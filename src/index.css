@@ -17,8 +17,11 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 222.2 47.4% 11.2%;
+    /* RevenuePRO AI Brand Colors */
+    --primary: 222 60% 20%;
     --primary-foreground: 210 40% 98%;
+    --primary-light: 222 45% 35%;
+    --primary-dark: 222 75% 15%;
 
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -26,33 +29,49 @@ All colors MUST be HSL.
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 220 80% 55%;
+    --accent-foreground: 210 40% 98%;
+    --accent-light: 220 65% 70%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
+    --success: 142 76% 36%;
+    --success-foreground: 210 40% 98%;
+    --success-light: 142 60% 85%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 210 40% 98%;
+    --warning-light: 38 80% 90%;
+
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --ring: 222 60% 20%;
 
     --radius: 0.5rem;
 
-    --sidebar-background: 0 0% 98%;
+    /* Revenue colors */
+    --revenue-green: 142 76% 36%;
+    --revenue-red: 0 84.2% 60.2%;
+    --revenue-yellow: 38 92% 50%;
+    --revenue-blue: 222 60% 20%;
+    --revenue-purple: 262 80% 50%;
 
-    --sidebar-foreground: 240 5.3% 26.1%;
+    /* Chart colors */
+    --chart-primary: 222 60% 20%;
+    --chart-secondary: 220 80% 55%;
+    --chart-accent: 142 76% 36%;
+    --chart-warning: 38 92% 50%;
+    --chart-danger: 0 84.2% 60.2%;
 
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 222 60% 20%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 220 80% 55%;
+    --sidebar-primary-foreground: 210 40% 98%;
+    --sidebar-accent: 222 45% 35%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 222 30% 30%;
+    --sidebar-ring: 220 80% 55%;
   }
 
   .dark {

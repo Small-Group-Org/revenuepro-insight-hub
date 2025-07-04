@@ -14,26 +14,26 @@ const menuItems = [
   { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
   { id: 'targets', label: 'Set Targets', icon: Target },
   { id: 'actuals', label: 'Add Actual Data', icon: Plus },
-  { id: 'compare', label: 'Compare & Results', icon: TrendingUp },
+  { id: 'compare', label: 'Compare & Analyze', icon: TrendingUp },
 ];
 
 export const Sidebar = ({ activeSection, onSectionChange, isCollapsed, onToggleCollapse }: SidebarProps) => {
   return (
     <div className={cn(
-      "bg-slate-900 text-white transition-all duration-300 flex flex-col",
+      "bg-sidebar text-sidebar-foreground transition-all duration-300 flex flex-col",
       isCollapsed ? "w-16" : "w-64"
     )}>
       {/* Header */}
-      <div className="p-4 border-b border-slate-700">
+      <div className="p-4 border-b border-sidebar-border">
         <div className="flex items-center justify-between">
           {!isCollapsed && (
-            <h1 className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+            <h1 className="text-xl font-bold text-sidebar-primary">
               RevenuePRO AI
             </h1>
           )}
           <button
             onClick={onToggleCollapse}
-            className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+            className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors"
           >
             {isCollapsed ? <Menu size={20} /> : <X size={20} />}
           </button>
@@ -49,10 +49,10 @@ export const Sidebar = ({ activeSection, onSectionChange, isCollapsed, onToggleC
               onClick={() => onSectionChange(id)}
               className={cn(
                 "w-full flex items-center gap-3 p-3 rounded-lg transition-all duration-200",
-                "hover:bg-slate-800",
+                "hover:bg-sidebar-accent",
                 activeSection === id 
-                  ? "bg-blue-600 shadow-md" 
-                  : "text-slate-300"
+                  ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md" 
+                  : "text-sidebar-foreground"
               )}
             >
               <Icon size={20} />
@@ -65,9 +65,9 @@ export const Sidebar = ({ activeSection, onSectionChange, isCollapsed, onToggleC
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-slate-700">
+      <div className="p-4 border-t border-sidebar-border">
         <div className={cn(
-          "text-xs text-slate-400",
+          "text-xs text-sidebar-foreground/60",
           isCollapsed ? "text-center" : ""
         )}>
           {isCollapsed ? "v1.0" : "RevenuePRO AI v1.0"}
