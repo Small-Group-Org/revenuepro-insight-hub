@@ -117,8 +117,8 @@ export const SetTargets = () => {
               <div className="text-lg">{icon}</div>
               <div className="text-2xl font-bold text-slate-900">
                 {key === 'salesRevenue' || key === 'metaBudgetSpent' 
-                  ? `$${formData[key as keyof typeof formData].toLocaleString()}`
-                  : formData[key as keyof typeof formData].toLocaleString()}
+                  ? `$${formData[key as keyof typeof formData]?.toLocaleString()}`
+                  : (formData[key as keyof typeof formData] || 0).toLocaleString()}
               </div>
               <div className="text-xs text-slate-600">{label.replace(' Target', '')}</div>
             </div>
