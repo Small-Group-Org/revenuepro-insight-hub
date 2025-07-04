@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { AxiosError, AxiosResponse } from "axios";
 import { STORAGE_KEYS, getValue, removeValue } from "./storage";
 import {API_METHODS, API_URL} from "./constant";
 import useAuthStore from "@/stores/authStore";
@@ -9,10 +9,21 @@ export const api = axios.create({
 
 const isFormData = (value: unknown): value is FormData => value instanceof FormData;
 
-const apiHandler = async (endPoint: any, method: string, data = null) => {
+type ApiResponse<T = unknown> = {
+    error: boolean;
+    message: string;
+    status: number;
+    data: T | null;
+};
+
+const apiHandler = async (
+    endPoint: string,
+    method: string,
+    data: unknown = null
+): Promise<ApiResponse> => {
     try {
         const contentType: string = isFormData(data) ? "multipart/form-data" : "application/json";
-        const response = await api({
+        const response: AxiosResponse = await api({
             method: method,
             url: endPoint,
             ...(![API_METHODS.GET].includes(method) && { data: data }),
@@ -24,16 +35,16 @@ const apiHandler = async (endPoint: any, method: string, data = null) => {
             },
         });
 
-        return { error: false, message: "", status: response?.status, data: response?.data };
-    } catch (error: any) {
+        return { error: false, message: "", status: response.status, data: response.data };
+    } catch (error) {
         // Default error message
         let errorMessage = 'An error occurred.';
         let statusCode = 500;
 
-        if (error?.response?.data?.message) {
-            errorMessage = error.response.data.message;
-            statusCode = error.response.status;
-        } else if (error?.message) {
+        if (error instanceof AxiosError) {
+            errorMessage = error.response?.data?.message || error.message;
+            statusCode = error.response?.status || 500;
+        } else if (error instanceof Error) {
             errorMessage = error.message;
         }
 
