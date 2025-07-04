@@ -252,7 +252,7 @@ export const WeekCalendar = ({
               </Button>
             </div>
 
-            <div className="bg-accent-light p-4 rounded-lg">
+            <div className="bg-accent p-4 rounded-lg">
               <div className="text-sm font-medium text-accent-foreground mb-2">Week Details</div>
               <div className="space-y-1 text-sm">
                 <div>Start: {format(selectedWeek.weekStart, 'EEEE, MMM dd, yyyy')}</div>
