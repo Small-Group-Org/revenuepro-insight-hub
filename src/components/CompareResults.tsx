@@ -94,9 +94,9 @@ export const CompareResults = () => {
 
   const formatValue = (value: number, format: string) => {
     if (format === 'currency') {
-      return `$${value.toLocaleString()}`;
+      return `$${value?.toLocaleString()}`;
     }
-    return value.toLocaleString();
+    return value?.toLocaleString();
   };
 
   const calculateDifference = (actual: number, target: number) => {
@@ -232,7 +232,7 @@ export const CompareResults = () => {
                       </div>
                     </td>
                     <td className="p-4 text-right font-medium text-slate-700">
-                      {formatValue(item.target, item.format)}
+                      {formatValue(item?.target, item?.format)}
                     </td>
                     <td className="p-4 text-right font-bold text-slate-900">
                       {formatValue(item.actual, item.format)}
