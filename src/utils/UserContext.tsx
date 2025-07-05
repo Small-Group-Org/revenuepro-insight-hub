@@ -12,20 +12,8 @@ interface User {
   id?: string;
   name?: string;
   email?: string;
+  role?: string; // Add role here
   // Add other user properties as needed
-}
-
-interface Project {
-  _id?: string;
-  name?: string;
-  // Add other project properties as needed
-}
-
-interface Product {
-  id: string;
-  title: string;
-  price: number;
-  // Add other product properties as needed
 }
 
 interface UserContextType {
@@ -60,9 +48,11 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   const setUser = useAuthStore((state) => state.setUser);
   const { toast } = useToast();
 
+  
+
   useEffect(() => {
     checkExistingToken();
-  }, [login]);
+  }, []);
 
   const contextValue: UserContextType = {
     user,
@@ -77,23 +67,39 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     if (accessToken && refreshToken) {
       setIsVerifying(true);
       try {
-        const isTokenValid = await verifyToken(accessToken, refreshToken);
-         if (isTokenValid?.status === 403) {
+        const response = await verifyToken(accessToken, refreshToken);
+        if (response?.status === 403) {
           toast({
             title: "Error",
             description: "Please request permission from the administrator to access this resource - tushar.mangla1120@gmail.com",
             variant: "destructive",
           });
-
           navigate("/login");
-        }
-        if (isTokenValid.status === 200) {
-          login();
           return;
         }
+        
+        if (response?.status === 200 && response?.data?.user) {
+          setUser(response.data.user);
+          login();
+          navigate("/");
+          return;
+        }
+
+        // If we get here, something went wrong with verification
+        toast({
+          title: "Session Expired",
+          description: "Please login again",
+          variant: "destructive",
+        });
+        navigate("/login");
        
       } catch (error) {
         console.error("Token verification failed:", error);
+        toast({
+          title: "Error",
+          description: "Authentication failed. Please login again.",
+          variant: "destructive",
+        });
         navigate("/login");
       } finally {
         setIsVerifying(false);

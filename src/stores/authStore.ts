@@ -7,8 +7,9 @@ interface AuthState {
     id?: string;
     name?: string;
     email?: string;
+    role?: string; // Added role
   };
-  setUser: (user: { id?: string; name?: string; email?: string; }) => void;
+  setUser: (user: { id?: string; name?: string; email?: string; role?: string }) => void;
   login: () => void;
   logout: () => void;
 }
