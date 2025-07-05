@@ -21,7 +21,6 @@ export default function AppLayout() {
           onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
         />
         <main className="flex-1 overflow-auto">
-          {/* Show UserSelect at the top if user is ADMIN */}
           {user?.role === "ADMIN" && (
             <div className="w-full flex justify-center py-4 bg-gray-100">
               <div className="w-full max-w-xs">

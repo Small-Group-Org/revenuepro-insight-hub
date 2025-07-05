@@ -4,7 +4,7 @@ import { create } from 'zustand';
 interface AuthState {
   isLoggedIn: boolean;
   user?: {
-    id?: string;
+    _id?: string;
     name?: string;
     email?: string;
     role?: string; // Added role

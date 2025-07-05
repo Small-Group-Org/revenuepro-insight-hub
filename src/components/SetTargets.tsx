@@ -1,52 +1,121 @@
-
-import React, { useState } from 'react';
-import { useData } from '@/contexts/DataContext';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
-import { Save, RotateCcw, Target } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { Save, Target } from "lucide-react";
+import { useTargetStore } from "../stores/targetStore";
+import { DateSelect } from "./DateSelect";
+import { useUserStore } from "../stores/userStore";
+import useAuthStore from "../stores/authStore";
+import { endOfWeek, startOfWeek } from "date-fns";
 
 export const SetTargets = () => {
-  const { targets, updateTargets, resetTargets } = useData();
   const { toast } = useToast();
-  const [formData, setFormData] = useState(targets);
+  const [formData, setFormData] = useState({
+    leads: 120,
+    appointmentsSet: 60,
+    appointmentsComplete: 50,
+    jobsBooked: 25,
+    salesRevenue: 30000,
+    metaBudgetSpent: 6000,
+  });
+  const [selectedStartDate, setSelectedStartDate] = useState<Date>(
+    startOfWeek(new Date(), { weekStartsOn: 1 })
+  );
+  const [selectedEndDate, setSelectedEndDate] = useState<Date>(
+    endOfWeek(new Date(), { weekStartsOn: 1 })
+  );
+  const { upsertWeeklyTarget, isLoading, error, getTargetsForUser, currentTarget } =
+    useTargetStore();
+  const { selectedUserId } = useUserStore();
+  const { user } = useAuthStore();
+
+  // Update formData when currentTarget changes
+  useEffect(() => {
+    if (currentTarget) {
+      setFormData({
+        leads: currentTarget.leads ?? 0,
+        appointmentsSet: currentTarget.appointmentRate
+          ? Math.round((currentTarget.leads * currentTarget.appointmentRate) / 100)
+          : 0,
+        appointmentsComplete:
+          currentTarget.showRate && currentTarget.appointmentRate
+            ? Math.round(
+                (currentTarget.leads * currentTarget.appointmentRate * currentTarget.showRate) /
+                  10000
+              )
+            : 0,
+        jobsBooked:
+          currentTarget.closeRate && currentTarget.showRate && currentTarget.appointmentRate
+            ? Math.round(
+                (currentTarget.leads *
+                  currentTarget.appointmentRate *
+                  currentTarget.showRate *
+                  currentTarget.closeRate) /
+                  1000000
+              )
+            : 0,
+        salesRevenue: currentTarget.revenue ?? 0,
+        metaBudgetSpent: currentTarget.adSpendBudget ?? 0,
+      });
+    }
+  }, [currentTarget, selectedStartDate]);
+
+  useEffect(() => {
+    if (user?.role === "ADMIN" && selectedUserId) {
+      getTargetsForUser("weekly", selectedStartDate);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedUserId]);
 
   const handleInputChange = (field: keyof typeof formData, value: string) => {
-    setFormData(prev => ({
+    const numValue = parseFloat(value) || 0;
+    setFormData((prev) => ({
       ...prev,
-      [field]: parseFloat(value) || 0
+      [field]: numValue,
     }));
   };
 
-  const handleSave = () => {
-    updateTargets(formData);
-    toast({
-      title: "✅ Targets Saved Successfully!",
-      description: "Your target values have been updated.",
-    });
-  };
+  const handleSave = async () => {
+    try {
+      await upsertWeeklyTarget({
+        startDate: (selectedStartDate),
+        endDate: (selectedEndDate),
+        queryType: "weekly",
+        leads: formData.leads || 0,
+        revenue: formData.salesRevenue || 0,
+        avgJobSize: formData.salesRevenue / formData.jobsBooked || 0,
+        appointmentRate: (formData.appointmentsSet / formData.leads) * 100 || 0,
+        showRate: (formData.appointmentsComplete / formData.appointmentsSet) * 100 || 0,
+        closeRate: (formData.jobsBooked / formData.appointmentsComplete) * 100 || 0,
+        adSpendBudget: formData.metaBudgetSpent || 0,
+        costPerLead: formData.metaBudgetSpent / formData.leads || 0,
+        costPerEstimateSet: formData.metaBudgetSpent / formData.appointmentsSet || 0,
+        costPerJobBooked: formData.metaBudgetSpent / formData.jobsBooked || 0,
+      });
 
-  const handleReset = () => {
-    const confirmed = window.confirm('Are you sure you want to reset all targets to default values?');
-    if (confirmed) {
-      resetTargets();
-      setFormData(targets);
       toast({
-        title: "🔄 Targets Reset",
-        description: "All targets have been reset to default values.",
+        title: "✅ Targets Saved Successfully!",
+        description: "Your target values have been updated.",
+      });
+    } catch (err) {
+      toast({
+        title: "❌ Error Saving Targets",
+        description: error || "Failed to save targets. Please try again.",
+        variant: "destructive",
       });
     }
   };
 
   const targetFields = [
-    { key: 'leads', label: 'Leads Target', icon: '👥' },
-    { key: 'appointmentsSet', label: 'Appointments Set Target', icon: '📅' },
-    { key: 'appointmentsComplete', label: 'Appointments Complete Target', icon: '✅' },
-    { key: 'jobsBooked', label: 'Jobs Booked Target', icon: '🎯' },
-    { key: 'salesRevenue', label: 'Sales Revenue Target ($)', icon: '💰' },
-    { key: 'metaBudgetSpent', label: 'Meta Budget Spent Target ($)', icon: '📊' },
+    { key: "leads", label: "Leads Target", icon: "👥" },
+    { key: "appointmentsSet", label: "Appointments Set Target", icon: "📅" },
+    { key: "appointmentsComplete", label: "Appointments Complete Target", icon: "✅" },
+    { key: "jobsBooked", label: "Jobs Booked Target", icon: "🎯" },
+    { key: "salesRevenue", label: "Sales Revenue Target ($)", icon: "💰" },
+    { key: "metaBudgetSpent", label: "Meta Budget Spent Target ($)", icon: "📊" },
   ];
 
   return (
@@ -55,18 +124,30 @@ export const SetTargets = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Set Performance Targets</h1>
-          <p className="text-slate-600 mt-1">Define your monthly performance goals and benchmarks</p>
+          <p className="text-slate-600 mt-1">Define your weekly performance goals and benchmarks</p>
         </div>
         <div className="flex gap-3">
-          <Button onClick={handleReset} variant="outline" className="hover:bg-red-50">
+          {/* <Button onClick={handleReset} variant="outline" className="hover:bg-red-50">
             <RotateCcw className="h-4 w-4 mr-2" />
             Reset to Defaults
-          </Button>
+          </Button> */}
           <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700">
             <Save className="h-4 w-4 mr-2" />
             Save Targets
           </Button>
         </div>
+      </div>
+
+      {/* Date Selection */}
+      <div className="flex justify-between items-center">
+        <DateSelect
+          onDateChange={(start, end) => {
+            setSelectedStartDate(start);
+            setSelectedEndDate(end);
+          }}
+          initialView="weekly"
+        />
+        <div className="text-sm text-slate-600">Values shown are weekly targets</div>
       </div>
 
       {/* Targets Form */}
@@ -81,12 +162,12 @@ export const SetTargets = () => {
                 </Label>
               </div>
               <p className="text-sm text-slate-600">
-                {key === 'salesRevenue' || key === 'metaBudgetSpent' 
-                  ? 'Enter target amount in dollars' 
-                  : 'Enter target number of units'}
+                {key === "salesRevenue" || key === "metaBudgetSpent"
+                  ? "Enter target amount in dollars (weekly)"
+                  : "Enter target number of units (weekly)"}
               </p>
             </div>
-            
+
             <div className="relative">
               <Input
                 id={key}
@@ -96,8 +177,10 @@ export const SetTargets = () => {
                 className="text-lg font-medium bg-yellow-50 border-yellow-200 focus:border-yellow-400 focus:ring-yellow-400"
                 placeholder="0"
               />
-              {(key === 'salesRevenue' || key === 'metaBudgetSpent') && (
-                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500">$</span>
+              {(key === "salesRevenue" || key === "metaBudgetSpent") && (
+                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500">
+                  $
+                </span>
               )}
             </div>
           </Card>
@@ -110,17 +193,17 @@ export const SetTargets = () => {
           <Target className="h-6 w-6 text-blue-600" />
           <h3 className="text-xl font-semibold text-slate-900">Target Summary</h3>
         </div>
-        
+
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {targetFields.map(({ key, label, icon }) => (
             <div key={key} className="text-center p-3 bg-white rounded-lg">
               <div className="text-lg">{icon}</div>
               <div className="text-2xl font-bold text-slate-900">
-                {key === 'salesRevenue' || key === 'metaBudgetSpent' 
+                {key === "salesRevenue" || key === "metaBudgetSpent"
                   ? `$${formData[key as keyof typeof formData]?.toLocaleString()}`
-                  : (formData[key as keyof typeof formData] || 0).toLocaleString()}
+                  : formData[key as keyof typeof formData]?.toLocaleString()}
               </div>
-              <div className="text-xs text-slate-600">{label.replace(' Target', '')}</div>
+              <div className="text-xs text-slate-600">{label.replace(" Target", "")}</div>
             </div>
           ))}
         </div>
@@ -134,6 +217,7 @@ export const SetTargets = () => {
           <li>• Consider seasonal variations in your industry</li>
           <li>• Review and adjust targets quarterly based on results</li>
           <li>• Ensure targets are challenging but achievable</li>
+          <li>• Weekly targets will be used to calculate monthly and yearly projections</li>
         </ul>
       </Card>
     </div>

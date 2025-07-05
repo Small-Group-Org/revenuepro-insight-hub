@@ -9,15 +9,21 @@ interface UserSelectProps {
 }
 
 const UserSelect: React.FC<UserSelectProps> = ({ value, onChange, placeholder }) => {
-  const { users, loading, fetchUsers } = useUserStore();
+  const { users, loading, fetchUsers, selectedUserId, setSelectedUserId } = useUserStore();
   useEffect(() => {
-    if (users.length === 0) {
+    if (users?.length === 0) {
       fetchUsers();
     }
-    // eslint-disable-next-line
   }, []);
+
+  // Handle value and onChange
+  const handleChange = (userId: string) => {
+    setSelectedUserId(userId);
+    if (onChange) onChange(userId);
+  };
+
   return (
-    <Select value={value} onValueChange={onChange} disabled={loading}>
+    <Select value={value ?? selectedUserId} onValueChange={handleChange} disabled={loading}>
       <SelectTrigger className="w-full">
         <SelectValue placeholder={placeholder || (loading ? "Loading users..." : "Select a user")}/>
       </SelectTrigger>

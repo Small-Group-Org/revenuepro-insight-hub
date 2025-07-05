@@ -4,30 +4,24 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { createUser, getAllUsers, User } from "@/service/userService";
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
+import { createUser, User as ServiceUser } from "@/service/userService";
+import { useUserContext } from "@/utils/UserContext";
+import { useUserStore } from "@/stores/userStore";
 
 const CreateUser = () => {
   const { toast } = useToast();
+  const { user: loggedInUser } = useUserContext();
+  const { users, loading: fetchingUsers, fetchUsers } = useUserStore();
   const [form, setForm] = useState({ email: "", password: "", name: "" });
   const [loading, setLoading] = useState(false);
-  const [users, setUsers] = useState<User[]>([]);
-  const [fetchingUsers, setFetchingUsers] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | undefined>(undefined);
 
-  const fetchUsers = async () => {
-    setFetchingUsers(true);
-    const res = await getAllUsers();
-    if (!res.error && Array.isArray(res.data.data)) {
-      setUsers(res?.data?.data);
-    } else {
-      toast({ title: "Error", description: res.message || "Failed to fetch users", variant: "destructive" });
-    }
-    setFetchingUsers(false);
-  };
-
+  // If admin, update selected user if users list changes and none selected
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    if (loggedInUser?.role === "ADMIN" && users.length > 0 && !selectedUserId) {
+      setSelectedUserId(users[0].id);
+    }
+  }, [users, loggedInUser, selectedUserId]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
@@ -47,6 +41,14 @@ const CreateUser = () => {
     }
     setLoading(false);
   };
+
+  // Use a union type for profileUser
+  let profileUser: (ServiceUser | typeof loggedInUser) | undefined = undefined;
+  if (loggedInUser?.role === "ADMIN") {
+    profileUser = users.find(u => u.id === selectedUserId);
+  } else {
+    profileUser = loggedInUser || undefined;
+  }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 py-8">
