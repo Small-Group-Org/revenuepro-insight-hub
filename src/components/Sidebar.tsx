@@ -1,23 +1,34 @@
-
 import React from 'react';
-import { BarChart3, Target, Plus, TrendingUp, Menu, X } from 'lucide-react';
+import { BarChart3, Target, Plus, TrendingUp, Menu, X, UserPlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useNavigate, useLocation } from "react-router-dom";
+import { useUserContext } from "../utils/UserContext";
 
 interface SidebarProps {
-  activeSection: string;
-  onSectionChange: (section: string) => void;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
 }
 
+interface UserWithRole {
+  id?: string;
+  name?: string;
+  email?: string;
+  role?: string;
+}
+
 const menuItems = [
-  { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
-  { id: 'targets', label: 'Set Targets', icon: Target },
-  { id: 'actuals', label: 'Add Actual Data', icon: Plus },
-  { id: 'compare', label: 'Compare & Results', icon: TrendingUp },
+  { id: 'dashboard', label: 'Dashboard', icon: BarChart3, path: '/' },
+  { id: 'settargets', label: 'Set Targets', icon: Target, path: '/targets' },
+  { id: 'actuals', label: 'Add Actual Data', icon: Plus, path: '/actuals' },
+  { id: 'compare', label: 'Compare & Results', icon: TrendingUp, path: '/compare' },
 ];
 
-export const Sidebar = ({ activeSection, onSectionChange, isCollapsed, onToggleCollapse }: SidebarProps) => {
+export const Sidebar = ({ isCollapsed, onToggleCollapse }: SidebarProps) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useUserContext();
+  const userWithRole = user as UserWithRole | null;
+  const isAdmin = userWithRole && (userWithRole.role === 'ADMIN'); // Placeholder admin check
   return (
     <div className={cn(
       "bg-slate-900 text-white transition-all duration-300 flex flex-col",
@@ -43,14 +54,14 @@ export const Sidebar = ({ activeSection, onSectionChange, isCollapsed, onToggleC
       {/* Navigation */}
       <nav className="flex-1 p-4">
         <div className="space-y-2">
-          {menuItems.map(({ id, label, icon: Icon }) => (
+          {menuItems.map(({ id, label, icon: Icon, path }) => (
             <button
               key={id}
-              onClick={() => onSectionChange(id)}
+              onClick={() => navigate(path)}
               className={cn(
                 "w-full flex items-center gap-3 p-3 rounded-lg transition-all duration-200",
                 "hover:bg-slate-800",
-                activeSection === id 
+                location.pathname === path 
                   ? "bg-blue-600 shadow-md" 
                   : "text-slate-300"
               )}
@@ -61,6 +72,24 @@ export const Sidebar = ({ activeSection, onSectionChange, isCollapsed, onToggleC
               )}
             </button>
           ))}
+          {/* Admin Section */}
+          {isAdmin && (
+            <button
+              onClick={() => navigate('/create-user')}
+              className={cn(
+                "w-full flex items-center gap-3 p-3 rounded-lg transition-all duration-200",
+                "hover:bg-slate-800",
+                location.pathname === '/create-user'
+                  ? "bg-blue-600 shadow-md"
+                  : "text-slate-300"
+              )}
+            >
+              <UserPlus size={20} />
+              {!isCollapsed && (
+                <span className="font-medium">Create User</span>
+              )}
+            </button>
+          )}
         </div>
       </nav>
 
