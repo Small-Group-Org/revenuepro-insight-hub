@@ -1,4 +1,4 @@
-import { doPOST, doGET } from "@/utils/HttpUtils";
+import { doPOST, doGET, doPUT, doDELETE } from "@/utils/HttpUtils";
 
 export interface User {
   id: string;
@@ -14,6 +14,12 @@ export interface CreateUserPayload {
   role?: string;
 }
 
+export interface UpdateUserPayload {
+  userId: string;
+  email?: string;
+  name?: string;
+}
+
 export const createUser = async (payload: CreateUserPayload) => {
   // Always set role to USER for this admin action
   const response = await doPOST("/admin/users/upsert", { ...payload, role: "USER" });
@@ -22,5 +28,20 @@ export const createUser = async (payload: CreateUserPayload) => {
 
 export const getAllUsers = async () => {
   const response = await doGET("/admin/users/list/all?role=USER");
+  return response;
+};
+
+export const updateUser = async (payload: UpdateUserPayload) => {
+  const response = await doPOST("/admin/users/upsert", payload);
+  return response;
+};
+
+export const deleteUser = async (userId: string) => {
+  const response = await doDELETE(`/admin/users/delete/${userId}`);
+  return response;
+};
+
+export const getUserById = async (userId: string) => {
+  const response = await doGET(`/admin/get/users/${userId}`);
   return response;
 };

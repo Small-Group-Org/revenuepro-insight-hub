@@ -4,17 +4,20 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { createUser, User as ServiceUser } from "@/service/userService";
+import { User as ServiceUser } from "@/service/userService";
 import { useUserContext } from "@/utils/UserContext";
 import { useUserStore } from "@/stores/userStore";
+import CreateUserModal from "@/components/CreateUserModal";
 
 const CreateUser = () => {
   const { toast } = useToast();
   const { user: loggedInUser } = useUserContext();
-  const { users, loading: fetchingUsers, fetchUsers } = useUserStore();
-  const [form, setForm] = useState({ email: "", password: "", name: "" });
+  const { users, loading: fetchingUsers, fetchUsers, createUser, updateUser, deleteUser } = useUserStore();
   const [loading, setLoading] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | undefined>(undefined);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
 
   // If admin, update selected user if users list changes and none selected
   useEffect(() => {
@@ -23,26 +26,49 @@ const CreateUser = () => {
     }
   }, [users, loggedInUser, selectedUserId]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { id, value } = e.target;
-    setForm(prev => ({ ...prev, [id]: value }));
+  const handleEditClick = (userId: string) => {
+    setEditingUserId(userId);
+    setIsCreating(false);
+    setIsModalOpen(true);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleCreateClick = () => {
+    setEditingUserId(null);
+    setIsCreating(true);
+    setIsModalOpen(true);
+  };
+
+  const handleDeleteClick = async (userId: string) => {
+    if (window.confirm("Are you sure you want to delete this user?")) {
+      const res = await deleteUser(userId);
+      if (!res.error) {
+        toast({ title: "User Deleted", description: "User deleted successfully!" });
+      } else {
+        toast({ title: "Error", description: res.message || "Failed to delete user", variant: "destructive" });
+      }
+    }
+  };
+
+  const handleModalSave = async (userId: string | null, userData: { email: string; name: string; password?: string }) => {
     setLoading(true);
-    const res = await createUser({ email: form.email, password: form.password, name: form.name });
-    if (!res.error) {
-      toast({ title: "User Created", description: `User ${form.email} created successfully!` });
-      setForm({ email: "", password: "", name: "" });
-      fetchUsers();
-    } else {
-      toast({ title: "Error", description: res.message || "Failed to create user", variant: "destructive" });
+    let res;
+    if (isCreating) {
+      res = await createUser({ email: userData.email, password: userData.password!, name: userData.name });
+    } else if (userId) {
+      res = await updateUser({ userId: userId, email: userData.email, name: userData.name });
+    }
+
+    if (res && !res.error) {
+      toast({ title: `User ${isCreating ? "Created" : "Updated"}`, description: `User ${userData.email} ${isCreating ? "created" : "updated"} successfully!` });
+      setIsModalOpen(false);
+      setEditingUserId(null);
+    } else if (res) {
+      toast({ title: "Error", description: res.message || `Failed to ${isCreating ? "create" : "update"} user`, variant: "destructive" });
     }
     setLoading(false);
   };
 
-  // Use a union type for profileUser
+
   let profileUser: (ServiceUser | typeof loggedInUser) | undefined = undefined;
   if (loggedInUser?.role === "ADMIN") {
     profileUser = users.find(u => u.id === selectedUserId);
@@ -51,30 +77,18 @@ const CreateUser = () => {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 py-8">
-      <Card className="w-full max-w-md mb-8">
-        <CardHeader>
-          <CardTitle>Create New User</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium mb-1">Name</label>
-              <Input id="name" type="text" value={form.name} onChange={handleChange} required disabled={loading} placeholder="Enter user name" />
-            </div>
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium mb-1">Email</label>
-              <Input id="email" type="email" value={form.email} onChange={handleChange} required disabled={loading} placeholder="Enter user email" />
-            </div>
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium mb-1">Password</label>
-              <Input id="password" type="password" value={form.password} onChange={handleChange} required disabled={loading} placeholder="Enter password" />
-            </div>
-            <Button type="submit" className="w-full" disabled={loading}>{loading ? "Creating..." : "Create User"}</Button>
-          </form>
-        </CardContent>
-      </Card>
-      <Card className="w-full max-w-2xl">
+    <div className="flex flex-col justify-center  bg-gray-50">
+        <CreateUserModal
+          isOpen={isModalOpen}
+          onOpenChange={setIsModalOpen}
+          isCreating={isCreating}
+          editingUserId={editingUserId}
+          onSave={handleModalSave}
+          loading={loading}
+          onCreateClick={handleCreateClick}
+        />
+
+      <Card className="w-full max-w-full">
         <CardHeader>
           <CardTitle>All Users</CardTitle>
         </CardHeader>
@@ -87,13 +101,14 @@ const CreateUser = () => {
                   <TableHead>Name</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead>User ID</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {fetchingUsers ? (
-                  <TableRow><TableCell colSpan={4}>Loading...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={5}>Loading...</TableCell></TableRow>
                 ) : users.length === 0 ? (
-                  <TableRow><TableCell colSpan={4}>No users found.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={5}>No users found.</TableCell></TableRow>
                 ) : (
                   users.map(user => (
                     <TableRow key={user.id}>
@@ -101,6 +116,10 @@ const CreateUser = () => {
                       <TableCell>{user.name || '-'}</TableCell>
                       <TableCell>{user.role}</TableCell>
                       <TableCell>{user.id}</TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="outline" size="sm" className="mr-2" onClick={() => handleEditClick(user.id)}>Edit</Button>
+                        <Button variant="destructive" size="sm" onClick={() => handleDeleteClick(user.id)}>Delete</Button>
+                      </TableCell>
                     </TableRow>
                   ))
                 )}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { BarChart3, Target, Plus, TrendingUp, Menu, X, UserPlus } from 'lucide-react';
+import { BarChart3, Target, Plus, TrendingUp, Menu, X, UserPlus, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigate, useLocation } from "react-router-dom";
 import { useUserContext } from "../utils/UserContext";
@@ -7,6 +7,7 @@ import { useUserContext } from "../utils/UserContext";
 interface SidebarProps {
   isCollapsed: boolean;
   onToggleCollapse: () => void;
+  onLogout: () => void;
 }
 
 interface UserWithRole {
@@ -23,7 +24,7 @@ const menuItems = [
   { id: 'compare', label: 'Compare & Results', icon: TrendingUp, path: '/compare' },
 ];
 
-export const Sidebar = ({ isCollapsed, onToggleCollapse }: SidebarProps) => {
+export const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }: SidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useUserContext();
@@ -95,8 +96,21 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse }: SidebarProps) => {
 
       {/* Footer */}
       <div className="p-4 border-t border-slate-700">
+        <button
+          onClick={onLogout}
+          className={cn(
+            "w-full flex items-center gap-3 p-3 rounded-lg transition-all duration-200",
+            "hover:bg-slate-800",
+            "text-red-400"
+          )}
+        >
+          <LogOut size={20} />
+          {!isCollapsed && (
+            <span className="font-medium">Logout</span>
+          )}
+        </button>
         <div className={cn(
-          "text-xs text-slate-400",
+          "text-xs text-slate-400 mt-2",
           isCollapsed ? "text-center" : ""
         )}>
           {isCollapsed ? "v1.0" : "RevenuePRO AI v1.0"}
