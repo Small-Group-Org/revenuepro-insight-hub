@@ -21,41 +21,55 @@ import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-reac
 
 type View = 'weekly' | 'monthly' | 'yearly';
 
+// Define the shape of the object our callback will pass
+interface DateSelection {
+  view: View;
+  startDate: string; // Changed to string
+  endDate: string;   // Changed to string
+}
+
 interface DateSelectProps {
-  onDateChange: (startDate: Date, endDate: Date) => void;
-  onViewChange?: (view: View) => void;
+  // Changed to a single callback for all selection changes
+  onSelectionChange: (selection: DateSelection) => void;
   initialView?: View;
 }
 
-export const DateSelect = ({ onDateChange = ()=>{}, onViewChange= ()=>{}, initialView = 'monthly' }: DateSelectProps) => {
+export const DateSelect = ({ onSelectionChange = ()=>{}, initialView = 'monthly' }: DateSelectProps) => {
   const [view, setView] = useState<View>(initialView);
   const [currentDate, setCurrentDate] = useState(new Date());
 
-  const getRange = () => {
-    switch (view) {
-      case 'weekly':
-        // Week starts on Monday
-        return {
-          start: startOfWeek(currentDate, { weekStartsOn: 1 }),
-          end: endOfWeek(currentDate, { weekStartsOn: 1 }),
-        };
-      case 'monthly':
-        return {
-          start: startOfMonth(currentDate),
-          end: endOfMonth(currentDate),
-        };
-      case 'yearly':
-        return {
-          start: startOfYear(currentDate),
-          end: endOfYear(currentDate),
-        };
-    }
-  };
-
+  // This useEffect is now the single source of truth for notifying the parent.
+  // It runs whenever the internal date or view changes.
   useEffect(() => {
+    const getRange = () => {
+      switch (view) {
+        case 'weekly':
+          return {
+            start: startOfWeek(currentDate, { weekStartsOn: 1 }),
+            end: endOfWeek(currentDate, { weekStartsOn: 1 }),
+          };
+        case 'monthly':
+          return {
+            start: startOfMonth(currentDate),
+            end: endOfMonth(currentDate),
+          };
+        case 'yearly':
+          return {
+            start: startOfYear(currentDate),
+            end: endOfYear(currentDate),
+          };
+      }
+    };
+
     const { start, end } = getRange();
-    onDateChange(start, end);
-  }, [currentDate, view]);
+    // Call the single callback with a complete selection object
+    onSelectionChange({
+      view,
+      startDate: format(start, 'yyyy-MM-dd'), // Format to string
+      endDate: format(end, 'yyyy-MM-dd'),     // Format to string
+    });
+
+  }, [currentDate, view, onSelectionChange]); // Dependency array is correct
 
   const handlePrev = () => {
     const duration = view === 'weekly' ? { weeks: 1 } : view === 'monthly' ? { months: 1 } : { years: 1 };
@@ -68,12 +82,27 @@ export const DateSelect = ({ onDateChange = ()=>{}, onViewChange= ()=>{}, initia
   };
 
   const handleViewChange = (newView: View) => {
+    // We only need to update the internal state.
+    // The useEffect hook will handle notifying the parent.
     setView(newView);
-    onViewChange?.(newView);
   };
 
   const formatDateRange = () => {
-    const { start, end } = getRange();
+    const { start, end } = {
+        weekly: {
+            start: startOfWeek(currentDate, { weekStartsOn: 1 }),
+            end: endOfWeek(currentDate, { weekStartsOn: 1 }),
+        },
+        monthly: {
+            start: startOfMonth(currentDate),
+            end: endOfMonth(currentDate),
+        },
+        yearly: {
+            start: startOfYear(currentDate),
+            end: endOfYear(currentDate),
+        }
+    }[view];
+
     switch (view) {
       case 'weekly':
         if (start.getMonth() === end.getMonth()) {
@@ -114,4 +143,4 @@ export const DateSelect = ({ onDateChange = ()=>{}, onViewChange= ()=>{}, initia
       </div>
     </div>
   );
-}; 
+};

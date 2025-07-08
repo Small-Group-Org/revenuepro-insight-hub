@@ -2,8 +2,8 @@ import { doPOST } from "../utils/HttpUtils";
 import { doGET } from "../utils/HttpUtils";
 
 export interface IWeeklyTarget {
-  startDate: Date;
-  endDate: Date;
+  startDate: string;
+  endDate: string;
   leads: number;
   queryType:string;
   revenue: number;
@@ -32,7 +32,7 @@ export const upsertTarget = async (targetData: IWeeklyTarget) => {
   }
 };
 
-export const getTargets = async (userId: string, queryType?: string, startDate?: Date) => {
+export const getTargets = async (userId: string, queryType?: string, startDate?: string) => {
   try {
     let url = `/targets/get?userId=${userId}`;
     if (queryType) url += `&queryType=${queryType}`;

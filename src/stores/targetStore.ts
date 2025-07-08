@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { IWeeklyTarget, upsertTarget, getTargets } from '../service/targetService';
 import useAuthStore from './authStore';
 import { useUserStore } from './userStore';
+import { format } from 'date-fns';
 
 interface TargetState {
   currentTarget: IWeeklyTarget | null;
@@ -10,12 +11,12 @@ interface TargetState {
   setCurrentTarget: (target: IWeeklyTarget | null) => void;
   upsertWeeklyTarget: (target: IWeeklyTarget) => Promise<void>;
   clearError: () => void;
-  getTargetsForUser: (queryType?: string, startDate?: Date) => Promise<void>;
+  getTargetsForUser: (queryType?: string, startDate?: string) => Promise<void>;
 }
 
 const defaultWeeklyTarget: IWeeklyTarget = {
-  startDate: new Date(),
-  endDate: new Date(),
+  startDate: format(new Date(), 'yyyy-MM-dd'),
+  endDate: format(new Date(), 'yyyy-MM-dd'),
   leads: 0,
   queryType: '',
   revenue: 0,
@@ -65,7 +66,7 @@ export const useTargetStore = create<TargetState>((set, get) => ({
 
   clearError: () => set({ error: null }),
 
-  getTargetsForUser: async (queryType?: string, startDate?: Date) => {
+  getTargetsForUser: async (queryType?: string, startDate?: string) => {
     set({ isLoading: true, error: null });
     try {
       const authState = useAuthStore.getState();
