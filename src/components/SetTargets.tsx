@@ -155,11 +155,11 @@ export const SetTargets = () => {
         <div className="max-w-7xl mx-auto space-y-10">
           <div className="text-center">
             <div className="flex items-center justify-center gap-4">
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent">
+                <h1 className="leading-[130%] text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent">
                 Set Targets
               </h1>
             </div>
-            <p className="text-gray-600 max-w-2xl mx-auto text-lg my-4">
+            <p className="text-gray-600 max-w-2xl mx-auto text-lg mb-10 mt-2">
               Configure your business targets and KPIs with precision
             </p>
           </div>
@@ -180,7 +180,7 @@ export const SetTargets = () => {
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
           
           {/* Funnel Rates Card */}
-          <Card className="bg-white/90 backdrop-blur-sm border border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300">
+          <Card className="bg-white/90 backdrop-blur-sm border border-white/20 shadow-xl hover:shadow-2xld">
             <div className="p-6 border-b border-gray-100/50 bg-gradient-to-r from-blue-50/50 to-purple-50/50">
               <div className="flex items-center gap-3">
                 <TrendingUp className="h-5 w-5 text-gray-600" />
@@ -256,7 +256,7 @@ export const SetTargets = () => {
               </div>
 
               {/* Calculated Field */}
-              <div className={`bg-gradient-to-r from-gray-50/80 to-gray-100/80 backdrop-blur-sm p-4 rounded-xl border border-gray-200/40 ${isHighlighted('leadToSale') ? 'bg-gradient-to-r from-yellow-100/80 via-yellow-50/80 to-transparent transition-all duration-300 shadow-lg' : 'hover:shadow-md transition-all duration-300'}`}>
+              <div className={`bg-gradient-to-r from-gray-50/80 to-gray-100/80 backdrop-blur-sm p-4 rounded-xl border border-gray-200/40 ${isHighlighted('leadToSale') ? 'bg-gradient-to-r from-sky-100/80 border-blue-500 via-blue-100/80 to-transparentd border-sky-200/60' : 'hover:shadow-mdd'}`}>
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-sm font-medium text-gray-900">Lead to Sale</div>
@@ -271,7 +271,7 @@ export const SetTargets = () => {
           </Card>
 
           {/* Monthly Targets Card */}
-          <Card className="bg-white/90 backdrop-blur-sm border border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300">
+          <Card className="bg-white/90 backdrop-blur-sm border border-white/20 shadow-xl hover:shadow-2xld">
             <div className="p-6 border-b border-gray-100/50 bg-gradient-to-r from-green-50/50 to-blue-50/50">
               <div className="flex items-center gap-3">
                 <Calculator className="h-5 w-5 text-gray-600" />
@@ -323,7 +323,7 @@ export const SetTargets = () => {
 
               {/* Calculated Fields */}
               <div className="space-y-3">
-                <div className={`bg-gradient-to-r from-gray-50/80 to-gray-100/80 backdrop-blur-sm p-3 rounded-xl border border-gray-200/40 ${isHighlighted('sale') ? 'bg-gradient-to-r from-yellow-100/80 via-yellow-50/80 to-transparent transition-all duration-300 shadow-lg' : 'hover:shadow-md transition-all duration-300'}`}>
+                <div className={`bg-gradient-to-r from-gray-50/80 to-gray-100/80 backdrop-blur-sm p-3 rounded-xl border border-gray-200/40 ${isHighlighted('sale') ? 'bg-gradient-to-r from-sky-100/80 border-blue-200 via-blue-100/80 to-transparentd border-sky-200/60' : 'hover:shadow-mdd'}`}>
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-sm font-medium text-gray-900">Sales</div>
@@ -333,7 +333,7 @@ export const SetTargets = () => {
                   </div>
                 </div>
                 
-                <div className={`bg-gradient-to-r from-gray-50/80 to-gray-100/80 backdrop-blur-sm p-3 rounded-xl border border-gray-200/40 ${isHighlighted('estimatesRan') ? 'bg-gradient-to-r from-yellow-100/80 via-yellow-50/80 to-transparent transition-all duration-300 shadow-lg' : 'hover:shadow-md transition-all duration-300'}`}>
+                <div className={`bg-gradient-to-r from-gray-50/80 to-gray-100/80 backdrop-blur-sm p-3 rounded-xl border border-gray-200/40 ${isHighlighted('estimatesRan') ? 'bg-gradient-to-r from-sky-100/80 border-blue-200 via-blue-100/80 to-transparentd border-sky-200/60' : 'hover:shadow-mdd'}`}>
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-sm font-medium text-gray-900">Estimates Ran</div>
@@ -343,7 +343,7 @@ export const SetTargets = () => {
                   </div>
                 </div>
 
-                <div className={`bg-gradient-to-r from-gray-50/80 to-gray-100/80 backdrop-blur-sm p-3 rounded-xl border border-gray-200/40 ${isHighlighted('estimatesSet') ? 'bg-gradient-to-r from-yellow-100/80 via-yellow-50/80 to-transparent transition-all duration-300 shadow-lg' : 'hover:shadow-md transition-all duration-300'}`}>
+                <div className={`bg-gradient-to-r from-gray-50/80 to-gray-100/80 backdrop-blur-sm p-3 rounded-xl border border-gray-200/40 ${isHighlighted('estimatesSet') ? 'bg-gradient-to-r from-sky-100/80 border-blue-200 via-blue-100/80 to-transparentd border-sky-200/60' : 'hover:shadow-mdd'}`}>
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-sm font-medium text-gray-900">Estimates Set</div>
@@ -353,7 +353,7 @@ export const SetTargets = () => {
                   </div>
                 </div>
 
-                <div className={`bg-gradient-to-r from-gray-50/80 to-gray-100/80 backdrop-blur-sm p-3 rounded-xl border border-gray-200/40 ${isHighlighted('leads') ? 'bg-gradient-to-r from-yellow-100/80 via-yellow-50/80 to-transparent transition-all duration-300 shadow-lg' : 'hover:shadow-md transition-all duration-300'}`}>
+                <div className={`bg-gradient-to-r from-gray-50/80 to-gray-100/80 backdrop-blur-sm p-3 rounded-xl border border-gray-200/40 ${isHighlighted('leads') ? 'bg-gradient-to-r from-sky-100/80 border-blue-200 via-blue-100/80 to-transparentd border-sky-200/60' : 'hover:shadow-mdd'}`}>
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-sm font-medium text-gray-900">Leads</div>
@@ -367,7 +367,7 @@ export const SetTargets = () => {
           </Card>
 
           {/* Budget Targets Card */}
-          <Card className="bg-white/90 backdrop-blur-sm border border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300">
+          <Card className="bg-white/90 backdrop-blur-sm border border-white/20 shadow-xl hover:shadow-2xld">
             <div className="p-6 border-b border-gray-100/50 bg-gradient-to-r from-emerald-50/50 to-teal-50/50">
               <div className="flex items-center gap-3">
                 <DollarSign className="h-5 w-5 text-gray-600" />
@@ -402,7 +402,7 @@ export const SetTargets = () => {
 
               {/* Calculated Fields */}
               <div className="space-y-3">
-                <div className={`bg-gradient-to-r from-gray-50/80 to-gray-100/80 backdrop-blur-sm p-3 rounded-xl border border-gray-200/40 ${isHighlighted('calculatedMonthlyBudget') ? 'bg-gradient-to-r from-yellow-100/80 via-yellow-50/80 to-transparent transition-all duration-300 shadow-lg' : 'hover:shadow-md transition-all duration-300'}`}>
+                <div className={`bg-gradient-to-r from-gray-50/80 to-gray-100/80 backdrop-blur-sm p-3 rounded-xl border border-gray-200/40 ${isHighlighted('calculatedMonthlyBudget') ? 'bg-gradient-to-r from-sky-100/80 border-blue-200 via-blue-100/80 to-transparentd border-sky-200/60' : 'hover:shadow-mdd'}`}>
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-sm font-medium text-gray-900">Monthly Budget (Ad Spend)</div>
@@ -412,7 +412,7 @@ export const SetTargets = () => {
                   </div>
                 </div>
 
-                <div className="bg-gradient-to-r from-gray-50/80 to-gray-100/80 backdrop-blur-sm p-3 rounded-xl border border-gray-200/40 hover:shadow-md transition-all duration-300">
+                <div className="bg-gradient-to-r from-gray-50/80 to-gray-100/80 backdrop-blur-sm p-3 rounded-xl border border-gray-200/40 hover:shadow-mdd">
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-sm font-medium text-gray-900">Management Cost</div>
@@ -422,7 +422,7 @@ export const SetTargets = () => {
                   </div>
                 </div>
 
-                <div className={`bg-gradient-to-r from-gray-50/80 to-gray-100/80 backdrop-blur-sm p-3 rounded-xl border border-gray-200/40 ${isHighlighted('dailyBudget') ? 'bg-gradient-to-r from-yellow-100/80 via-yellow-50/80 to-transparent transition-all duration-300 shadow-lg' : 'hover:shadow-md transition-all duration-300'}`}>
+                <div className={`bg-gradient-to-r from-gray-50/80 to-gray-100/80 backdrop-blur-sm p-3 rounded-xl border border-gray-200/40 ${isHighlighted('dailyBudget') ? 'bg-gradient-to-r from-sky-100/80 border-blue-200 via-blue-100/80 to-transparentd border-sky-200/60' : 'hover:shadow-mdd'}`}>
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-sm font-medium text-gray-900">Daily Budget</div>
@@ -432,7 +432,7 @@ export const SetTargets = () => {
                   </div>
                 </div>
 
-                <div className={`bg-gradient-to-r from-gray-50/80 to-gray-100/80 backdrop-blur-sm p-3 rounded-xl border border-gray-200/40 ${isHighlighted('cpl') ? 'bg-gradient-to-r from-yellow-100/80 via-yellow-50/80 to-transparent transition-all duration-300 shadow-lg' : 'hover:shadow-md transition-all duration-300'}`}>
+                <div className={`bg-gradient-to-r from-gray-50/80 to-gray-100/80 backdrop-blur-sm p-3 rounded-xl border border-gray-200/40 ${isHighlighted('cpl') ? 'bg-gradient-to-r from-sky-100/80 border-blue-200 via-blue-100/80 to-transparentd border-sky-200/60' : 'hover:shadow-mdd'}`}>
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-sm font-medium text-gray-900">Cost Per Lead</div>
@@ -442,7 +442,7 @@ export const SetTargets = () => {
                   </div>
                 </div>
 
-                <div className={`bg-gradient-to-r from-gray-50/80 to-gray-100/80 backdrop-blur-sm p-3 rounded-xl border border-gray-200/40 ${isHighlighted('cpEstimateSet') ? 'bg-gradient-to-r from-yellow-100/80 via-yellow-50/80 to-transparent transition-all duration-300 shadow-lg' : 'hover:shadow-md transition-all duration-300'}`}>
+                <div className={`bg-gradient-to-r from-gray-50/80 to-gray-100/80 backdrop-blur-sm p-3 rounded-xl border border-gray-200/40 ${isHighlighted('cpEstimateSet') ? 'bg-gradient-to-r from-sky-100/80 border-blue-200 via-blue-100/80 to-transparentd border-sky-200/60' : 'hover:shadow-mdd'}`}>
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-sm font-medium text-gray-900">CP Estimate Set</div>
@@ -452,7 +452,7 @@ export const SetTargets = () => {
                   </div>
                 </div>
 
-                <div className={`bg-gradient-to-r from-gray-50/80 to-gray-100/80 backdrop-blur-sm p-3 rounded-xl border border-gray-200/40 ${isHighlighted('cpEstimate') ? 'bg-gradient-to-r from-yellow-100/80 via-yellow-50/80 to-transparent transition-all duration-300 shadow-lg' : 'hover:shadow-md transition-all duration-300'}`}>
+                <div className={`bg-gradient-to-r from-gray-50/80 to-gray-100/80 backdrop-blur-sm p-3 rounded-xl border border-gray-200/40 ${isHighlighted('cpEstimate') ? 'bg-gradient-to-r from-sky-100/80 border-blue-200 via-blue-100/80 to-transparentd border-sky-200/60' : 'hover:shadow-mdd'}`}>
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-sm font-medium text-gray-900">CP Estimate</div>
@@ -462,7 +462,7 @@ export const SetTargets = () => {
                   </div>
                 </div>
 
-                <div className={`bg-gradient-to-r from-gray-50/80 to-gray-100/80 backdrop-blur-sm p-3 rounded-xl border border-gray-200/40 ${isHighlighted('cpJobBooked') ? 'bg-gradient-to-r from-yellow-100/80 via-yellow-50/80 to-transparent transition-all duration-300 shadow-lg' : 'hover:shadow-md transition-all duration-300'}`}>
+                <div className={`bg-gradient-to-r from-gray-50/80 to-gray-100/80 backdrop-blur-sm p-3 rounded-xl border border-gray-200/40 ${isHighlighted('cpJobBooked') ? 'bg-gradient-to-r from-sky-100/80 border-blue-200 via-blue-100/80 to-transparentd border-sky-200/60' : 'hover:shadow-mdd'}`}>
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-sm font-medium text-gray-900">CP Job Booked</div>
@@ -472,7 +472,7 @@ export const SetTargets = () => {
                   </div>
                 </div>
 
-                <div className={`bg-gradient-to-r from-gray-50/80 to-gray-100/80 backdrop-blur-sm p-3 rounded-xl border border-gray-200/40 ${isHighlighted('totalCom') ? 'bg-gradient-to-r from-yellow-100/80 via-yellow-50/80 to-transparent transition-all duration-300 shadow-lg' : 'hover:shadow-md transition-all duration-300'}`}>
+                <div className={`bg-gradient-to-r from-gray-50/80 to-gray-100/80 backdrop-blur-sm p-3 rounded-xl border border-gray-200/40 ${isHighlighted('totalCom') ? 'bg-gradient-to-r from-sky-100/80 border-blue-200 via-blue-100/80 to-transparentd border-sky-200/60' : 'hover:shadow-mdd'}`}>
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-sm font-medium text-gray-900">Total CoM%</div>

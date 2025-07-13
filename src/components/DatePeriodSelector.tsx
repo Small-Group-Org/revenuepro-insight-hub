@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { format } from 'date-fns';
+import { format, addWeeks, subWeeks } from 'date-fns';
 import { Button } from '@/components/ui/button';
+import { getWeekInfo, formatWeekRange } from '@/utils/weekLogic';
 
-export type PeriodType = 'monthly' | 'yearly';
+export type PeriodType = 'weekly' | 'monthly' | 'yearly';
 
 interface DatePeriodSelectorProps {
   initialDate?: Date;
@@ -26,7 +27,10 @@ export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
 
   // Format label based on period
   const getLabel = () => {
-    if (period === 'monthly') {
+    if (period === 'weekly') {
+      const weekInfo = getWeekInfo(selectedDate);
+      return formatWeekRange(weekInfo.weekStart, weekInfo.weekEnd);
+    } else if (period === 'monthly') {
       return format(selectedDate, 'MMMM yyyy');
     } else {
       return format(selectedDate, 'yyyy');
@@ -36,7 +40,9 @@ export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
   // Navigation logic
   const handlePrev = () => {
     let newDate;
-    if (period === 'monthly') {
+    if (period === 'weekly') {
+      newDate = subWeeks(selectedDate, 1);
+    } else if (period === 'monthly') {
       newDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth() - 1, 1);
     } else {
       newDate = new Date(selectedDate.getFullYear() - 1, 0, 1);
@@ -47,7 +53,9 @@ export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
 
   const handleNext = () => {
     let newDate;
-    if (period === 'monthly') {
+    if (period === 'weekly') {
+      newDate = addWeeks(selectedDate, 1);
+    } else if (period === 'monthly') {
       newDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 1);
     } else {
       newDate = new Date(selectedDate.getFullYear() + 1, 0, 1);
@@ -88,6 +96,7 @@ export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="weekly">Week</SelectItem>
             <SelectItem value="monthly">Month</SelectItem>
             <SelectItem value="yearly">Year</SelectItem>
           </SelectContent>
