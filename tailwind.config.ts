@@ -44,8 +44,7 @@ export default {
 				},
 				accent: {
 					DEFAULT: 'hsl(var(--accent))',
-					foreground: 'hsl(var(--accent-foreground))',
-					light: 'hsl(var(--accent-light))'
+					foreground: 'hsl(var(--accent-foreground))'
 				},
 				popover: {
 					DEFAULT: 'hsl(var(--popover))',
@@ -64,13 +63,6 @@ export default {
 					DEFAULT: 'hsl(var(--warning))',
 					foreground: 'hsl(var(--warning-foreground))',
 					light: 'hsl(var(--warning-light))'
-				},
-				revenue: {
-					green: 'hsl(var(--revenue-green))',
-					red: 'hsl(var(--revenue-red))',
-					yellow: 'hsl(var(--revenue-yellow))',
-					blue: 'hsl(var(--revenue-blue))',
-					purple: 'hsl(var(--revenue-purple))'
 				},
 				chart: {
 					primary: 'hsl(var(--chart-primary))',

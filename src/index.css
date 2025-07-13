@@ -2,6 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Hide number input spinners for Chrome, Safari, Edge */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Hide number input spinners for Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
+/* Hide number input spinners for Edge (legacy) */
+input[type=number]::-ms-input-spinner {
+  display: none;
+}
+
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
 */

@@ -1,9 +1,9 @@
 
 import React, { useState } from 'react';
-import { EnhancedDataProvider } from '@/contexts/EnhancedDataContext';
+import { DataProvider } from '@/contexts/DataContext';
 import { Sidebar } from '@/components/Sidebar';
 import { Dashboard } from '@/components/Dashboard';
-import { EnhancedSetTargets } from '@/components/EnhancedSetTargets';
+import { SetTargets } from '@/components/SetTargets';
 import { AddActualData } from '@/components/AddActualData';
 import { CompareResults } from '@/components/CompareResults';
 
@@ -16,7 +16,7 @@ const Index = () => {
       case 'dashboard':
         return <Dashboard />;
       case 'targets':
-        return <EnhancedSetTargets />;
+        return <SetTargets />;
       case 'actuals':
         return <AddActualData />;
       case 'compare':
@@ -27,7 +27,7 @@ const Index = () => {
   };
 
   return (
-    <EnhancedDataProvider>
+    <DataProvider>
       <div className="min-h-screen flex bg-background">
         <Sidebar
           activeSection={activeSection}
@@ -40,7 +40,7 @@ const Index = () => {
           {renderActiveSection()}
         </main>
       </div>
-    </EnhancedDataProvider>
+    </DataProvider>
   );
 };
 
