@@ -1,4 +1,4 @@
-import { FieldValue, FormulaContext } from "@/types";
+import { FieldValue, FormulaContext, PeriodType } from "@/types";
 import { targetFields } from "./constant";
 
 // Utility for formatting
@@ -65,7 +65,7 @@ export const getDaysInMonth = (date: Date): number => {
    * @returns The calculated result
    */
   export function evaluateFormula(formula: string, context: FormulaContext): number {
-    const { values, daysInMonth } = context;
+    const { values, daysInMonth, period } = context;
     
     // Create a safe evaluation environment
     const safeEval = (expression: string): number => {
@@ -79,6 +79,21 @@ export const getDaysInMonth = (date: Date): number => {
           if (argMatch) {
             const arg = evaluateFormula(argMatch[1], context);
             return calculateManagementCost(arg);
+          }
+        }
+        
+        // Handle conditional logic for monthly budget calculation
+        if (expression.includes('calculatedMonthlyBudget')) {
+          // If this is the monthly budget calculation, apply conditional logic
+          if (period === 'yearly') {
+            // For yearly period, monthly budget = annualBudget / 12
+            const annualBudget = values.annualBudget || 0;
+            return annualBudget / 12;
+          } else {
+            // For monthly period, use the original formula: revenue * (com / 100)
+            const revenue = values.revenue || 0;
+            const com = values.com || 0;
+            return revenue * (com / 100);
           }
         }
         
@@ -107,17 +122,19 @@ export const getDaysInMonth = (date: Date): number => {
    * Calculates all calculated fields based on input values
    * @param inputValues - Object containing input field values
    * @param daysInMonth - Number of days in the current month
+   * @param period - The selected period (weekly, monthly, yearly)
    * @returns Object containing all calculated values
    */
-  export function calculateAllFields(inputValues: FieldValue, daysInMonth: number): FieldValue {
+  export function calculateAllFields(inputValues: FieldValue, daysInMonth: number, period: PeriodType = 'monthly'): FieldValue {
     const allValues = { ...inputValues };
-    const context: FormulaContext = { values: allValues, daysInMonth };
+    const context: FormulaContext = { values: allValues, daysInMonth, period };
     
     // Calculate fields in dependency order
     const calculateSection = (sectionKey: keyof typeof targetFields) => {
       targetFields[sectionKey].forEach((field: any) => {
         if (field.fieldType === 'calculated' && field.formula) {
-          allValues[field.value] = evaluateFormula(field.formula, context);
+          const calculatedValue = evaluateFormula(field.formula, context);
+          allValues[field.value] = Math.round(calculatedValue);
         }
       });
     };

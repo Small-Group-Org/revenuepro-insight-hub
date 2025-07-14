@@ -2,8 +2,9 @@ import React from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FieldConfig, InputField, CalculatedField, FieldValue } from "@/types";
+import { FieldConfig, InputField, CalculatedField, FieldValue, PeriodType } from "@/types";
 import { formatCurrency, formatPercent, calculateManagementCost } from "@/utils/utils";
+import { isBefore, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
 
 interface TargetSectionProps {
   sectionKey: string;
@@ -16,6 +17,8 @@ interface TargetSectionProps {
   onInputChange: (fieldName: string, value: number) => void;
   isHighlighted: (fieldName: string) => boolean;
   isLoading?: boolean;
+  period?: PeriodType;
+  selectedDate?: Date;
 }
 
 export const TargetSection: React.FC<TargetSectionProps> = ({
@@ -28,7 +31,46 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
   onInputChange,
   isHighlighted,
   isLoading = false,
+  period = 'monthly',
+  selectedDate,
 }) => {
+  // Filter fields based on applicable property
+  const filterFieldsByPeriod = (fields: FieldConfig[]): FieldConfig[] => {
+    return fields.filter(field => {
+      // If no applicable property is set, show the field for all periods
+      if (!field.applicable) return true;
+      
+      // Check if the current period is in the applicable array
+      return field.applicable.includes(period);
+    });
+  };
+
+  const filteredFields = filterFieldsByPeriod(fields);
+
+  // Check if inputs should be disabled based on period and date
+  const shouldDisableInputs = React.useMemo(() => {
+    if (!selectedDate) return false;
+    
+    const currentDate = new Date();
+    
+    if (period === 'weekly') {
+      // Weekly: All time slots are disabled
+      return true;
+    } else if (period === 'monthly') {
+      // Monthly: Only past months are disabled
+      const currentMonthStart = startOfMonth(currentDate);
+      const selectedMonthStart = startOfMonth(selectedDate);
+      return isBefore(selectedMonthStart, currentMonthStart);
+    } else if (period === 'yearly') {
+      // Yearly: Only past years are disabled
+      const currentYearStart = startOfYear(currentDate);
+      const selectedYearStart = startOfYear(selectedDate);
+      return isBefore(selectedYearStart, currentYearStart);
+    }
+    
+    return false;
+  }, [period, selectedDate]);
+
   const renderInputField = (field: InputField) => {
     const value = fieldValues[field.value] || 0;
     
@@ -52,9 +94,9 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
             }}
             onFocus={(e) => e.target.select()}
             onWheel={(e) => e.currentTarget.blur()}
-            className="appearance-none pr-12"
+            className={`appearance-none pr-12 ${shouldDisableInputs ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`}
             style={{ MozAppearance: 'textfield' }}
-            disabled={isLoading}
+            disabled={isLoading || shouldDisableInputs}
           />
           {field.unit && (
             <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
@@ -104,23 +146,30 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
   return (
     <Card className="bg-white/90 backdrop-blur-sm border border-white/20 shadow-xl hover:shadow-2xld">
       <div className={`p-6 border-b border-gray-100/50 ${gradientClass}`}>
-        <div className="flex items-center gap-3">
-          {icon}
-          <h2 className="text-lg font-semibold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-            {title}
-          </h2>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {icon}
+            <h2 className="text-lg font-semibold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+              {title}
+            </h2>
+          </div>
+          {shouldDisableInputs && (
+            <div className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-md">
+              Read Only
+            </div>
+          )}
         </div>
       </div>
       
       <div className="p-6 space-y-6">
         <div className="space-y-4">
-          {fields
+          {filteredFields
             .filter((field: FieldConfig): field is InputField => field.fieldType === 'input')
             .map(renderInputField)}
         </div>
 
         <div className="space-y-3">
-          {fields
+          {filteredFields
             .filter((field: FieldConfig): field is CalculatedField => field.fieldType === 'calculated')
             .map(renderCalculatedField)}
         </div>

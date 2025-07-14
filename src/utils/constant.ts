@@ -118,11 +118,62 @@ export const targetFields: TargetFieldsConfig = {
       unit: "%",
     },
     {
-      name: "Monthly Budget (Ad Spend)",
+      name: "Annual Budget",
+      value: "annualBudget",
+      fieldType: "calculated",
+      formula: "revenue * (com / 100)",
+      description: "Revenue × CoM%",
+      unit: "$",
+      applicable: ["yearly"]
+    },
+    {
+      name: "Monthly Budget",
       value: "calculatedMonthlyBudget",
       fieldType: "calculated",
       formula: "revenue * (com / 100)",
       description: "Revenue × CoM%",
+      unit: "$",
+      applicable: ["yearly", "monthly"]
+    },
+    {
+      name: "Daily Budget",
+      value: "dailyBudget",
+      fieldType: "calculated",
+      formula: "calculatedMonthlyBudget / daysInMonth",
+      description: "Budget ÷ Days in Month",
+      unit: "$",
+      applicable: ["weekly", "monthly"]
+    },
+    {
+      name: "Cost Per Lead",
+      value: "cpl",
+      fieldType: "calculated",
+      formula: "calculatedMonthlyBudget / leads",
+      description: "Budget ÷ Leads",
+      unit: "$",
+    },
+    {
+      name: "CP Estimate Set",
+      value: "cpEstimateSet",
+      fieldType: "calculated",
+      formula: "calculatedMonthlyBudget / estimatesSet",
+      description: "Budget ÷ Estimates Set",
+      unit: "$",
+    },
+    {
+      name: "CP Estimate",
+      value: "cpEstimate",
+      fieldType: "calculated",
+      formula: "calculatedMonthlyBudget / estimatesRan",
+      description: "Budget ÷ Estimates Ran",
+      unit: "$",
+    },
+    {
+      name: "CP Job Booked",
+      value: "cpJobBooked",
+      fieldType: "calculated",
+      formula: "calculatedMonthlyBudget / sales",
+      description: "Budget ÷ Sales",
       unit: "$",
     },
     {
@@ -132,46 +183,7 @@ export const targetFields: TargetFieldsConfig = {
       formula: "calculateManagementCost(calculatedMonthlyBudget)",
       description: "Based on Ad Spend Range",
       unit: "$",
-    },
-    {
-      name: "Daily Budget",
-      value: "dailyBudget",
-      fieldType: "calculated",
-      formula: "calculatedMonthlyBudget / daysInMonth",
-      description: "Monthly Budget ÷ Days in Month",
-      unit: "$",
-    },
-    {
-      name: "Cost Per Lead",
-      value: "cpl",
-      fieldType: "calculated",
-      formula: "calculatedMonthlyBudget / leads",
-      description: "Monthly Budget ÷ Leads",
-      unit: "$",
-    },
-    {
-      name: "CP Estimate Set",
-      value: "cpEstimateSet",
-      fieldType: "calculated",
-      formula: "calculatedMonthlyBudget / estimatesSet",
-      description: "Monthly Budget ÷ Estimates Set",
-      unit: "$",
-    },
-    {
-      name: "CP Estimate",
-      value: "cpEstimate",
-      fieldType: "calculated",
-      formula: "calculatedMonthlyBudget / estimatesRan",
-      description: "Monthly Budget ÷ Estimates Ran",
-      unit: "$",
-    },
-    {
-      name: "CP Job Booked",
-      value: "cpJobBooked",
-      fieldType: "calculated",
-      formula: "calculatedMonthlyBudget / sales",
-      description: "Monthly Budget ÷ Sales",
-      unit: "$",
+      applicable: ["monthly"]
     },
     {
       name: "Total CoM%",
@@ -180,6 +192,7 @@ export const targetFields: TargetFieldsConfig = {
       formula: "((calculatedMonthlyBudget + managementCost) / revenue) * 100",
       description: "(Monthly Budget + Management Cost) ÷ Revenue",
       unit: "%",
+      applicable: ["monthly"]
     }
   ]
 };

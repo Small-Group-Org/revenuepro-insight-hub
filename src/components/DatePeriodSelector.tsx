@@ -4,9 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { format, addWeeks, subWeeks } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { getWeekInfo, formatWeekRange } from '@/utils/weekLogic';
-
-export type PeriodType = 'weekly' | 'monthly' | 'yearly';
-
+import { PeriodType } from '@/types';
 interface DatePeriodSelectorProps {
   initialDate?: Date;
   initialPeriod?: PeriodType;

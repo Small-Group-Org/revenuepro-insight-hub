@@ -1,3 +1,5 @@
+export type PeriodType = 'weekly' | 'monthly' | 'yearly';
+
 export interface InputField {
   name: string;
   value: string;
@@ -8,6 +10,7 @@ export interface InputField {
   fieldType: "input";
   step?: number;
   unit?: string;
+  applicable?: PeriodType[];
 }
 
 export interface CalculatedField {
@@ -17,6 +20,7 @@ export interface CalculatedField {
   formula: string;
   description?: string;
   unit?: string;
+  applicable?: PeriodType[];
 }
 
 export type FieldConfig = InputField | CalculatedField;
@@ -34,5 +38,6 @@ export interface FieldValue {
   export interface FormulaContext {
     values: FieldValue;
     daysInMonth: number;
+    period?: PeriodType;
   }
   

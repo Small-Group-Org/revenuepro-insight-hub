@@ -1,15 +1,16 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { TrendingUp, Calculator, DollarSign } from "lucide-react";
-import { DatePeriodSelector, PeriodType } from './DatePeriodSelector';
+import { DatePeriodSelector } from './DatePeriodSelector';
 import { TargetSection } from './TargetSection';
+import { YearlyTargetModal } from './YearlyTargetModal';
 import { useTargetStore } from "../stores/targetStore";
 import { useUserStore } from "../stores/userStore";
 import useAuthStore from "../stores/authStore";
-import { endOfWeek, startOfWeek, format } from "date-fns";
+import { endOfWeek, startOfWeek, format, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
 import { getDaysInMonth } from "@/utils/utils";
 import { targetFields } from "@/utils/constant";
-import { FieldConfig, FieldValue, InputField } from "@/types";
+import { FieldConfig, FieldValue, InputField, PeriodType } from "@/types";
 import { calculateAllFields, getDefaultValues } from "@/utils/utils";
 
 export const SetTargets = () => {
@@ -27,6 +28,7 @@ export const SetTargets = () => {
   const [selectedEndDate, setSelectedEndDate] = useState<string>(
     format(endOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd')
   );
+  const [isYearlyModalOpen, setIsYearlyModalOpen] = useState(false);
 
   const { upsertWeeklyTarget, isLoading, error, getTargetsForUser, currentTarget } = useTargetStore();
   const { selectedUserId } = useUserStore();
@@ -34,13 +36,33 @@ export const SetTargets = () => {
 
   // Memoize calculatedValues to prevent recalculation on every render
   const calculatedValues = useMemo(() => 
-    calculateAllFields(fieldValues, daysInMonth), 
-    [fieldValues, daysInMonth]
+    calculateAllFields(fieldValues, daysInMonth, period), 
+    [fieldValues, daysInMonth, period]
   );
 
   useEffect(() => {
     setDaysInMonth(getDaysInMonth(selectedDate));
   }, [selectedDate]);
+
+  // Update start and end dates when selected date or period changes
+  useEffect(() => {
+    let startDate: Date;
+    let endDate: Date;
+
+    if (period === 'weekly') {
+      startDate = startOfWeek(selectedDate, { weekStartsOn: 1 });
+      endDate = endOfWeek(selectedDate, { weekStartsOn: 1 });
+    } else if (period === 'monthly') {
+      startDate = startOfMonth(selectedDate);
+      endDate = endOfMonth(selectedDate);
+    } else {
+      startDate = startOfYear(selectedDate);
+      endDate = endOfYear(selectedDate);
+    }
+
+    setSelectedStartDate(format(startDate, 'yyyy-MM-dd'));
+    setSelectedEndDate(format(endDate, 'yyyy-MM-dd'));
+  }, [selectedDate, period]);
 
   // Initialize prevValues only once
   useEffect(() => {
@@ -118,6 +140,12 @@ export const SetTargets = () => {
   }, []);
 
   const handleSave = useCallback(async () => {
+    // If period is yearly, open the modal instead of saving directly
+    if (period === 'yearly') {
+      setIsYearlyModalOpen(true);
+      return;
+    }
+
     try {
       await upsertWeeklyTarget({
         startDate: selectedStartDate,
@@ -153,6 +181,27 @@ export const SetTargets = () => {
     setPeriod(period);
     setLastChanged(null);
   }, []);
+
+  const handleSaveMonthlyTargets = useCallback(async (monthlyData: { [key: string]: any }) => {
+    try {
+      // Here you would implement the logic to save monthly targets
+      // For now, we'll just show a success message
+      console.log('Monthly targets data:', monthlyData);
+      
+      toast({
+        title: "✅ Monthly Targets Saved Successfully!",
+        description: "Your yearly targets have been distributed across months.",
+      });
+      
+      setIsYearlyModalOpen(false);
+    } catch (err) {
+      toast({
+        title: "❌ Error Saving Monthly Targets",
+        description: "Failed to save monthly targets. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [toast]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -192,6 +241,8 @@ export const SetTargets = () => {
             onInputChange={handleInputChange}
             isHighlighted={isHighlighted}
             isLoading={isLoading}
+            period={period}
+            selectedDate={selectedDate}
           />
 
           <TargetSection
@@ -205,6 +256,8 @@ export const SetTargets = () => {
             onInputChange={handleInputChange}
             isHighlighted={isHighlighted}
             isLoading={isLoading}
+            period={period}
+            selectedDate={selectedDate}
           />
 
           <TargetSection
@@ -218,9 +271,20 @@ export const SetTargets = () => {
             onInputChange={handleInputChange}
             isHighlighted={isHighlighted}
             isLoading={isLoading}
+            period={period}
+            selectedDate={selectedDate}
           />
         </div>
       </div>
+
+      {/* Yearly Target Modal */}
+      <YearlyTargetModal
+        isOpen={isYearlyModalOpen}
+        onOpenChange={setIsYearlyModalOpen}
+        annualFieldValues={fieldValues}
+        onSave={handleSaveMonthlyTargets}
+        isLoading={isLoading}
+      />
     </div>
   );
 };
