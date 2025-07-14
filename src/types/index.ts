@@ -11,6 +11,7 @@ export interface InputField {
   step?: number;
   unit?: string;
   applicable?: PeriodType[];
+  isHidden?: boolean;
 }
 
 export interface CalculatedField {
@@ -21,6 +22,7 @@ export interface CalculatedField {
   description?: string;
   unit?: string;
   applicable?: PeriodType[];
+  isHidden?: boolean;
 }
 
 export type FieldConfig = InputField | CalculatedField;

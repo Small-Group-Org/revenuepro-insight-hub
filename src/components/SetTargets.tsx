@@ -186,7 +186,6 @@ export const SetTargets = () => {
     try {
       // Here you would implement the logic to save monthly targets
       // For now, we'll just show a success message
-      console.log('Monthly targets data:', monthlyData);
       
       toast({
         title: "✅ Monthly Targets Saved Successfully!",

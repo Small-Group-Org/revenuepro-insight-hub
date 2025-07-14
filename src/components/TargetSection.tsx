@@ -34,9 +34,12 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
   period = 'monthly',
   selectedDate,
 }) => {
-  // Filter fields based on applicable property
+  // Filter fields based on applicable property and hidden status
   const filterFieldsByPeriod = (fields: FieldConfig[]): FieldConfig[] => {
     return fields.filter(field => {
+      // Hide fields that are marked as hidden
+      if (field.isHidden) return false;
+      
       // If no applicable property is set, show the field for all periods
       if (!field.applicable) return true;
       

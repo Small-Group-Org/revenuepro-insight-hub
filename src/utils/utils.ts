@@ -64,7 +64,7 @@ export const getDaysInMonth = (date: Date): number => {
    * @param context - Object containing values and additional context
    * @returns The calculated result
    */
-  export function evaluateFormula(formula: string, context: FormulaContext): number {
+  export function evaluateFormula(formula: string, context: FormulaContext, fieldValue?: string): number {
     const { values, daysInMonth, period } = context;
     
     // Create a safe evaluation environment
@@ -77,27 +77,45 @@ export const getDaysInMonth = (date: Date): number => {
         if (expression.includes('calculateManagementCost')) {
           const argMatch = expression.match(/calculateManagementCost\(([^)]+)\)/);
           if (argMatch) {
-            const arg = evaluateFormula(argMatch[1], context);
+            const arg = evaluateFormula(argMatch[1], context, fieldValue);
             return calculateManagementCost(arg);
           }
         }
         
-        // Handle conditional logic for monthly budget calculation
-        if (expression.includes('calculatedMonthlyBudget')) {
-          // If this is the monthly budget calculation, apply conditional logic
+        // Handle budget field calculation based on period
+        if (fieldValue === 'budget') {
           if (period === 'yearly') {
-            // For yearly period, monthly budget = annualBudget / 12
+            return values.annualBudget || 0;
+          } else {
+            return values.calculatedMonthlyBudget || 0;
+          }
+        }
+        
+        // Handle calculatedMonthlyBudget field calculation
+        if (fieldValue === 'calculatedMonthlyBudget') {
+          if (period === 'yearly') {
             const annualBudget = values.annualBudget || 0;
             return annualBudget / 12;
           } else {
-            // For monthly period, use the original formula: revenue * (com / 100)
             const revenue = values.revenue || 0;
             const com = values.com || 0;
             return revenue * (com / 100);
           }
         }
         
-        // Replace all variable references with their values
+        // Handle annualBudget field calculation
+        if (fieldValue === 'annualBudget') {
+          const revenue = values.revenue || 0;
+          const com = values.com || 0;
+          return revenue * (com / 100);
+        }
+        
+        // Replace budget references in formulas with the appropriate value based on period
+        if (expression.includes('budget')) {
+          const budgetValue = period === 'yearly' ? (values.annualBudget || 0) : (values.calculatedMonthlyBudget || 0);
+          processedExpression = processedExpression.replace(/\bbudget\b/g, budgetValue.toString());
+        }
+        
         Object.keys(values).forEach(key => {
           const regex = new RegExp(`\\b${key}\\b`, 'g');
           processedExpression = processedExpression.replace(regex, values[key].toString());
@@ -128,12 +146,11 @@ export const getDaysInMonth = (date: Date): number => {
   export function calculateAllFields(inputValues: FieldValue, daysInMonth: number, period: PeriodType = 'monthly'): FieldValue {
     const allValues = { ...inputValues };
     const context: FormulaContext = { values: allValues, daysInMonth, period };
-    
-    // Calculate fields in dependency order
+
     const calculateSection = (sectionKey: keyof typeof targetFields) => {
       targetFields[sectionKey].forEach((field: any) => {
         if (field.fieldType === 'calculated' && field.formula) {
-          const calculatedValue = evaluateFormula(field.formula, context);
+          const calculatedValue = evaluateFormula(field.formula, context, field.value);
           allValues[field.value] = Math.round(calculatedValue);
         }
       });
@@ -142,6 +159,14 @@ export const getDaysInMonth = (date: Date): number => {
     // Calculate in order: funnelRate, budget, budgetTarget
     calculateSection('funnelRate');
     calculateSection('budget');
+    
+    // Calculate budget field specifically to ensure it's available for budgetTarget calculations
+    const budgetField = targetFields.budgetTarget.find((field: any) => field.value === 'budget');
+    if (budgetField && budgetField.fieldType === 'calculated' && budgetField.formula) {
+      const budgetValue = evaluateFormula(budgetField.formula, context, 'budget');
+      allValues['budget'] = Math.round(budgetValue);
+    }
+    
     calculateSection('budgetTarget');
     
     return allValues;
