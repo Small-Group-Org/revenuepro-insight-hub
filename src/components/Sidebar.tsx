@@ -1,23 +1,35 @@
-
 import React from 'react';
-import { BarChart3, Target, Plus, TrendingUp, Menu, X } from 'lucide-react';
+import { BarChart3, Target, Plus, TrendingUp, Menu, X, UserPlus, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useNavigate, useLocation } from "react-router-dom";
+import { useUserContext } from "../utils/UserContext";
 
 interface SidebarProps {
-  activeSection: string;
-  onSectionChange: (section: string) => void;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
+  onLogout: () => void;
+}
+
+interface UserWithRole {
+  id?: string;
+  name?: string;
+  email?: string;
+  role?: string;
 }
 
 const menuItems = [
-  { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
-  { id: 'targets', label: 'Set Targets', icon: Target },
-  { id: 'actuals', label: 'Add Actual Data', icon: Plus },
-  { id: 'compare', label: 'Compare & Analyze', icon: TrendingUp },
+  { id: 'dashboard', label: 'Dashboard', icon: BarChart3, path: '/' },
+  { id: 'settargets', label: 'Set Targets', icon: Target, path: '/targets' },
+  { id: 'actuals', label: 'Add Actual Data', icon: Plus, path: '/actuals' },
+  { id: 'compare', label: 'Compare & Results', icon: TrendingUp, path: '/compare' },
 ];
 
-export const Sidebar = ({ activeSection, onSectionChange, isCollapsed, onToggleCollapse }: SidebarProps) => {
+export const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }: SidebarProps) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useUserContext();
+  const userWithRole = user as UserWithRole | null;
+  const isAdmin = userWithRole && (userWithRole.role === 'ADMIN'); // Placeholder admin check
   return (
     <div className={cn(
       "bg-sidebar text-sidebar-foreground transition-all duration-300 flex flex-col",
@@ -43,16 +55,16 @@ export const Sidebar = ({ activeSection, onSectionChange, isCollapsed, onToggleC
       {/* Navigation */}
       <nav className="flex-1 p-4">
         <div className="space-y-2">
-          {menuItems.map(({ id, label, icon: Icon }) => (
+          {menuItems.map(({ id, label, icon: Icon, path }) => (
             <button
               key={id}
-              onClick={() => onSectionChange(id)}
+              onClick={() => navigate(path)}
               className={cn(
                 "w-full flex items-center gap-3 p-3 rounded-lg transition-all duration-200",
-                "hover:bg-sidebar-accent",
-                activeSection === id 
-                  ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md" 
-                  : "text-sidebar-foreground"
+                "hover:bg-slate-800",
+                location.pathname === path 
+                  ? "bg-blue-600 shadow-md" 
+                  : "text-slate-300"
               )}
             >
               <Icon size={20} />
@@ -61,13 +73,44 @@ export const Sidebar = ({ activeSection, onSectionChange, isCollapsed, onToggleC
               )}
             </button>
           ))}
+          {/* Admin Section */}
+          {isAdmin && (
+            <button
+              onClick={() => navigate('/create-user')}
+              className={cn(
+                "w-full flex items-center gap-3 p-3 rounded-lg transition-all duration-200",
+                "hover:bg-slate-800",
+                location.pathname === '/create-user'
+                  ? "bg-blue-600 shadow-md"
+                  : "text-slate-300"
+              )}
+            >
+              <UserPlus size={20} />
+              {!isCollapsed && (
+                <span className="font-medium">Create User</span>
+              )}
+            </button>
+          )}
         </div>
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-sidebar-border">
+      <div className="p-4 border-t border-slate-700">
+        <button
+          onClick={onLogout}
+          className={cn(
+            "w-full flex items-center gap-3 p-3 rounded-lg transition-all duration-200",
+            "hover:bg-slate-800",
+            "text-red-400"
+          )}
+        >
+          <LogOut size={20} />
+          {!isCollapsed && (
+            <span className="font-medium">Logout</span>
+          )}
+        </button>
         <div className={cn(
-          "text-xs text-sidebar-foreground/60",
+          "text-xs text-slate-400 mt-2",
           isCollapsed ? "text-center" : ""
         )}>
           {isCollapsed ? "v1.0" : "RevenuePRO AI v1.0"}

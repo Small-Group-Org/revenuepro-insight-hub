@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { useData } from "@/contexts/DataContext";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +11,12 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { DatePeriodSelector, PeriodType } from './DatePeriodSelector';
+import { useTargetStore } from "../stores/targetStore";
+import { useUserStore } from "../stores/userStore";
+import useAuthStore from "../stores/authStore";
+import { endOfWeek, startOfWeek, format } from "date-fns";
+
+type View = 'weekly' | 'monthly' | 'yearly';
 
 // Utility for formatting
 const formatCurrency = (val: number) => `$${val.toLocaleString()}`;
@@ -35,6 +40,8 @@ const getDaysInMonth = (date: Date): number => {
 };
 
 export const SetTargets = () => {
+  const { toast } = useToast();
+  
   // User-editable fields
   const [appointmentRate, setAppointmentRate] = useState(55);
   const [showRate, setShowRate] = useState(70);
@@ -46,6 +53,20 @@ export const SetTargets = () => {
   // Add state for date/period selection
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [period, setPeriod] = useState<PeriodType>('monthly');
+  const [currentView, setCurrentView] = useState<View>('weekly');
+
+  // API integration state
+  const [selectedStartDate, setSelectedStartDate] = useState<string>(
+    format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd')
+  );
+  const [selectedEndDate, setSelectedEndDate] = useState<string>(
+    format(endOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd')
+  );
+
+  // Store hooks
+  const { upsertWeeklyTarget, isLoading, error, getTargetsForUser, currentTarget } = useTargetStore();
+  const { selectedUserId } = useUserStore();
+  const { user } = useAuthStore();
 
   // Calculate days in month based on selected date
   const [daysInMonth, setDaysInMonth] = useState(getDaysInMonth(new Date()));
@@ -95,11 +116,47 @@ export const SetTargets = () => {
     setDaysInMonth(getDaysInMonth(selectedDate));
   }, [selectedDate]);
 
+  // Update form data when currentTarget changes from API
+  useEffect(() => {
+    if (currentTarget) {
+      setAppointmentRate(currentTarget.appointmentRate ?? 55);
+      setShowRate(currentTarget.showRate ?? 70);
+      setCloseRate(currentTarget.closeRate ?? 45);
+      setRevenue(currentTarget.revenue ?? 6500);
+      setAvgJobSize(currentTarget.avgJobSize ?? 6500);
+      setCom(((currentTarget.adSpendBudget ?? 520) / (currentTarget.revenue ?? 6500)) * 100);
+    }
+  }, [currentTarget]);
+
+  // Fetch targets when user, date, or view changes
+  useEffect(() => {
+    if (user) {
+      getTargetsForUser(currentView, selectedStartDate);
+    }
+  }, [selectedUserId, selectedStartDate, currentView, user, getTargetsForUser]);
+
   // Helper to determine if a field should be highlighted
   const isHighlighted = (field: keyof typeof prevValues) => {
     if (!lastChanged) return false;
     // Only highlight if value changed due to the last input
-    return prevValues[field] !== eval(field);
+    const currentValue = (() => {
+      switch (field) {
+        case 'sale': return sale;
+        case 'estimatesRan': return estimatesRan;
+        case 'estimatesSet': return estimatesSet;
+        case 'leads': return leads;
+        case 'calculatedMonthlyBudget': return calculatedMonthlyBudget;
+        case 'dailyBudget': return dailyBudget;
+        case 'cpl': return cpl;
+        case 'cpEstimateSet': return cpEstimateSet;
+        case 'cpEstimate': return cpEstimate;
+        case 'cpJobBooked': return cpJobBooked;
+        case 'totalCom': return totalCom;
+        case 'leadToSale': return leadToSale;
+        default: return 0;
+      }
+    })();
+    return prevValues[field] !== currentValue;
   };
 
   // Update prevValues and lastChanged on input change
@@ -130,13 +187,35 @@ export const SetTargets = () => {
     }
   };
 
-  const { toast } = useToast();
+  const handleSave = async () => {
+    try {
+      await upsertWeeklyTarget({
+        startDate: selectedStartDate,
+        endDate: selectedEndDate,
+        queryType: currentView,
+        leads: leads || 0,
+        revenue: revenue || 0,
+        avgJobSize: avgJobSize || 0,
+        appointmentRate: appointmentRate || 0,
+        showRate: showRate || 0,
+        closeRate: closeRate || 0,
+        adSpendBudget: calculatedMonthlyBudget || 0,
+        costPerLead: cpl || 0,
+        costPerEstimateSet: cpEstimateSet || 0,
+        costPerJobBooked: cpJobBooked || 0,
+      });
 
-  const handleSave = () => {
-    toast({
-      title: "Targets Saved",
-      description: "Your target values have been updated successfully.",
-    });
+      toast({
+        title: "✅ Targets Saved Successfully!",
+        description: `Your ${currentView} target values have been updated.`,
+      });
+    } catch (err) {
+      toast({
+        title: "❌ Error Saving Targets",
+        description: error || "Failed to save targets. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleDatePeriodChange = (date: Date, period: PeriodType) => {
@@ -207,6 +286,7 @@ export const SetTargets = () => {
                       onWheel={(e) => e.currentTarget.blur()}
                       className="appearance-none pr-12"
                       style={{ MozAppearance: 'textfield' }}
+                      disabled={isLoading}
                     />
                     <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">%</span>
                   </div>
@@ -228,6 +308,7 @@ export const SetTargets = () => {
                       onWheel={(e) => e.currentTarget.blur()}
                       className="appearance-none pr-12"
                       style={{ MozAppearance: 'textfield' }}
+                      disabled={isLoading}
                     />
                     <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">%</span>
                   </div>
@@ -249,6 +330,7 @@ export const SetTargets = () => {
                       onWheel={(e) => e.currentTarget.blur()}
                       className="appearance-none pr-12"
                       style={{ MozAppearance: 'textfield' }}
+                      disabled={isLoading}
                     />
                     <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">%</span>
                   </div>
@@ -296,6 +378,7 @@ export const SetTargets = () => {
                       onWheel={(e) => e.currentTarget.blur()}
                       className="appearance-none pr-12"
                       style={{ MozAppearance: 'textfield' }}
+                      disabled={isLoading}
                     />
                     <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">$</span>
                   </div>
@@ -315,6 +398,7 @@ export const SetTargets = () => {
                       onWheel={(e) => e.currentTarget.blur()}
                       className="appearance-none pr-12"
                       style={{ MozAppearance: 'textfield' }}
+                      disabled={isLoading}
                     />
                     <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">$</span>
                   </div>
@@ -394,6 +478,7 @@ export const SetTargets = () => {
                       onWheel={(e) => e.currentTarget.blur()}
                       className="appearance-none pr-12"
                       style={{ MozAppearance: 'textfield' }}
+                      disabled={isLoading}
                     />
                     <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">%</span>
                   </div>
