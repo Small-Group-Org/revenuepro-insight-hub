@@ -4,17 +4,17 @@ import { doGET } from "../utils/HttpUtils";
 export interface IWeeklyTarget {
   startDate: string;
   endDate: string;
-  leads: number;
-  queryType:string;
-  revenue: number;
-  avgJobSize: number;
-  appointmentRate: number;
-  showRate: number;
-  closeRate: number;
-  adSpendBudget: number;
-  costPerLead: number;
-  costPerEstimateSet: number;
-  costPerJobBooked: number;
+  queryType: string;
+  leads?: number;
+  revenue?: number;
+  avgJobSize?: number;
+  appointmentRate?: number;
+  showRate?: number;
+  closeRate?: number;
+  adSpendBudget?: number;
+  costPerLead?: number;
+  costPerEstimateSet?: number;
+  costPerJobBooked?: number;
   userId?: string; // Add userId for upsert
 }
 

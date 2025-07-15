@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { calculateAllFields } from "@/utils/utils";
 import { FieldValue } from "@/types";
 
-interface MonthlyData {
+export type MonthlyData = {
   budget: number;
   leads: number;
   estimatesSet: number;
@@ -22,7 +22,7 @@ interface MonthlyData {
   revenue: number;
   avgJobSize: number;
   com: number;
-}
+};
 
 interface YearlyTargetModalProps {
   isOpen: boolean;
@@ -36,6 +36,8 @@ const months = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December"
 ];
+
+const currentMonthIndex = new Date().getMonth();
 
 export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
   isOpen,
@@ -139,7 +141,7 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
             </div>
             
             <div className="grid grid-cols-2 gap-3">
-              {months.map((month) => (
+              {months.map((month, idx) => (
                 <div key={month} className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">
                     {month}
@@ -152,6 +154,7 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
                     className="text-sm"
                     onFocus={() => setSelectedMonth(month)}
                     onWheel={(e) => e.currentTarget.blur()}
+                    disabled={idx <= currentMonthIndex}
                   />
                   {monthlyBudgets[month] && totalBudget > 0 && (
                     <div className="text-xs text-gray-500">
