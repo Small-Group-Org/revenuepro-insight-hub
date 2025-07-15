@@ -14,24 +14,8 @@ interface TargetState {
   getTargetsForUser: (queryType?: string, startDate?: string) => Promise<void>;
 }
 
-const defaultWeeklyTarget: IWeeklyTarget = {
-  startDate: format(new Date(), 'yyyy-MM-dd'),
-  endDate: format(new Date(), 'yyyy-MM-dd'),
-  leads: 0,
-  queryType: '',
-  revenue: 0,
-  avgJobSize: 0,
-  appointmentRate: 0,
-  showRate: 0,
-  closeRate: 0,
-  adSpendBudget: 0,
-  costPerLead: 0,
-  costPerEstimateSet: 0,
-  costPerJobBooked: 0,
-};
-
 export const useTargetStore = create<TargetState>((set, get) => ({
-  currentTarget: defaultWeeklyTarget,
+  currentTarget: null,
   isLoading: false,
   error: null,
 
@@ -84,10 +68,10 @@ export const useTargetStore = create<TargetState>((set, get) => ({
       if (!response.error && response.data) {
         set({ currentTarget: response.data?.data, isLoading: false });
       } else {
-        set({ currentTarget: defaultWeeklyTarget, error: response.message || 'Failed to fetch targets', isLoading: false });
+        set({ currentTarget: null, error: response.message || 'Failed to fetch targets', isLoading: false });
       }
     } catch (error) {
-      set({ currentTarget: defaultWeeklyTarget, error: error instanceof Error ? error.message : 'An error occurred while fetching targets', isLoading: false });
+      set({ currentTarget: null, error: error instanceof Error ? error.message : 'An error occurred while fetching targets', isLoading: false });
     }
   },
 }));

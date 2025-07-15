@@ -11,6 +11,7 @@ import { endOfWeek, startOfWeek, format, startOfMonth, endOfMonth, startOfYear, 
 import { getDaysInMonth } from "@/utils/utils";
 import { targetFields } from "@/utils/constant";
 import { FieldConfig, FieldValue, InputField, PeriodType } from "@/types";
+import type { MonthlyData } from "./YearlyTargetModal";
 import { calculateAllFields, getDefaultValues } from "@/utils/utils";
 
 export const SetTargets = () => {
@@ -84,6 +85,8 @@ export const SetTargets = () => {
       }
       
       setFieldValues(newValues);
+      setLastChanged(null); // Reset lastChanged so no highlight
+      setPrevValues(newValues); // Reset prevValues to new API data
     }
   }, [currentTarget]);
 
@@ -139,28 +142,38 @@ export const SetTargets = () => {
     return targetFields[sectionKey];
   }, []);
 
+  const getInputFieldNames = useCallback(() => {
+    // Collect all input field names from all sections
+    const inputNames: string[] = [];
+    Object.values(targetFields).forEach(section => {
+      section.forEach(field => {
+        if (field.fieldType === 'input') {
+          inputNames.push(field.value);
+        }
+      });
+    });
+    return inputNames;
+  }, []);
+
   const handleSave = useCallback(async () => {
-    // If period is yearly, open the modal instead of saving directly
     if (period === 'yearly') {
       setIsYearlyModalOpen(true);
       return;
     }
 
     try {
+      // Only send input fields to the API
+      const inputFieldNames = getInputFieldNames();
+      const inputData: { [key: string]: number | undefined } = {};
+      inputFieldNames.forEach(name => {
+        inputData[name] = fieldValues[name];
+      });
+
       await upsertWeeklyTarget({
         startDate: selectedStartDate,
         endDate: selectedEndDate,
         queryType: period,
-        leads: calculatedValues.leads || 0,
-        revenue: fieldValues.revenue || 0,
-        avgJobSize: fieldValues.avgJobSize || 0,
-        appointmentRate: fieldValues.appointmentRate || 0,
-        showRate: fieldValues.showRate || 0,
-        closeRate: fieldValues.closeRate || 0,
-        adSpendBudget: calculatedValues.calculatedMonthlyBudget || 0,
-        costPerLead: calculatedValues.cpl || 0,
-        costPerEstimateSet: calculatedValues.cpEstimateSet || 0,
-        costPerJobBooked: calculatedValues.cpJobBooked || 0,
+        ...inputData
       });
 
       toast({
@@ -174,7 +187,7 @@ export const SetTargets = () => {
         variant: "destructive",
       });
     }
-  }, [upsertWeeklyTarget, selectedStartDate, selectedEndDate, period, calculatedValues, fieldValues, toast, error]);
+  }, [upsertWeeklyTarget, selectedStartDate, selectedEndDate, period, fieldValues, toast, error, getInputFieldNames]);
 
   const handleDatePeriodChange = useCallback((date: Date, period: PeriodType) => {
     setSelectedDate(date);
@@ -182,7 +195,7 @@ export const SetTargets = () => {
     setLastChanged(null);
   }, []);
 
-  const handleSaveMonthlyTargets = useCallback(async (monthlyData: { [key: string]: any }) => {
+  const handleSaveMonthlyTargets = useCallback(async (monthlyData: { [key: string]: MonthlyData }) => {
     try {
       // Here you would implement the logic to save monthly targets
       // For now, we'll just show a success message
