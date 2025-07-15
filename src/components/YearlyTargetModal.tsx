@@ -63,6 +63,8 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
     };
   }, [annualFieldValues]);
 
+  console.log(annualTotals);
+
   // Calculate monthly data based on budget percentages
   const calculateMonthlyData = useMemo(() => {
     const totalBudget = Object.values(monthlyBudgets).reduce((sum, budget) => sum + budget, 0);
@@ -131,7 +133,7 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold">Monthly Budgets</h3>
-              <Badge variant="secondary">
+              <Badge variant={totalBudget > annualTotals.budget ? "destructive" : "secondary"}>
                 Total: ${totalBudget.toLocaleString()}
               </Badge>
             </div>
@@ -149,6 +151,7 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
                     placeholder="0"
                     className="text-sm"
                     onFocus={() => setSelectedMonth(month)}
+                    onWheel={(e) => e.currentTarget.blur()}
                   />
                   {monthlyBudgets[month] && totalBudget > 0 && (
                     <div className="text-xs text-gray-500">
@@ -181,35 +184,35 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
               <CardContent className="space-y-3">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-600">LEADS</label>
+                    <label className="text-sm font-medium text-gray-600">Leads</label>
                     <div className="text-lg font-semibold">{selectedMonthData.leads.toLocaleString()}</div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">ESTIMATES SET</label>
+                    <label className="text-sm font-medium text-gray-600">Estimates Set</label>
                     <div className="text-lg font-semibold">{selectedMonthData.estimatesSet.toLocaleString()}</div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">ESTIMATES</label>
+                    <label className="text-sm font-medium text-gray-600">Estimates</label>
                     <div className="text-lg font-semibold">{selectedMonthData.estimates.toLocaleString()}</div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">SALES</label>
+                    <label className="text-sm font-medium text-gray-600">Sales</label>
                     <div className="text-lg font-semibold">{selectedMonthData.sales.toLocaleString()}</div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">REVENUE</label>
+                    <label className="text-sm font-medium text-gray-600">Revenue</label>
                     <div className="text-lg font-semibold text-green-600">
                       ${selectedMonthData.revenue.toLocaleString()}
                     </div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">AVG JOB SIZE</label>
+                    <label className="text-sm font-medium text-gray-600">Avg Job Size</label>
                     <div className="text-lg font-semibold">
                       ${selectedMonthData.avgJobSize.toLocaleString()}
                     </div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">MONTHLY BUDGET</label>
+                    <label className="text-sm font-medium text-gray-600">Monthly Budget</label>
                     <div className="text-lg font-semibold text-blue-600">
                       ${selectedMonthData.budget.toLocaleString()}
                     </div>
@@ -245,7 +248,10 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={isLoading}>
+          <Button 
+            onClick={handleSave} 
+            disabled={isLoading || totalBudget !== annualTotals.budget}
+          >
             {isLoading ? "Saving..." : "Save Monthly Targets"}
           </Button>
         </div>
