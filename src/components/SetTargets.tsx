@@ -35,7 +35,6 @@ export const SetTargets = () => {
   const { selectedUserId } = useUserStore();
   const { user } = useAuthStore();
 
-  // Memoize calculatedValues to prevent recalculation on every render
   const calculatedValues = useMemo(() => 
     calculateAllFields(fieldValues, daysInMonth, period), 
     [fieldValues, daysInMonth, period]
@@ -45,7 +44,6 @@ export const SetTargets = () => {
     setDaysInMonth(getDaysInMonth(selectedDate));
   }, [selectedDate]);
 
-  // Update start and end dates when selected date or period changes
   useEffect(() => {
     let startDate: Date;
     let endDate: Date;
@@ -65,10 +63,9 @@ export const SetTargets = () => {
     setSelectedEndDate(format(endDate, 'yyyy-MM-dd'));
   }, [selectedDate, period]);
 
-  // Initialize prevValues only once
   useEffect(() => {
     setPrevValues(calculatedValues);
-  }, []); // Empty dependency array - only run once
+  }, []);
 
   useEffect(() => {
     if (currentTarget) {
@@ -79,14 +76,11 @@ export const SetTargets = () => {
       if (currentTarget.closeRate !== undefined) newValues.closeRate = currentTarget.closeRate;
       if (currentTarget.revenue !== undefined) newValues.revenue = currentTarget.revenue;
       if (currentTarget.avgJobSize !== undefined) newValues.avgJobSize = currentTarget.avgJobSize;
-      
-      if (currentTarget.adSpendBudget !== undefined && currentTarget.revenue !== undefined) {
-        newValues.com = (currentTarget.adSpendBudget / currentTarget.revenue) * 100;
-      }
+      if (currentTarget.com !== undefined) newValues.com = currentTarget.com;
       
       setFieldValues(newValues);
-      setLastChanged(null); // Reset lastChanged so no highlight
-      setPrevValues(newValues); // Reset prevValues to new API data
+      setLastChanged(null); 
+      setPrevValues(newValues);
     }
   }, [currentTarget]);
 
@@ -94,7 +88,7 @@ export const SetTargets = () => {
     if (user) {
       getTargetsForUser(period, selectedStartDate);
     }
-  }, [selectedUserId, selectedStartDate, period, user]); // Remove getTargetsForUser dependency
+  }, [selectedUserId, selectedStartDate, period, user]); 
 
   const isHighlighted = useCallback((fieldName: string) => {
     if (!lastChanged) return false;
@@ -143,7 +137,6 @@ export const SetTargets = () => {
   }, []);
 
   const getInputFieldNames = useCallback(() => {
-    // Collect all input field names from all sections
     const inputNames: string[] = [];
     Object.values(targetFields).forEach(section => {
       section.forEach(field => {
@@ -162,7 +155,6 @@ export const SetTargets = () => {
     }
 
     try {
-      // Only send input fields to the API
       const inputFieldNames = getInputFieldNames();
       const inputData: { [key: string]: number | undefined } = {};
       inputFieldNames.forEach(name => {
@@ -259,7 +251,7 @@ export const SetTargets = () => {
 
           <TargetSection
             sectionKey="budget"
-            title="Monthly Targets"
+            title={`${period.charAt(0).toUpperCase() + period.slice(1)} Targets`}
             icon={<Calculator className="h-5 w-5 text-gray-600" />}
             gradientClass="bg-gradient-to-r from-green-50/50 to-blue-50/50"
             fields={getSectionFields('budget')}

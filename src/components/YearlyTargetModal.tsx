@@ -65,8 +65,6 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
     };
   }, [annualFieldValues]);
 
-  console.log(annualTotals);
-
   // Calculate monthly data based on budget percentages
   const calculateMonthlyData = useMemo(() => {
     const totalBudget = Object.values(monthlyBudgets).reduce((sum, budget) => sum + budget, 0);

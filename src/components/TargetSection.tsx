@@ -2,6 +2,8 @@ import React from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Info } from "lucide-react";
 import { FieldConfig, InputField, CalculatedField, FieldValue, PeriodType } from "@/types";
 import { formatCurrency, formatPercent, calculateManagementCost } from "@/utils/utils";
 import { isBefore, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
@@ -60,10 +62,12 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
       // Weekly: All time slots are disabled
       return true;
     } else if (period === 'monthly') {
-      // Monthly: Only past months are disabled
+      // Monthly: Disable past months and current month, only allow next month and future
       const currentMonthStart = startOfMonth(currentDate);
       const selectedMonthStart = startOfMonth(selectedDate);
-      return isBefore(selectedMonthStart, currentMonthStart);
+      const nextMonthStart = new Date(currentMonthStart);
+      nextMonthStart.setMonth(nextMonthStart.getMonth() + 1);
+      return isBefore(selectedMonthStart, nextMonthStart);
     } else if (period === 'yearly') {
       // Yearly: Only past years are disabled
       const currentYearStart = startOfYear(currentDate);
@@ -73,6 +77,16 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
     
     return false;
   }, [period, selectedDate]);
+
+  // Get the appropriate message for disabled state
+  const getDisabledMessage = () => {
+    if (period === 'weekly') {
+      return "Week targets cannot be edited";
+    } else if (shouldDisableInputs) {
+      return `Past Targets cannot be edited`;
+    }
+    return null;
+  };
 
   const renderInputField = (field: InputField) => {
     const value = fieldValues[field.value] || 0;
@@ -156,10 +170,19 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
               {title}
             </h2>
           </div>
-          {shouldDisableInputs && (
-            <div className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-md">
-              Read Only
-            </div>
+          {getDisabledMessage() && (
+            <TooltipProvider>
+              <Tooltip delayDuration={200}>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-1 text-amber-600 hover:text-amber-700 cursor-pointer">
+                    <Info className="h-4 w-4" />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="left" className="bg-amber-50 border-amber-200 text-amber-800 z-[9999]">
+                  <p className="text-xs">{getDisabledMessage()}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
         </div>
       </div>
