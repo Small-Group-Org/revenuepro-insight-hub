@@ -17,7 +17,7 @@ export interface IWeeklyTarget {
 }
 
 
-export const upsertTarget = async (targetData: IWeeklyTarget) => {
+export const upsertTarget = async (targetData: IWeeklyTarget | IWeeklyTarget[]) => {
   try {
     const response = await doPOST('/targets/upsert', targetData);
     if (response.status === 200) {
@@ -26,6 +26,19 @@ export const upsertTarget = async (targetData: IWeeklyTarget) => {
     return response;
   } catch (error) {
     console.error("Error upserting target:", error);
+    throw error;
+  }
+};
+
+export const upsertBulkTargets = async (targetsData: IWeeklyTarget[]) => {
+  try {
+    const response = await doPOST('/targets/bulk-upsert', targetsData);
+    if (response.status === 200) {
+      return response.data;
+    }
+    return response;
+  } catch (error) {
+    console.error("Error upserting bulk targets:", error);
     throw error;
   }
 };

@@ -13,6 +13,22 @@ import { targetFields } from "@/utils/constant";
 import { FieldConfig, FieldValue, InputField, PeriodType } from "@/types";
 import type { MonthlyData } from "./YearlyTargetModal";
 import { calculateAllFields, getDefaultValues } from "@/utils/utils";
+import { upsertTarget } from "@/service/targetService";
+
+const months = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
 
 export const SetTargets = () => {
   const { toast } = useToast();
@@ -32,6 +48,7 @@ export const SetTargets = () => {
   const [isYearlyModalOpen, setIsYearlyModalOpen] = useState(false);
 
   const { upsertWeeklyTarget, isLoading, error, getTargetsForUser, currentTarget } = useTargetStore();
+  const selectedYear = selectedDate.getFullYear();
   const { selectedUserId } = useUserStore();
   const { user } = useAuthStore();
 
@@ -189,8 +206,39 @@ export const SetTargets = () => {
 
   const handleSaveMonthlyTargets = useCallback(async (monthlyData: { [key: string]: MonthlyData }) => {
     try {
-      // Here you would implement the logic to save monthly targets
-      // For now, we'll just show a success message
+      const inputFieldNames = getInputFieldNames();
+      const targets: any[] = [];
+      
+      // Convert monthly data to target objects
+      Object.entries(monthlyData).forEach(([month, data]) => {
+        const monthIndex = months.indexOf(month);
+        if (monthIndex === -1) return;
+        
+        const startDate = new Date(selectedYear, monthIndex, 1);
+        const endDate = new Date(selectedYear, monthIndex + 1, 0);
+        
+        const targetData: any = {
+          startDate: format(startDate, 'yyyy-MM-dd'),
+          endDate: format(endDate, 'yyyy-MM-dd'),
+          queryType: 'yearly',
+          appointmentRate: fieldValues?.appointmentRate,
+          avgJobSize: fieldValues?.avgJobSize,
+          closeRate: fieldValues?.closeRate,
+          com: fieldValues?.com,
+          showRate: fieldValues?.showRate,
+        };
+
+        // Add input field values
+        inputFieldNames.forEach(name => {
+          if (data[name as keyof MonthlyData] !== undefined) {
+            targetData[name] = data[name as keyof MonthlyData];
+          }
+        });
+        
+        targets.push(targetData);
+      });
+      
+      await upsertTarget(targets);
       
       toast({
         title: "✅ Monthly Targets Saved Successfully!",
@@ -201,11 +249,11 @@ export const SetTargets = () => {
     } catch (err) {
       toast({
         title: "❌ Error Saving Monthly Targets",
-        description: "Failed to save monthly targets. Please try again.",
+        description: error || "Failed to save monthly targets. Please try again.",
         variant: "destructive",
       });
     }
-  }, [toast]);
+  }, [toast, error, getInputFieldNames, selectedYear]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -288,6 +336,7 @@ export const SetTargets = () => {
         annualFieldValues={fieldValues}
         onSave={handleSaveMonthlyTargets}
         isLoading={isLoading}
+        selectedYear={selectedYear}
       />
     </div>
   );

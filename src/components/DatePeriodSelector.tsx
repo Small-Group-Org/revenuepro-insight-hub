@@ -5,6 +5,7 @@ import { format, addWeeks, subWeeks } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { getWeekInfo, formatWeekRange } from '@/utils/weekLogic';
 import { PeriodType } from '@/types';
+import { useTargetStore } from '@/stores/targetStore';
 interface DatePeriodSelectorProps {
   initialDate?: Date;
   initialPeriod?: PeriodType;
@@ -22,6 +23,7 @@ export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
 }) => {
   const [selectedDate, setSelectedDate] = useState<Date>(initialDate);
   const [period, setPeriod] = useState<PeriodType>(initialPeriod);
+  const { shouldDisableInputs } = useTargetStore();
 
   // Format label based on period
   const getLabel = () => {
@@ -104,6 +106,7 @@ export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
             onClick={onButtonClick}
             className="bg-gray-900 hover:bg-gray-800 text-white px-6 h-[38px]"
             type="button"
+            disabled={shouldDisableInputs || period === 'weekly'} 
           >
             {buttonText}
           </Button>

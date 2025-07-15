@@ -12,6 +12,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { calculateAllFields } from "@/utils/utils";
 import { FieldValue } from "@/types";
+import { TooltipProvider } from "@radix-ui/react-tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import { Info } from "lucide-react";
 
 export type MonthlyData = {
   budget: number;
@@ -30,11 +33,22 @@ interface YearlyTargetModalProps {
   annualFieldValues: FieldValue;
   onSave: (monthlyData: { [key: string]: MonthlyData }) => Promise<void>;
   isLoading: boolean;
+  selectedYear: number;
 }
 
 const months = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December"
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 const currentMonthIndex = new Date().getMonth();
@@ -44,15 +58,20 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
   onOpenChange,
   annualFieldValues,
   onSave,
-  isLoading
+  isLoading,
+  selectedYear,
 }) => {
-  const [monthlyBudgets, setMonthlyBudgets] = useState<{ [key: string]: number }>({});
+  const [monthlyBudgets, setMonthlyBudgets] = useState<{
+    [key: string]: number;
+  }>({});
   const [selectedMonth, setSelectedMonth] = useState<string>("January");
-  const [monthlyData, setMonthlyData] = useState<{ [key: string]: MonthlyData }>({});
+  const [monthlyData, setMonthlyData] = useState<{
+    [key: string]: MonthlyData;
+  }>({});
 
   // Calculate annual totals from the provided field values
   const annualTotals = useMemo(() => {
-    const calculated = calculateAllFields(annualFieldValues, 365, 'yearly'); // Use 365 days for yearly
+    const calculated = calculateAllFields(annualFieldValues, 365, "yearly"); // Use 365 days for yearly
     return {
       leads: calculated.leads || 0,
       estimatesSet: calculated.estimatesSet || 0,
@@ -61,18 +80,21 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
       revenue: calculated.revenue || 0,
       avgJobSize: calculated.avgJobSize || 0,
       budget: calculated.annualBudget || 0, // Use annual budget directly
-      com: calculated.com || 0
+      com: calculated.com || 0,
     };
   }, [annualFieldValues]);
 
   // Calculate monthly data based on budget percentages
   const calculateMonthlyData = useMemo(() => {
-    const totalBudget = Object.values(monthlyBudgets).reduce((sum, budget) => sum + budget, 0);
+    const totalBudget = Object.values(monthlyBudgets).reduce(
+      (sum, budget) => sum + budget,
+      0
+    );
     const newMonthlyData: { [key: string]: MonthlyData } = {};
 
-    months.forEach(month => {
+    months.forEach((month) => {
       const budget = monthlyBudgets[month] || 0;
-      const percentage = totalBudget > 0 ? (budget / totalBudget) : 0;
+      const percentage = totalBudget > 0 ? budget / totalBudget : 0;
 
       newMonthlyData[month] = {
         budget,
@@ -81,8 +103,8 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
         estimates: Math.round(annualTotals.estimates * percentage),
         sales: Math.round(annualTotals.sales * percentage),
         revenue: Math.round(annualTotals.revenue * percentage),
-        avgJobSize: annualTotals.avgJobSize, // Keep same as annual
-        com: annualTotals.com // Keep same as annual
+        avgJobSize: annualTotals.avgJobSize,
+        com: annualTotals.com,
       };
     });
 
@@ -96,9 +118,9 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
 
   const handleBudgetChange = (month: string, value: number) => {
     const validatedValue = Math.max(0, value);
-    setMonthlyBudgets(prev => ({
+    setMonthlyBudgets((prev) => ({
       ...prev,
-      [month]: validatedValue
+      [month]: validatedValue,
     }));
   };
 
@@ -106,7 +128,10 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
     await onSave(monthlyData);
   };
 
-  const totalBudget = Object.values(monthlyBudgets).reduce((sum, budget) => sum + budget, 0);
+  const totalBudget = Object.values(monthlyBudgets).reduce(
+    (sum, budget) => sum + budget,
+    0
+  );
   const selectedMonthData = monthlyData[selectedMonth] || {
     budget: 0,
     leads: 0,
@@ -115,8 +140,11 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
     sales: 0,
     revenue: 0,
     avgJobSize: 0,
-    com: 0
+    com: 0,
   };
+
+  console.log("[monthlyBudgets]", {monthlyBudgets, totalBudget});
+  
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -124,7 +152,9 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
         <DialogHeader>
           <DialogTitle>Set Monthly Revenue Budgets</DialogTitle>
           <DialogDescription>
-            Configure monthly revenue budgets for your yearly targets. The calculated values will be distributed proportionally based on each month's budget percentage.
+            Configure monthly revenue budgets for your yearly targets. The
+            calculated values will be distributed proportionally based on each
+            month's budget percentage.
           </DialogDescription>
         </DialogHeader>
 
@@ -132,31 +162,67 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
           {/* Left side - Monthly budget inputs */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Monthly Budgets</h3>
-              <Badge variant={totalBudget > annualTotals.budget ? "destructive" : "secondary"}>
+              <div className="flex items-center gap-2">
+              <h3 className="text-lg font-semibold">
+                Monthly Budgets
+              </h3>
+                {selectedYear === new Date().getFullYear() &&
+                  currentMonthIndex > 0 && (
+                    <TooltipProvider>
+                      <Tooltip delayDuration={200}>
+                        <TooltipTrigger asChild>
+                          <Info className="h-4 w-4 text-amber-600 hover:text-amber-700 cursor-pointer" />
+                        </TooltipTrigger>
+                        <TooltipContent
+                          side="top"
+                          className="bg-amber-50 border-amber-200 text-amber-800 z-[9999]"
+                        >
+                          <p className="text-xs">
+                            Monthly budgets cannot be updated for past months
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+              </div>
+              <Badge
+                variant={
+                  totalBudget > annualTotals.budget
+                    ? "destructive"
+                    : "secondary"
+                }
+              >
                 Total: ${totalBudget.toLocaleString()}
               </Badge>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-3">
               {months.map((month, idx) => (
                 <div key={month} className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">
-                    {month}
-                  </label>
+                  <div className="flex items-center gap-1">
+                    <label className="text-sm font-medium text-gray-700">
+                      {month}
+                    </label>
+                  </div>
                   <Input
                     type="number"
                     value={monthlyBudgets[month] || ""}
-                    onChange={(e) => handleBudgetChange(month, parseFloat(e.target.value) || 0)}
+                    onChange={(e) =>
+                      handleBudgetChange(month, parseFloat(e.target.value) || 0)
+                    }
                     placeholder="0"
                     className="text-sm"
                     onFocus={() => setSelectedMonth(month)}
                     onWheel={(e) => e.currentTarget.blur()}
-                    disabled={idx <= currentMonthIndex}
+                    disabled={
+                      selectedYear === new Date().getFullYear() &&
+                      idx <= currentMonthIndex
+                    }
                   />
-                  {monthlyBudgets[month] && totalBudget > 0 && (
+                  {monthlyBudgets[month] && annualTotals.budget > 0 && (
                     <div className="text-xs text-gray-500">
-                      {((monthlyBudgets[month] / totalBudget) * 100).toFixed(1)}%
+                      {((monthlyBudgets[month] / annualTotals.budget) * 100).toFixed(1)}
+                      %
                     </div>
                   )}
                 </div>
@@ -167,14 +233,14 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
           {/* Right side - Selected month details */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">
-                {selectedMonth} Details
-              </h3>
+              <h3 className="text-lg font-semibold">{selectedMonth} Details</h3>
               <Badge variant="outline">
-                {monthlyBudgets[selectedMonth] && totalBudget > 0 
-                  ? `${((monthlyBudgets[selectedMonth] / totalBudget) * 100).toFixed(1)}% of annual`
-                  : "0% of annual"
-                }
+                {monthlyBudgets[selectedMonth] && annualTotals.budget > 0
+                  ? `${(
+                      (monthlyBudgets[selectedMonth] / annualTotals.budget) *
+                      100
+                    ).toFixed(1)}% of annual`
+                  : "0% of annual"}
               </Badge>
             </div>
 
@@ -185,41 +251,65 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
               <CardContent className="space-y-3">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Leads</label>
-                    <div className="text-lg font-semibold">{selectedMonthData.leads.toLocaleString()}</div>
+                    <label className="text-sm font-medium text-gray-600">
+                      Leads
+                    </label>
+                    <div className="text-lg font-semibold">
+                      {selectedMonthData.leads.toLocaleString()}
+                    </div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Estimates Set</label>
-                    <div className="text-lg font-semibold">{selectedMonthData.estimatesSet.toLocaleString()}</div>
+                    <label className="text-sm font-medium text-gray-600">
+                      Estimates Set
+                    </label>
+                    <div className="text-lg font-semibold">
+                      {selectedMonthData.estimatesSet.toLocaleString()}
+                    </div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Estimates</label>
-                    <div className="text-lg font-semibold">{selectedMonthData.estimates.toLocaleString()}</div>
+                    <label className="text-sm font-medium text-gray-600">
+                      Estimates
+                    </label>
+                    <div className="text-lg font-semibold">
+                      {selectedMonthData.estimates.toLocaleString()}
+                    </div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Sales</label>
-                    <div className="text-lg font-semibold">{selectedMonthData.sales.toLocaleString()}</div>
+                    <label className="text-sm font-medium text-gray-600">
+                      Sales
+                    </label>
+                    <div className="text-lg font-semibold">
+                      {selectedMonthData.sales.toLocaleString()}
+                    </div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Revenue</label>
+                    <label className="text-sm font-medium text-gray-600">
+                      Revenue
+                    </label>
                     <div className="text-lg font-semibold text-green-600">
                       ${selectedMonthData.revenue.toLocaleString()}
                     </div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Avg Job Size</label>
+                    <label className="text-sm font-medium text-gray-600">
+                      Avg Job Size
+                    </label>
                     <div className="text-lg font-semibold">
                       ${selectedMonthData.avgJobSize.toLocaleString()}
                     </div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Monthly Budget</label>
+                    <label className="text-sm font-medium text-gray-600">
+                      Monthly Budget
+                    </label>
                     <div className="text-lg font-semibold text-blue-600">
                       ${selectedMonthData.budget.toLocaleString()}
                     </div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">CoM%</label>
+                    <label className="text-sm font-medium text-gray-600">
+                      CoM%
+                    </label>
                     <div className="text-lg font-semibold text-purple-600">
                       {selectedMonthData.com.toFixed(2)}%
                     </div>
@@ -231,14 +321,36 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
             {/* Annual totals reference */}
             <Card className="bg-gray-50">
               <CardHeader>
-                <CardTitle className="text-base">Annual Totals (Reference)</CardTitle>
+                <CardTitle className="text-base">
+                  Annual Totals (Reference)
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div>Total Revenue: <span className="font-semibold">${annualTotals.revenue.toLocaleString()}</span></div>
-                  <div>Total Budget: <span className="font-semibold">${annualTotals.budget.toLocaleString()}</span></div>
-                  <div>Total Leads: <span className="font-semibold">{annualTotals.leads.toLocaleString()}</span></div>
-                  <div>Total Sales: <span className="font-semibold">{annualTotals.sales.toLocaleString()}</span></div>
+                  <div>
+                    Total Revenue:{" "}
+                    <span className="font-semibold">
+                      ${annualTotals.revenue.toLocaleString()}
+                    </span>
+                  </div>
+                  <div>
+                    Total Budget:{" "}
+                    <span className="font-semibold">
+                      ${annualTotals.budget.toLocaleString()}
+                    </span>
+                  </div>
+                  <div>
+                    Total Leads:{" "}
+                    <span className="font-semibold">
+                      {annualTotals.leads.toLocaleString()}
+                    </span>
+                  </div>
+                  <div>
+                    Total Sales:{" "}
+                    <span className="font-semibold">
+                      {annualTotals.sales.toLocaleString()}
+                    </span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -249,8 +361,8 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button 
-            onClick={handleSave} 
+          <Button
+            onClick={handleSave}
             disabled={isLoading || totalBudget !== annualTotals.budget}
           >
             {isLoading ? "Saving..." : "Save Monthly Targets"}
@@ -259,4 +371,4 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
       </DialogContent>
     </Dialog>
   );
-}; 
+};

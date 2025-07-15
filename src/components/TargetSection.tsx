@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,6 +7,7 @@ import { Info } from "lucide-react";
 import { FieldConfig, InputField, CalculatedField, FieldValue, PeriodType } from "@/types";
 import { formatCurrency, formatPercent, calculateManagementCost } from "@/utils/utils";
 import { isBefore, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
+import { useTargetStore } from "@/stores/targetStore";
 
 interface TargetSectionProps {
   sectionKey: string;
@@ -36,54 +37,51 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
   period = 'monthly',
   selectedDate,
 }) => {
-  // Filter fields based on applicable property and hidden status
+  const { shouldDisableInputs, setShouldDisableInputs } = useTargetStore();
+
+  useEffect(() => {
+    setShouldDisableInputs(checkShouldDisableInputs())
+  }, [period, selectedDate])
+
   const filterFieldsByPeriod = (fields: FieldConfig[]): FieldConfig[] => {
     return fields.filter(field => {
-      // Hide fields that are marked as hidden
       if (field.isHidden) return false;
       
-      // If no applicable property is set, show the field for all periods
       if (!field.applicable) return true;
       
-      // Check if the current period is in the applicable array
       return field.applicable.includes(period);
     });
   };
 
   const filteredFields = filterFieldsByPeriod(fields);
 
-  // Check if inputs should be disabled based on period and date
-  const shouldDisableInputs = React.useMemo(() => {
+  const checkShouldDisableInputs = () => {
     if (!selectedDate) return false;
     
     const currentDate = new Date();
     
     if (period === 'weekly') {
-      // Weekly: All time slots are disabled
       return true;
     } else if (period === 'monthly') {
-      // Monthly: Disable past months and current month, only allow next month and future
       const currentMonthStart = startOfMonth(currentDate);
       const selectedMonthStart = startOfMonth(selectedDate);
       const nextMonthStart = new Date(currentMonthStart);
       nextMonthStart.setMonth(nextMonthStart.getMonth() + 1);
       return isBefore(selectedMonthStart, nextMonthStart);
     } else if (period === 'yearly') {
-      // Yearly: Only past years are disabled
       const currentYearStart = startOfYear(currentDate);
       const selectedYearStart = startOfYear(selectedDate);
       return isBefore(selectedYearStart, currentYearStart);
     }
     
     return false;
-  }, [period, selectedDate]);
+  }
 
-  // Get the appropriate message for disabled state
   const getDisabledMessage = () => {
     if (period === 'weekly') {
-      return "Week targets cannot be edited";
+      return "Week targets cannot be updated";
     } else if (shouldDisableInputs) {
-      return `Past Targets cannot be edited`;
+      return `Past Targets cannot be updated`;
     }
     return null;
   };

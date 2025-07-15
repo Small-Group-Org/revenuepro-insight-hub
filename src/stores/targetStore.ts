@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { IWeeklyTarget, upsertTarget, getTargets } from '../service/targetService';
+import { IWeeklyTarget, upsertTarget, upsertBulkTargets, getTargets } from '../service/targetService';
 import useAuthStore from './authStore';
 import { useUserStore } from './userStore';
 import { format } from 'date-fns';
@@ -8,8 +8,11 @@ interface TargetState {
   currentTarget: IWeeklyTarget | null;
   isLoading: boolean;
   error: string | null;
+  shouldDisableInputs: boolean;
+  setShouldDisableInputs: (shouldDisable: boolean) => void;
   setCurrentTarget: (target: IWeeklyTarget | null) => void;
   upsertWeeklyTarget: (target: IWeeklyTarget) => Promise<void>;
+  upsertBulkWeeklyTargets: (targets: IWeeklyTarget[]) => Promise<void>;
   clearError: () => void;
   getTargetsForUser: (queryType?: string, startDate?: string) => Promise<void>;
 }
@@ -18,7 +21,8 @@ export const useTargetStore = create<TargetState>((set, get) => ({
   currentTarget: null,
   isLoading: false,
   error: null,
-
+  shouldDisableInputs: false,
+  setShouldDisableInputs: (shouldDisableInputs: boolean) => set({ shouldDisableInputs }),
   setCurrentTarget: (target) => set({ currentTarget: target }),
 
   upsertWeeklyTarget: async (target) => {
@@ -43,6 +47,55 @@ export const useTargetStore = create<TargetState>((set, get) => ({
       }
     } catch (error) {
       set({ error: error instanceof Error ? error.message : 'An error occurred while updating target' });
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  upsertBulkWeeklyTargets: async (targets) => {
+    set({ isLoading: true, error: null });
+    try {
+      const authState = useAuthStore.getState();
+      const userStore = useUserStore.getState();
+      const user = authState.user;
+      let userId = user?._id;
+      if (user?.role === 'ADMIN') {
+        userId = userStore.selectedUserId || user?._id;
+      }
+      if (!userId) {
+        set({ error: 'No user ID found', isLoading: false });
+        return;
+      }
+      
+      // Add userId to each target
+      const targetsWithUserId = targets.map(target => ({ ...target, userId }));
+      
+      try {
+        // Try to use bulk endpoint first
+        const response = await upsertBulkTargets(targetsWithUserId);
+        if (response.success) {
+          set({ currentTarget: response.data?.[0] || null });
+        } else {
+          set({ error: response.message || 'Failed to update targets' });
+        }
+      } catch (bulkError) {
+        // Fallback to individual calls if bulk endpoint fails
+        console.warn('Bulk endpoint failed, falling back to individual calls:', bulkError);
+        const promises = targetsWithUserId.map(target => upsertTarget(target));
+        const responses = await Promise.all(promises);
+        
+        // Check if all responses are successful
+        const allSuccessful = responses.every(response => response.success);
+        if (allSuccessful) {
+          // Set the first target as current target (or you could set the last one)
+          set({ currentTarget: responses[0]?.data || null });
+        } else {
+          const failedResponses = responses.filter(response => !response.success);
+          set({ error: failedResponses[0]?.message || 'Failed to update some targets' });
+        }
+      }
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : 'An error occurred while updating targets' });
     } finally {
       set({ isLoading: false });
     }
