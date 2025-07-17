@@ -14,7 +14,7 @@ interface TargetState {
   upsertWeeklyTarget: (target: IWeeklyTarget) => Promise<void>;
   upsertBulkWeeklyTargets: (targets: IWeeklyTarget[]) => Promise<void>;
   clearError: () => void;
-  getTargetsForUser: (queryType?: string, startDate?: string) => Promise<void>;
+  getTargetsForUser: (queryType: string, startDate: string, endDate:string) => Promise<void>;
 }
 
 export const useTargetStore = create<TargetState>((set, get) => ({
@@ -103,7 +103,7 @@ export const useTargetStore = create<TargetState>((set, get) => ({
 
   clearError: () => set({ error: null }),
 
-  getTargetsForUser: async (queryType?: string, startDate?: string) => {
+  getTargetsForUser: async (queryType: string, startDate: string, endDate: string) => {
     set({ isLoading: true, error: null });
     try {
       const authState = useAuthStore.getState();
@@ -117,7 +117,7 @@ export const useTargetStore = create<TargetState>((set, get) => ({
         set({ error: 'No user ID found', isLoading: false });
         return;
       }
-      const response = await getTargets(userId, queryType, startDate);
+      const response = await getTargets(userId, queryType, startDate, endDate);
       if (!response.error && response.data) {
         set({ currentTarget: response.data?.data, isLoading: false });
       } else {

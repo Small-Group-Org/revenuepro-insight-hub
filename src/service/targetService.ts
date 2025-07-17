@@ -43,11 +43,12 @@ export const upsertBulkTargets = async (targetsData: IWeeklyTarget[]) => {
   }
 };
 
-export const getTargets = async (userId: string, queryType?: string, startDate?: string) => {
+export const getTargets = async (userId: string, queryType: string, startDate: string, endDate:string) => {
   try {
     let url = `/targets/get?userId=${userId}`;
     if (queryType) url += `&queryType=${queryType}`;
     if (startDate) url += `&startDate=${startDate}`;
+    if(endDate) url += `&endDate=${endDate}`
     const response = await doGET(url);
     return response;
   } catch (error) {
