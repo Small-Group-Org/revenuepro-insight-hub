@@ -5,12 +5,12 @@ import { useUserStore } from './userStore';
 import { format } from 'date-fns';
 
 interface TargetState {
-  currentTarget: IWeeklyTarget | null;
+  currentTarget: IWeeklyTarget[] | null;
   isLoading: boolean;
   error: string | null;
   shouldDisableInputs: boolean;
   setShouldDisableInputs: (shouldDisable: boolean) => void;
-  setCurrentTarget: (target: IWeeklyTarget | null) => void;
+  setCurrentTarget: (target: IWeeklyTarget[] | null) => void;
   upsertWeeklyTarget: (target: IWeeklyTarget) => Promise<void>;
   upsertBulkWeeklyTargets: (targets: IWeeklyTarget[]) => Promise<void>;
   clearError: () => void;
@@ -119,7 +119,8 @@ export const useTargetStore = create<TargetState>((set, get) => ({
       }
       const response = await getTargets(userId, queryType, startDate, endDate);
       if (!response.error && response.data) {
-        set({ currentTarget: response.data?.data, isLoading: false });
+        const data = Array.isArray(response.data?.data) ? response.data?.data : [response.data?.data];
+        set({ currentTarget: data, isLoading: false });
       } else {
         set({ currentTarget: null, error: response.message || 'Failed to fetch targets', isLoading: false });
       }

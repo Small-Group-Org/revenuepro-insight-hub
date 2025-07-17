@@ -143,9 +143,6 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
     com: 0,
   };
 
-  console.log("[monthlyBudgets]", {monthlyBudgets, totalBudget});
-  
-
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
