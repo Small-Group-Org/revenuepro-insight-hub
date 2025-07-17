@@ -10,8 +10,8 @@ export const API_METHODS = {
 export const tabs = ["basic", "templates", "target"];
 
 // export const API_URL = import.meta.env.VITE_API_URL;
-export const API_URL = "https://revenue-pro-backend-1057029383450.asia-south2.run.app/api/v1";
-// export const API_URL = " http://localhost:4000/api/v1";
+// export const API_URL = "https://revenue-pro-backend-1057029383450.asia-south2.run.app//api/v1";
+export const API_URL = " http://localhost:4000/api/v1";
 
 export const targetFields: TargetFieldsConfig = {
   funnelRate: [
@@ -77,18 +77,11 @@ export const targetFields: TargetFieldsConfig = {
       unit: "$",
     },
     {
-      name: "Sales",
-      value: "sales",
+      name: "Leads",
+      value: "leads",
       fieldType: "calculated",
-      formula: "revenue / avgJobSize",
-      description: "Revenue ÷ Avg Job Size",
-    },
-    {
-      name: "Estimates Ran",
-      value: "estimatesRan",
-      fieldType: "calculated",
-      formula: "sales / (closeRate / 100)",
-      description: "Sales ÷ Close Rate",
+      formula: "estimatesSet / (appointmentRate / 100)",
+      description: "Estimates Set ÷ Appointment Rate",
     },
     {
       name: "Estimates Set",
@@ -98,12 +91,19 @@ export const targetFields: TargetFieldsConfig = {
       description: "Estimates Ran ÷ Show Rate",
     },
     {
-      name: "Leads",
-      value: "leads",
+      name: "Estimates Ran",
+      value: "estimatesRan",
       fieldType: "calculated",
-      formula: "estimatesSet / (appointmentRate / 100)",
-      description: "Estimates Set ÷ Appointment Rate",
-    }
+      formula: "sales / (closeRate / 100)",
+      description: "Sales ÷ Close Rate",
+    },
+    {
+      name: "Sales",
+      value: "sales",
+      fieldType: "calculated",
+      formula: "revenue / avgJobSize",
+      description: "Revenue ÷ Avg Job Size",
+    },
   ],
   budgetTarget: [
     {
@@ -193,7 +193,7 @@ export const targetFields: TargetFieldsConfig = {
       formula: "calculateManagementCost(calculatedMonthlyBudget)",
       description: "Based on Ad Spend Range",
       unit: "$",
-      applicable: ["monthly"]
+      isHidden: true
     },
     {
       name: "Total CoM%",

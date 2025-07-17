@@ -50,6 +50,13 @@ export const calculateManagementCost = (adSpend: number): number => {
   if (adSpend >= 20001 && adSpend <= 25000) return 4000;
   if (adSpend >= 25001 && adSpend <= 30000) return 4500;
   if (adSpend >= 30001 && adSpend <= 35000) return 5000;
+  if(adSpend >= 35001 && adSpend <= 40000) return 5500;
+  if(adSpend >= 40001 && adSpend <= 45000) return 6000;
+  if(adSpend >= 45001 && adSpend <= 50000) return 6500;
+  if(adSpend >= 50001 && adSpend <= 55000) return 7000;
+  if(adSpend >= 55001 && adSpend <= 60000) return 7500;
+  if(adSpend >= 60001 && adSpend <= 65000) return 8000;
+  if(adSpend >= 65001 && adSpend <= 70000) return 8500;
   return 0;
 };
 
@@ -155,10 +162,43 @@ export const getDaysInMonth = (date: Date): number => {
         }
       });
     };
+
+    const calculateBudgetSection = () => {
+      // Calculate budget section fields in dependency order
+      const budgetFields = targetFields.budget;
+      
+      // First, calculate sales (depends on revenue and avgJobSize)
+      const salesField = budgetFields.find((field: any) => field.value === 'sales');
+      if (salesField && salesField.fieldType === 'calculated' && salesField.formula) {
+        const salesValue = evaluateFormula(salesField.formula, context, 'sales');
+        allValues['sales'] = Math.round(salesValue);
+      }
+      
+      // Then calculate estimatesRan (depends on sales)
+      const estimatesRanField = budgetFields.find((field: any) => field.value === 'estimatesRan');
+      if (estimatesRanField && estimatesRanField.fieldType === 'calculated' && estimatesRanField.formula) {
+        const estimatesRanValue = evaluateFormula(estimatesRanField.formula, context, 'estimatesRan');
+        allValues['estimatesRan'] = Math.round(estimatesRanValue);
+      }
+      
+      // Then calculate estimatesSet (depends on estimatesRan)
+      const estimatesSetField = budgetFields.find((field: any) => field.value === 'estimatesSet');
+      if (estimatesSetField && estimatesSetField.fieldType === 'calculated' && estimatesSetField.formula) {
+        const estimatesSetValue = evaluateFormula(estimatesSetField.formula, context, 'estimatesSet');
+        allValues['estimatesSet'] = Math.round(estimatesSetValue);
+      }
+      
+      // Finally calculate leads (depends on estimatesSet)
+      const leadsField = budgetFields.find((field: any) => field.value === 'leads');
+      if (leadsField && leadsField.fieldType === 'calculated' && leadsField.formula) {
+        const leadsValue = evaluateFormula(leadsField.formula, context, 'leads');
+        allValues['leads'] = Math.round(leadsValue);
+      }
+    };
     
-    // Calculate in order: funnelRate, budget, budgetTarget
+    // Calculate in order: funnelRate, budget (with proper dependency order), budgetTarget
     calculateSection('funnelRate');
-    calculateSection('budget');
+    calculateBudgetSection();
     
     // Calculate budget field specifically to ensure it's available for budgetTarget calculations
     const budgetField = targetFields.budgetTarget.find((field: any) => field.value === 'budget');

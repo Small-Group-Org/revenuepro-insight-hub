@@ -5,16 +5,16 @@ import { useUserStore } from './userStore';
 import { format } from 'date-fns';
 
 interface TargetState {
-  currentTarget: IWeeklyTarget | null;
+  currentTarget: IWeeklyTarget[] | null;
   isLoading: boolean;
   error: string | null;
   shouldDisableInputs: boolean;
   setShouldDisableInputs: (shouldDisable: boolean) => void;
-  setCurrentTarget: (target: IWeeklyTarget | null) => void;
+  setCurrentTarget: (target: IWeeklyTarget[] | null) => void;
   upsertWeeklyTarget: (target: IWeeklyTarget) => Promise<void>;
   upsertBulkWeeklyTargets: (targets: IWeeklyTarget[]) => Promise<void>;
   clearError: () => void;
-  getTargetsForUser: (queryType?: string, startDate?: string) => Promise<void>;
+  getTargetsForUser: (queryType: string, startDate: string, endDate:string) => Promise<void>;
 }
 
 export const useTargetStore = create<TargetState>((set, get) => ({
@@ -103,7 +103,7 @@ export const useTargetStore = create<TargetState>((set, get) => ({
 
   clearError: () => set({ error: null }),
 
-  getTargetsForUser: async (queryType?: string, startDate?: string) => {
+  getTargetsForUser: async (queryType: string, startDate: string, endDate: string) => {
     set({ isLoading: true, error: null });
     try {
       const authState = useAuthStore.getState();
@@ -117,9 +117,10 @@ export const useTargetStore = create<TargetState>((set, get) => ({
         set({ error: 'No user ID found', isLoading: false });
         return;
       }
-      const response = await getTargets(userId, queryType, startDate);
+      const response = await getTargets(userId, queryType, startDate, endDate);
       if (!response.error && response.data) {
-        set({ currentTarget: response.data?.data, isLoading: false });
+        const data = Array.isArray(response.data?.data) ? response.data?.data : [response.data?.data];
+        set({ currentTarget: data, isLoading: false });
       } else {
         set({ currentTarget: null, error: response.message || 'Failed to fetch targets', isLoading: false });
       }

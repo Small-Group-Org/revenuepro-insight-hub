@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { calculateAllFields } from "@/utils/utils";
+import { calculateAllFields, calculateManagementCost } from "@/utils/utils";
 import { FieldValue } from "@/types";
 import { TooltipProvider } from "@radix-ui/react-tooltip";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
@@ -25,6 +25,7 @@ export type MonthlyData = {
   revenue: number;
   avgJobSize: number;
   com: number;
+  totalCom: number;
 };
 
 interface YearlyTargetModalProps {
@@ -94,7 +95,9 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
 
     months.forEach((month) => {
       const budget = monthlyBudgets[month] || 0;
-      const percentage = totalBudget > 0 ? budget / totalBudget : 0;
+      const percentage = totalBudget > 0 ? budget / annualTotals.budget : 0;
+      const monthlyRevenue = Math.round(annualTotals.revenue * percentage);
+      const managementCost = calculateManagementCost(budget);
 
       newMonthlyData[month] = {
         budget,
@@ -102,9 +105,10 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
         estimatesSet: Math.round(annualTotals.estimatesSet * percentage),
         estimates: Math.round(annualTotals.estimates * percentage),
         sales: Math.round(annualTotals.sales * percentage),
-        revenue: Math.round(annualTotals.revenue * percentage),
+        revenue: monthlyRevenue,
         avgJobSize: annualTotals.avgJobSize,
         com: annualTotals.com,
+        totalCom: ((budget + managementCost) / monthlyRevenue) * 100,
       };
     });
 
@@ -128,6 +132,12 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
     await onSave(monthlyData);
   };
 
+  const handleCancel = () => {
+    setMonthlyBudgets({});
+    setSelectedMonth("January");
+    onOpenChange(false);
+  };
+
   const totalBudget = Object.values(monthlyBudgets).reduce(
     (sum, budget) => sum + budget,
     0
@@ -141,10 +151,8 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
     revenue: 0,
     avgJobSize: 0,
     com: 0,
+    totalCom: 0,
   };
-
-  console.log("[monthlyBudgets]", {monthlyBudgets, totalBudget});
-  
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -314,6 +322,14 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
                       {selectedMonthData.com.toFixed(2)}%
                     </div>
                   </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">
+                      Total CoM%
+                    </label>
+                    <div className="text-lg font-semibold text-purple-600">
+                      {selectedMonthData.totalCom.toFixed(2)}%
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -358,7 +374,7 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
         </div>
 
         <div className="flex justify-end space-x-2 pt-4">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={handleCancel}>
             Cancel
           </Button>
           <Button

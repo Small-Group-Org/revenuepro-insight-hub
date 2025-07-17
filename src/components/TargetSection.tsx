@@ -2,11 +2,35 @@ import React, { useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Info } from "lucide-react";
-import { FieldConfig, InputField, CalculatedField, FieldValue, PeriodType } from "@/types";
-import { formatCurrency, formatPercent, calculateManagementCost } from "@/utils/utils";
-import { isBefore, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
+import {
+  FieldConfig,
+  InputField,
+  CalculatedField,
+  FieldValue,
+  PeriodType,
+} from "@/types";
+import {
+  formatCurrency,
+  formatPercent,
+  calculateManagementCost,
+} from "@/utils/utils";
+import {
+  isBefore,
+  isAfter,
+  startOfWeek,
+  endOfWeek,
+  startOfMonth,
+  endOfMonth,
+  startOfYear,
+  endOfYear,
+} from "date-fns";
 import { useTargetStore } from "@/stores/targetStore";
 
 interface TargetSectionProps {
@@ -25,6 +49,7 @@ interface TargetSectionProps {
 }
 
 export const TargetSection: React.FC<TargetSectionProps> = ({
+  sectionKey,
   title,
   icon,
   gradientClass,
@@ -34,21 +59,22 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
   onInputChange,
   isHighlighted,
   isLoading = false,
-  period = 'monthly',
+  period = "monthly",
   selectedDate,
 }) => {
-  const { shouldDisableInputs, setShouldDisableInputs } = useTargetStore();
+  const { shouldDisableInputs, setShouldDisableInputs, currentTarget } =
+    useTargetStore();
 
   useEffect(() => {
-    setShouldDisableInputs(checkShouldDisableInputs())
-  }, [period, selectedDate])
+    setShouldDisableInputs(checkShouldDisableInputs());
+  }, [period, selectedDate]);
 
   const filterFieldsByPeriod = (fields: FieldConfig[]): FieldConfig[] => {
-    return fields.filter(field => {
+    return fields.filter((field) => {
       if (field.isHidden) return false;
-      
+
       if (!field.applicable) return true;
-      
+
       return field.applicable.includes(period);
     });
   };
@@ -57,30 +83,30 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
 
   const checkShouldDisableInputs = () => {
     if (!selectedDate) return false;
-    
+
     const currentDate = new Date();
-    
-    if (period === 'weekly') {
-      return true;
-    } else if (period === 'monthly') {
+
+    if (period === "weekly") {
+      const selectedWeekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
+      const nextSunday = endOfWeek(currentDate, { weekStartsOn: 1 });
+      return !isAfter(selectedWeekStart, nextSunday);
+    } else if (period === "monthly") {
       const currentMonthStart = startOfMonth(currentDate);
       const selectedMonthStart = startOfMonth(selectedDate);
       const nextMonthStart = new Date(currentMonthStart);
       nextMonthStart.setMonth(nextMonthStart.getMonth() + 1);
       return isBefore(selectedMonthStart, nextMonthStart);
-    } else if (period === 'yearly') {
+    } else if (period === "yearly") {
       const currentYearStart = startOfYear(currentDate);
       const selectedYearStart = startOfYear(selectedDate);
       return isBefore(selectedYearStart, currentYearStart);
     }
-    
+
     return false;
-  }
+  };
 
   const getDisabledMessage = () => {
-    if (period === 'weekly') {
-      return "Week targets cannot be updated";
-    } else if (shouldDisableInputs) {
+    if (shouldDisableInputs) {
       return `Past Targets cannot be updated`;
     }
     return null;
@@ -88,10 +114,13 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
 
   const renderInputField = (field: InputField) => {
     const value = fieldValues[field.value] || 0;
-    
+
     return (
       <div key={field.value} className="space-y-2">
-        <Label htmlFor={field.value} className="text-sm font-medium text-gray-700">
+        <Label
+          htmlFor={field.value}
+          className="text-sm font-medium text-gray-700"
+        >
           {field.name}
         </Label>
         <div className="relative">
@@ -104,13 +133,17 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
             value={value}
             onChange={(e) => {
               const inputValue = e.target.value;
-              const numValue = inputValue === '' ? 0 : Number(inputValue);
+              const numValue = inputValue === "" ? 0 : Number(inputValue);
               onInputChange(field.value, numValue);
             }}
             onFocus={(e) => e.target.select()}
             onWheel={(e) => e.currentTarget.blur()}
-            className={`appearance-none pr-12 ${shouldDisableInputs ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`}
-            style={{ MozAppearance: 'textfield' }}
+            className={`appearance-none pr-12 ${
+              shouldDisableInputs
+                ? "bg-gray-100 text-gray-500 cursor-not-allowed"
+                : ""
+            }`}
+            style={{ MozAppearance: "textfield" }}
             disabled={isLoading || shouldDisableInputs}
           />
           {field.unit && (
@@ -126,34 +159,75 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
   const renderCalculatedField = (field: CalculatedField) => {
     let value = calculatedValues[field.value] || 0;
     const isHighlightedField = isHighlighted(field.value);
-    
-    if (field.value === 'managementCost') {
+
+    if (field.value === "managementCost") {
       const monthlyBudget = calculatedValues.calculatedMonthlyBudget || 0;
       value = calculateManagementCost(monthlyBudget);
     }
-    
+
+    // Calculate per-week value for monthly budget
+    const perWeekValue =
+      period === "monthly" && sectionKey === "budget" && currentTarget?.length
+        ? Math.round(value / currentTarget.length)
+        : null;
+
     return (
-      <div 
-        key={field.value} 
+      <div
+        key={field.value}
         className={`bg-gradient-to-r from-gray-50/80 to-gray-100/80 backdrop-blur-sm p-3 rounded-xl border border-gray-200/40 ${
-          isHighlightedField 
-            ? 'bg-gradient-to-r from-sky-100/80 border-blue-200 via-blue-100/80 to-transparentd border-sky-200/60' 
-            : 'hover:shadow-mdd'
+          isHighlightedField
+            ? "bg-gradient-to-r from-sky-100/80 border-blue-200 via-blue-100/80 to-transparentd border-sky-200/60"
+            : "hover:shadow-mdd"
         }`}
       >
         <div className="flex items-center justify-between">
-          <div>
-            <div className="text-sm font-medium text-gray-900">{field.name}</div>
+          <div className="flex-1">
+            <div className="text-sm font-medium text-gray-900">
+              {field.name}
+            </div>
             {field.description && (
-              <div className="text-[10px] mt-[2px] text-gray-500">{field.description}</div>
+              <div className="text-[10px] mt-[2px] text-gray-500">
+                {field.description}
+              </div>
             )}
           </div>
-          <span className="text-sm font-semibold text-gray-900">
-            {field.unit === '$' ? formatCurrency(Math.round(value)) : 
-             field.unit === '%' ? formatPercent(Math.round(value)) : 
-             isNaN(value) ? 0 : Math.round(value)}
-          </span>
+          <div className="text-right">
+            <span className="text-sm font-semibold text-gray-900">
+              {field.unit === "$"
+                ? formatCurrency(Math.round(value))
+                : field.unit === "%"
+                ? formatPercent(Math.round(value))
+                : isNaN(value)
+                ? 0
+                : Math.round(value)}
+            </span>
+          </div>
         </div>
+
+        {/* Enhanced per-week breakdown for monthly budget */}
+        {perWeekValue !== null && (
+          <div className="mt-3 pt-3 border-t border-gray-200/40">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="">
+                  <span className="text-xs font-medium text-gray-700">
+                    Weekly Allocation
+                  </span>
+                  <div className="text-[10px] text-gray-500">
+                  {currentTarget?.length || 0} weeks
+                </div>
+                </div>
+                
+                <div className="text-right">
+                  <div className="text-sm font-semibold text-gray-700">
+                    {perWeekValue}
+                  </div>
+                  <div className="text-[10px] text-gray-500">per week</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -176,7 +250,10 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
                     <Info className="h-4 w-4" />
                   </div>
                 </TooltipTrigger>
-                <TooltipContent side="left" className="bg-amber-50 border-amber-200 text-amber-800 z-[9999]">
+                <TooltipContent
+                  side="left"
+                  className="bg-amber-50 border-amber-200 text-amber-800 z-[9999]"
+                >
                   <p className="text-xs">{getDisabledMessage()}</p>
                 </TooltipContent>
               </Tooltip>
@@ -184,20 +261,26 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
           )}
         </div>
       </div>
-      
+
       <div className="p-6 space-y-6">
         <div className="space-y-4">
           {filteredFields
-            .filter((field: FieldConfig): field is InputField => field.fieldType === 'input')
+            .filter(
+              (field: FieldConfig): field is InputField =>
+                field.fieldType === "input"
+            )
             .map(renderInputField)}
         </div>
 
         <div className="space-y-3">
           {filteredFields
-            .filter((field: FieldConfig): field is CalculatedField => field.fieldType === 'calculated')
+            .filter(
+              (field: FieldConfig): field is CalculatedField =>
+                field.fieldType === "calculated"
+            )
             .map(renderCalculatedField)}
         </div>
       </div>
     </Card>
   );
-}; 
+};

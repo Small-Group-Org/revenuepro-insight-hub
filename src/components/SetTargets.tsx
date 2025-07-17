@@ -13,7 +13,7 @@ import { targetFields } from "@/utils/constant";
 import { FieldConfig, FieldValue, InputField, PeriodType } from "@/types";
 import type { MonthlyData } from "./YearlyTargetModal";
 import { calculateAllFields, getDefaultValues } from "@/utils/utils";
-import { upsertTarget } from "@/service/targetService";
+import { IWeeklyTarget, upsertTarget } from "@/service/targetService";
 
 const months = [
   "January",
@@ -87,23 +87,24 @@ export const SetTargets = () => {
   useEffect(() => {
     if (currentTarget) {
       const newValues = { ...getDefaultValues() };
-      
-      if (currentTarget.appointmentRate !== undefined) newValues.appointmentRate = currentTarget.appointmentRate;
-      if (currentTarget.showRate !== undefined) newValues.showRate = currentTarget.showRate;
-      if (currentTarget.closeRate !== undefined) newValues.closeRate = currentTarget.closeRate;
-      if (currentTarget.revenue !== undefined) newValues.revenue = currentTarget.revenue;
-      if (currentTarget.avgJobSize !== undefined) newValues.avgJobSize = currentTarget.avgJobSize;
-      if (currentTarget.com !== undefined) newValues.com = currentTarget.com;
-      
+      const first = currentTarget[0] || {} as IWeeklyTarget;
+      const revenueSum = currentTarget.reduce((sum, item) => sum + (item.revenue || 0), 0);
+      if (first.appointmentRate !== undefined) newValues.appointmentRate = first.appointmentRate;
+      if (first.showRate !== undefined) newValues.showRate = first.showRate;
+      if (first.closeRate !== undefined) newValues.closeRate = first.closeRate;
+      if (first.avgJobSize !== undefined) newValues.avgJobSize = first.avgJobSize;
+      if (first.com !== undefined) newValues.com = first.com;
+      newValues.revenue = revenueSum;
+        
       setFieldValues(newValues);
       setLastChanged(null); 
       setPrevValues(newValues);
     }
-  }, [currentTarget]);
+  }, [currentTarget, period]);
 
   useEffect(() => {
     if (user) {
-      getTargetsForUser(period, selectedStartDate);
+      getTargetsForUser(period, selectedStartDate, selectedEndDate);
     }
   }, [selectedUserId, selectedStartDate, period, user]); 
 
