@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { format, addWeeks, subWeeks } from 'date-fns';
+import { format, addWeeks, subWeeks, startOfWeek, endOfWeek, isAfter } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { getWeekInfo, formatWeekRange } from '@/utils/weekLogic';
 import { PeriodType } from '@/types';
@@ -69,6 +69,16 @@ export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
     onChange?.(selectedDate, value);
   };
 
+  // Check if button should be disabled for weekly periods
+  const shouldDisableWeeklyButton = () => {
+    if (period !== 'weekly') return false;
+    
+    const currentDate = new Date();
+    const selectedWeekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
+    const nextSunday = endOfWeek(currentDate, { weekStartsOn: 1 });
+    return !isAfter(selectedWeekStart, nextSunday);
+  };
+
   return (
     <div className="flex items-center justify-between w-full py-2 px-4 bg-white rounded-xl shadow border border-gray-200">
       <div className="flex items-center gap-2">
@@ -106,7 +116,7 @@ export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
             onClick={onButtonClick}
             className="bg-gray-900 hover:bg-gray-800 text-white px-6 h-[38px]"
             type="button"
-            disabled={shouldDisableInputs || period === 'weekly'} 
+            disabled={shouldDisableInputs || shouldDisableWeeklyButton()} 
           >
             {buttonText}
           </Button>

@@ -50,6 +50,13 @@ export const calculateManagementCost = (adSpend: number): number => {
   if (adSpend >= 20001 && adSpend <= 25000) return 4000;
   if (adSpend >= 25001 && adSpend <= 30000) return 4500;
   if (adSpend >= 30001 && adSpend <= 35000) return 5000;
+  if(adSpend >= 35001 && adSpend <= 40000) return 5500;
+  if(adSpend >= 40001 && adSpend <= 45000) return 6000;
+  if(adSpend >= 45001 && adSpend <= 50000) return 6500;
+  if(adSpend >= 50001 && adSpend <= 55000) return 7000;
+  if(adSpend >= 55001 && adSpend <= 60000) return 7500;
+  if(adSpend >= 60001 && adSpend <= 65000) return 8000;
+  if(adSpend >= 65001 && adSpend <= 70000) return 8500;
   return 0;
 };
 

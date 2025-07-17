@@ -23,6 +23,7 @@ import {
 } from "@/utils/utils";
 import {
   isBefore,
+  isAfter,
   startOfWeek,
   endOfWeek,
   startOfMonth,
@@ -86,7 +87,9 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
     const currentDate = new Date();
 
     if (period === "weekly") {
-      return true;
+      const selectedWeekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
+      const nextSunday = endOfWeek(currentDate, { weekStartsOn: 1 });
+      return !isAfter(selectedWeekStart, nextSunday);
     } else if (period === "monthly") {
       const currentMonthStart = startOfMonth(currentDate);
       const selectedMonthStart = startOfMonth(selectedDate);
@@ -103,9 +106,7 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
   };
 
   const getDisabledMessage = () => {
-    if (period === "weekly") {
-      return "Week targets cannot be updated";
-    } else if (shouldDisableInputs) {
+    if (shouldDisableInputs) {
       return `Past Targets cannot be updated`;
     }
     return null;
