@@ -3,41 +3,29 @@ import React, { useState } from 'react';
 import { DataProvider } from '@/contexts/DataContext';
 import { Sidebar } from '@/components/Sidebar';
 import { Dashboard } from '@/components/Dashboard';
-import { SetTargets } from '@/components/SetTargets';
-import { AddActualData } from '@/components/AddActualData';
-import { CompareResults } from '@/components/CompareResults';
+import { SetTargets } from '@/pages/SetTargets';
+import { AddActualData } from '@/pages/AddActualData';
+import { CompareResults } from '@/pages/CompareResults';
 
 const Index = () => {
-  const [activeSection, setActiveSection] = useState('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  const renderActiveSection = () => {
-    switch (activeSection) {
-      case 'dashboard':
-        return <Dashboard />;
-      case 'targets':
-        return <SetTargets />;
-      case 'actuals':
-        return <AddActualData />;
-      case 'compare':
-        return <CompareResults />;
-      default:
-        return <Dashboard />;
-    }
+  const handleLogout = () => {
+    // Add logout logic here
+    console.log('Logout clicked');
   };
 
   return (
     <DataProvider>
       <div className="min-h-screen flex bg-background">
         <Sidebar
-          activeSection={activeSection}
-          onSectionChange={setActiveSection}
           isCollapsed={sidebarCollapsed}
           onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+          onLogout={handleLogout}
         />
         
         <main className="flex-1 overflow-auto">
-          {renderActiveSection()}
+          <Dashboard />
         </main>
       </div>
     </DataProvider>

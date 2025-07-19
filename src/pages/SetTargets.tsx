@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { TrendingUp, Calculator, DollarSign } from "lucide-react";
-import { DatePeriodSelector } from './DatePeriodSelector';
-import { TargetSection } from './TargetSection';
-import { YearlyTargetModal } from './YearlyTargetModal';
+import { DatePeriodSelector } from '../components/DatePeriodSelector';
+import { TargetSection } from '../components/TargetSection';
+import { YearlyTargetModal } from '../components/YearlyTargetModal';
 import { useTargetStore } from "../stores/targetStore";
 import { useUserStore } from "../stores/userStore";
 import useAuthStore from "../stores/authStore";
@@ -11,7 +11,7 @@ import { endOfWeek, startOfWeek, format, startOfMonth, endOfMonth, startOfYear, 
 import { getDaysInMonth } from "@/utils/utils";
 import { targetFields } from "@/utils/constant";
 import { FieldConfig, FieldValue, InputField, PeriodType } from "@/types";
-import type { MonthlyData } from "./YearlyTargetModal";
+import type { MonthlyData } from "../components/YearlyTargetModal";
 import { calculateAllFields, getDefaultValues } from "@/utils/utils";
 import { IWeeklyTarget, upsertTarget } from "@/service/targetService";
 

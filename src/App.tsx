@@ -8,12 +8,12 @@ import { useState } from "react";
 
 // Import components
 import { Dashboard } from "@/components/Dashboard";
-import { SetTargets } from "@/components/SetTargets";
-import { AddActualData } from "@/components/AddActualData";
+import { SetTargets } from "@/pages/SetTargets";
+import { AddActualData } from "@/pages/AddActualData";
 import NotFound from "@/pages/NotFound";
 import Login from "./pages/Login";
 import { UserProvider } from "./utils/UserContext";
-import { CompareResults } from "@/components/CompareResults";
+import { CompareResults } from "@/pages/CompareResults";
 import CreateUser from "./pages/CreateUser";
 import UserSelect from "@/components/UserSelect";
 import { DataProvider } from "@/contexts/DataContext";
