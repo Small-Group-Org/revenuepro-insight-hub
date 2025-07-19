@@ -21,16 +21,6 @@ import {
   formatPercent,
   calculateManagementCost,
 } from "@/utils/utils";
-import {
-  isBefore,
-  isAfter,
-  startOfWeek,
-  endOfWeek,
-  startOfMonth,
-  endOfMonth,
-  startOfYear,
-  endOfYear,
-} from "date-fns";
 import { useTargetStore } from "@/stores/targetStore";
 
 interface TargetSectionProps {
@@ -48,6 +38,7 @@ interface TargetSectionProps {
   selectedDate?: Date;
   isDisabled?: boolean; // New prop for disable state
   disabledMessage?: string; // New prop for disable message
+  showTarget?: boolean;
 }
 
 export const TargetSection: React.FC<TargetSectionProps> = ({
@@ -63,8 +54,9 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
   isLoading = false,
   period = "monthly",
   selectedDate,
-  isDisabled = false, // Default to false
-  disabledMessage, // Optional message
+  isDisabled = false,
+  disabledMessage,
+  showTarget = false
 }) => {
   const { currentTarget } = useTargetStore();
 
@@ -87,9 +79,12 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
       <div key={field.value} className="space-y-2">
         <Label
           htmlFor={field.value}
-          className="text-sm font-medium text-gray-700"
+          className="flex items-center justify-between"
         >
-          {field.name}
+          <span className="text-sm font-medium text-gray-700">{field.name}</span>
+          <span className="text-[10px] text-gray-500">
+            {showTarget ? `Target: ${10}` : ""}
+          </span>
         </Label>
         <div className="relative">
           <Input
@@ -221,23 +216,6 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
                 <TooltipContent
                   side="left"
                   className="bg-amber-50 border-amber-200 text-amber-800 z-[9999]"
-                >
-                  <p className="text-xs">{disabledMessage}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
-          {!isDisabled && disabledMessage && (
-            <TooltipProvider>
-              <Tooltip delayDuration={200}>
-                <TooltipTrigger asChild>
-                  <div className="flex items-center gap-1 text-blue-600 hover:text-blue-700 cursor-pointer">
-                    <Info className="h-4 w-4" />
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="left"
-                  className="bg-blue-50 border-blue-200 text-blue-800 z-[9999]"
                 >
                   <p className="text-xs">{disabledMessage}</p>
                 </TooltipContent>

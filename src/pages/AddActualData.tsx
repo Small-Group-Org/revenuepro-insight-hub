@@ -160,7 +160,7 @@ export const AddActualData = () => {
             initialDate={selectedDate}
             initialPeriod={period}
             onChange={handleDatePeriodChange}
-            buttonText="Save Data"
+            buttonText="Save Report"
             onButtonClick={handleSave}
             allowedPeriods={['weekly']}
             isButtonDisabled={isButtonDisabled}
@@ -168,7 +168,23 @@ export const AddActualData = () => {
         </div>
 
         {/* Reporting Sections */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-8">
+          <TargetSection
+            sectionKey="targets"
+            title="Performance"
+            icon={<TrendingUp className="h-5 w-5 text-gray-600" />}
+            gradientClass="bg-gradient-to-r from-green-50/50 to-blue-50/50"
+            fields={getSectionFields('targets')}
+            fieldValues={fieldValues}
+            calculatedValues={calculatedValues}
+            onInputChange={handleInputChange}
+            isHighlighted={isHighlighted}
+            period={period}
+            selectedDate={selectedDate}
+            isDisabled={isDisabled}
+            disabledMessage={disabledMessage}
+          />
+
           <TargetSection
             sectionKey="budgetReport"
             title="Budget Report"
@@ -199,6 +215,7 @@ export const AddActualData = () => {
             selectedDate={selectedDate}
             isDisabled={isDisabled}
             disabledMessage={disabledMessage}
+            showTarget={true}
           />
         </div>
       </div>

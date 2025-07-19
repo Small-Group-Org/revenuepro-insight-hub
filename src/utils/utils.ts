@@ -312,8 +312,8 @@ export const calculateAddActualDataDisableLogic = (
   // For non-weekly periods, only disable the button, not the inputs
   if (period !== 'weekly') {
     return {
-      isDisabled: false,
-      disabledMessage: 'Only weekly data can be edited in this view',
+      isDisabled: true,
+      disabledMessage: 'Reports can only be edited on weekly basis',
       isButtonDisabled: true
     };
   }

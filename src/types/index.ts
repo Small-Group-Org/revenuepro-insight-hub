@@ -34,6 +34,7 @@ export interface TargetFieldsConfig {
 }
 
 export interface ReportingFieldsConfig {
+  targets: FieldConfig[];
   budgetReport: FieldConfig[];
   targetReport: FieldConfig[];
 }

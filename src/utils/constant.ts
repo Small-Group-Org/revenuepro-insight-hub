@@ -208,6 +208,32 @@ export const targetFields: TargetFieldsConfig = {
 };
 
 export const reportingFields: ReportingFieldsConfig = {
+  targets:[
+    {
+      name: "Over/Under Budget",
+      value: "overUnderBudget",
+      fieldType: "calculated",
+      formula: "budget - budgetSpent",
+      description: "Budget - Budget Spent",
+      unit: "$",
+    },
+    {
+      name: "Weekly Budget",
+      value: "weeklyBudget",
+      fieldType: "calculated",
+      formula: "weeklyBudget",
+      description: "",
+      unit: "$",
+    },
+    {
+      name: "Budget Spent",
+      value: "budgetSpent",
+      fieldType: "calculated",
+      formula:
+        "testingBudgetSpent + awarenessBrandingBudgetSpent + leadGenerationBudgetSpent",
+      unit: "$",
+    },
+  ],
   budgetReport: [
     {
       name: "Testing Budget Spent",
@@ -236,30 +262,7 @@ export const reportingFields: ReportingFieldsConfig = {
       fieldType: "input",
       unit: "$",
     },
-    {
-      name: "Over/Under Budget",
-      value: "overUnderBudget",
-      fieldType: "calculated",
-      formula: "budget - budgetSpent",
-      description: "Budget - Budget Spent",
-      unit: "$",
-    },
-    {
-      name: "Weekly Budget",
-      value: "weeklyBudget",
-      fieldType: "calculated",
-      formula: "weeklyBudget",
-      description: "",
-      unit: "$",
-    },
-    {
-      name: "Budget Spent",
-      value: "budgetSpent",
-      fieldType: "calculated",
-      formula:
-        "testingBudgetSpent + awarenessBrandingBudgetSpent + leadGenerationBudgetSpent",
-      unit: "$",
-    },
+    
   ],
 
   targetReport: [
@@ -282,7 +285,7 @@ export const reportingFields: ReportingFieldsConfig = {
       unit: "$",
     },
     {
-      name: "Estimates Sent",
+      name: "Estimates Ran",
       value: "estimatesSent",
       type: "number",
       min: 0,
