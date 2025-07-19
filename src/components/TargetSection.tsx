@@ -46,6 +46,8 @@ interface TargetSectionProps {
   isLoading?: boolean;
   period?: PeriodType;
   selectedDate?: Date;
+  isDisabled?: boolean; // New prop for disable state
+  disabledMessage?: string; // New prop for disable message
 }
 
 export const TargetSection: React.FC<TargetSectionProps> = ({
@@ -61,13 +63,10 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
   isLoading = false,
   period = "monthly",
   selectedDate,
+  isDisabled = false, // Default to false
+  disabledMessage, // Optional message
 }) => {
-  const { shouldDisableInputs, setShouldDisableInputs, currentTarget } =
-    useTargetStore();
-
-  useEffect(() => {
-    setShouldDisableInputs(checkShouldDisableInputs());
-  }, [period, selectedDate]);
+  const { currentTarget } = useTargetStore();
 
   const filterFieldsByPeriod = (fields: FieldConfig[]): FieldConfig[] => {
     return fields.filter((field) => {
@@ -80,37 +79,6 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
   };
 
   const filteredFields = filterFieldsByPeriod(fields);
-
-  const checkShouldDisableInputs = () => {
-    if (!selectedDate) return false;
-
-    const currentDate = new Date();
-
-    if (period === "weekly") {
-      const selectedWeekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
-      const nextSunday = endOfWeek(currentDate, { weekStartsOn: 1 });
-      return !isAfter(selectedWeekStart, nextSunday);
-    } else if (period === "monthly") {
-      const currentMonthStart = startOfMonth(currentDate);
-      const selectedMonthStart = startOfMonth(selectedDate);
-      const nextMonthStart = new Date(currentMonthStart);
-      nextMonthStart.setMonth(nextMonthStart.getMonth() + 1);
-      return isBefore(selectedMonthStart, nextMonthStart);
-    } else if (period === "yearly") {
-      const currentYearStart = startOfYear(currentDate);
-      const selectedYearStart = startOfYear(selectedDate);
-      return isBefore(selectedYearStart, currentYearStart);
-    }
-
-    return false;
-  };
-
-  const getDisabledMessage = () => {
-    if (shouldDisableInputs) {
-      return `Past Targets cannot be updated`;
-    }
-    return null;
-  };
 
   const renderInputField = (field: InputField) => {
     const value = fieldValues[field.value] || 0;
@@ -139,12 +107,12 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
             onFocus={(e) => e.target.select()}
             onWheel={(e) => e.currentTarget.blur()}
             className={`appearance-none pr-12 ${
-              shouldDisableInputs
+              isDisabled
                 ? "bg-gray-100 text-gray-500 cursor-not-allowed"
                 : ""
             }`}
             style={{ MozAppearance: "textfield" }}
-            disabled={isLoading || shouldDisableInputs}
+            disabled={isLoading || isDisabled}
           />
           {field.unit && (
             <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
@@ -242,7 +210,7 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
               {title}
             </h2>
           </div>
-          {getDisabledMessage() && (
+          {isDisabled && disabledMessage && (
             <TooltipProvider>
               <Tooltip delayDuration={200}>
                 <TooltipTrigger asChild>
@@ -254,7 +222,24 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
                   side="left"
                   className="bg-amber-50 border-amber-200 text-amber-800 z-[9999]"
                 >
-                  <p className="text-xs">{getDisabledMessage()}</p>
+                  <p className="text-xs">{disabledMessage}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+          {!isDisabled && disabledMessage && (
+            <TooltipProvider>
+              <Tooltip delayDuration={200}>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-1 text-blue-600 hover:text-blue-700 cursor-pointer">
+                    <Info className="h-4 w-4" />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="left"
+                  className="bg-blue-50 border-blue-200 text-blue-800 z-[9999]"
+                >
+                  <p className="text-xs">{disabledMessage}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>

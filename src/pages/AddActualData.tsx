@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,67 +7,106 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Calendar, Save, Plus, Edit } from 'lucide-react';
+import { Save, Edit, DollarSign, TrendingUp } from 'lucide-react';
 import { format } from 'date-fns';
+import { DatePeriodSelector } from '@/components/DatePeriodSelector';
+import { TargetSection } from '@/components/TargetSection';
+import { PeriodType, FieldValue } from '@/types';
+import { reportingFields } from '@/utils/constant';
+import { calculateReportingFields, calculateAddActualDataDisableLogic } from '@/utils/utils';
 
 export const AddActualData = () => {
   const { actualData, addActualData } = useData();
   const { toast } = useToast();
   
-  const [selectedWeek, setSelectedWeek] = useState(() => {
-    const now = new Date();
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - now.getDay() + 1);
-    return format(monday, 'yyyy-MM-dd');
-  });
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [period, setPeriod] = useState<PeriodType>('weekly');
+  
+  const [fieldValues, setFieldValues] = useState<FieldValue>({});
+  const [lastChanged, setLastChanged] = useState<string | null>(null);
+  const [prevValues, setPrevValues] = useState<FieldValue>({});
 
-  const [formData, setFormData] = useState({
-    leads: 0,
-    appointmentsSet: 0,
-    appointmentsComplete: 0,
-    jobsBooked: 0,
-    salesRevenue: 0,
-    metaBudgetSpent: 0,
-    notes: ''
-  });
+  // Get the selected week string for data lookup
+  const selectedWeek = format(selectedDate, 'yyyy-MM-dd');
+
+  // Calculate all reporting fields
+  const calculatedValues = useMemo(() => 
+    calculateReportingFields(fieldValues), 
+    [fieldValues]
+  );
+
+  // Calculate disable logic for AddActualData page
+  const { isDisabled, disabledMessage, isButtonDisabled } = useMemo(() => 
+    calculateAddActualDataDisableLogic(period, selectedDate), 
+    [period, selectedDate]
+  );
 
   // Load existing data when week changes
   React.useEffect(() => {
     const existingData = actualData.find(data => data.week === selectedWeek);
     if (existingData) {
-      setFormData({
-        leads: existingData.leads,
-        appointmentsSet: existingData.appointmentsSet,
-        appointmentsComplete: existingData.appointmentsComplete,
-        jobsBooked: existingData.jobsBooked,
-        salesRevenue: existingData.salesRevenue,
-        metaBudgetSpent: existingData.metaBudgetSpent,
-        notes: existingData.notes || ''
+      setFieldValues({
+        testingBudgetSpent: 0, // Map from existing fields or use defaults
+        awarenessBrandingBudgetSpent: 0,
+        leadGenerationBudgetSpent: 0,
+        revenue: 0,
+        jobsBooked: existingData.jobsBooked || 0,
+        estimatesSent: 0,
+        estimatesSet: 0,
+        budget: 0,
+        notes: 0 // Store as number for FieldValue type
       });
     } else {
-      setFormData({
-        leads: 0,
-        appointmentsSet: 0,
-        appointmentsComplete: 0,
+      setFieldValues({
+        testingBudgetSpent: 0,
+        awarenessBrandingBudgetSpent: 0,
+        leadGenerationBudgetSpent: 0,
+        revenue: 0,
         jobsBooked: 0,
-        salesRevenue: 0,
-        metaBudgetSpent: 0,
-        notes: ''
+        estimatesSent: 0,
+        estimatesSet: 0,
+        budget: 0,
+        notes: 0
       });
     }
   }, [selectedWeek, actualData]);
 
-  const handleInputChange = (field: keyof typeof formData, value: string) => {
-    setFormData(prev => ({
+  const handleInputChange = useCallback((fieldName: string, value: number) => {
+    if (value === undefined || value === null || isNaN(value)) {
+      value = 0;
+    }
+    
+    const validatedValue = Math.max(0, value);
+    
+    setLastChanged(fieldName);
+    setPrevValues(calculatedValues);
+    
+    setFieldValues(prev => ({
       ...prev,
-      [field]: field === 'notes' ? value : (parseFloat(value) || 0)
+      [fieldName]: validatedValue
     }));
-  };
+  }, [calculatedValues]);
 
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     const dataToSave = {
       week: selectedWeek,
-      ...formData
+      leads: 0,
+      appointmentsSet: 0,
+      appointmentsComplete: 0,
+      jobsBooked: fieldValues.jobsBooked || 0,
+      salesRevenue: fieldValues.revenue || 0,
+      metaBudgetSpent: calculatedValues.budgetSpent || 0,
+      notes: fieldValues.notes ? String(fieldValues.notes) : '',
+      // Add new reporting fields
+      testingBudgetSpent: fieldValues.testingBudgetSpent || 0,
+      awarenessBrandingBudgetSpent: fieldValues.awarenessBrandingBudgetSpent || 0,
+      leadGenerationBudgetSpent: fieldValues.leadGenerationBudgetSpent || 0,
+      revenue: fieldValues.revenue || 0,
+      estimatesSent: fieldValues.estimatesSent || 0,
+      estimatesSet: fieldValues.estimatesSet || 0,
+      budget: fieldValues.budget || 0,
+      budgetSpent: calculatedValues.budgetSpent || 0,
+      overUnderBudget: calculatedValues.overUnderBudget || 0
     };
     
     addActualData(dataToSave);
@@ -75,7 +114,7 @@ export const AddActualData = () => {
       title: "✅ Data Saved Successfully!",
       description: `Week of ${format(new Date(selectedWeek), 'MMM dd, yyyy')} has been updated.`,
     });
-  };
+  }, [selectedWeek, fieldValues, calculatedValues, addActualData, toast]);
 
   const getWeekRange = (mondayDate: string) => {
     const monday = new Date(mondayDate);
@@ -86,135 +125,83 @@ export const AddActualData = () => {
 
   const isExistingData = actualData.some(data => data.week === selectedWeek);
 
-  const actualFields = [
-    { key: 'leads', label: 'Leads Generated', icon: '👥', color: 'blue' },
-    { key: 'appointmentsSet', label: 'Appointments Set', icon: '📅', color: 'green' },
-    { key: 'appointmentsComplete', label: 'Appointments Completed', icon: '✅', color: 'emerald' },
-    { key: 'jobsBooked', label: 'Jobs Booked', icon: '🎯', color: 'orange' },
-    { key: 'salesRevenue', label: 'Sales Revenue ($)', icon: '💰', color: 'purple' },
-    { key: 'metaBudgetSpent', label: 'Meta Budget Spent ($)', icon: '📊', color: 'red' },
-  ];
+  const isHighlighted = useCallback((fieldName: string) => {
+    if (!lastChanged) return false;
+    return prevValues[fieldName] !== calculatedValues[fieldName];
+  }, [lastChanged, prevValues, calculatedValues]);
+
+  const handleDatePeriodChange = useCallback((date: Date, period: PeriodType) => {
+    setSelectedDate(date);
+    setPeriod(period);
+  }, []);
+
+  const getSectionFields = useCallback((sectionKey: keyof typeof reportingFields) => {
+    return reportingFields[sectionKey];
+  }, []);
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">Add Actual Performance Data</h1>
-          <p className="text-slate-600 mt-1">Enter your weekly performance metrics for tracking</p>
-        </div>
-        <Button onClick={handleSave} className="bg-green-600 hover:bg-green-700">
-          <Save className="h-4 w-4 mr-2" />
-          Save Data
-        </Button>
-      </div>
-
-      {/* Week Selection */}
-      <Card className="p-6">
-        <div className="flex items-center gap-4">
-          <Calendar className="h-6 w-6 text-blue-600" />
-          <div className="flex-1">
-            <Label htmlFor="week-select" className="text-lg font-semibold">
-              Select Week (Monday - Sunday)
-            </Label>
-            <p className="text-sm text-slate-600 mt-1">
-              Selected: {getWeekRange(selectedWeek)}
-              {isExistingData && (
-                <span className="ml-2 px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full">
-                  Editing Existing Data
-                </span>
-              )}
+    <div className="min-h-screen bg-gray-50">
+      <div className="relative z-10 py-12 px-4">
+        <div className="max-w-7xl mx-auto space-y-10">
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-4">
+              <h1 className="leading-[130%] text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent">
+                Add Actual Performance Data
+              </h1>
+            </div>
+            <p className="text-gray-600 max-w-2xl mx-auto text-lg mb-10 mt-2">
+              Enter your weekly performance metrics for tracking and analysis
             </p>
           </div>
-          <Input
-            id="week-select"
-            type="date"
-            value={selectedWeek}
-            onChange={(e) => setSelectedWeek(e.target.value)}
-            className="w-48"
+        </div>
+
+        <div className="max-w-7xl mx-auto mb-8">
+          <DatePeriodSelector
+            initialDate={selectedDate}
+            initialPeriod={period}
+            onChange={handleDatePeriodChange}
+            buttonText="Save Data"
+            onButtonClick={handleSave}
+            allowedPeriods={['weekly']}
+            isButtonDisabled={isButtonDisabled}
           />
         </div>
-      </Card>
 
-      {/* Data Entry Form */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {actualFields.map(({ key, label, icon, color }) => (
-          <Card key={key} className="p-6 hover:shadow-lg transition-shadow">
-            <div className="mb-4">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-2xl">{icon}</span>
-                <Label htmlFor={key} className="text-lg font-semibold text-slate-900">
-                  {label}
-                </Label>
-              </div>
-              <p className="text-sm text-slate-600">
-                {key === 'salesRevenue' || key === 'metaBudgetSpent' 
-                  ? 'Enter actual amount spent/earned' 
-                  : 'Enter actual number achieved'}
-              </p>
-            </div>
-            
-            <div className="relative">
-              <Input
-                id={key}
-                type="number"
-                value={formData[key as keyof typeof formData] as number}
-                onChange={(e) => handleInputChange(key as keyof typeof formData, e.target.value)}
-                className="text-lg font-medium bg-slate-50 border-slate-200 focus:border-blue-400 focus:ring-blue-400"
-                placeholder="0"
-              />
-              {(key === 'salesRevenue' || key === 'metaBudgetSpent') && (
-                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500">$</span>
-              )}
-            </div>
-          </Card>
-        ))}
+        {/* Reporting Sections */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
+          <TargetSection
+            sectionKey="budgetReport"
+            title="Budget Report"
+            icon={<DollarSign className="h-5 w-5 text-gray-600" />}
+            gradientClass="bg-gradient-to-r from-blue-50/50 to-purple-50/50"
+            fields={getSectionFields('budgetReport')}
+            fieldValues={fieldValues}
+            calculatedValues={calculatedValues}
+            onInputChange={handleInputChange}
+            isHighlighted={isHighlighted}
+            period={period}
+            selectedDate={selectedDate}
+            isDisabled={isDisabled}
+            disabledMessage={disabledMessage}
+          />
+
+          <TargetSection
+            sectionKey="targetReport"
+            title="Target Report"
+            icon={<TrendingUp className="h-5 w-5 text-gray-600" />}
+            gradientClass="bg-gradient-to-r from-green-50/50 to-blue-50/50"
+            fields={getSectionFields('targetReport')}
+            fieldValues={fieldValues}
+            calculatedValues={calculatedValues}
+            onInputChange={handleInputChange}
+            isHighlighted={isHighlighted}
+            period={period}
+            selectedDate={selectedDate}
+            isDisabled={isDisabled}
+            disabledMessage={disabledMessage}
+          />
+        </div>
       </div>
-
-      {/* Notes Section */}
-      <Card className="p-6">
-        <Label htmlFor="notes" className="text-lg font-semibold text-slate-900 mb-2 block">
-          📝 Weekly Notes (Optional)
-        </Label>
-        <Textarea
-          id="notes"
-          value={formData.notes}
-          onChange={(e) => handleInputChange('notes', e.target.value)}
-          placeholder="Add any relevant notes about this week's performance, challenges, or observations..."
-          className="min-h-24 bg-slate-50"
-        />
-      </Card>
-
-      {/* Recent Entries */}
-      {actualData.length > 0 && (
-        <Card className="p-6">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">📊 Recent Entries</h3>
-          <div className="space-y-2">
-            {actualData
-              .sort((a, b) => new Date(b.week).getTime() - new Date(a.week).getTime())
-              .slice(0, 5)
-              .map((data) => (
-                <div key={data.week} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                  <div>
-                    <span className="font-medium">{getWeekRange(data.week)}</span>
-                    <span className="ml-3 text-sm text-slate-600">
-                      {data.leads} leads, {data.appointmentsSet} appointments, ${data.salesRevenue.toLocaleString()} revenue
-                    </span>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setSelectedWeek(data.week)}
-                    className="hover:bg-blue-50"
-                  >
-                    <Edit className="h-4 w-4 mr-1" />
-                    Edit
-                  </Button>
-                </div>
-              ))}
-          </div>
-        </Card>
-      )}
     </div>
   );
 };

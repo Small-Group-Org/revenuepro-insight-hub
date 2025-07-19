@@ -5,13 +5,15 @@ import { format, addWeeks, subWeeks, startOfWeek, endOfWeek, isAfter } from 'dat
 import { Button } from '@/components/ui/button';
 import { getWeekInfo, formatWeekRange } from '@/utils/weekLogic';
 import { PeriodType } from '@/types';
-import { useTargetStore } from '@/stores/targetStore';
+
 interface DatePeriodSelectorProps {
   initialDate?: Date;
   initialPeriod?: PeriodType;
   onChange?: (date: Date, period: PeriodType) => void;
   buttonText?: string;
   onButtonClick?: () => void;
+  allowedPeriods?: PeriodType[]; // New prop for allowed periods
+  isButtonDisabled?: boolean; // New prop for button disable state
 }
 
 export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
@@ -20,10 +22,11 @@ export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
   onChange,
   buttonText,
   onButtonClick,
+  allowedPeriods = ['weekly', 'monthly', 'yearly'], // Default to all periods
+  isButtonDisabled = false, // Default to false
 }) => {
   const [selectedDate, setSelectedDate] = useState<Date>(initialDate);
-  const [period, setPeriod] = useState<PeriodType>(initialPeriod);
-  const { shouldDisableInputs } = useTargetStore();
+  const [period, setPeriod] = useState<PeriodType>(allowedPeriods.includes(initialPeriod) ? initialPeriod : allowedPeriods[0]);
 
   // Format label based on period
   const getLabel = () => {
@@ -69,16 +72,6 @@ export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
     onChange?.(selectedDate, value);
   };
 
-  // Check if button should be disabled for weekly periods
-  const shouldDisableWeeklyButton = () => {
-    if (period !== 'weekly') return false;
-    
-    const currentDate = new Date();
-    const selectedWeekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
-    const nextSunday = endOfWeek(currentDate, { weekStartsOn: 1 });
-    return !isAfter(selectedWeekStart, nextSunday);
-  };
-
   return (
     <div className="flex items-center justify-between w-full py-2 px-4 bg-white rounded-xl shadow border border-gray-200">
       <div className="flex items-center gap-2">
@@ -116,7 +109,7 @@ export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
             onClick={onButtonClick}
             className="bg-gray-900 hover:bg-gray-800 text-white px-6 h-[38px]"
             type="button"
-            disabled={shouldDisableInputs || shouldDisableWeeklyButton()} 
+            disabled={isButtonDisabled || !allowedPeriods.includes(period)} 
           >
             {buttonText}
           </Button>

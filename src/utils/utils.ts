@@ -1,5 +1,6 @@
 import { FieldValue, FormulaContext, PeriodType } from "@/types";
 import { targetFields } from "./constant";
+import { startOfWeek, endOfWeek, isAfter, startOfMonth, isBefore, startOfYear } from "date-fns";
 
 // Utility for formatting
 export const formatCurrency = (val: number) => {
@@ -211,6 +212,24 @@ export const getDaysInMonth = (date: Date): number => {
     
     return allValues;
   }
+
+export function calculateReportingFields(inputValues: FieldValue): FieldValue {
+  const allValues = { ...inputValues };
+  const context: FormulaContext = { values: allValues, daysInMonth: 30, period: 'weekly' };
+
+  // Calculate budget report fields
+  const budgetSpent = (allValues.testingBudgetSpent || 0) + 
+                     (allValues.awarenessBrandingBudgetSpent || 0) + 
+                     (allValues.leadGenerationBudgetSpent || 0);
+  allValues.budgetSpent = budgetSpent;
+
+  // Calculate over/under budget (assuming budget is available)
+  if (allValues.budget !== undefined) {
+    allValues.overUnderBudget = allValues.budget - budgetSpent;
+  }
+
+  return allValues;
+}
   
   /**
    * Gets the default values for all input fields
@@ -257,3 +276,108 @@ export const getDaysInMonth = (date: Date): number => {
     
     return errors;
   } 
+
+export interface DisableLogicResult {
+  isDisabled: boolean;
+  disabledMessage: string;
+  isButtonDisabled: boolean;
+}
+
+/**
+ * Calculate disable logic for AddActualData page
+ * - Only allows weekly periods for editing
+ * - Disables future dates
+ */
+export const calculateAddActualDataDisableLogic = (
+  period: PeriodType,
+  selectedDate: Date
+): DisableLogicResult => {
+  const currentDate = new Date();
+  
+  // Check if selected date is in the future (only for weekly periods)
+  if (period === 'weekly') {
+    const selectedWeekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
+    const currentWeekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+    const isFutureDate = isAfter(selectedWeekStart, currentWeekStart);
+    
+    if (isFutureDate) {
+      return {
+        isDisabled: true,
+        disabledMessage: 'Future dates cannot be edited',
+        isButtonDisabled: true
+      };
+    }
+  }
+  
+  // For non-weekly periods, only disable the button, not the inputs
+  if (period !== 'weekly') {
+    return {
+      isDisabled: false,
+      disabledMessage: 'Only weekly data can be edited in this view',
+      isButtonDisabled: true
+    };
+  }
+  
+  return {
+    isDisabled: false,
+    disabledMessage: '',
+    isButtonDisabled: false
+  };
+};
+
+/**
+ * Calculate disable logic for SetTargets page (original logic)
+ * - Allows all periods
+ * - Disables past dates
+ */
+export const calculateSetTargetsDisableLogic = (
+  period: PeriodType,
+  selectedDate: Date
+): DisableLogicResult => {
+  if (!selectedDate) {
+    return {
+      isDisabled: false,
+      disabledMessage: '',
+      isButtonDisabled: false
+    };
+  }
+
+  const currentDate = new Date();
+
+  if (period === "weekly") {
+    const selectedWeekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
+    const nextSunday = endOfWeek(currentDate, { weekStartsOn: 1 });
+    const shouldDisable = !isAfter(selectedWeekStart, nextSunday);
+    return {
+      isDisabled: shouldDisable,
+      disabledMessage: shouldDisable ? 'Past Targets cannot be updated' : '',
+      isButtonDisabled: shouldDisable
+    };
+  } else if (period === "monthly") {
+    const currentMonthStart = startOfMonth(currentDate);
+    const selectedMonthStart = startOfMonth(selectedDate);
+    const nextMonthStart = new Date(currentMonthStart);
+    nextMonthStart.setMonth(nextMonthStart.getMonth() + 1);
+    const shouldDisable = isBefore(selectedMonthStart, nextMonthStart);
+    return {
+      isDisabled: shouldDisable,
+      disabledMessage: shouldDisable ? 'Past Targets cannot be updated' : '',
+      isButtonDisabled: shouldDisable
+    };
+  } else if (period === "yearly") {
+    const currentYearStart = startOfYear(currentDate);
+    const selectedYearStart = startOfYear(selectedDate);
+    const shouldDisable = isBefore(selectedYearStart, currentYearStart);
+    return {
+      isDisabled: shouldDisable,
+      disabledMessage: shouldDisable ? 'Past Targets cannot be updated' : '',
+      isButtonDisabled: shouldDisable
+    };
+  }
+
+  return {
+    isDisabled: false,
+    disabledMessage: '',
+    isButtonDisabled: false
+  };
+}; 

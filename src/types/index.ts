@@ -33,6 +33,11 @@ export interface TargetFieldsConfig {
   budgetTarget: FieldConfig[];
 }
 
+export interface ReportingFieldsConfig {
+  budgetReport: FieldConfig[];
+  targetReport: FieldConfig[];
+}
+
 export interface FieldValue {
     [key: string]: number;
   }

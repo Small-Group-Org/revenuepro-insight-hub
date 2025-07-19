@@ -8,8 +8,6 @@ interface TargetState {
   currentTarget: IWeeklyTarget[] | null;
   isLoading: boolean;
   error: string | null;
-  shouldDisableInputs: boolean;
-  setShouldDisableInputs: (shouldDisable: boolean) => void;
   setCurrentTarget: (target: IWeeklyTarget[] | null) => void;
   upsertWeeklyTarget: (target: IWeeklyTarget) => Promise<void>;
   upsertBulkWeeklyTargets: (targets: IWeeklyTarget[]) => Promise<void>;
@@ -21,8 +19,6 @@ export const useTargetStore = create<TargetState>((set, get) => ({
   currentTarget: null,
   isLoading: false,
   error: null,
-  shouldDisableInputs: false,
-  setShouldDisableInputs: (shouldDisableInputs: boolean) => set({ shouldDisableInputs }),
   setCurrentTarget: (target) => set({ currentTarget: target }),
 
   upsertWeeklyTarget: async (target) => {

@@ -8,7 +8,7 @@ import { useTargetStore } from "../stores/targetStore";
 import { useUserStore } from "../stores/userStore";
 import useAuthStore from "../stores/authStore";
 import { endOfWeek, startOfWeek, format, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
-import { getDaysInMonth } from "@/utils/utils";
+import { getDaysInMonth, calculateSetTargetsDisableLogic } from "@/utils/utils";
 import { targetFields } from "@/utils/constant";
 import { FieldConfig, FieldValue, InputField, PeriodType } from "@/types";
 import type { MonthlyData } from "../components/YearlyTargetModal";
@@ -55,6 +55,12 @@ export const SetTargets = () => {
   const calculatedValues = useMemo(() => 
     calculateAllFields(fieldValues, daysInMonth, period), 
     [fieldValues, daysInMonth, period]
+  );
+
+  // Calculate disable logic for SetTargets page (original logic)
+  const { isDisabled, disabledMessage, isButtonDisabled } = useMemo(() => 
+    calculateSetTargetsDisableLogic(period, selectedDate), 
+    [period, selectedDate]
   );
 
   useEffect(() => {
@@ -279,6 +285,7 @@ export const SetTargets = () => {
             onChange={handleDatePeriodChange}
             buttonText="Save Targets"
             onButtonClick={handleSave}
+            isButtonDisabled={isButtonDisabled}
           />
         </div>
 
@@ -296,6 +303,8 @@ export const SetTargets = () => {
             isLoading={isLoading}
             period={period}
             selectedDate={selectedDate}
+            isDisabled={isDisabled}
+            disabledMessage={disabledMessage}
           />
 
           <TargetSection
@@ -311,6 +320,8 @@ export const SetTargets = () => {
             isLoading={isLoading}
             period={period}
             selectedDate={selectedDate}
+            isDisabled={isDisabled}
+            disabledMessage={disabledMessage}
           />
 
           <TargetSection
@@ -326,6 +337,8 @@ export const SetTargets = () => {
             isLoading={isLoading}
             period={period}
             selectedDate={selectedDate}
+            isDisabled={isDisabled}
+            disabledMessage={disabledMessage}
           />
         </div>
       </div>

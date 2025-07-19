@@ -1,4 +1,4 @@
-import { TargetFieldsConfig } from "@/types";
+import { TargetFieldsConfig, ReportingFieldsConfig } from "@/types";
 
 export const API_METHODS = {
   GET: "GET",
@@ -55,7 +55,7 @@ export const targetFields: TargetFieldsConfig = {
       formula: "appointmentRate * showRate * closeRate / 10000",
       description: "Appointment × Show × Close",
       unit: "%",
-    }
+    },
   ],
   budget: [
     {
@@ -124,7 +124,7 @@ export const targetFields: TargetFieldsConfig = {
       formula: "revenue * (com / 100)",
       description: "Revenue × CoM%",
       unit: "$",
-      applicable: ["yearly"]
+      applicable: ["yearly"],
     },
     {
       name: "Budget",
@@ -134,7 +134,7 @@ export const targetFields: TargetFieldsConfig = {
       description: "Budget based on period",
       unit: "$",
       applicable: ["yearly", "monthly"],
-      isHidden: true
+      isHidden: true,
     },
     {
       name: "Monthly Budget",
@@ -143,7 +143,7 @@ export const targetFields: TargetFieldsConfig = {
       formula: "revenue * (com / 100)",
       description: "Revenue × CoM%",
       unit: "$",
-      applicable: ["yearly", "monthly"]
+      applicable: ["yearly", "monthly"],
     },
     {
       name: "Daily Budget",
@@ -152,7 +152,7 @@ export const targetFields: TargetFieldsConfig = {
       formula: "budget / daysInMonth",
       description: "Budget ÷ Days in Month",
       unit: "$",
-      applicable: ["weekly", "monthly"]
+      applicable: ["weekly", "monthly"],
     },
     {
       name: "Cost Per Lead",
@@ -193,7 +193,7 @@ export const targetFields: TargetFieldsConfig = {
       formula: "calculateManagementCost(calculatedMonthlyBudget)",
       description: "Based on Ad Spend Range",
       unit: "$",
-      isHidden: true
+      isHidden: true,
     },
     {
       name: "Total CoM%",
@@ -202,7 +202,102 @@ export const targetFields: TargetFieldsConfig = {
       formula: "((calculatedMonthlyBudget + managementCost) / revenue) * 100",
       description: "(Monthly Budget + Management Cost) ÷ Revenue",
       unit: "%",
-      applicable: ["monthly"]
-    }
-  ]
+      applicable: ["monthly"],
+    },
+  ],
+};
+
+export const reportingFields: ReportingFieldsConfig = {
+  budgetReport: [
+    {
+      name: "Testing Budget Spent",
+      value: "testingBudgetSpent",
+      type: "number",
+      min: 0,
+      defaultValue: 0,
+      fieldType: "input",
+      unit: "$",
+    },
+    {
+      name: "Awareness/Branding Budget Spent",
+      value: "awarenessBrandingBudgetSpent",
+      type: "number",
+      min: 0,
+      defaultValue: 0,
+      fieldType: "input",
+      unit: "$",
+    },
+    {
+      name: "Lead Generation Budget Spent",
+      value: "leadGenerationBudgetSpent",
+      type: "number",
+      min: 0,
+      defaultValue: 0,
+      fieldType: "input",
+      unit: "$",
+    },
+    {
+      name: "Over/Under Budget",
+      value: "overUnderBudget",
+      fieldType: "calculated",
+      formula: "budget - budgetSpent",
+      description: "Budget - Budget Spent",
+      unit: "$",
+    },
+    {
+      name: "Weekly Budget",
+      value: "weeklyBudget",
+      fieldType: "calculated",
+      formula: "weeklyBudget",
+      description: "",
+      unit: "$",
+    },
+    {
+      name: "Budget Spent",
+      value: "budgetSpent",
+      fieldType: "calculated",
+      formula:
+        "testingBudgetSpent + awarenessBrandingBudgetSpent + leadGenerationBudgetSpent",
+      unit: "$",
+    },
+  ],
+
+  targetReport: [
+    {
+      name: "Revenue",
+      value: "revenue",
+      type: "number",
+      min: 0,
+      defaultValue: 0,
+      fieldType: "input",
+      unit: "$",
+    },
+    {
+      name: "Jobs Booked",
+      value: "jobsBooked",
+      type: "number",
+      min: 0,
+      defaultValue: 0,
+      fieldType: "input",
+      unit: "$",
+    },
+    {
+      name: "Estimates Sent",
+      value: "estimatesSent",
+      type: "number",
+      min: 0,
+      defaultValue: 0,
+      fieldType: "input",
+      unit: "$",
+    },
+    {
+      name: "Estimates Set",
+      value: "estimatesSet",
+      type: "number",
+      min: 0,
+      defaultValue: 0,
+      fieldType: "input",
+      unit: "$",
+    },
+  ],
 };
