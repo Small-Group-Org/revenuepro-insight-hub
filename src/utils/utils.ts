@@ -1,4 +1,4 @@
-import { FieldValue, FormulaContext, PeriodType } from "@/types";
+import { FieldConfig, FieldValue, FormulaContext, PeriodType } from "@/types";
 import { targetFields } from "./constant";
 import { startOfWeek, endOfWeek, isAfter, startOfMonth, isBefore, startOfYear } from "date-fns";
 
@@ -112,7 +112,7 @@ export const getDaysInMonth = (date: Date): number => {
         }
         
         // Handle annualBudget field calculation
-        if (fieldValue === 'annualBudget') {
+        if (fieldValue === 'annualBudget' || fieldValue === 'weeklyBudget') {
           const revenue = values.revenue || 0;
           const com = values.com || 0;
           return revenue * (com / 100);
@@ -381,3 +381,25 @@ export const calculateSetTargetsDisableLogic = (
     isButtonDisabled: false
   };
 }; 
+
+export const targetValidation = (inputFieldNames: string[], fieldValues: FieldValue) => {
+  const zeroFields: string[] = [];
+    
+  inputFieldNames.forEach(name => {
+    if (fieldValues[name] === 0) {
+      // Find the actual field name from targetFields
+      let fieldName = name;
+      for (const section of Object.values(targetFields)) {
+        const field = section.find((f: FieldConfig) => f.value === name);
+        if (field) {
+          fieldName = field.name;
+          break;
+        }
+      }
+      zeroFields.push(fieldName);
+    }
+  });
+
+  return zeroFields;
+
+}

@@ -125,7 +125,14 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
 
     if (field.value === "managementCost") {
       const monthlyBudget = calculatedValues.calculatedMonthlyBudget || 0;
-      value = calculateManagementCost(monthlyBudget);
+      
+      if(period === "monthly"){
+        value = calculateManagementCost(monthlyBudget);
+      } else if(period === "yearly"){
+        value = calculateManagementCost(monthlyBudget)*12;
+      } else {
+        value = calculateManagementCost(monthlyBudget) / (currentTarget?.length || 1);
+      }
     }
 
     // Calculate per-week value for monthly budget
