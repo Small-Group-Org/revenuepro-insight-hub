@@ -282,16 +282,14 @@ export const reportingFields: ReportingFieldsConfig = {
       min: 0,
       defaultValue: 0,
       fieldType: "input",
-      unit: "$",
     },
     {
       name: "Estimates Ran",
-      value: "estimatesSent",
+      value: "estimatesRan",
       type: "number",
       min: 0,
       defaultValue: 0,
       fieldType: "input",
-      unit: "$",
     },
     {
       name: "Estimates Set",
@@ -300,7 +298,6 @@ export const reportingFields: ReportingFieldsConfig = {
       min: 0,
       defaultValue: 0,
       fieldType: "input",
-      unit: "$",
     },
   ],
 };

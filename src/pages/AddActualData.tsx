@@ -14,6 +14,7 @@ import { TargetSection } from '@/components/TargetSection';
 import { PeriodType, FieldValue } from '@/types';
 import { reportingFields } from '@/utils/constant';
 import { calculateReportingFields, calculateAddActualDataDisableLogic } from '@/utils/utils';
+import { getWeekInfo } from '@/utils/weekLogic';
 
 export const AddActualData = () => {
   const { actualData, addActualData } = useData();
@@ -51,7 +52,7 @@ export const AddActualData = () => {
         leadGenerationBudgetSpent: 0,
         revenue: 0,
         jobsBooked: existingData.jobsBooked || 0,
-        estimatesSent: 0,
+        estimatesRan: 0,
         estimatesSet: 0,
         budget: 0,
         notes: 0 // Store as number for FieldValue type
@@ -63,7 +64,7 @@ export const AddActualData = () => {
         leadGenerationBudgetSpent: 0,
         revenue: 0,
         jobsBooked: 0,
-        estimatesSent: 0,
+        estimatesRan: 0,
         estimatesSet: 0,
         budget: 0,
         notes: 0
@@ -87,34 +88,43 @@ export const AddActualData = () => {
     }));
   }, [calculatedValues]);
 
+  // Helper to get all input field names from reportingFields
+  const getInputFieldNames = useCallback(() => {
+    const inputNames: string[] = [];
+    Object.values(reportingFields).forEach(section => {
+      section.forEach(field => {
+        if (field.fieldType === 'input') {
+          inputNames.push(field.value);
+        }
+      });
+    });
+    return inputNames;
+  }, []);
+
   const handleSave = useCallback(() => {
+    const weekInfo = getWeekInfo(selectedDate);
+    const startDate = format(weekInfo.weekStart, 'yyyy-MM-dd');
+    const endDate = format(weekInfo.weekEnd, 'yyyy-MM-dd');
+
+    const inputFieldNames = getInputFieldNames();
+    const inputData: { [key: string]: number | undefined } = {};
+    inputFieldNames.forEach(name => {
+      inputData[name] = fieldValues[name];
+    });
+
     const dataToSave = {
-      week: selectedWeek,
-      leads: 0,
-      appointmentsSet: 0,
-      appointmentsComplete: 0,
-      jobsBooked: fieldValues.jobsBooked || 0,
-      salesRevenue: fieldValues.revenue || 0,
-      metaBudgetSpent: calculatedValues.budgetSpent || 0,
-      notes: fieldValues.notes ? String(fieldValues.notes) : '',
-      // Add new reporting fields
-      testingBudgetSpent: fieldValues.testingBudgetSpent || 0,
-      awarenessBrandingBudgetSpent: fieldValues.awarenessBrandingBudgetSpent || 0,
-      leadGenerationBudgetSpent: fieldValues.leadGenerationBudgetSpent || 0,
-      revenue: fieldValues.revenue || 0,
-      estimatesSent: fieldValues.estimatesSent || 0,
-      estimatesSet: fieldValues.estimatesSet || 0,
-      budget: fieldValues.budget || 0,
-      budgetSpent: calculatedValues.budgetSpent || 0,
-      overUnderBudget: calculatedValues.overUnderBudget || 0
+      startDate: startDate,
+      endDate: endDate,
+      ...inputData
     };
-    
-    addActualData(dataToSave);
+
+    console.log(dataToSave);
+
     toast({
       title: "✅ Data Saved Successfully!",
-      description: `Week of ${format(new Date(selectedWeek), 'MMM dd, yyyy')} has been updated.`,
+      description: `Week of ${format(new Date(startDate), 'MMM dd, yyyy')} has been updated.`,
     });
-  }, [selectedWeek, fieldValues, calculatedValues, addActualData, toast]);
+  }, [selectedDate, fieldValues, addActualData, toast, getInputFieldNames]);
 
   const getWeekRange = (mondayDate: string) => {
     const monday = new Date(mondayDate);
