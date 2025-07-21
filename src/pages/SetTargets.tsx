@@ -8,27 +8,12 @@ import { useTargetStore } from "../stores/targetStore";
 import { useUserStore } from "../stores/userStore";
 import useAuthStore from "../stores/authStore";
 import { endOfWeek, startOfWeek, format, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
-import { getDaysInMonth, calculateSetTargetsDisableLogic } from "@/utils/utils";
-import { targetFields } from "@/utils/constant";
+import { getDaysInMonth, calculateSetTargetsDisableLogic, targetValidation } from "@/utils/utils";
+import { months, targetFields } from "@/utils/constant";
 import { FieldConfig, FieldValue, InputField, PeriodType } from "@/types";
 import type { MonthlyData } from "../components/YearlyTargetModal";
 import { calculateAllFields, getDefaultValues } from "@/utils/utils";
 import { IWeeklyTarget, upsertTarget } from "@/service/targetService";
-
-const months = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-];
 
 export const SetTargets = () => {
   const { toast } = useToast();
@@ -173,13 +158,29 @@ export const SetTargets = () => {
   }, []);
 
   const handleSave = useCallback(async () => {
+    const inputFieldNames = getInputFieldNames();
+    const zeroFields = targetValidation(inputFieldNames, fieldValues);
+
+    if (zeroFields.length > 0) {
+      toast({
+        title: "Validation Error",
+        description: (
+          <div>
+            <div>The following fields cannot be 0:</div>
+            <div><em>{zeroFields.join(', ')}</em></div>
+          </div>
+        ),
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (period === 'yearly') {
       setIsYearlyModalOpen(true);
       return;
     }
 
     try {
-      const inputFieldNames = getInputFieldNames();
       const inputData: { [key: string]: number | undefined } = {};
       inputFieldNames.forEach(name => {
         inputData[name] = fieldValues[name];
@@ -212,11 +213,11 @@ export const SetTargets = () => {
   }, []);
 
   const handleSaveMonthlyTargets = useCallback(async (monthlyData: { [key: string]: MonthlyData }) => {
+    const inputFieldNames = getInputFieldNames();
+   
     try {
-      const inputFieldNames = getInputFieldNames();
       const targets: any[] = [];
       
-      // Convert monthly data to target objects
       Object.entries(monthlyData).forEach(([month, data]) => {
         const monthIndex = months.indexOf(month);
         if (monthIndex === -1) return;
@@ -235,7 +236,6 @@ export const SetTargets = () => {
           showRate: fieldValues?.showRate,
         };
 
-        // Add input field values
         inputFieldNames.forEach(name => {
           if (data[name as keyof MonthlyData] !== undefined) {
             targetData[name] = data[name as keyof MonthlyData];
@@ -248,19 +248,19 @@ export const SetTargets = () => {
       await upsertTarget(targets);
       
       toast({
-        title: "✅ Monthly Targets Saved Successfully!",
+        title: "Monthly Targets Saved Successfully!",
         description: "Your yearly targets have been distributed across months.",
       });
       
       setIsYearlyModalOpen(false);
     } catch (err) {
       toast({
-        title: "❌ Error Saving Monthly Targets",
+        title: "Error Saving Monthly Targets",
         description: error || "Failed to save monthly targets. Please try again.",
         variant: "destructive",
       });
     }
-  }, [toast, error, getInputFieldNames, selectedYear]);
+  }, [toast, error, getInputFieldNames, selectedYear, fieldValues]);
 
   return (
     <div className="min-h-screen bg-gray-50">

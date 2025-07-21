@@ -13,6 +13,21 @@ export const tabs = ["basic", "templates", "target"];
 // export const API_URL = "https://revenue-pro-backend-1057029383450.asia-south2.run.app/api/v1";
 export const API_URL = " http://localhost:4000/api/v1";
 
+export const months = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
 export const targetFields: TargetFieldsConfig = {
   funnelRate: [
     {
@@ -133,7 +148,6 @@ export const targetFields: TargetFieldsConfig = {
       formula: "period === 'yearly' ? annualBudget : calculatedMonthlyBudget",
       description: "Budget based on period",
       unit: "$",
-      applicable: ["yearly", "monthly"],
       isHidden: true,
     },
     {
@@ -144,6 +158,15 @@ export const targetFields: TargetFieldsConfig = {
       description: "Revenue × CoM%",
       unit: "$",
       applicable: ["yearly", "monthly"],
+    },
+    {
+      name: "Weekly Budget",
+      value: "weeklyBudget",
+      fieldType: "calculated",
+      formula: "revenue * (com / 100)",
+      description: "Revenue × CoM%",
+      unit: "$",
+      applicable: ["weekly"],
     },
     {
       name: "Daily Budget",
@@ -202,7 +225,6 @@ export const targetFields: TargetFieldsConfig = {
       formula: "((calculatedMonthlyBudget + managementCost) / revenue) * 100",
       description: "(Monthly Budget + Management Cost) ÷ Revenue",
       unit: "%",
-      applicable: ["monthly"],
     },
   ],
 };

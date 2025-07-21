@@ -10,11 +10,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { calculateAllFields, calculateManagementCost } from "@/utils/utils";
+import { calculateAllFields, calculateManagementCost, safePercentage } from "@/utils/utils";
 import { FieldValue } from "@/types";
 import { TooltipProvider } from "@radix-ui/react-tooltip";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { Info } from "lucide-react";
+import { months } from "@/utils/constant";
 
 export type MonthlyData = {
   budget: number;
@@ -36,21 +37,6 @@ interface YearlyTargetModalProps {
   isLoading: boolean;
   selectedYear: number;
 }
-
-const months = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-];
 
 const currentMonthIndex = new Date().getMonth();
 
@@ -108,7 +94,7 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
         revenue: monthlyRevenue,
         avgJobSize: annualTotals.avgJobSize,
         com: annualTotals.com,
-        totalCom: ((budget + managementCost) / monthlyRevenue) * 100,
+        totalCom: safePercentage(((budget + managementCost) / monthlyRevenue) * 100),
       };
     });
 
@@ -193,15 +179,22 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
                     </TooltipProvider>
                   )}
               </div>
+              <div className="flex items-center gap-2">
+              <Badge
+                variant="outline"
+              >
+                Allocated: ${totalBudget.toLocaleString()}
+              </Badge>
               <Badge
                 variant={
-                  totalBudget > annualTotals.budget
+                  annualTotals.budget - totalBudget < 0
                     ? "destructive"
-                    : "secondary"
+                    : "success"
                 }
               >
-                Total: ${totalBudget.toLocaleString()}
+                Left: {annualTotals.budget - totalBudget >= 0 ? '  ' : '- '}${Math.abs(annualTotals.budget - totalBudget).toLocaleString()}
               </Badge>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -227,7 +220,7 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
                       idx <= currentMonthIndex
                     }
                   />
-                  {monthlyBudgets[month] && annualTotals.budget > 0 && (
+                  {Number(monthlyBudgets[month]) > 0 && annualTotals.budget > 0 && (
                     <div className="text-xs text-gray-500">
                       {((monthlyBudgets[month] / annualTotals.budget) * 100).toFixed(1)}
                       %
@@ -335,7 +328,7 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
             </Card>
 
             {/* Annual totals reference */}
-            <Card className="bg-gray-50">
+            <Card className="bg-gradient-to-r from-emerald-50/50 to-teal-50/50 border-emerald-200">
               <CardHeader>
                 <CardTitle className="text-base">
                   Annual Totals (Reference)
