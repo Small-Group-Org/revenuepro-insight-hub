@@ -74,6 +74,15 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
 
   const renderInputField = (field: InputField) => {
     const value = fieldValues[field.value] || 0;
+    const [isFocused, setIsFocused] = React.useState(false);
+    const [displayValue, setDisplayValue] = React.useState(value.toString());
+
+    // Update display value when fieldValues changes
+    React.useEffect(() => {
+      if (!isFocused) {
+        setDisplayValue(value.toString());
+      }
+    }, [value, isFocused]);
 
     return (
       <div key={field.value} className="space-y-2">
@@ -93,13 +102,39 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
             min={field.min}
             max={field.max}
             step={field.step || 1}
-            value={value}
+            value={isFocused ? displayValue : value}
             onChange={(e) => {
               const inputValue = e.target.value;
-              const numValue = inputValue === "" ? 0 : Number(inputValue);
-              onInputChange(field.value, numValue);
+              setDisplayValue(inputValue);
+              
+              if (inputValue === "") {
+                return;
+              }
+              
+              const numValue = Number(inputValue);
+              if (!isNaN(numValue)) {
+                onInputChange(field.value, numValue);
+              }
             }}
-            onFocus={(e) => e.target.select()}
+            onFocus={(e) => {
+              setIsFocused(true);
+              e.target.select();
+            }}
+            onBlur={(e) => {
+              setIsFocused(false);
+              const inputValue = e.target.value;
+              
+              if (inputValue === "") {
+                // Set to 0 if empty when blurred
+                onInputChange(field.value, 0);
+                setDisplayValue("0");
+              } else {
+                const numValue = Number(inputValue);
+                if (!isNaN(numValue)) {
+                  onInputChange(field.value, numValue);
+                }
+              }
+            }}
             onWheel={(e) => e.currentTarget.blur()}
             className={`appearance-none pr-12 ${
               isDisabled
