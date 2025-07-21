@@ -1,13 +1,8 @@
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { useData } from '@/contexts/DataContext';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { useReportingDataStore } from '@/stores/reportingDataStore';
 import { useToast } from '@/hooks/use-toast';
-import { Save, Edit, DollarSign, TrendingUp } from 'lucide-react';
+import { DollarSign, TrendingUp } from 'lucide-react';
 import { format } from 'date-fns';
 import { DatePeriodSelector } from '@/components/DatePeriodSelector';
 import { TargetSection } from '@/components/TargetSection';
@@ -17,7 +12,7 @@ import { calculateReportingFields, calculateAddActualDataDisableLogic } from '@/
 import { getWeekInfo } from '@/utils/weekLogic';
 
 export const AddActualData = () => {
-  const { actualData, addActualData } = useData();
+  const { reportingData, getReportingData, upsertReportingData, isLoading, error } = useReportingDataStore();
   const { toast } = useToast();
   
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -27,35 +22,18 @@ export const AddActualData = () => {
   const [lastChanged, setLastChanged] = useState<string | null>(null);
   const [prevValues, setPrevValues] = useState<FieldValue>({});
 
-  // Get the selected week string for data lookup
   const selectedWeek = format(selectedDate, 'yyyy-MM-dd');
 
-  // Calculate all reporting fields
-  const calculatedValues = useMemo(() => 
-    calculateReportingFields(fieldValues), 
-    [fieldValues]
-  );
-
-  // Calculate disable logic for AddActualData page
-  const { isDisabled, disabledMessage, isButtonDisabled } = useMemo(() => 
-    calculateAddActualDataDisableLogic(period, selectedDate), 
-    [period, selectedDate]
-  );
-
-  // Load existing data when week changes
   React.useEffect(() => {
-    const existingData = actualData.find(data => data.week === selectedWeek);
+    getReportingData(selectedWeek, selectedWeek);
+  }, [selectedWeek, getReportingData]);
+
+  React.useEffect(() => {
+    const existingData = reportingData?.find(data => data.startDate === selectedWeek);
     if (existingData) {
       setFieldValues({
-        testingBudgetSpent: 0, // Map from existing fields or use defaults
-        awarenessBrandingBudgetSpent: 0,
-        leadGenerationBudgetSpent: 0,
-        revenue: 0,
-        jobsBooked: existingData.jobsBooked || 0,
-        estimatesRan: 0,
-        estimatesSet: 0,
-        budget: 0,
-        notes: 0 // Store as number for FieldValue type
+        ...fieldValues,
+        ...existingData,
       });
     } else {
       setFieldValues({
@@ -70,7 +48,20 @@ export const AddActualData = () => {
         notes: 0
       });
     }
-  }, [selectedWeek, actualData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reportingData, selectedWeek]);
+
+  // Calculate all reporting fields
+  const calculatedValues = useMemo(() => 
+    calculateReportingFields(fieldValues), 
+    [fieldValues]
+  );
+
+  // Calculate disable logic for AddActualData page
+  const { isDisabled, disabledMessage, isButtonDisabled } = useMemo(() => 
+    calculateAddActualDataDisableLogic(period, selectedDate), 
+    [period, selectedDate]
+  );
 
   const handleInputChange = useCallback((fieldName: string, value: number) => {
     if (value === undefined || value === null || isNaN(value)) {
@@ -101,7 +92,7 @@ export const AddActualData = () => {
     return inputNames;
   }, []);
 
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback(async () => {
     const weekInfo = getWeekInfo(selectedDate);
     const startDate = format(weekInfo.weekStart, 'yyyy-MM-dd');
     const endDate = format(weekInfo.weekEnd, 'yyyy-MM-dd');
@@ -118,13 +109,20 @@ export const AddActualData = () => {
       ...inputData
     };
 
-    console.log(dataToSave);
-
-    toast({
-      title: "✅ Data Saved Successfully!",
-      description: `Week of ${format(new Date(startDate), 'MMM dd, yyyy')} has been updated.`,
-    });
-  }, [selectedDate, fieldValues, addActualData, toast, getInputFieldNames]);
+    try {
+      await upsertReportingData(dataToSave);
+      toast({
+        title: "✅ Data Saved Successfully!",
+        description: `Week of ${format(new Date(startDate), 'MMM dd, yyyy')} has been updated.`,
+      });
+    } catch (e) {
+      toast({
+        title: "❌ Error Saving Data",
+        description: error || 'An error occurred while saving.',
+        variant: 'destructive',
+      });
+    }
+  }, [selectedDate, fieldValues, upsertReportingData, toast, getInputFieldNames, error]);
 
   const getWeekRange = (mondayDate: string) => {
     const monday = new Date(mondayDate);
@@ -133,7 +131,7 @@ export const AddActualData = () => {
     return `${format(monday, 'MMM dd')} - ${format(sunday, 'MMM dd, yyyy')}`;
   };
 
-  const isExistingData = actualData.some(data => data.week === selectedWeek);
+  const isExistingData = reportingData?.some(data => data.startDate === selectedWeek);
 
   const isHighlighted = useCallback((fieldName: string) => {
     if (!lastChanged) return false;
