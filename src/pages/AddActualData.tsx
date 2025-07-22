@@ -1,67 +1,100 @@
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useReportingDataStore } from '@/stores/reportingDataStore';
+import { useTargetStore } from '@/stores/targetStore';
 import { useToast } from '@/hooks/use-toast';
 import { DollarSign, TrendingUp } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { DatePeriodSelector } from '@/components/DatePeriodSelector';
 import { TargetSection } from '@/components/TargetSection';
 import { PeriodType, FieldValue } from '@/types';
 import { reportingFields } from '@/utils/constant';
-import { calculateReportingFields, handleInputDisable } from '@/utils/utils';
+import { calculateReportingFields, handleInputDisable, getDefaultValues, processTargetData } from '@/utils/utils';
 import { getWeekInfo } from '@/utils/weekLogic';
+import { IWeeklyTarget } from '@/service/targetService';
 
 export const AddActualData = () => {
   const { reportingData, getReportingData, upsertReportingData, isLoading, error } = useReportingDataStore();
+  const { getTargetsForUser, currentTarget } = useTargetStore();
   const { toast } = useToast();
   
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [period, setPeriod] = useState<PeriodType>('weekly');
   
+  const [targetData, setTargetData] = useState<FieldValue>();
   const [fieldValues, setFieldValues] = useState<FieldValue>({});
   const [lastChanged, setLastChanged] = useState<string | null>(null);
   const [prevValues, setPrevValues] = useState<FieldValue>({});
 
   const selectedWeek = format(selectedDate, 'yyyy-MM-dd');
 
-  React.useEffect(() => {
-    getReportingData(selectedWeek, selectedWeek);
-  }, [selectedWeek, getReportingData]);
+  // Helper function to get default values for reporting fields
+  const getReportingDefaultValues = useCallback((): FieldValue => {
+    const defaults: FieldValue = {};
+    Object.values(reportingFields).forEach((section: any) => {
+      section.forEach((field: any) => {
+        if (field.fieldType === "input" && field.defaultValue !== undefined) {
+          defaults[field.value] = field.defaultValue;
+        }
+      });
+    });
+    return defaults;
+  }, []);
 
   React.useEffect(() => {
-    const existingData = reportingData?.find(data => data.startDate === selectedWeek);
-    if (existingData) {
-      setFieldValues({
-        ...fieldValues,
-        ...existingData,
-      });
+    let startDate: string, endDate: string;
+    
+    if (period === 'weekly') {
+      const weekInfo = getWeekInfo(selectedDate);
+      startDate = format(weekInfo.weekStart, 'yyyy-MM-dd');
+      endDate = format(weekInfo.weekEnd, 'yyyy-MM-dd');
+    } else if (period === 'monthly') {
+      startDate = format(startOfMonth(selectedDate), 'yyyy-MM-dd');
+      endDate = format(endOfMonth(selectedDate), 'yyyy-MM-dd');
     } else {
-      setFieldValues({
-        testingBudgetSpent: 0,
-        awarenessBrandingBudgetSpent: 0,
-        leadGenerationBudgetSpent: 0,
-        revenue: 0,
-        jobsBooked: 0,
-        estimatesRan: 0,
-        estimatesSet: 0,
-        budget: 0,
-        notes: 0
-      });
+      startDate = format(startOfYear(selectedDate), 'yyyy-MM-dd');
+      endDate = format(endOfYear(selectedDate), 'yyyy-MM-dd');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reportingData, selectedWeek]);
+    getReportingData(startDate, endDate);
+    getTargetsForUser(period, startDate, endDate);
+  }, [selectedDate, period, getReportingData, getTargetsForUser]);
 
-  // Calculate all reporting fields
+  React.useEffect(() => {
+    if (reportingData) {
+      const newValues = { ...getReportingDefaultValues() };
+      
+      reportingData.forEach(data => {
+        Object.keys(data).forEach(key => {
+          if (key !== 'userId' && key !== 'startDate' && key !== 'endDate') {
+            newValues[key] = (newValues[key] || 0) + (data[key] || 0);
+          }
+        });
+      });
+      
+      setFieldValues(newValues);
+      setLastChanged(null);
+      setPrevValues(newValues);
+    }
+  }, [reportingData, getReportingDefaultValues]);
+
+  useEffect(() => {
+    if (currentTarget) {
+      setTargetData(processTargetData(currentTarget));
+    }
+  }, [currentTarget]);
+
   const calculatedValues = useMemo(() => 
     calculateReportingFields(fieldValues), 
     [fieldValues]
   );
 
   // Calculate disable logic for AddActualData page
-  const { isDisabled, disabledMessage, isButtonDisabled } = useMemo(() => 
+  const disableLogic = useMemo(() => 
     handleInputDisable(period, selectedDate, null, 'addActualData'), 
     [period, selectedDate]
   );
+
+  const { isDisabled, disabledMessage } = disableLogic;
 
   const handleInputChange = useCallback((fieldName: string, value: number) => {
     if (value === undefined || value === null || isNaN(value)) {
@@ -171,6 +204,7 @@ export const AddActualData = () => {
             buttonText="Save Report"
             onButtonClick={handleSave}
             allowedPeriods={['weekly']}
+            disableLogic={disableLogic}
           />
         </div>
 
@@ -190,6 +224,8 @@ export const AddActualData = () => {
             selectedDate={selectedDate}
             isDisabled={isDisabled}
             disabledMessage={disabledMessage}
+            targetValues={targetData}
+            showTarget={true}
           />
 
           <TargetSection
@@ -206,6 +242,8 @@ export const AddActualData = () => {
             selectedDate={selectedDate}
             isDisabled={isDisabled}
             disabledMessage={disabledMessage}
+            targetValues={targetData}
+            showTarget={true}
           />
 
           <TargetSection
@@ -222,6 +260,7 @@ export const AddActualData = () => {
             selectedDate={selectedDate}
             isDisabled={isDisabled}
             disabledMessage={disabledMessage}
+            targetValues={targetData}
             showTarget={true}
           />
         </div>

@@ -51,7 +51,6 @@ export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
     isButtonDisabled: false,
   };
 
-  // Notify parent component of disable status changes
   useEffect(() => {
     if (onDisableStatusChange) {
       onDisableStatusChange(finalDisableLogic);

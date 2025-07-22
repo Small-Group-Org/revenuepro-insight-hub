@@ -36,6 +36,8 @@ export const useReportingDataStore = create<ReportingDataState>((set, get) => ({
       const response = await fetchReportingData(userId, startDate, endDate);
       if (!response.error && response.data) {
         const data = Array.isArray(response.data?.data) ? response.data?.data : [response.data?.data];
+        console.log("[]", data);
+        
         set({ reportingData: data, isLoading: false });
       } else {
         set({ reportingData: null, error: response.message || 'Failed to fetch reporting data', isLoading: false });

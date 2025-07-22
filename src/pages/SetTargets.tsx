@@ -13,7 +13,7 @@ import { months, targetFields } from "@/utils/constant";
 import { DisableMetadata } from "@/types";
 import { FieldConfig, FieldValue, InputField, PeriodType } from "@/types";
 import type { MonthlyData } from "../components/YearlyTargetModal";
-import { calculateAllFields, getDefaultValues } from "@/utils/utils";
+import { calculateAllFields, getDefaultValues, processTargetData } from "@/utils/utils";
 import { IWeeklyTarget, upsertTarget } from "@/service/targetService";
 
 export const SetTargets = () => {
@@ -86,16 +86,7 @@ export const SetTargets = () => {
 
   useEffect(() => {
     if (currentTarget) {
-      const newValues = { ...getDefaultValues() };
-      const first = currentTarget[0] || {} as IWeeklyTarget;
-      const revenueSum = currentTarget.reduce((sum, item) => sum + (item.revenue || 0), 0);
-      if (first.appointmentRate !== undefined) newValues.appointmentRate = first.appointmentRate;
-      if (first.showRate !== undefined) newValues.showRate = first.showRate;
-      if (first.closeRate !== undefined) newValues.closeRate = first.closeRate;
-      if (first.avgJobSize !== undefined) newValues.avgJobSize = first.avgJobSize;
-      if (first.com !== undefined) newValues.com = first.com;
-      newValues.revenue = revenueSum;
-        
+      const newValues = processTargetData(currentTarget);
       setFieldValues(newValues);
       setLastChanged(null); 
       setPrevValues(newValues);

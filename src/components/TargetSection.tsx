@@ -40,6 +40,7 @@ interface TargetSectionProps {
   disabledMessage?: string; // New prop for disable message
   showTarget?: boolean;
   shouldDisableNonRevenueFields?: boolean; // New prop to disable all fields except revenue
+  targetValues?: FieldValue; // New prop for target values
 }
 
 export const TargetSection: React.FC<TargetSectionProps> = ({
@@ -58,7 +59,8 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
   isDisabled = false,
   disabledMessage,
   showTarget = false,
-  shouldDisableNonRevenueFields = false
+  shouldDisableNonRevenueFields = false,
+  targetValues = {}
 }) => {
   const { currentTarget } = useTargetStore();
 
@@ -97,7 +99,10 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
         >
           <span className="text-sm font-medium text-gray-700">{field.name}</span>
           <span className="text-[10px] text-gray-500">
-            {showTarget ? `Target: ${10}` : ""}
+            {showTarget && targetValues[field.value] !== undefined ? 
+              `Target: ${field.unit === "$" ? formatCurrency(targetValues[field.value]) : 
+                        field.unit === "%" ? formatPercent(targetValues[field.value]) : 
+                        targetValues[field.value]}` : ""}
           </span>
         </Label>
         <div className="relative">

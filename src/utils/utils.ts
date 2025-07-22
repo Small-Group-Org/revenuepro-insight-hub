@@ -408,6 +408,33 @@ export const isTimeFrameEditable = (
 };
 
 /**
+ * Check if the selected time frame is in the past (for actual data entry)
+ */
+export const isTimeFrameInPast = (
+  period: PeriodType,
+  selectedDate: Date
+): boolean => {
+  const currentDate = new Date();
+
+  if (period === "weekly") {
+    const selectedWeekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
+    const currentWeekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+    return isBefore(selectedWeekStart, currentWeekStart);
+  } else if (period === "monthly") {
+    const selectedMonthStart = startOfMonth(selectedDate);
+    const currentMonthStart = startOfMonth(currentDate);
+    // For monthly period, allow current month as well (not just past months)
+    return !isAfter(selectedMonthStart, currentMonthStart);
+  } else if (period === "yearly") {
+    const selectedYearStart = startOfYear(selectedDate);
+    const currentYearStart = startOfYear(currentDate);
+    return !isAfter(selectedYearStart, currentYearStart);
+  }
+
+  return false;
+};
+
+/**
  * Get unique query types from current target data
  */
 export const getUniqueQueryTypes = (currentTarget: any[] | null): string[] => {
@@ -445,28 +472,44 @@ export const handleInputDisable = (
   let shouldDisableNonRevenueFields = false;
   let isButtonDisabled = false;
 
-  // First, check if the time frame is editable (past date validation)
-  const isEditable = isTimeFrameEditable(period, selectedDate);
-
-  if (!isEditable) {
-    // Past date logic - disable everything
-    isDisabled = true;
-    isButtonDisabled = true;
-    disabledMessage = "Past Targets cannot be updated";
-    return {
-      isDisabled,
-      disabledMessage,
-      noteMessage,
-      shouldDisableNonRevenueFields,
-      isButtonDisabled,
-    };
+  // For AddActualData page, check if the time frame is in the past (only past dates allowed)
+  if (pageType === "addActualData") {
+    const isInPast = isTimeFrameInPast(period, selectedDate);
+    if (!isInPast) {
+      // Future date logic for actual data - disable everything
+      isDisabled = true;
+      isButtonDisabled = true;
+      disabledMessage = "Actual data can only be entered for past dates";
+      return {
+        isDisabled,
+        disabledMessage,
+        noteMessage,
+        shouldDisableNonRevenueFields,
+        isButtonDisabled,
+      };
+    }
+  } else {
+    // For SetTargets page, check if the time frame is editable (not in the past)
+    const isEditable = isTimeFrameEditable(period, selectedDate);
+    if (!isEditable) {
+      // Past date logic - disable everything
+      isDisabled = true;
+      isButtonDisabled = true;
+      disabledMessage = "Past Targets cannot be updated";
+      return {
+        isDisabled,
+        disabledMessage,
+        noteMessage,
+        shouldDisableNonRevenueFields,
+        isButtonDisabled,
+      };
+    }
   }
 
-  // For AddActualData page, only weekly periods are allowed
   if (pageType === "addActualData" && period !== "weekly") {
     isDisabled = true;
     isButtonDisabled = true;
-    disabledMessage = "Reports can only be edited on weekly basis";
+    noteMessage = "Reporting data can only be added in week view";
     return {
       isDisabled,
       disabledMessage,
@@ -486,10 +529,10 @@ export const handleInputDisable = (
       if (
         hasTargets &&
         queryTypes.includes("monthly") &&
-        queryTypes.length > 1
+        queryTypes.length === 1
       ) {
         noteMessage =
-          "You have not set target for this year. These are aggregated using months previous target";
+          "You have not set target for this year. These are values are calculated using months previous target";
       }
     } else if (period === "monthly") {
       if (queryTypes.includes("yearly")) {
@@ -522,4 +565,32 @@ export const handleInputDisable = (
     shouldDisableNonRevenueFields,
     isButtonDisabled,
   };
+};
+
+/**
+ * Processes target data from the API and converts it to field values
+ * @param currentTarget - Array of target data from the API
+ * @returns Processed field values with default values as fallback
+ */
+export const processTargetData = (currentTarget: any[] | null): FieldValue => {
+  const newValues = { ...getDefaultValues() };
+  
+  if (!currentTarget || currentTarget.length === 0) {
+    return newValues;
+  }
+
+  const first = currentTarget[0] || {};
+  const revenueSum = currentTarget.reduce((sum, item) => sum + (item.revenue || 0), 0);
+  
+  // Set individual field values from the first target
+  if (first.appointmentRate !== undefined) newValues.appointmentRate = first.appointmentRate;
+  if (first.showRate !== undefined) newValues.showRate = first.showRate;
+  if (first.closeRate !== undefined) newValues.closeRate = first.closeRate;
+  if (first.avgJobSize !== undefined) newValues.avgJobSize = first.avgJobSize;
+  if (first.com !== undefined) newValues.com = first.com;
+  
+  // Set revenue as the sum of all targets
+  newValues.revenue = revenueSum;
+  
+  return newValues;
 };

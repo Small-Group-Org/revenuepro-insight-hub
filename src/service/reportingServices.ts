@@ -13,7 +13,7 @@ export const getReportingData = async (
   endDate: string
 ) => {
   try {
-    let url = `/getReportingData?userId=${userId}`;
+    let url = `/actual/get?userId=${userId}`;
     if (startDate) url += `&startDate=${startDate}`;
     if (endDate) url += `&endDate=${endDate}`;
     const response = await doGET(url);
@@ -26,7 +26,7 @@ export const getReportingData = async (
 
 export const upsertReportingData = async (reportingData: IReportingData) => {
   try {
-    const response = await doPOST("/upsertReportingData", reportingData);
+    const response = await doPOST("/actual/upsert", reportingData);
     if (response.status === 200) {
       return response.data;
     }
