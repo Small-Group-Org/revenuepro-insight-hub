@@ -8,7 +8,7 @@ import { useTargetStore } from "../stores/targetStore";
 import { useUserStore } from "../stores/userStore";
 import useAuthStore from "../stores/authStore";
 import { endOfWeek, startOfWeek, format, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
-import { getDaysInMonth, calculateUnifiedDisableLogic, targetValidation } from "@/utils/utils";
+import { getDaysInMonth, handleInputDisable, targetValidation } from "@/utils/utils";
 import { months, targetFields } from "@/utils/constant";
 import { DisableMetadata } from "@/types";
 import { FieldConfig, FieldValue, InputField, PeriodType } from "@/types";
@@ -44,7 +44,7 @@ export const SetTargets = () => {
   );
 
   const disableLogic = useMemo(() => 
-    calculateUnifiedDisableLogic(period, selectedDate, currentTarget, 'setTargets'), 
+    handleInputDisable(period, selectedDate, currentTarget, 'setTargets'), 
     [period, selectedDate, currentTarget]
   );
 
@@ -69,9 +69,16 @@ export const SetTargets = () => {
       endDate = endOfYear(selectedDate);
     }
 
-    setSelectedStartDate(format(startDate, 'yyyy-MM-dd'));
-    setSelectedEndDate(format(endDate, 'yyyy-MM-dd'));
-  }, [selectedDate, period]);
+    const formattedStartDate = format(startDate, 'yyyy-MM-dd');
+    const formattedEndDate = format(endDate, 'yyyy-MM-dd');
+
+    setSelectedStartDate(formattedStartDate);
+    setSelectedEndDate(formattedEndDate);
+
+    if (user) {
+      getTargetsForUser(period, formattedStartDate, formattedEndDate);
+    }
+  }, [selectedDate, period, user, selectedUserId]);
 
   useEffect(() => {
     setPrevValues(calculatedValues);
@@ -93,13 +100,7 @@ export const SetTargets = () => {
       setLastChanged(null); 
       setPrevValues(newValues);
     }
-  }, [currentTarget, period]);
-
-  useEffect(() => {
-    if (user) {
-      getTargetsForUser(period, selectedStartDate, selectedEndDate);
-    }
-  }, [selectedUserId, selectedStartDate, period, user]); 
+  }, [currentTarget, period]); 
 
   const isHighlighted = useCallback((fieldName: string) => {
     if (!lastChanged) return false;

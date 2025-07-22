@@ -432,7 +432,7 @@ export const areAllQueryTypesEmpty = (currentTarget: any[] | null): boolean => {
  * Unified disable logic that combines past date validation and target status logic
  * This function handles all disable scenarios for both SetTargets and AddActualData pages
  */
-export const calculateUnifiedDisableLogic = (
+export const handleInputDisable = (
   period: PeriodType,
   selectedDate: Date,
   currentTarget: any[] | null = null,
