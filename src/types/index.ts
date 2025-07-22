@@ -49,3 +49,10 @@ export interface FieldValue {
     period?: PeriodType;
   }
   
+  export interface DisableMetadata {
+    isDisabled: boolean;
+    disabledMessage: string | null;
+    noteMessage: string | null;
+    shouldDisableNonRevenueFields: boolean;
+    isButtonDisabled: boolean;
+  }

@@ -8,7 +8,7 @@ import { DatePeriodSelector } from '@/components/DatePeriodSelector';
 import { TargetSection } from '@/components/TargetSection';
 import { PeriodType, FieldValue } from '@/types';
 import { reportingFields } from '@/utils/constant';
-import { calculateReportingFields, calculateAddActualDataDisableLogic } from '@/utils/utils';
+import { calculateReportingFields, calculateUnifiedDisableLogic } from '@/utils/utils';
 import { getWeekInfo } from '@/utils/weekLogic';
 
 export const AddActualData = () => {
@@ -59,7 +59,7 @@ export const AddActualData = () => {
 
   // Calculate disable logic for AddActualData page
   const { isDisabled, disabledMessage, isButtonDisabled } = useMemo(() => 
-    calculateAddActualDataDisableLogic(period, selectedDate), 
+    calculateUnifiedDisableLogic(period, selectedDate, null, 'addActualData'), 
     [period, selectedDate]
   );
 
@@ -171,7 +171,6 @@ export const AddActualData = () => {
             buttonText="Save Report"
             onButtonClick={handleSave}
             allowedPeriods={['weekly']}
-            isButtonDisabled={isButtonDisabled}
           />
         </div>
 

@@ -8,8 +8,9 @@ import { useTargetStore } from "../stores/targetStore";
 import { useUserStore } from "../stores/userStore";
 import useAuthStore from "../stores/authStore";
 import { endOfWeek, startOfWeek, format, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
-import { getDaysInMonth, calculateSetTargetsDisableLogic, targetValidation } from "@/utils/utils";
+import { getDaysInMonth, calculateUnifiedDisableLogic, targetValidation } from "@/utils/utils";
 import { months, targetFields } from "@/utils/constant";
+import { DisableMetadata } from "@/types";
 import { FieldConfig, FieldValue, InputField, PeriodType } from "@/types";
 import type { MonthlyData } from "../components/YearlyTargetModal";
 import { calculateAllFields, getDefaultValues } from "@/utils/utils";
@@ -42,11 +43,12 @@ export const SetTargets = () => {
     [fieldValues, daysInMonth, period]
   );
 
-  // Calculate disable logic for SetTargets page (original logic)
-  const { isDisabled, disabledMessage, isButtonDisabled } = useMemo(() => 
-    calculateSetTargetsDisableLogic(period, selectedDate), 
-    [period, selectedDate]
+  const disableLogic = useMemo(() => 
+    calculateUnifiedDisableLogic(period, selectedDate, currentTarget, 'setTargets'), 
+    [period, selectedDate, currentTarget]
   );
+
+  const [disableStatus, setDisableStatus] = useState(disableLogic);
 
   useEffect(() => {
     setDaysInMonth(getDaysInMonth(selectedDate));
@@ -212,6 +214,10 @@ export const SetTargets = () => {
     setLastChanged(null);
   }, []);
 
+  const handleDisableStatusChange = useCallback((status: DisableMetadata) => {
+    setDisableStatus(status);
+  }, []);
+
   const handleSaveMonthlyTargets = useCallback(async (monthlyData: { [key: string]: MonthlyData }) => {
     const inputFieldNames = getInputFieldNames();
    
@@ -285,7 +291,8 @@ export const SetTargets = () => {
             onChange={handleDatePeriodChange}
             buttonText="Save Targets"
             onButtonClick={handleSave}
-            isButtonDisabled={isButtonDisabled}
+            disableLogic={disableLogic}
+            onDisableStatusChange={handleDisableStatusChange}
           />
         </div>
 
@@ -303,8 +310,9 @@ export const SetTargets = () => {
             isLoading={isLoading}
             period={period}
             selectedDate={selectedDate}
-            isDisabled={isDisabled}
-            disabledMessage={disabledMessage}
+            isDisabled={disableStatus.isDisabled}
+            disabledMessage={disableStatus.disabledMessage}
+            shouldDisableNonRevenueFields={disableStatus.shouldDisableNonRevenueFields}
           />
 
           <TargetSection
@@ -320,8 +328,9 @@ export const SetTargets = () => {
             isLoading={isLoading}
             period={period}
             selectedDate={selectedDate}
-            isDisabled={isDisabled}
-            disabledMessage={disabledMessage}
+            isDisabled={disableStatus.isDisabled}
+            disabledMessage={disableStatus.disabledMessage}
+            shouldDisableNonRevenueFields={disableStatus.shouldDisableNonRevenueFields}
           />
 
           <TargetSection
@@ -337,8 +346,9 @@ export const SetTargets = () => {
             isLoading={isLoading}
             period={period}
             selectedDate={selectedDate}
-            isDisabled={isDisabled}
-            disabledMessage={disabledMessage}
+            isDisabled={disableStatus.isDisabled}
+            disabledMessage={disableStatus.disabledMessage}
+            shouldDisableNonRevenueFields={disableStatus.shouldDisableNonRevenueFields}
           />
         </div>
       </div>
