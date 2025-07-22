@@ -8,11 +8,12 @@ import { useTargetStore } from "../stores/targetStore";
 import { useUserStore } from "../stores/userStore";
 import useAuthStore from "../stores/authStore";
 import { endOfWeek, startOfWeek, format, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
-import { getDaysInMonth, calculateSetTargetsDisableLogic, targetValidation } from "@/utils/utils";
+import { getDaysInMonth, handleInputDisable, targetValidation } from "@/utils/utils";
 import { months, targetFields } from "@/utils/constant";
+import { DisableMetadata } from "@/types";
 import { FieldConfig, FieldValue, InputField, PeriodType } from "@/types";
 import type { MonthlyData } from "../components/YearlyTargetModal";
-import { calculateAllFields, getDefaultValues } from "@/utils/utils";
+import { calculateAllFields, getDefaultValues, processTargetData } from "@/utils/utils";
 import { IWeeklyTarget, upsertTarget } from "@/service/targetService";
 
 export const SetTargets = () => {
@@ -42,11 +43,12 @@ export const SetTargets = () => {
     [fieldValues, daysInMonth, period]
   );
 
-  // Calculate disable logic for SetTargets page (original logic)
-  const { isDisabled, disabledMessage, isButtonDisabled } = useMemo(() => 
-    calculateSetTargetsDisableLogic(period, selectedDate), 
-    [period, selectedDate]
+  const disableLogic = useMemo(() => 
+    handleInputDisable(period, selectedDate, currentTarget, 'setTargets'), 
+    [period, selectedDate, currentTarget]
   );
+
+  const [disableStatus, setDisableStatus] = useState(disableLogic);
 
   useEffect(() => {
     setDaysInMonth(getDaysInMonth(selectedDate));
@@ -67,9 +69,16 @@ export const SetTargets = () => {
       endDate = endOfYear(selectedDate);
     }
 
-    setSelectedStartDate(format(startDate, 'yyyy-MM-dd'));
-    setSelectedEndDate(format(endDate, 'yyyy-MM-dd'));
-  }, [selectedDate, period]);
+    const formattedStartDate = format(startDate, 'yyyy-MM-dd');
+    const formattedEndDate = format(endDate, 'yyyy-MM-dd');
+
+    setSelectedStartDate(formattedStartDate);
+    setSelectedEndDate(formattedEndDate);
+
+    if (user) {
+      getTargetsForUser(period, formattedStartDate, formattedEndDate);
+    }
+  }, [selectedDate, period, user, selectedUserId]);
 
   useEffect(() => {
     setPrevValues(calculatedValues);
@@ -77,27 +86,12 @@ export const SetTargets = () => {
 
   useEffect(() => {
     if (currentTarget) {
-      const newValues = { ...getDefaultValues() };
-      const first = currentTarget[0] || {} as IWeeklyTarget;
-      const revenueSum = currentTarget.reduce((sum, item) => sum + (item.revenue || 0), 0);
-      if (first.appointmentRate !== undefined) newValues.appointmentRate = first.appointmentRate;
-      if (first.showRate !== undefined) newValues.showRate = first.showRate;
-      if (first.closeRate !== undefined) newValues.closeRate = first.closeRate;
-      if (first.avgJobSize !== undefined) newValues.avgJobSize = first.avgJobSize;
-      if (first.com !== undefined) newValues.com = first.com;
-      newValues.revenue = revenueSum;
-        
+      const newValues = processTargetData(currentTarget);
       setFieldValues(newValues);
       setLastChanged(null); 
       setPrevValues(newValues);
     }
-  }, [currentTarget, period]);
-
-  useEffect(() => {
-    if (user) {
-      getTargetsForUser(period, selectedStartDate, selectedEndDate);
-    }
-  }, [selectedUserId, selectedStartDate, period, user]); 
+  }, [currentTarget, period]); 
 
   const isHighlighted = useCallback((fieldName: string) => {
     if (!lastChanged) return false;
@@ -212,6 +206,10 @@ export const SetTargets = () => {
     setLastChanged(null);
   }, []);
 
+  const handleDisableStatusChange = useCallback((status: DisableMetadata) => {
+    setDisableStatus(status);
+  }, []);
+
   const handleSaveMonthlyTargets = useCallback(async (monthlyData: { [key: string]: MonthlyData }) => {
     const inputFieldNames = getInputFieldNames();
    
@@ -285,7 +283,8 @@ export const SetTargets = () => {
             onChange={handleDatePeriodChange}
             buttonText="Save Targets"
             onButtonClick={handleSave}
-            isButtonDisabled={isButtonDisabled}
+            disableLogic={disableLogic}
+            onDisableStatusChange={handleDisableStatusChange}
           />
         </div>
 
@@ -303,8 +302,9 @@ export const SetTargets = () => {
             isLoading={isLoading}
             period={period}
             selectedDate={selectedDate}
-            isDisabled={isDisabled}
-            disabledMessage={disabledMessage}
+            isDisabled={disableStatus.isDisabled}
+            disabledMessage={disableStatus.disabledMessage}
+            shouldDisableNonRevenueFields={disableStatus.shouldDisableNonRevenueFields}
           />
 
           <TargetSection
@@ -320,8 +320,9 @@ export const SetTargets = () => {
             isLoading={isLoading}
             period={period}
             selectedDate={selectedDate}
-            isDisabled={isDisabled}
-            disabledMessage={disabledMessage}
+            isDisabled={disableStatus.isDisabled}
+            disabledMessage={disableStatus.disabledMessage}
+            shouldDisableNonRevenueFields={disableStatus.shouldDisableNonRevenueFields}
           />
 
           <TargetSection
@@ -337,8 +338,9 @@ export const SetTargets = () => {
             isLoading={isLoading}
             period={period}
             selectedDate={selectedDate}
-            isDisabled={isDisabled}
-            disabledMessage={disabledMessage}
+            isDisabled={disableStatus.isDisabled}
+            disabledMessage={disableStatus.disabledMessage}
+            shouldDisableNonRevenueFields={disableStatus.shouldDisableNonRevenueFields}
           />
         </div>
       </div>

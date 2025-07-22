@@ -39,6 +39,8 @@ interface TargetSectionProps {
   isDisabled?: boolean; // New prop for disable state
   disabledMessage?: string; // New prop for disable message
   showTarget?: boolean;
+  shouldDisableNonRevenueFields?: boolean; // New prop to disable all fields except revenue
+  targetValues?: FieldValue; // New prop for target values
 }
 
 export const TargetSection: React.FC<TargetSectionProps> = ({
@@ -56,7 +58,9 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
   selectedDate,
   isDisabled = false,
   disabledMessage,
-  showTarget = false
+  showTarget = false,
+  shouldDisableNonRevenueFields = false,
+  targetValues = {}
 }) => {
   const { currentTarget } = useTargetStore();
 
@@ -77,6 +81,9 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
     const [isFocused, setIsFocused] = React.useState(false);
     const [displayValue, setDisplayValue] = React.useState(value.toString());
 
+    // Determine if this field should be disabled
+    const isFieldDisabled = isDisabled || (shouldDisableNonRevenueFields && field.value !== 'revenue');
+
     // Update display value when fieldValues changes
     React.useEffect(() => {
       if (!isFocused) {
@@ -92,7 +99,10 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
         >
           <span className="text-sm font-medium text-gray-700">{field.name}</span>
           <span className="text-[10px] text-gray-500">
-            {showTarget ? `Target: ${10}` : ""}
+            {showTarget && targetValues[field.value] !== undefined ? 
+              `Target: ${field.unit === "$" ? formatCurrency(targetValues[field.value]) : 
+                        field.unit === "%" ? formatPercent(targetValues[field.value]) : 
+                        targetValues[field.value]}` : ""}
           </span>
         </Label>
         <div className="relative">
@@ -137,12 +147,12 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
             }}
             onWheel={(e) => e.currentTarget.blur()}
             className={`appearance-none pr-12 ${
-              isDisabled
+              isFieldDisabled
                 ? "bg-gray-100 text-gray-500 cursor-not-allowed"
                 : ""
             }`}
             style={{ MozAppearance: "textfield" }}
-            disabled={isLoading || isDisabled}
+            disabled={isLoading || isFieldDisabled}
           />
           {field.unit && (
             <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
