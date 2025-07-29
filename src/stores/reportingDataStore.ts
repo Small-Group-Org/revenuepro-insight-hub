@@ -1,15 +1,16 @@
 import { create } from 'zustand';
-import { IReportingData, getReportingData as fetchReportingData, upsertReportingData as saveReportingData } from '../service/reportingServices';
+import { IReportingData, IReportingResponse, getReportingData as fetchReportingData, upsertReportingData as saveReportingData } from '../service/reportingServices';
+import { IWeeklyTarget } from '../service/targetService';
 import useAuthStore from './authStore';
 import { useUserStore } from './userStore';
 
 interface ReportingDataState {
   reportingData: IReportingData[] | null;
-  targetData: any;
+  targetData: IWeeklyTarget[] | null;
   isLoading: boolean;
   error: string | null;
   setReportingData: (data: IReportingData[] | null) => void;
-  setTargetData: (data: any) => void;
+  setTargetData: (data: IWeeklyTarget[] | null) => void;
   getReportingData: (startDate: string, endDate: string, queryType: string) => Promise<void>;
   upsertReportingData: (data: IReportingData) => Promise<void>;
   clearError: () => void;
@@ -38,11 +39,15 @@ export const useReportingDataStore = create<ReportingDataState>((set, get) => ({
         return;
       }
       const response = await fetchReportingData(userId, startDate, endDate, queryType);
-      if (!response.error && response.data && response.data.data) {
-        const actualData = Array.isArray(response.data.data.actual) ? response.data.actual : [response.data.data.actual];
-        const targetRaw = response.data.data.target;
-        
+      if (!response.error && response.data) {
+        // Handle new response format: { actual: [...], target: {...} }
+        const reportingResponse = response.data.data as IReportingResponse;
+        console.log("[reportingResponse]", reportingResponse);
+        const actualData = Array.isArray(reportingResponse.actual) ? reportingResponse.actual : [reportingResponse.actual];
+        const targetRaw = Array.isArray(reportingResponse.target) ? reportingResponse.target : [reportingResponse.target];
+        console.log("[targetRaw]", targetRaw);
         const targetData = Array.isArray(targetRaw) ? targetRaw : (targetRaw ? [targetRaw] : []);
+        console.log("[targetData]", targetData);
         set({ reportingData: actualData, targetData, isLoading: false });
       } else {
         set({ reportingData: null, targetData: null, error: response.message || 'Failed to fetch reporting data', isLoading: false });

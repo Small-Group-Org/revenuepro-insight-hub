@@ -1,10 +1,16 @@
 import { doGET, doPOST } from "../utils/HttpUtils";
+import { IWeeklyTarget } from "./targetService";
 
 export interface IReportingData {
   userId?: string;
   startDate: string;
   endDate: string;
   [key: string]: any; // Flexible for additional fields
+}
+
+export interface IReportingResponse {
+  actual: IReportingData[];
+  target: IWeeklyTarget | IWeeklyTarget[]; // Target data structure - same as getTarget response
 }
 
 export const getReportingData = async (

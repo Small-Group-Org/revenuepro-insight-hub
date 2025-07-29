@@ -67,6 +67,7 @@ export const calculateFields = (
   // Calculate budget fields based on input values (for user input changes)
   if (values.revenue !== undefined && values.avgJobSize !== undefined) {
     values.sales = Math.round(values.revenue / values.avgJobSize);
+    values.jobsBooked = values.sales; // jobsBooked is the same as sales
   }
   
   if (values.sales !== undefined && values.closeRate !== undefined) {
@@ -192,6 +193,7 @@ export const processTargetData = (currentTarget: any[] | null): FieldValue => {
     };
 
     weekValues.sales = Math.round(weekValues.revenue / weekValues.avgJobSize);
+    weekValues.jobsBooked = weekValues.sales; // jobsBooked is the same as sales
     weekValues.estimatesRan = Math.round(weekValues.sales / (weekValues.closeRate / 100));
     weekValues.estimatesSet = Math.round(weekValues.estimatesRan / (weekValues.showRate / 100));
     weekValues.leads = Math.round(weekValues.estimatesSet / (weekValues.appointmentRate / 100));
@@ -254,6 +256,7 @@ export const calculateFieldsForApiData = (
   // Note: avgJobSize and com are now calculated using reverse formulas for monthly/yearly periods
   if (values.revenue !== undefined && values.avgJobSize !== undefined && values.sales === undefined) {
     values.sales = Math.round(values.revenue / values.avgJobSize);
+    values.jobsBooked = values.sales; // jobsBooked is the same as sales
   }
   
   if (values.sales !== undefined && values.closeRate !== undefined && values.estimatesRan === undefined) {
@@ -357,6 +360,12 @@ export function calculateReportingFields(inputValues: FieldValue): FieldValue {
                      (allValues.awarenessBrandingBudgetSpent || 0) + 
                      (allValues.leadGenerationBudgetSpent || 0);
   allValues.budgetSpent = budgetSpent;
+
+  // Calculate budget fields if target revenue and com are available
+  if (allValues.targetRevenue !== undefined && allValues.com !== undefined) {
+    allValues.weeklyBudget = Math.round(allValues.targetRevenue * (allValues.com / 100));
+    allValues.budget = allValues.weeklyBudget; // For weekly period
+  }
 
   // Calculate over/under budget
   if (allValues.budget !== undefined) {

@@ -26,7 +26,8 @@ export const AddActualData = () => {
   // Use processed target data from store (single API)
   const processedTargetData = useMemo(() => {
     if (!targetData) return undefined;
-    return processTargetData(Array.isArray(targetData) ? targetData : [targetData]);
+    console.log("[targetData]", targetData);
+    return processTargetData(targetData);
   }, [targetData]);
 
   const selectedWeek = format(selectedDate, 'yyyy-MM-dd');
@@ -84,7 +85,7 @@ React.useEffect(() => {
         }
       });
     });
-    
+
     setFieldValues(newValues);
     setLastChanged(null);
     setPrevValues(newValues);
@@ -96,13 +97,19 @@ React.useEffect(() => {
     setLastChanged(null);
     setPrevValues(defaults);
   }
-}, [reportingData, getReportingDefaultValues]);
+}, [reportingData]);
 
 
-  const calculatedValues = useMemo(() => 
-    calculateReportingFields(fieldValues), 
-    [fieldValues]
-  );
+  const calculatedValues = useMemo(() => {
+    // For Add Actual Data, use target revenue for budget calculation
+    const combinedValues = {
+      ...fieldValues, // User input (actual revenue, etc.)
+      com: processedTargetData?.com || 0, // Use target com percentage
+      targetRevenue: processedTargetData?.revenue || 0, // Add target revenue
+    };
+    
+    return calculateReportingFields(combinedValues);
+  }, [fieldValues, processedTargetData]);
 
   // Calculate disable logic for AddActualData page
   const disableLogic = useMemo(() => 

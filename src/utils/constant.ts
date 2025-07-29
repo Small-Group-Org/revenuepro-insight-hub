@@ -243,8 +243,8 @@ export const reportingFields: ReportingFieldsConfig = {
       name: "Weekly Budget",
       value: "weeklyBudget",
       fieldType: "calculated",
-      formula: "weeklyBudget",
-      description: "",
+      formula: "targetRevenue * (com / 100)",
+      description: "Target Revenue × CoM%",
       unit: "$",
     },
     {
@@ -316,6 +316,14 @@ export const reportingFields: ReportingFieldsConfig = {
     {
       name: "Estimates Set",
       value: "estimatesSet",
+      type: "number",
+      min: 0,
+      defaultValue: 0,
+      fieldType: "input",
+    },
+    {
+      name: "Leads",
+      value: "leads",
       type: "number",
       min: 0,
       defaultValue: 0,
