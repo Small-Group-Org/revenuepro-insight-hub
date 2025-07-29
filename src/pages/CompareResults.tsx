@@ -1,299 +1,365 @@
+import React, { useState, useEffect, useMemo } from "react";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { DatePeriodSelector } from "@/components/DatePeriodSelector";
+import {
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
+  BarChart3,
+  Target,
+} from "lucide-react";
+import { useReportingDataStore } from "@/stores/reportingDataStore";
+import {
+  format,
+  startOfMonth,
+  endOfMonth,
+  startOfYear,
+  endOfYear,
+} from "date-fns";
+import { getWeekInfo } from "@/utils/weekLogic";
+import { processTargetData } from "@/utils/utils";
 
-import React from 'react';
-import { useData } from '@/contexts/DataContext';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
-import { Download, TrendingUp, TrendingDown, Target, BarChart3 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+const metricIcons: Record<string, React.ReactNode> = {
+  "Appointment Rate": <TrendingUp className="h-5 w-5 text-blue-600" />,
+  "Show Rate": <TrendingUp className="h-5 w-5 text-blue-700" />,
+  "Close Rate": <TrendingUp className="h-5 w-5 text-green-600" />,
+  "Lead to Sale": <TrendingUp className="h-5 w-5 text-purple-600" />,
+  Revenue: <DollarSign className="h-5 w-5 text-yellow-600" />,
+  "Total COM%": <BarChart3 className="h-5 w-5 text-indigo-600" />,
+  "AD COM%": <BarChart3 className="h-5 w-5 text-indigo-700" />,
+  "Cost Per Lead": <DollarSign className="h-5 w-5 text-green-700" />,
+  "Cost Per Estimate Set": <DollarSign className="h-5 w-5 text-blue-700" />,
+  "Cost Per Estimate": <DollarSign className="h-5 w-5 text-blue-600" />,
+  "Cost Per Job Booked": <DollarSign className="h-5 w-5 text-purple-700" />,
+  Leads: <BarChart3 className="h-5 w-5 text-blue-600" />,
+  "Estimates Set": <Target className="h-5 w-5 text-green-600" />,
+  Estimates: <Target className="h-5 w-5 text-green-700" />,
+  "Jobs Booked": <Target className="h-5 w-5 text-purple-600" />,
+  "Average Job Size": <DollarSign className="h-5 w-5 text-yellow-700" />,
+};
 
 export const CompareResults = () => {
-  const { targets, actualData } = useData();
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [period, setPeriod] = useState<"weekly" | "monthly" | "yearly">(
+    "weekly"
+  );
 
-  // Calculate totals from actual data
-  const calculateTotals = () => {
-    if (actualData.length === 0) {
-      return {
-        totalLeads: 0,
-        totalAppointmentsSet: 0,
-        totalAppointmentsComplete: 0,
-        totalJobsBooked: 0,
-        totalSalesRevenue: 0,
-        totalMetaBudgetSpent: 0
-      };
+  const { reportingData, targetData, getReportingData } = useReportingDataStore();
+
+  // Fetch actual+target data from single API
+  useEffect(() => {
+    let startDate: string, endDate: string, queryType: string;
+    if (period === "weekly") {
+      const weekInfo = getWeekInfo(selectedDate);
+      startDate = format(weekInfo.weekStart, "yyyy-MM-dd");
+      endDate = format(weekInfo.weekEnd, "yyyy-MM-dd");
+      queryType = "weekly";
+    } else if (period === "monthly") {
+      startDate = format(startOfMonth(selectedDate), "yyyy-MM-dd");
+      endDate = format(endOfMonth(selectedDate), "yyyy-MM-dd");
+      queryType = "monthly";
+    } else {
+      startDate = format(startOfYear(selectedDate), "yyyy-MM-dd");
+      endDate = format(endOfYear(selectedDate), "yyyy-MM-dd");
+      queryType = "yearly";
     }
+    getReportingData(startDate, endDate, queryType);
+  }, [selectedDate, period, getReportingData]);
 
-    return actualData.reduce((acc, week) => ({
-      totalLeads: acc.totalLeads + week.leads,
-      totalAppointmentsSet: acc.totalAppointmentsSet + week.appointmentsSet,
-      totalAppointmentsComplete: acc.totalAppointmentsComplete + week.appointmentsComplete,
-      totalJobsBooked: acc.totalJobsBooked + week.jobsBooked,
-      totalSalesRevenue: acc.totalSalesRevenue + week.salesRevenue,
-      totalMetaBudgetSpent: acc.totalMetaBudgetSpent + week.metaBudgetSpent
-    }), {
-      totalLeads: 0,
-      totalAppointmentsSet: 0,
-      totalAppointmentsComplete: 0,
-      totalJobsBooked: 0,
-      totalSalesRevenue: 0,
-      totalMetaBudgetSpent: 0
+  // Aggregate actual data
+  const allMetricKeys = [
+  "appointmentRate", "showRate", "closeRate", "leadToSale",
+  "revenue", "com", "adCom",
+  "costPerLead", "costPerEstimateSet", "costPerEstimate", "costPerJobBooked",
+  "leads", "estimatesSet", "estimates", "jobsBooked", "avgJobSize"
+];
+
+const actualTotals = useMemo(() => {
+  const totals: Record<string, number> = {};
+  // Initialize all keys to 0
+  allMetricKeys.forEach(key => { totals[key] = 0; });
+  if (!reportingData || reportingData.length === 0) return totals;
+  reportingData.forEach((data) => {
+    allMetricKeys.forEach((key) => {
+      totals[key] += data[key] || 0;
     });
-  };
+  });
+  return totals;
+}, [reportingData]);
 
-  const totals = calculateTotals();
+  // Always process targetData as array
+  const processedTargetData = useMemo(() => {
+    if (!targetData) return undefined;
+    return processTargetData(Array.isArray(targetData) ? targetData : [targetData]);
+  }, [targetData]);
 
-  // Calculate metrics
-  const funnelPercentage = totals.totalLeads > 0 ? (totals.totalAppointmentsSet / totals.totalLeads * 100) : 0;
-  const funnelCost = totals.totalLeads > 0 ? (totals.totalMetaBudgetSpent / totals.totalLeads) : 0;
+  // Prepare metrics from API data
+  const metrics = useMemo(
+    () => [
+      {
+        category: "Funnel Metrics",
+        items: [
+          {
+            name: "Appointment Rate",
+            actual: actualTotals["appointmentRate"] ?? 0,
+            target: processedTargetData?.appointmentRate ?? 0,
+            format: "percent",
+          },
+          {
+            name: "Show Rate",
+            actual: actualTotals["showRate"] ?? 0,
+            target: processedTargetData?.showRate ?? 0,
+            format: "percent",
+          },
+          {
+            name: "Close Rate",
+            actual: actualTotals["closeRate"] ?? 0,
+            target: processedTargetData?.closeRate ?? 0,
+            format: "percent",
+          },
+          {
+            name: "Lead to Sale",
+            actual: actualTotals["leadToSale"] ?? 0,
+            target: 0,
+            format: "percent",
+          },
+        ],
+      },
+      {
+        category: "Revenue Metrics",
+        items: [
+          {
+            name: "Revenue",
+            actual: actualTotals["revenue"] ?? 0,
+            target: processedTargetData?.revenue ?? 0,
+            format: "currency",
+          },
+          {
+            name: "Total COM%",
+            actual: actualTotals["com"] ?? 0,
+            target: processedTargetData?.com ?? 0,
+            format: "percent",
+          },
+          {
+            name: "AD COM%",
+            actual: actualTotals["adCom"] ?? 0,
+            target: 0,
+            format: "percent",
+          },
+        ],
+      },
+      {
+        category: "Expense Metrics",
+        items: [
+          {
+            name: "Cost Per Lead",
+            actual: actualTotals["costPerLead"] ?? 0,
+            target: 0,
+            format: "currency",
+          },
+          {
+            name: "Cost Per Estimate Set",
+            actual: actualTotals["costPerEstimateSet"] ?? 0,
+            target: 0,
+            format: "currency",
+          },
+          {
+            name: "Cost Per Estimate",
+            actual: actualTotals["costPerEstimate"] ?? 0,
+            target: 0,
+            format: "currency",
+          },
+          {
+            name: "Cost Per Job Booked",
+            actual: actualTotals["costPerJobBooked"] ?? 0,
+            target: 0,
+            format: "currency",
+          },
+        ],
+      },
+      {
+        category: "Performance Metrics",
+        items: [
+          {
+            name: "Leads",
+            actual: actualTotals["leads"] ?? 0,
+            target: 0,
+            format: "number",
+          },
+          {
+            name: "Estimates Set",
+            actual: actualTotals["estimatesSet"] ?? 0,
+            target: 0,
+            format: "number",
+          },
+          {
+            name: "Estimates",
+            actual: actualTotals["estimates"] ?? 0,
+            target: 0,
+            format: "number",
+          },
+          {
+            name: "Jobs Booked",
+            actual: actualTotals["jobsBooked"] ?? 0,
+            target: 0,
+            format: "number",
+          },
+          {
+            name: "Average Job Size",
+            actual: actualTotals["avgJobSize"] ?? 0,
+            target: 0,
+            format: "currency",
+          },
+        ],
+      },
+    ],
+    [actualTotals, processedTargetData]
+  );
 
-  const comparisonData = [
-    {
-      metric: 'Leads',
-      target: targets.leads,
-      actual: totals.totalLeads,
-      icon: '👥',
-      format: 'number'
-    },
-    {
-      metric: 'Appointments Set',
-      target: targets.appointmentsSet,
-      actual: totals.totalAppointmentsSet,
-      icon: '📅',
-      format: 'number'
-    },
-    {
-      metric: 'Appointments Complete',
-      target: targets.appointmentsComplete,
-      actual: totals.totalAppointmentsComplete,
-      icon: '✅',
-      format: 'number'
-    },
-    {
-      metric: 'Jobs Booked',
-      target: targets.jobsBooked,
-      actual: totals.totalJobsBooked,
-      icon: '🎯',
-      format: 'number'
-    },
-    {
-      metric: 'Sales Revenue',
-      target: targets.salesRevenue,
-      actual: totals.totalSalesRevenue,
-      icon: '💰',
-      format: 'currency'
-    },
-    {
-      metric: 'Meta Budget Spent',
-      target: targets.metaBudgetSpent,
-      actual: totals.totalMetaBudgetSpent,
-      icon: '📊',
-      format: 'currency'
-    }
-  ];
-
+  // Format value helper
   const formatValue = (value: number, format: string) => {
-    if (format === 'currency') {
-      return `$${value?.toLocaleString()}`;
+    if (format === "currency") {
+      return `$${value?.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`;
+    }
+    if (format === "percent") {
+      return `${value?.toFixed(2)}%`;
     }
     return value?.toLocaleString();
   };
 
-  const calculateDifference = (actual: number, target: number) => {
-    return actual - target;
+  // Handler for DatePeriodSelector
+  const handleDatePeriodChange = (
+    date: Date,
+    newPeriod: "weekly" | "monthly" | "yearly"
+  ) => {
+    setSelectedDate(date);
+    setPeriod(newPeriod);
   };
 
-  const calculatePercentage = (actual: number, target: number) => {
-    if (target === 0) return 0;
-    return (actual / target) * 100;
-  };
-
-  const getStatusColor = (actual: number, target: number) => {
-    return actual >= target ? 'text-green-600' : 'text-red-600';
-  };
-
-  const getStatusBadge = (actual: number, target: number) => {
-    const percentage = calculatePercentage(actual, target);
-    const isPositive = actual >= target;
-    
-    return (
-      <Badge variant={isPositive ? 'default' : 'destructive'} className="ml-2">
-        {isPositive ? <TrendingUp className="h-3 w-3 mr-1" /> : <TrendingDown className="h-3 w-3 mr-1" />}
-        {percentage.toFixed(1)}%
-      </Badge>
-    );
-  };
-
-  const handleDownloadReport = () => {
-    // Create CSV data
-    const csvData = [
-      ['Metric', 'Target', 'Actual', 'Difference', '% Achieved'],
-      ...comparisonData.map(item => [
-        item.metric,
-        item.target.toString(),
-        item.actual.toString(),
-        calculateDifference(item.actual, item.target).toString(),
-        calculatePercentage(item.actual, item.target).toFixed(1) + '%'
-      ])
-    ];
-
-    const csvContent = csvData.map(row => row.join(',')).join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.setAttribute('hidden', '');
-    a.setAttribute('href', url);
-    a.setAttribute('download', 'performance-report.csv');
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+  // Export button handler (TODO)
+  const handleExport = () => {
+    // TODO: Implement export logic
+    alert("Export coming soon!");
   };
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">Compare & Results</h1>
-          <p className="text-slate-600 mt-1">Live comparison of targets vs actual performance</p>
+    <div className="min-h-screen bg-gray-50">
+      <div className="relative z-10 py-12 px-4">
+        <div className="max-w-7xl mx-auto space-y-10">
+          {/* Header */}
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-4">
+              <h1 className="leading-[130%] text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent">
+                Compare & Results
+              </h1>
+            </div>
+            <p className="text-gray-600 max-w-2xl mx-auto text-lg mb-10 mt-2">
+              Enter your weekly performance metrics for tracking and analysis
+            </p>
+          </div>
         </div>
-        <Button onClick={handleDownloadReport} variant="outline" className="hover:bg-blue-50">
-          <Download className="h-4 w-4 mr-2" />
-          Download Report
-        </Button>
+
+        {/* Controls */}
+        <div className="max-w-7xl mx-auto mb-8">
+          <DatePeriodSelector
+            initialDate={selectedDate}
+            initialPeriod={period}
+            onChange={handleDatePeriodChange}
+            buttonText="Export"
+            onButtonClick={handleExport}
+            allowedPeriods={["weekly", "monthly", "yearly"]}
+          />
+        </div>
+
+        {/* Metrics Table */}
+        <Card className="max-w-7xl mx-auto p-6">
+          <h3 className="text-xl font-semibold text-slate-900 mb-6">
+            📊 Performance Comparison
+          </h3>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[600px]">
+              <thead>
+                <tr className="border-b border-slate-200">
+                  <th className="text-left p-4 font-semibold text-slate-700">
+                    Metric
+                  </th>
+                  <th className="text-right p-4 font-semibold text-slate-700">
+                    Actual
+                  </th>
+                  <th className="text-right p-4 font-semibold text-slate-700">
+                    Target
+                  </th>
+                  <th className="text-right p-4 font-semibold text-slate-700">
+                    Performance
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {metrics
+                  .map((section) => [
+                    <tr
+                      key={`${section.category}-header`}
+                      className="bg-slate-100"
+                    >
+                      <td
+                        colSpan={4}
+                        className="font-bold text-blue-900 py-2 pl-4 text-lg"
+                      >
+                        {section.category}
+                      </td>
+                    </tr>,
+                    ...section.items.map((item) => {
+                      const percent =
+                        item.target === 0
+                          ? 0
+                          : ((item.actual - item.target) / item.target) * 100;
+                      const isPositive = percent >= 0;
+                      return (
+                        <tr
+                          key={`${section.category}-${item.name}`}
+                          className="border-b border-slate-100 hover:bg-slate-50"
+                        >
+                          <td className="p-4 font-medium text-slate-900 flex items-center gap-2">
+                            {metricIcons[item.name]}
+                            {item.name}
+                          </td>
+                          <td className="p-4 text-right font-bold text-slate-900">
+                            {formatValue(item.actual, item.format)}
+                          </td>
+                          <td className="p-4 text-right font-medium text-slate-700">
+                            {formatValue(item.target, item.format)}
+                          </td>
+                          <td className="p-4 text-right font-semibold">
+                            <span
+                              className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-bold ${
+                                isPositive
+                                  ? "bg-green-100 text-green-700"
+                                  : "bg-red-100 text-red-700"
+                              }`}
+                            >
+                              {isPositive ? (
+                                <TrendingUp className="h-4 w-4 mr-1" />
+                              ) : (
+                                <TrendingDown className="h-4 w-4 mr-1" />
+                              )}
+                              {percent > 0 ? "+" : ""}
+                              {percent.toFixed(2)}%
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    }),
+                  ])
+                  .flat()}
+              </tbody>
+            </table>
+          </div>
+        </Card>
       </div>
-
-      {/* Key Metrics Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="p-6 bg-gradient-to-r from-blue-50 to-blue-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-blue-700">Funnel Conversion Rate</p>
-              <p className="text-3xl font-bold text-blue-900">{funnelPercentage.toFixed(1)}%</p>
-              <p className="text-xs text-blue-600">Appointments Set / Leads</p>
-            </div>
-            <BarChart3 className="h-8 w-8 text-blue-600" />
-          </div>
-        </Card>
-
-        <Card className="p-6 bg-gradient-to-r from-green-50 to-green-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-green-700">Cost per Lead</p>
-              <p className="text-3xl font-bold text-green-900">${funnelCost.toFixed(2)}</p>
-              <p className="text-xs text-green-600">Meta Budget / Leads</p>
-            </div>
-            <Target className="h-8 w-8 text-green-600" />
-          </div>
-        </Card>
-
-        <Card className="p-6 bg-gradient-to-r from-purple-50 to-purple-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-purple-700">Overall Performance</p>
-              <p className="text-3xl font-bold text-purple-900">
-                {comparisonData.filter(item => item.actual >= item.target).length}/{comparisonData.length}
-              </p>
-              <p className="text-xs text-purple-600">Targets Met</p>
-            </div>
-            <TrendingUp className="h-8 w-8 text-purple-600" />
-          </div>
-        </Card>
-      </div>
-
-      {/* Detailed Comparison Table */}
-      <Card className="p-6">
-        <h3 className="text-xl font-semibold text-slate-900 mb-6">📊 Performance Comparison</h3>
-        
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-slate-200">
-                <th className="text-left p-4 font-semibold text-slate-700">Metric</th>
-                <th className="text-right p-4 font-semibold text-slate-700">Target</th>
-                <th className="text-right p-4 font-semibold text-slate-700">Actual</th>
-                <th className="text-right p-4 font-semibold text-slate-700">Difference</th>
-                <th className="text-right p-4 font-semibold text-slate-700">Progress</th>
-                <th className="text-center p-4 font-semibold text-slate-700">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {comparisonData.map((item, index) => {
-                const difference = calculateDifference(item.actual, item.target);
-                const percentage = calculatePercentage(item.actual, item.target);
-                const isPositive = item.actual >= item.target;
-                
-                return (
-                  <tr key={index} className="border-b border-slate-100 hover:bg-slate-50">
-                    <td className="p-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xl">{item.icon}</span>
-                        <span className="font-medium text-slate-900">{item.metric}</span>
-                      </div>
-                    </td>
-                    <td className="p-4 text-right font-medium text-slate-700">
-                      {formatValue(item?.target, item?.format)}
-                    </td>
-                    <td className="p-4 text-right font-bold text-slate-900">
-                      {formatValue(item.actual, item.format)}
-                    </td>
-                    <td className={cn("p-4 text-right font-medium", getStatusColor(item.actual, item.target))}>
-                      {isPositive ? '+' : ''}{formatValue(Math.abs(difference), item.format)}
-                    </td>
-                    <td className="p-4">
-                      <div className="w-full">
-                        <Progress 
-                          value={Math.min(percentage, 100)} 
-                          className="h-2"
-                        />
-                        <p className="text-xs text-slate-600 mt-1 text-right">
-                          {percentage.toFixed(1)}%
-                        </p>
-                      </div>
-                    </td>
-                    <td className="p-4 text-center">
-                      {getStatusBadge(item.actual, item.target)}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </Card>
-
-      {/* Performance Insights */}
-      <Card className="p-6 bg-gradient-to-r from-slate-50 to-slate-100">
-        <h3 className="text-lg font-semibold text-slate-900 mb-4">💡 Performance Insights</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <h4 className="font-medium text-green-800">✅ Strengths</h4>
-            <ul className="text-sm text-green-700 space-y-1">
-              {comparisonData
-                .filter(item => item.actual >= item.target)
-                .map((item, index) => (
-                  <li key={index}>• {item.metric} exceeded target by {calculatePercentage(item.actual, item.target) - 100 > 0 ? `${(calculatePercentage(item.actual, item.target) - 100).toFixed(1)}%` : '0%'}</li>
-                ))}
-              {comparisonData.filter(item => item.actual >= item.target).length === 0 && (
-                <li>• Focus on improving performance across all metrics</li>
-              )}
-            </ul>
-          </div>
-          <div className="space-y-2">
-            <h4 className="font-medium text-red-800">🎯 Areas for Improvement</h4>
-            <ul className="text-sm text-red-700 space-y-1">
-              {comparisonData
-                .filter(item => item.actual < item.target)
-                .map((item, index) => (
-                  <li key={index}>• {item.metric} is {(100 - calculatePercentage(item.actual, item.target)).toFixed(1)}% below target</li>
-                ))}
-              {comparisonData.filter(item => item.actual < item.target).length === 0 && (
-                <li>• Great job! All targets have been met or exceeded</li>
-              )}
-            </ul>
-          </div>
-        </div>
-      </Card>
     </div>
   );
 };
