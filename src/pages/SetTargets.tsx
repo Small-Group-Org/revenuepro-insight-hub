@@ -87,6 +87,7 @@ export const SetTargets = () => {
   useEffect(() => {
     if (currentTarget) {
       const newValues = processTargetData(currentTarget);
+      console.log("[newValues]", newValues);
       setFieldValues(newValues);
       setLastChanged(null); 
       setPrevValues(newValues);
@@ -259,6 +260,8 @@ export const SetTargets = () => {
       });
     }
   }, [toast, error, getInputFieldNames, selectedYear, fieldValues]);
+
+  console.log("[calc]", calculatedValues);
 
   return (
     <div className="min-h-screen bg-gray-50">
