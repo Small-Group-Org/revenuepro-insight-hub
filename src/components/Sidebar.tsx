@@ -21,8 +21,8 @@ const menuItems = [
   { id: 'dashboard', label: 'Dashboard', icon: BarChart3, path: '/' },
   { id: 'settargets', label: 'Set Targets', icon: Target, path: '/targets' },
   { id: 'actuals', label: 'Weekly Reporting', icon: Plus, path: '/actuals' },
-  { id: 'leads', label: 'Lead Sheet', icon: Users, path: '/leads' },
   { id: 'compare', label: 'Target Vs Actual', icon: TrendingUp, path: '/compare' },
+  { id: 'leads', label: 'Lead Sheet', icon: Users, path: '/leads' },
 ];
 
 export const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }: SidebarProps) => {

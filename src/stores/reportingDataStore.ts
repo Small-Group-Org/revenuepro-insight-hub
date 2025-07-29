@@ -42,12 +42,9 @@ export const useReportingDataStore = create<ReportingDataState>((set, get) => ({
       if (!response.error && response.data) {
         // Handle new response format: { actual: [...], target: {...} }
         const reportingResponse = response.data.data as IReportingResponse;
-        console.log("[reportingResponse]", reportingResponse);
         const actualData = Array.isArray(reportingResponse.actual) ? reportingResponse.actual : [reportingResponse.actual];
         const targetRaw = Array.isArray(reportingResponse.target) ? reportingResponse.target : [reportingResponse.target];
-        console.log("[targetRaw]", targetRaw);
         const targetData = Array.isArray(targetRaw) ? targetRaw : (targetRaw ? [targetRaw] : []);
-        console.log("[targetData]", targetData);
         set({ reportingData: actualData, targetData, isLoading: false });
       } else {
         set({ reportingData: null, targetData: null, error: response.message || 'Failed to fetch reporting data', isLoading: false });

@@ -8,6 +8,11 @@ import {
   isBefore,
   startOfYear,
   format,
+  endOfMonth,
+  eachWeekOfInterval,
+  isSameMonth,
+  getDay,
+  addDays,
 } from "date-fns";
 import { getWeekInfo, formatWeekRange } from "./weekLogic";
 
@@ -52,6 +57,54 @@ export const calculateManagementCost = (adSpend: number): number => {
 // Get days in month for a given date
 export const getDaysInMonth = (date: Date): number => {
   return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+};
+
+/**
+ * Determines how many weeks are in a given month
+ * A week is considered part of the month if it has 4 or more days in that month
+ * Weeks start on Monday and end on Sunday
+ * @param date - Any date in the month to check
+ * @returns Number of weeks in the month
+ */
+export const getWeeksInMonth = (date: Date): number => {
+  const monthStart = startOfMonth(date);
+  const monthEnd = endOfMonth(date);
+  
+  // Get the Monday of the week that contains the first day of the month
+  const firstWeekStart = startOfWeek(monthStart, { weekStartsOn: 1 });
+  
+  // Get the Sunday of the week that contains the last day of the month
+  const lastWeekEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
+  
+  // Generate all weeks that overlap with the month
+  const weeks = eachWeekOfInterval(
+    { start: firstWeekStart, end: lastWeekEnd },
+    { weekStartsOn: 1 }
+  );
+  
+  let weekCount = 0;
+  
+  weeks.forEach(weekStart => {
+    const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
+    
+    // Count how many days of this week fall within the month
+    let daysInMonth = 0;
+    let currentDay = weekStart;
+    
+    while (currentDay <= weekEnd) {
+      if (isSameMonth(currentDay, date)) {
+        daysInMonth++;
+      }
+      currentDay = addDays(currentDay, 1);
+    }
+    
+    // If 4 or more days of this week are in the month, count it
+    if (daysInMonth >= 4) {
+      weekCount++;
+    }
+  });
+  
+  return weekCount;
 };
 
 /**
