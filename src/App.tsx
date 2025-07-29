@@ -10,6 +10,7 @@ import { useState } from "react";
 import { Dashboard } from "@/components/Dashboard";
 import { SetTargets } from "@/pages/SetTargets";
 import { AddActualData } from "@/pages/AddActualData";
+import { LeadSheet } from "@/pages/LeadSheet";
 import NotFound from "@/pages/NotFound";
 import Login from "./pages/Login";
 import { UserProvider } from "./utils/UserContext";
@@ -38,6 +39,7 @@ const App = () => {
                   <Route path="/targets" element={<SetTargets />} />
                   <Route path="/actuals" element={<AddActualData />} />
                   <Route path="/compare" element={<CompareResults />} />
+                  <Route path="/leads" element={<LeadSheet />} />
                   <Route path="/create-user" element={<CreateUser />} />
                 </Route>
                 <Route path="*" element={<NotFound />} />

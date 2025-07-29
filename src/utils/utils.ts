@@ -1,4 +1,4 @@
-import { DisableMetadata, FieldConfig, FieldValue, FormulaContext, PeriodType } from "@/types";
+import { DisableMetadata, FieldConfig, FieldValue, PeriodType } from "@/types";
 import { targetFields } from "./constant";
 import {
   startOfWeek,
@@ -16,35 +16,14 @@ export const formatCurrency = (val: number) => {
   if (isNaN(val) || !isFinite(val)) return "$0";
   return `$${val.toLocaleString()}`;
 };
+
 export const formatPercent = (val: number) => {
   if (isNaN(val) || !isFinite(val)) return "0.00%";
   return `${val.toFixed(2)}%`;
 };
 
-// Safe calculation utilities to prevent NaN values
-export const safeDivide = (
-  numerator: number,
-  denominator: number,
-  defaultValue: number = 0
-): number => {
-  if (denominator === 0 || isNaN(denominator) || isNaN(numerator)) {
-    return defaultValue;
-  }
-  const result = numerator / denominator;
-  return isNaN(result) ? defaultValue : result;
-};
-
-export const safeRound = (value: number, defaultValue: number = 0): number => {
-  if (isNaN(value) || !isFinite(value)) {
-    return defaultValue;
-  }
-  return Math.round(value);
-};
-
-export const safePercentage = (
-  value: number,
-  defaultValue: number = 0
-): number => {
+// Safe calculation utilities
+export const safePercentage = (value: number, defaultValue: number = 0): number => {
   if (isNaN(value) || !isFinite(value)) {
     return defaultValue;
   }
@@ -76,232 +55,319 @@ export const getDaysInMonth = (date: Date): number => {
 };
 
 /**
- * Evaluates a formula string using the provided context values
- * @param formula - The formula string to evaluate
- * @param context - Object containing values and additional context
- * @returns The calculated result
+ * Main calculation function that handles all field calculations
  */
-export function evaluateFormula(
-  formula: string,
-  context: FormulaContext,
-  fieldValue?: string
-): number {
-  const { values, daysInMonth, period } = context;
+export const calculateFields = (
+  inputValues: FieldValue,
+  period: PeriodType = "monthly",
+  daysInMonth: number = 30
+): FieldValue => {
+  const values = { ...inputValues };
+  
+  // Calculate budget fields based on input values (for user input changes)
+  if (values.revenue !== undefined && values.avgJobSize !== undefined) {
+    values.sales = Math.round(values.revenue / values.avgJobSize);
+    values.sales = values.sales; // sales is the same as sales
+  }
+  
+  if (values.sales !== undefined && values.closeRate !== undefined) {
+    values.estimatesRan = Math.round(values.sales / (values.closeRate / 100));
+  }
+  
+  if (values.estimatesRan !== undefined && values.showRate !== undefined) {
+    values.estimatesSet = Math.round(values.estimatesRan / (values.showRate / 100));
+  }
+  
+  if (values.estimatesSet !== undefined && values.appointmentRate !== undefined) {
+    values.leads = Math.round(values.estimatesSet / (values.appointmentRate / 100));
+  }
 
-  // Create a safe evaluation environment
-  const safeEval = (expression: string): number => {
-    try {
-      // Replace variable names with their values
-      let processedExpression = expression;
+  // Calculate funnel rate
+  if (values.appointmentRate !== undefined && values.showRate !== undefined && values.closeRate !== undefined) {
+    values.leadToSale = Math.round((values.appointmentRate * values.showRate * values.closeRate) / 10000);
+  }
 
-      // Handle special functions
-      if (expression.includes("calculateManagementCost")) {
-        const argMatch = expression.match(/calculateManagementCost\(([^)]+)\)/);
-        if (argMatch) {
-          const arg = evaluateFormula(argMatch[1], context, fieldValue);
-          return calculateManagementCost(arg);
-        }
-      }
-
-      // Handle budget field calculation based on period
-      if (fieldValue === "budget") {
-        if (period === "yearly") {
-          return values.annualBudget || 0;
-        } else {
-          return values.calculatedMonthlyBudget || 0;
-        }
-      }
-
-      // Handle calculatedMonthlyBudget field calculation
-      if (fieldValue === "calculatedMonthlyBudget") {
-        if (period === "yearly") {
-          const annualBudget = values.annualBudget || 0;
-          return annualBudget / 12;
-        } else {
-          const revenue = values.revenue || 0;
-          const com = values.com || 0;
-          return revenue * (com / 100);
-        }
-      }
-
-      // Handle annualBudget field calculation
-      if (fieldValue === "annualBudget" || fieldValue === "weeklyBudget") {
-        const revenue = values.revenue || 0;
-        const com = values.com || 0;
-        return revenue * (com / 100);
-      }
-
-      // Replace budget references in formulas with the appropriate value based on period
-      if (expression.includes("budget")) {
-        const budgetValue =
-          period === "yearly"
-            ? values.annualBudget || 0
-            : values.calculatedMonthlyBudget || 0;
-        processedExpression = processedExpression.replace(
-          /\bbudget\b/g,
-          budgetValue.toString()
-        );
-      }
-
-      Object.keys(values).forEach((key) => {
-        const regex = new RegExp(`\\b${key}\\b`, "g");
-        processedExpression = processedExpression.replace(
-          regex,
-          values[key].toString()
-        );
-      });
-
-      // Replace daysInMonth
-      processedExpression = processedExpression.replace(
-        /\bdaysInMonth\b/g,
-        daysInMonth.toString()
-      );
-
-      // Evaluate the expression
-      const result = Function(
-        '"use strict"; return (' + processedExpression + ")"
-      )();
-      return isNaN(result) ? 0 : result;
-    } catch (error) {
-      console.error("Formula evaluation error:", error, "Formula:", formula);
-      return 0;
+  // Calculate budget fields based on period
+  if (values.revenue !== undefined && values.com !== undefined) {
+    if (period === 'yearly') {
+      values.annualBudget = Math.round(values.revenue * (values.com / 100));
+      values.calculatedMonthlyBudget = Math.round(values.annualBudget / 12);
+      values.budget = values.annualBudget;
+    } else if (period === 'monthly') {
+      values.calculatedMonthlyBudget = Math.round(values.revenue * (values.com / 100));
+      values.budget = values.calculatedMonthlyBudget;
+    } else if (period === 'weekly') {
+      values.weeklyBudget = Math.round(values.revenue * (values.com / 100));
+      values.budget = values.weeklyBudget;
     }
-  };
+  }
 
-  return safeEval(formula);
-}
+  // Calculate daily budget
+  if (values.budget !== undefined) {
+    values.dailyBudget = Math.round(values.budget / daysInMonth);
+  }
+
+  // Calculate cost metrics
+  if (values.budget !== undefined) {
+    if (values.leads !== undefined && values.leads > 0) {
+      values.cpl = Math.round(values.budget / values.leads);
+    }
+    if (values.estimatesSet !== undefined && values.estimatesSet > 0) {
+      values.cpEstimateSet = Math.round(values.budget / values.estimatesSet);
+    }
+    if (values.estimatesRan !== undefined && values.estimatesRan > 0) {
+      values.cpEstimate = Math.round(values.budget / values.estimatesRan);
+    }
+    if (values.sales !== undefined && values.sales > 0) {
+      values.cpJobBooked = Math.round(values.budget / values.sales);
+    }
+  }
+
+  // Calculate management cost and total CoM%
+  if (values.calculatedMonthlyBudget !== undefined) {
+    values.managementCost = calculateManagementCost(values.calculatedMonthlyBudget);
+    
+    if (values.revenue !== undefined && values.revenue > 0) {
+      values.totalCom = Math.round(((values.calculatedMonthlyBudget + values.managementCost) / values.revenue) * 100);
+    }
+  }
+
+  return values;
+};
 
 /**
- * Calculates all calculated fields based on input values
- * @param inputValues - Object containing input field values
- * @param daysInMonth - Number of days in the current month
- * @param period - The selected period (weekly, monthly, yearly)
- * @returns Object containing all calculated values
+ * Calculates fields for a single week
+ */
+export const calculateWeeklyFields = (weekData: FieldValue): FieldValue => {
+  return calculateFields(weekData, 'weekly', 7);
+};
+
+/**
+ * Aggregates weekly field values for monthly/yearly totals
+ */
+export const aggregateWeeklyFields = (weeklyData: FieldValue[]): FieldValue => {
+  return weeklyData.reduce((acc, weekValues) => {
+    Object.keys(weekValues).forEach(key => {
+      if (typeof weekValues[key] === 'number') {
+        acc[key] = (acc[key] || 0) + weekValues[key];
+      }
+    });
+    return acc;
+  }, {} as FieldValue);
+};
+
+/**
+ * Processes target data from the API and converts it to field values
+ */
+export const processTargetData = (currentTarget: any[] | null): FieldValue => {
+  if (!currentTarget || currentTarget.length === 0) {
+    return getDefaultValues();
+  }
+
+  // For weekly period, use normal forward calculation (like before)
+  if (currentTarget.length === 1) {
+    const weekData = currentTarget[0];
+    const weekValues: FieldValue = {
+      revenue: weekData.revenue || 0,
+      avgJobSize: weekData.avgJobSize || 0,
+      appointmentRate: weekData.appointmentRate || 0,
+      showRate: weekData.showRate || 0,
+      closeRate: weekData.closeRate || 0,
+      com: weekData.com || 0,
+    };
+
+    // Use normal forward calculation for weekly
+    return calculateFieldsForApiData(weekValues, 'weekly', 7);
+  }
+
+  // For monthly/yearly periods, use the new reverse calculation flow
+  // Calculate budget fields for each week individually
+  const weeklyCalculations = currentTarget.map(weekData => {
+    const weekValues: FieldValue = {
+      revenue: weekData.revenue || 0,
+      avgJobSize: weekData.avgJobSize || 0,
+      appointmentRate: weekData.appointmentRate || 0,
+      showRate: weekData.showRate || 0,
+      closeRate: weekData.closeRate || 0,
+      com: weekData.com || 0,
+    };
+
+    weekValues.sales = Math.round(weekValues.revenue / weekValues.avgJobSize);
+    weekValues.sales = weekValues.sales; // sales is the same as sales
+    weekValues.estimatesRan = Math.round(weekValues.sales / (weekValues.closeRate / 100));
+    weekValues.estimatesSet = Math.round(weekValues.estimatesRan / (weekValues.showRate / 100));
+    weekValues.leads = Math.round(weekValues.estimatesSet / (weekValues.appointmentRate / 100));
+    weekValues.weeklyBudget = Math.round(weekValues.revenue * (weekValues.com / 100));
+
+    return weekValues;
+  });
+
+  const aggregatedValues = aggregateWeeklyFields(weeklyCalculations);
+  const first = currentTarget[0] || {};
+  
+  // Calculate funnel rates using reverse formulas from aggregated data
+  const finalValues: FieldValue = {
+    ...getDefaultValues(),
+    ...aggregatedValues,
+  };
+
+  // Calculate avgJobSize using reverse formula: revenue / sales
+  if (finalValues.revenue && finalValues.revenue > 0 && finalValues.sales && finalValues.sales > 0) {
+    finalValues.avgJobSize = Math.round(finalValues.revenue / finalValues.sales);
+  }
+
+  // Calculate COM% using reverse formula: (aggregated weekly budget / total revenue) * 100
+  if (finalValues.revenue && finalValues.revenue > 0 && finalValues.weeklyBudget && finalValues.weeklyBudget > 0) {
+    finalValues.com = Number(((finalValues.weeklyBudget / finalValues.revenue) * 100).toFixed(2));
+  }
+
+  // Calculate funnel rates using reverse formulas
+  if (finalValues.leads && finalValues.leads > 0 && finalValues.estimatesSet && finalValues.estimatesSet > 0) {
+    finalValues.appointmentRate = Math.round((finalValues.estimatesSet / finalValues.leads) * 100);
+  }
+  
+  if (finalValues.estimatesSet && finalValues.estimatesSet > 0 && finalValues.estimatesRan && finalValues.estimatesRan > 0) {
+    finalValues.showRate = Math.round((finalValues.estimatesRan / finalValues.estimatesSet) * 100);
+  }
+  
+  if (finalValues.estimatesRan && finalValues.estimatesRan > 0 && finalValues.sales && finalValues.sales > 0) {
+    finalValues.closeRate = Math.round((finalValues.sales / finalValues.estimatesRan) * 100);
+  }
+  
+  if (finalValues.leads && finalValues.leads > 0 && finalValues.sales && finalValues.sales > 0) {
+    finalValues.leadToSale = Math.round((finalValues.sales / finalValues.leads) * 100);
+  }
+
+  return finalValues;
+};
+
+/**
+ * Calculates fields for API data while preserving reverse-calculated values
+ * This function is used specifically for API data processing
+ */
+export const calculateFieldsForApiData = (
+  inputValues: FieldValue,
+  period: PeriodType = "monthly",
+  daysInMonth: number = 30
+): FieldValue => {
+  const values = { ...inputValues };
+  
+  // Only calculate budget fields if they don't already exist (preserve reverse-calculated values)
+  // Note: avgJobSize and com are now calculated using reverse formulas for monthly/yearly periods
+  if (values.revenue !== undefined && values.avgJobSize !== undefined && values.sales === undefined) {
+    values.sales = Math.round(values.revenue / values.avgJobSize);
+    values.sales = values.sales; // sales is the same as sales
+  }
+  
+  if (values.sales !== undefined && values.closeRate !== undefined && values.estimatesRan === undefined) {
+    values.estimatesRan = Math.round(values.sales / (values.closeRate / 100));
+  }
+  
+  if (values.estimatesRan !== undefined && values.showRate !== undefined && values.estimatesSet === undefined) {
+    values.estimatesSet = Math.round(values.estimatesRan / (values.showRate / 100));
+  }
+  
+  if (values.estimatesSet !== undefined && values.appointmentRate !== undefined && values.leads === undefined) {
+    values.leads = Math.round(values.estimatesSet / (values.appointmentRate / 100));
+  }
+
+  // Calculate funnel rate
+  if (values.appointmentRate !== undefined && values.showRate !== undefined && values.closeRate !== undefined) {
+    values.leadToSale = Math.round((values.appointmentRate * values.showRate * values.closeRate) / 10000);
+  }
+
+  // Calculate budget fields based on period
+  if (values.revenue !== undefined && values.com !== undefined) {
+    if (period === 'yearly') {
+      values.annualBudget = Math.round(values.revenue * (values.com / 100));
+      values.calculatedMonthlyBudget = Math.round(values.annualBudget / 12);
+      values.budget = values.annualBudget;
+    } else if (period === 'monthly') {
+      values.calculatedMonthlyBudget = Math.round(values.revenue * (values.com / 100));
+      values.budget = values.calculatedMonthlyBudget;
+    } else if (period === 'weekly') {
+      values.weeklyBudget = Math.round(values.revenue * (values.com / 100));
+      values.budget = values.weeklyBudget;
+    }
+  }
+
+  // Calculate daily budget
+  if (values.budget !== undefined) {
+    values.dailyBudget = Math.round(values.budget / daysInMonth);
+  }
+
+  // Calculate cost metrics
+  if (values.budget !== undefined) {
+    if (values.leads !== undefined && values.leads > 0) {
+      values.cpl = Math.round(values.budget / values.leads);
+    }
+    if (values.estimatesSet !== undefined && values.estimatesSet > 0) {
+      values.cpEstimateSet = Math.round(values.budget / values.estimatesSet);
+    }
+    if (values.estimatesRan !== undefined && values.estimatesRan > 0) {
+      values.cpEstimate = Math.round(values.budget / values.estimatesRan);
+    }
+    if (values.sales !== undefined && values.sales > 0) {
+      values.cpJobBooked = Math.round(values.budget / values.sales);
+    }
+  }
+
+  // Calculate management cost and total CoM%
+  if (values.calculatedMonthlyBudget !== undefined) {
+    values.managementCost = calculateManagementCost(values.calculatedMonthlyBudget);
+    
+    if (values.revenue !== undefined && values.revenue > 0) {
+      values.totalCom = Math.round(((values.calculatedMonthlyBudget + values.managementCost) / values.revenue) * 100);
+    }
+  }
+
+  return values;
+};
+
+/**
+ * Legacy function for backward compatibility
  */
 export function calculateAllFields(
   inputValues: FieldValue,
   daysInMonth: number,
   period: PeriodType = "monthly"
 ): FieldValue {
-  const allValues = { ...inputValues };
-  const context: FormulaContext = { values: allValues, daysInMonth, period };
-
-  const calculateSection = (sectionKey: keyof typeof targetFields) => {
-    targetFields[sectionKey].forEach((field: any) => {
-      if (field.fieldType === "calculated" && field.formula) {
-        const calculatedValue = evaluateFormula(
-          field.formula,
-          context,
-          field.value
-        );
-        allValues[field.value] = Math.round(calculatedValue);
-      }
-    });
-  };
-
-  const calculateBudgetSection = () => {
-    // Calculate budget section fields in dependency order
-    const budgetFields = targetFields.budget;
-
-    // First, calculate sales (depends on revenue and avgJobSize)
-    const salesField = budgetFields.find(
-      (field: any) => field.value === "sales"
-    );
-    if (
-      salesField &&
-      salesField.fieldType === "calculated" &&
-      salesField.formula
-    ) {
-      const salesValue = evaluateFormula(salesField.formula, context, "sales");
-      allValues["sales"] = Math.round(salesValue);
-    }
-
-    // Then calculate estimatesRan (depends on sales)
-    const estimatesRanField = budgetFields.find(
-      (field: any) => field.value === "estimatesRan"
-    );
-    if (
-      estimatesRanField &&
-      estimatesRanField.fieldType === "calculated" &&
-      estimatesRanField.formula
-    ) {
-      const estimatesRanValue = evaluateFormula(
-        estimatesRanField.formula,
-        context,
-        "estimatesRan"
-      );
-      allValues["estimatesRan"] = Math.round(estimatesRanValue);
-    }
-
-    // Then calculate estimatesSet (depends on estimatesRan)
-    const estimatesSetField = budgetFields.find(
-      (field: any) => field.value === "estimatesSet"
-    );
-    if (
-      estimatesSetField &&
-      estimatesSetField.fieldType === "calculated" &&
-      estimatesSetField.formula
-    ) {
-      const estimatesSetValue = evaluateFormula(
-        estimatesSetField.formula,
-        context,
-        "estimatesSet"
-      );
-      allValues["estimatesSet"] = Math.round(estimatesSetValue);
-    }
-
-    // Finally calculate leads (depends on estimatesSet)
-    const leadsField = budgetFields.find(
-      (field: any) => field.value === "leads"
-    );
-    if (
-      leadsField &&
-      leadsField.fieldType === "calculated" &&
-      leadsField.formula
-    ) {
-      const leadsValue = evaluateFormula(leadsField.formula, context, "leads");
-      allValues["leads"] = Math.round(leadsValue);
-    }
-  };
-
-  // Calculate in order: funnelRate, budget (with proper dependency order), budgetTarget
-  calculateSection("funnelRate");
-  calculateBudgetSection();
-
-  // Calculate budget field specifically to ensure it's available for budgetTarget calculations
-  const budgetField = targetFields.budgetTarget.find(
-    (field: any) => field.value === "budget"
-  );
-  if (
-    budgetField &&
-    budgetField.fieldType === "calculated" &&
-    budgetField.formula
-  ) {
-    const budgetValue = evaluateFormula(budgetField.formula, context, "budget");
-    allValues["budget"] = Math.round(budgetValue);
-  }
-
-  calculateSection("budgetTarget");
-
-  return allValues;
+  return calculateFields(inputValues, period, daysInMonth);
 }
 
+/**
+ * Legacy function for backward compatibility
+ */
+export const calculateWeeklyBudgetFields = (weekData: FieldValue): FieldValue => {
+  return calculateWeeklyFields(weekData);
+};
+
+/**
+ * Legacy function for backward compatibility
+ */
+export const aggregateWeeklyBudgetFields = (weeklyData: FieldValue[]): FieldValue => {
+  return aggregateWeeklyFields(weeklyData);
+};
+
+/**
+ * Calculates reporting fields for actual data entry
+ */
 export function calculateReportingFields(inputValues: FieldValue): FieldValue {
   const allValues = { ...inputValues };
-  const context: FormulaContext = {
-    values: allValues,
-    daysInMonth: 30,
-    period: "weekly",
-  };
-
+  
   // Calculate budget report fields
-  const budgetSpent =
-    (allValues.testingBudgetSpent || 0) +
-    (allValues.awarenessBrandingBudgetSpent || 0) +
-    (allValues.leadGenerationBudgetSpent || 0);
+  const budgetSpent = (allValues.testingBudgetSpent || 0) + 
+                     (allValues.awarenessBrandingBudgetSpent || 0) + 
+                     (allValues.leadGenerationBudgetSpent || 0);
   allValues.budgetSpent = budgetSpent;
 
-  // Calculate over/under budget (assuming budget is available)
+  // Calculate budget fields if target revenue and com are available
+  if (allValues.targetRevenue !== undefined && allValues.com !== undefined) {
+    allValues.weeklyBudget = Math.round(allValues.targetRevenue * (allValues.com / 100));
+    allValues.budget = allValues.weeklyBudget; // For weekly period
+  }
+
+  // Calculate over/under budget
   if (allValues.budget !== undefined) {
     allValues.overUnderBudget = allValues.budget - budgetSpent;
   }
@@ -541,21 +607,8 @@ export const handleInputDisable = (
         shouldDisableNonRevenueFields = true;
         disabledMessage = noteMessage;
       }
-    } else if (period === "weekly") {
-      if (queryTypes.includes("monthly") || queryTypes.includes("yearly")) {
-        const weekInfo = getWeekInfo(selectedDate);
-        const weekRange = formatWeekRange(weekInfo.weekStart, weekInfo.weekEnd);
-        noteMessage = `The target for ${weekRange} is already set on ${
-          queryTypes.includes("yearly") ? "yearly" : "monthly"
-        } basis. You can only update the revenue of ${weekRange}`;
-        shouldDisableNonRevenueFields = true;
-        disabledMessage = noteMessage;
-      } else if (!hasTargets) {
-        isDisabled = true;
-        isButtonDisabled = true;
-        disabledMessage = "You can only set new targets in month or year view";
-      }
     }
+    // Removed weekly restrictions - users can now set weekly targets for any upcoming week
   }
 
   return {
@@ -565,32 +618,4 @@ export const handleInputDisable = (
     shouldDisableNonRevenueFields,
     isButtonDisabled,
   };
-};
-
-/**
- * Processes target data from the API and converts it to field values
- * @param currentTarget - Array of target data from the API
- * @returns Processed field values with default values as fallback
- */
-export const processTargetData = (currentTarget: any[] | null): FieldValue => {
-  const newValues = { ...getDefaultValues() };
-  
-  if (!currentTarget || currentTarget.length === 0) {
-    return newValues;
-  }
-
-  const first = currentTarget[0] || {};
-  const revenueSum = currentTarget.reduce((sum, item) => sum + (item.revenue || 0), 0);
-  
-  // Set individual field values from the first target
-  if (first.appointmentRate !== undefined) newValues.appointmentRate = first.appointmentRate;
-  if (first.showRate !== undefined) newValues.showRate = first.showRate;
-  if (first.closeRate !== undefined) newValues.closeRate = first.closeRate;
-  if (first.avgJobSize !== undefined) newValues.avgJobSize = first.avgJobSize;
-  if (first.com !== undefined) newValues.com = first.com;
-  
-  // Set revenue as the sum of all targets
-  newValues.revenue = revenueSum;
-  
-  return newValues;
 };

@@ -39,9 +39,7 @@ export default function AppLayout() {
               </div>
             </div>
           )}
-          <div className="container mx-auto py-6 px-4 lg:px-8">
             <Outlet />
-          </div>
         </main>
       </div>
     </>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { BarChart3, Target, Plus, TrendingUp, Menu, X, UserPlus, LogOut } from 'lucide-react';
+import { BarChart3, Target, Plus, TrendingUp, Menu, X, UserPlus, LogOut, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigate, useLocation } from "react-router-dom";
 import { useUserContext } from "../utils/UserContext";
@@ -20,8 +20,9 @@ interface UserWithRole {
 const menuItems = [
   { id: 'dashboard', label: 'Dashboard', icon: BarChart3, path: '/' },
   { id: 'settargets', label: 'Set Targets', icon: Target, path: '/targets' },
-  { id: 'actuals', label: 'Add Actual Data', icon: Plus, path: '/actuals' },
-  { id: 'compare', label: 'Compare & Results', icon: TrendingUp, path: '/compare' },
+  { id: 'actuals', label: 'Weekly Reporting', icon: Plus, path: '/actuals' },
+  { id: 'leads', label: 'Lead Sheet', icon: Users, path: '/leads' },
+  { id: 'compare', label: 'Target Vs Actual', icon: TrendingUp, path: '/compare' },
 ];
 
 export const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }: SidebarProps) => {

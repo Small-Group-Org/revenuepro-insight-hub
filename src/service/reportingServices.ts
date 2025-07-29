@@ -1,4 +1,5 @@
 import { doGET, doPOST } from "../utils/HttpUtils";
+import { IWeeklyTarget } from "./targetService";
 
 export interface IReportingData {
   userId?: string;
@@ -7,13 +8,20 @@ export interface IReportingData {
   [key: string]: any; // Flexible for additional fields
 }
 
+export interface IReportingResponse {
+  actual: IReportingData[];
+  target: IWeeklyTarget | IWeeklyTarget[]; // Target data structure - same as getTarget response
+}
+
 export const getReportingData = async (
   userId: string,
   startDate: string,
-  endDate: string
+  endDate: string,
+  queryType: string
 ) => {
   try {
     let url = `/actual/get?userId=${userId}`;
+    if (queryType) url += `&queryType=${queryType}`;
     if (startDate) url += `&startDate=${startDate}`;
     if (endDate) url += `&endDate=${endDate}`;
     const response = await doGET(url);

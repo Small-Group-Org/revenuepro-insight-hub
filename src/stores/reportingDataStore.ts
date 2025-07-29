@@ -1,25 +1,30 @@
 import { create } from 'zustand';
-import { IReportingData, getReportingData as fetchReportingData, upsertReportingData as saveReportingData } from '../service/reportingServices';
+import { IReportingData, IReportingResponse, getReportingData as fetchReportingData, upsertReportingData as saveReportingData } from '../service/reportingServices';
+import { IWeeklyTarget } from '../service/targetService';
 import useAuthStore from './authStore';
 import { useUserStore } from './userStore';
 
 interface ReportingDataState {
   reportingData: IReportingData[] | null;
+  targetData: IWeeklyTarget[] | null;
   isLoading: boolean;
   error: string | null;
   setReportingData: (data: IReportingData[] | null) => void;
-  getReportingData: (startDate: string, endDate: string) => Promise<void>;
+  setTargetData: (data: IWeeklyTarget[] | null) => void;
+  getReportingData: (startDate: string, endDate: string, queryType: string) => Promise<void>;
   upsertReportingData: (data: IReportingData) => Promise<void>;
   clearError: () => void;
 }
 
 export const useReportingDataStore = create<ReportingDataState>((set, get) => ({
   reportingData: null,
+  targetData: null,
   isLoading: false,
   error: null,
   setReportingData: (data) => set({ reportingData: data }),
+  setTargetData: (data) => set({ targetData: data }),
 
-  getReportingData: async (startDate, endDate) => {
+  getReportingData: async (startDate, endDate, queryType) => {
     set({ isLoading: true, error: null });
     try {
       const authState = useAuthStore.getState();
@@ -33,17 +38,22 @@ export const useReportingDataStore = create<ReportingDataState>((set, get) => ({
         set({ error: 'No user ID found', isLoading: false });
         return;
       }
-      const response = await fetchReportingData(userId, startDate, endDate);
+      const response = await fetchReportingData(userId, startDate, endDate, queryType);
       if (!response.error && response.data) {
-        const data = Array.isArray(response.data?.data) ? response.data?.data : [response.data?.data];
-        console.log("[]", data);
-        
-        set({ reportingData: data, isLoading: false });
+        // Handle new response format: { actual: [...], target: {...} }
+        const reportingResponse = response.data.data as IReportingResponse;
+        console.log("[reportingResponse]", reportingResponse);
+        const actualData = Array.isArray(reportingResponse.actual) ? reportingResponse.actual : [reportingResponse.actual];
+        const targetRaw = Array.isArray(reportingResponse.target) ? reportingResponse.target : [reportingResponse.target];
+        console.log("[targetRaw]", targetRaw);
+        const targetData = Array.isArray(targetRaw) ? targetRaw : (targetRaw ? [targetRaw] : []);
+        console.log("[targetData]", targetData);
+        set({ reportingData: actualData, targetData, isLoading: false });
       } else {
-        set({ reportingData: null, error: response.message || 'Failed to fetch reporting data', isLoading: false });
+        set({ reportingData: null, targetData: null, error: response.message || 'Failed to fetch reporting data', isLoading: false });
       }
     } catch (error) {
-      set({ reportingData: null, error: error instanceof Error ? error.message : 'An error occurred while fetching reporting data', isLoading: false });
+      set({ reportingData: null, targetData: null, error: error instanceof Error ? error.message : 'An error occurred while fetching reporting data', isLoading: false });
     }
   },
 
