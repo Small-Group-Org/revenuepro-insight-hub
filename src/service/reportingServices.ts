@@ -10,10 +10,12 @@ export interface IReportingData {
 export const getReportingData = async (
   userId: string,
   startDate: string,
-  endDate: string
+  endDate: string,
+  queryType: string
 ) => {
   try {
     let url = `/actual/get?userId=${userId}`;
+    if (queryType) url += `&queryType=${queryType}`;
     if (startDate) url += `&startDate=${startDate}`;
     if (endDate) url += `&endDate=${endDate}`;
     const response = await doGET(url);

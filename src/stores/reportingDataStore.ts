@@ -5,21 +5,25 @@ import { useUserStore } from './userStore';
 
 interface ReportingDataState {
   reportingData: IReportingData[] | null;
+  targetData: any;
   isLoading: boolean;
   error: string | null;
   setReportingData: (data: IReportingData[] | null) => void;
-  getReportingData: (startDate: string, endDate: string) => Promise<void>;
+  setTargetData: (data: any) => void;
+  getReportingData: (startDate: string, endDate: string, queryType: string) => Promise<void>;
   upsertReportingData: (data: IReportingData) => Promise<void>;
   clearError: () => void;
 }
 
 export const useReportingDataStore = create<ReportingDataState>((set, get) => ({
   reportingData: null,
+  targetData: null,
   isLoading: false,
   error: null,
   setReportingData: (data) => set({ reportingData: data }),
+  setTargetData: (data) => set({ targetData: data }),
 
-  getReportingData: async (startDate, endDate) => {
+  getReportingData: async (startDate, endDate, queryType) => {
     set({ isLoading: true, error: null });
     try {
       const authState = useAuthStore.getState();
@@ -33,17 +37,18 @@ export const useReportingDataStore = create<ReportingDataState>((set, get) => ({
         set({ error: 'No user ID found', isLoading: false });
         return;
       }
-      const response = await fetchReportingData(userId, startDate, endDate);
-      if (!response.error && response.data) {
-        const data = Array.isArray(response.data?.data) ? response.data?.data : [response.data?.data];
-        console.log("[]", data);
+      const response = await fetchReportingData(userId, startDate, endDate, queryType);
+      if (!response.error && response.data && response.data.data) {
+        const actualData = Array.isArray(response.data.data.actual) ? response.data.actual : [response.data.data.actual];
+        const targetRaw = response.data.data.target;
         
-        set({ reportingData: data, isLoading: false });
+        const targetData = Array.isArray(targetRaw) ? targetRaw : (targetRaw ? [targetRaw] : []);
+        set({ reportingData: actualData, targetData, isLoading: false });
       } else {
-        set({ reportingData: null, error: response.message || 'Failed to fetch reporting data', isLoading: false });
+        set({ reportingData: null, targetData: null, error: response.message || 'Failed to fetch reporting data', isLoading: false });
       }
     } catch (error) {
-      set({ reportingData: null, error: error instanceof Error ? error.message : 'An error occurred while fetching reporting data', isLoading: false });
+      set({ reportingData: null, targetData: null, error: error instanceof Error ? error.message : 'An error occurred while fetching reporting data', isLoading: false });
     }
   },
 

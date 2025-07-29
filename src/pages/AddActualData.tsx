@@ -1,7 +1,6 @@
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useReportingDataStore } from '@/stores/reportingDataStore';
-import { useTargetStore } from '@/stores/targetStore';
 import { useToast } from '@/hooks/use-toast';
 import { DollarSign, TrendingUp } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
@@ -14,17 +13,21 @@ import { getWeekInfo } from '@/utils/weekLogic';
 import { IWeeklyTarget } from '@/service/targetService';
 
 export const AddActualData = () => {
-  const { reportingData, getReportingData, upsertReportingData, isLoading, error } = useReportingDataStore();
-  const { getTargetsForUser, currentTarget } = useTargetStore();
+  const { reportingData, targetData, getReportingData, upsertReportingData, isLoading, error } = useReportingDataStore();
   const { toast } = useToast();
-  
+
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [period, setPeriod] = useState<PeriodType>('weekly');
-  
-  const [targetData, setTargetData] = useState<FieldValue>();
+
   const [fieldValues, setFieldValues] = useState<FieldValue>({});
   const [lastChanged, setLastChanged] = useState<string | null>(null);
   const [prevValues, setPrevValues] = useState<FieldValue>({});
+
+  // Use processed target data from store (single API)
+  const processedTargetData = useMemo(() => {
+    if (!targetData) return undefined;
+    return processTargetData(Array.isArray(targetData) ? targetData : [targetData]);
+  }, [targetData]);
 
   const selectedWeek = format(selectedDate, 'yyyy-MM-dd');
 
@@ -42,46 +45,59 @@ export const AddActualData = () => {
   }, []);
 
   React.useEffect(() => {
-    let startDate: string, endDate: string;
-    
+    let startDate: string, endDate: string, queryType: string;
+
     if (period === 'weekly') {
       const weekInfo = getWeekInfo(selectedDate);
       startDate = format(weekInfo.weekStart, 'yyyy-MM-dd');
       endDate = format(weekInfo.weekEnd, 'yyyy-MM-dd');
+      queryType = 'weekly';
     } else if (period === 'monthly') {
       startDate = format(startOfMonth(selectedDate), 'yyyy-MM-dd');
       endDate = format(endOfMonth(selectedDate), 'yyyy-MM-dd');
+      queryType = 'monthly';
     } else {
       startDate = format(startOfYear(selectedDate), 'yyyy-MM-dd');
       endDate = format(endOfYear(selectedDate), 'yyyy-MM-dd');
+      queryType = 'yearly';
     }
-    getReportingData(startDate, endDate);
-    getTargetsForUser(period, startDate, endDate);
-  }, [selectedDate, period, getReportingData, getTargetsForUser]);
+    getReportingData(startDate, endDate, queryType);
+  }, [selectedDate, period, getReportingData]);
 
-  React.useEffect(() => {
-    if (reportingData) {
-      const newValues = { ...getReportingDefaultValues() };
+  // Replace the second useEffect (lines 69-85) with this fixed version:
+
+React.useEffect(() => {
+  if (reportingData && Array.isArray(reportingData)) {
+    const newValues = { ...getReportingDefaultValues() };
+    
+    reportingData.forEach(data => {
+      if (!data) return;
       
-      reportingData.forEach(data => {
-        Object.keys(data).forEach(key => {
-          if (key !== 'userId' && key !== 'startDate' && key !== 'endDate') {
-            newValues[key] = (newValues[key] || 0) + (data[key] || 0);
-          }
-        });
+      // Process each field from the actual data
+      Object.keys(data).forEach(key => {
+        // Skip metadata fields
+        if (key !== 'userId' && key !== 'startDate' && key !== 'endDate' && 
+            key !== '_id' && key !== 'createdAt' && key !== 'updatedAt' && key !== '__v') {
+          
+          // Sum up the values (for monthly data with multiple weeks)
+          newValues[key] = (newValues[key] || 0) + (data[key] || 0);
+        }
       });
-      
-      setFieldValues(newValues);
-      setLastChanged(null);
-      setPrevValues(newValues);
-    }
-  }, [reportingData, getReportingDefaultValues]);
+    });
+    
+    setFieldValues(newValues);
+    setLastChanged(null);
+    setPrevValues(newValues);
+    
+  } else {
+    // If no data, set to defaults
+    const defaults = getReportingDefaultValues();
+    setFieldValues(defaults);
+    setLastChanged(null);
+    setPrevValues(defaults);
+  }
+}, [reportingData, getReportingDefaultValues]);
 
-  useEffect(() => {
-    if (currentTarget) {
-      setTargetData(processTargetData(currentTarget));
-    }
-  }, [currentTarget]);
 
   const calculatedValues = useMemo(() => 
     calculateReportingFields(fieldValues), 
@@ -164,7 +180,7 @@ export const AddActualData = () => {
     return `${format(monday, 'MMM dd')} - ${format(sunday, 'MMM dd, yyyy')}`;
   };
 
-  const isExistingData = reportingData?.some(data => data.startDate === selectedWeek);
+  const isExistingData = Array.isArray(reportingData) && reportingData.some(data => data && data.startDate === selectedWeek);
 
   const isHighlighted = useCallback((fieldName: string) => {
     if (!lastChanged) return false;
@@ -224,7 +240,7 @@ export const AddActualData = () => {
             selectedDate={selectedDate}
             isDisabled={isDisabled}
             disabledMessage={disabledMessage}
-            targetValues={targetData}
+            targetValues={processedTargetData}
             showTarget={true}
           />
 
@@ -242,7 +258,7 @@ export const AddActualData = () => {
             selectedDate={selectedDate}
             isDisabled={isDisabled}
             disabledMessage={disabledMessage}
-            targetValues={targetData}
+            targetValues={processedTargetData}
             showTarget={true}
           />
 
@@ -260,7 +276,7 @@ export const AddActualData = () => {
             selectedDate={selectedDate}
             isDisabled={isDisabled}
             disabledMessage={disabledMessage}
-            targetValues={targetData}
+            targetValues={processedTargetData}
             showTarget={true}
           />
         </div>

@@ -8,6 +8,7 @@ import { User as ServiceUser } from "@/service/userService";
 import { useUserContext } from "@/utils/UserContext";
 import { useUserStore } from "@/stores/userStore";
 import CreateUserModal from "@/components/CreateUserModal";
+import { UserPlus, Pencil, Trash2 } from "lucide-react";
 
 const CreateUser = () => {
   const { toast } = useToast();
@@ -68,7 +69,6 @@ const CreateUser = () => {
     setLoading(false);
   };
 
-
   let profileUser: (ServiceUser | typeof loggedInUser) | undefined = undefined;
   if (loggedInUser?.role === "ADMIN") {
     profileUser = users.find(u => u.id === selectedUserId);
@@ -77,57 +77,117 @@ const CreateUser = () => {
   }
 
   return (
-    <div className="flex flex-col justify-center  bg-gray-50">
-        <CreateUserModal
-          isOpen={isModalOpen}
-          onOpenChange={setIsModalOpen}
-          isCreating={isCreating}
-          editingUserId={editingUserId}
-          onSave={handleModalSave}
-          loading={loading}
-          onCreateClick={handleCreateClick}
-        />
+    <div className="flex flex-col min-h-screen bg-gray-50 py-6 px-2 sm:px-4 md:px-8">
+      <CreateUserModal
+        isOpen={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        isCreating={isCreating}
+        editingUserId={editingUserId}
+        onSave={handleModalSave}
+        loading={loading}
+      />
 
-      <Card className="w-full max-w-full">
-        <CardHeader>
-          <CardTitle>All Users</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>User ID</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {fetchingUsers ? (
-                  <TableRow><TableCell colSpan={5}>Loading...</TableCell></TableRow>
-                ) : users.length === 0 ? (
-                  <TableRow><TableCell colSpan={5}>No users found.</TableCell></TableRow>
-                ) : (
-                  users.map(user => (
-                    <TableRow key={user.id}>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>{user.name || '-'}</TableCell>
-                      <TableCell>{user.role}</TableCell>
-                      <TableCell>{user.id}</TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="outline" size="sm" className="mr-2" onClick={() => handleEditClick(user.id)}>Edit</Button>
-                        <Button variant="destructive" size="sm" onClick={() => handleDeleteClick(user.id)}>Delete</Button>
+      <div className="max-w-5xl mx-auto w-full">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <UserPlus className="h-8 w-8 text-blue-700" />
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent">
+              User Management
+            </h1>
+          </div>
+          <Button
+            onClick={handleCreateClick}
+            className="bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold shadow hover:from-blue-700 hover:to-purple-700"
+          >
+            <UserPlus className="h-5 w-5 mr-2" />
+            Add User
+          </Button>
+        </div>
+
+        <Card className="w-full shadow-lg">
+          <CardHeader>
+            <CardTitle>All Users</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto rounded-lg border border-slate-200">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-slate-100">
+                    <TableHead>Email</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>User ID</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {fetchingUsers ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8">
+                        Loading...
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+                  ) : users.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8">
+                        No users found.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    users.map((user, idx) => (
+                      <TableRow
+                        key={user.id}
+                        className={`transition-colors ${
+                          idx % 2 === 0 ? "bg-white" : "bg-slate-50"
+                        } hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50`}
+                      >
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell>{user.name || "-"}</TableCell>
+                        <TableCell>
+                          <span
+                            className={`inline-block px-2 py-1 rounded text-xs font-semibold ${
+                              user.role === "ADMIN"
+                                ? "bg-blue-100 text-blue-800"
+                                : "bg-purple-100 text-purple-800"
+                            }`}
+                          >
+                            {user.role}
+                          </span>
+                        </TableCell>
+                        <TableCell className="font-mono text-xs break-all">{user.id}</TableCell>
+                        <TableCell className="text-right flex flex-wrap gap-2 justify-end">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="flex items-center gap-1 px-3 py-1 border border-blue-200 text-blue-700 font-medium rounded-md transition-colors hover:bg-blue-100 hover:text-blue-900"
+                            onClick={() => handleEditClick(user.id)}
+                            aria-label="Edit"
+                            title="Edit"
+                          >
+                            <Pencil className="h-4 w-4" />
+                            Edit
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="flex items-center gap-1 px-3 py-1 border border-red-200 text-red-700 font-medium rounded-md transition-colors hover:bg-red-100 hover:text-red-900"
+                            onClick={() => handleDeleteClick(user.id)}
+                            aria-label="Delete"
+                            title="Delete"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Delete
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

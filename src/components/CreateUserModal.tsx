@@ -19,7 +19,6 @@ interface CreateUserModalProps {
   editingUserId: string | null;
   onSave: (userId: string | null, userData: { email: string; name: string; password?: string }) => Promise<void>;
   loading: boolean;
-  onCreateClick: () => void;
 }
 
 const CreateUserModal: React.FC<CreateUserModalProps> = ({
@@ -29,7 +28,6 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
   editingUserId,
   onSave,
   loading,
-  onCreateClick,
 }) => {
   const [currentUserData, setCurrentUserData] = useState({
     email: "",
@@ -77,9 +75,6 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogTrigger asChild>
-        <Button onClick={onCreateClick} className="absolute top-0 right-0 mt-4 mr-4">Create New User</Button>
-      </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>{isCreating ? "Create New User" : "Edit User"}</DialogTitle>
