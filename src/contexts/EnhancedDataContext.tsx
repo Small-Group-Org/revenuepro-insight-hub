@@ -6,7 +6,7 @@ export interface WeeklyTargets {
   leads: number;
   appointmentsSet: number;
   appointmentsComplete: number;
-  jobsBooked: number;
+  sales: number;
   salesRevenue: number;
   metaBudgetSpent: number;
 }
@@ -31,15 +31,15 @@ export interface ActualData extends WeeklyTargets {
 export interface FunnelMetrics {
   appointmentRate: number; // Appointments Set / Leads
   showRate: number; // Appointments Complete / Appointments Set  
-  closeRate: number; // Jobs Booked / Appointments Complete
-  leadToSaleRate: number; // Jobs Booked / Leads
+  closeRate: number; // Sales / Appointments Complete
+  leadToSaleRate: number; // Sales / Leads
 }
 
 export interface CostMetrics {
   costPerLead: number;
   costPerAppointmentSet: number;
   costPerAppointmentComplete: number;
-  costPerJobBooked: number;
+  costPerSale: number;
 }
 
 export interface ComparisonData {
@@ -96,7 +96,7 @@ const defaultTargets: WeeklyTargets = {
   leads: 0,
   appointmentsSet: 0,
   appointmentsComplete: 0,
-  jobsBooked: 0,
+  sales: 0,
   salesRevenue: 0,
   metaBudgetSpent: 0,
 };
@@ -159,7 +159,7 @@ export const EnhancedDataProvider = ({ children }: { children: ReactNode }) => {
       leads: calculateProportionalSplit(targets.leads, 12),
       appointmentsSet: calculateProportionalSplit(targets.appointmentsSet, 12),
       appointmentsComplete: calculateProportionalSplit(targets.appointmentsComplete, 12),
-      jobsBooked: calculateProportionalSplit(targets.jobsBooked, 12),
+      sales: calculateProportionalSplit(targets.sales, 12),
       salesRevenue: calculateProportionalSplit(targets.salesRevenue, 12),
       metaBudgetSpent: calculateProportionalSplit(targets.metaBudgetSpent, 12),
     };
@@ -169,7 +169,7 @@ export const EnhancedDataProvider = ({ children }: { children: ReactNode }) => {
         leads: monthlySplits.leads[month],
         appointmentsSet: monthlySplits.appointmentsSet[month],
         appointmentsComplete: monthlySplits.appointmentsComplete[month],
-        jobsBooked: monthlySplits.jobsBooked[month],
+        sales: monthlySplits.sales[month],
         salesRevenue: monthlySplits.salesRevenue[month],
         metaBudgetSpent: monthlySplits.metaBudgetSpent[month],
       };
@@ -179,7 +179,7 @@ export const EnhancedDataProvider = ({ children }: { children: ReactNode }) => {
         leads: calculateProportionalSplit(monthlyTargets.leads, weekCount),
         appointmentsSet: calculateProportionalSplit(monthlyTargets.appointmentsSet, weekCount),
         appointmentsComplete: calculateProportionalSplit(monthlyTargets.appointmentsComplete, weekCount),
-        jobsBooked: calculateProportionalSplit(monthlyTargets.jobsBooked, weekCount),
+        sales: calculateProportionalSplit(monthlyTargets.sales, weekCount),
         salesRevenue: calculateProportionalSplit(monthlyTargets.salesRevenue, weekCount),
         metaBudgetSpent: calculateProportionalSplit(monthlyTargets.metaBudgetSpent, weekCount),
       };
@@ -192,7 +192,7 @@ export const EnhancedDataProvider = ({ children }: { children: ReactNode }) => {
           leads: weeklySplits.leads[index],
           appointmentsSet: weeklySplits.appointmentsSet[index],
           appointmentsComplete: weeklySplits.appointmentsComplete[index],
-          jobsBooked: weeklySplits.jobsBooked[index],
+          sales: weeklySplits.sales[index],
           salesRevenue: weeklySplits.salesRevenue[index],
           metaBudgetSpent: weeklySplits.metaBudgetSpent[index],
         };
@@ -224,7 +224,7 @@ export const EnhancedDataProvider = ({ children }: { children: ReactNode }) => {
       leads: calculateProportionalSplit(targets.leads, weeks.length),
       appointmentsSet: calculateProportionalSplit(targets.appointmentsSet, weeks.length),
       appointmentsComplete: calculateProportionalSplit(targets.appointmentsComplete, weeks.length),
-      jobsBooked: calculateProportionalSplit(targets.jobsBooked, weeks.length),
+      sales: calculateProportionalSplit(targets.sales, weeks.length),
       salesRevenue: calculateProportionalSplit(targets.salesRevenue, weeks.length),
       metaBudgetSpent: calculateProportionalSplit(targets.metaBudgetSpent, weeks.length),
     };
@@ -235,7 +235,7 @@ export const EnhancedDataProvider = ({ children }: { children: ReactNode }) => {
         leads: weeklySplits.leads[index],
         appointmentsSet: weeklySplits.appointmentsSet[index],
         appointmentsComplete: weeklySplits.appointmentsComplete[index],
-        jobsBooked: weeklySplits.jobsBooked[index],
+        sales: weeklySplits.sales[index],
         salesRevenue: weeklySplits.salesRevenue[index],
         metaBudgetSpent: weeklySplits.metaBudgetSpent[index],
       };
@@ -258,7 +258,7 @@ export const EnhancedDataProvider = ({ children }: { children: ReactNode }) => {
         leads: acc.leads + monthData.leads,
         appointmentsSet: acc.appointmentsSet + monthData.appointmentsSet,
         appointmentsComplete: acc.appointmentsComplete + monthData.appointmentsComplete,
-        jobsBooked: acc.jobsBooked + monthData.jobsBooked,
+        sales: acc.sales + monthData.sales,
         salesRevenue: acc.salesRevenue + monthData.salesRevenue,
         metaBudgetSpent: acc.metaBudgetSpent + monthData.metaBudgetSpent,
       }),
@@ -298,7 +298,7 @@ export const EnhancedDataProvider = ({ children }: { children: ReactNode }) => {
         leads: acc.leads + weekData.leads,
         appointmentsSet: acc.appointmentsSet + weekData.appointmentsSet,
         appointmentsComplete: acc.appointmentsComplete + weekData.appointmentsComplete,
-        jobsBooked: acc.jobsBooked + weekData.jobsBooked,
+        sales: acc.sales + weekData.sales,
         salesRevenue: acc.salesRevenue + weekData.salesRevenue,
         metaBudgetSpent: acc.metaBudgetSpent + weekData.metaBudgetSpent,
       }),
@@ -322,7 +322,7 @@ export const EnhancedDataProvider = ({ children }: { children: ReactNode }) => {
         leads: acc.leads + monthData.leads,
         appointmentsSet: acc.appointmentsSet + monthData.appointmentsSet,
         appointmentsComplete: acc.appointmentsComplete + monthData.appointmentsComplete,
-        jobsBooked: acc.jobsBooked + monthData.jobsBooked,
+        sales: acc.sales + monthData.sales,
         salesRevenue: acc.salesRevenue + monthData.salesRevenue,
         metaBudgetSpent: acc.metaBudgetSpent + monthData.metaBudgetSpent,
       }),
@@ -382,8 +382,8 @@ export const EnhancedDataProvider = ({ children }: { children: ReactNode }) => {
   const calculateFunnelMetrics = (data: WeeklyTargets): FunnelMetrics => {
     const appointmentRate = data.leads > 0 ? (data.appointmentsSet / data.leads) * 100 : 0;
     const showRate = data.appointmentsSet > 0 ? (data.appointmentsComplete / data.appointmentsSet) * 100 : 0;
-    const closeRate = data.appointmentsComplete > 0 ? (data.jobsBooked / data.appointmentsComplete) * 100 : 0;
-    const leadToSaleRate = data.leads > 0 ? (data.jobsBooked / data.leads) * 100 : 0;
+    const closeRate = data.appointmentsComplete > 0 ? (data.sales / data.appointmentsComplete) * 100 : 0;
+    const leadToSaleRate = data.leads > 0 ? (data.sales / data.leads) * 100 : 0;
     
     return {
       appointmentRate,
@@ -398,7 +398,7 @@ export const EnhancedDataProvider = ({ children }: { children: ReactNode }) => {
       costPerLead: data.leads > 0 ? data.metaBudgetSpent / data.leads : 0,
       costPerAppointmentSet: data.appointmentsSet > 0 ? data.metaBudgetSpent / data.appointmentsSet : 0,
       costPerAppointmentComplete: data.appointmentsComplete > 0 ? data.metaBudgetSpent / data.appointmentsComplete : 0,
-      costPerJobBooked: data.jobsBooked > 0 ? data.metaBudgetSpent / data.jobsBooked : 0,
+      costPerSale: data.sales > 0 ? data.metaBudgetSpent / data.sales : 0,
     };
   };
 
@@ -427,7 +427,7 @@ export const EnhancedDataProvider = ({ children }: { children: ReactNode }) => {
       leads: actual.leads - target.leads,
       appointmentsSet: actual.appointmentsSet - target.appointmentsSet,
       appointmentsComplete: actual.appointmentsComplete - target.appointmentsComplete,
-      jobsBooked: actual.jobsBooked - target.jobsBooked,
+      sales: actual.sales - target.sales,
       salesRevenue: actual.salesRevenue - target.salesRevenue,
       metaBudgetSpent: actual.metaBudgetSpent - target.metaBudgetSpent,
     };
@@ -436,7 +436,7 @@ export const EnhancedDataProvider = ({ children }: { children: ReactNode }) => {
       leads: target.leads > 0 ? (actual.leads / target.leads) * 100 : 0,
       appointmentsSet: target.appointmentsSet > 0 ? (actual.appointmentsSet / target.appointmentsSet) * 100 : 0,
       appointmentsComplete: target.appointmentsComplete > 0 ? (actual.appointmentsComplete / target.appointmentsComplete) * 100 : 0,
-      jobsBooked: target.jobsBooked > 0 ? (actual.jobsBooked / target.jobsBooked) * 100 : 0,
+      sales: target.sales > 0 ? (actual.sales / target.sales) * 100 : 0,
       salesRevenue: target.salesRevenue > 0 ? (actual.salesRevenue / target.salesRevenue) * 100 : 0,
       metaBudgetSpent: target.metaBudgetSpent > 0 ? (actual.metaBudgetSpent / target.metaBudgetSpent) * 100 : 0,
     };
@@ -462,7 +462,7 @@ export const EnhancedDataProvider = ({ children }: { children: ReactNode }) => {
           leads: acc.leads + weeklyTarget.leads,
           appointmentsSet: acc.appointmentsSet + weeklyTarget.appointmentsSet,
           appointmentsComplete: acc.appointmentsComplete + weeklyTarget.appointmentsComplete,
-          jobsBooked: acc.jobsBooked + weeklyTarget.jobsBooked,
+          sales: acc.sales + weeklyTarget.sales,
           salesRevenue: acc.salesRevenue + weeklyTarget.salesRevenue,
           metaBudgetSpent: acc.metaBudgetSpent + weeklyTarget.metaBudgetSpent,
         };
@@ -477,7 +477,7 @@ export const EnhancedDataProvider = ({ children }: { children: ReactNode }) => {
           leads: acc.leads + weeklyActual.leads,
           appointmentsSet: acc.appointmentsSet + weeklyActual.appointmentsSet,
           appointmentsComplete: acc.appointmentsComplete + weeklyActual.appointmentsComplete,
-          jobsBooked: acc.jobsBooked + weeklyActual.jobsBooked,
+          sales: acc.sales + weeklyActual.sales,
           salesRevenue: acc.salesRevenue + weeklyActual.salesRevenue,
           metaBudgetSpent: acc.metaBudgetSpent + weeklyActual.metaBudgetSpent,
         };
@@ -497,7 +497,7 @@ export const EnhancedDataProvider = ({ children }: { children: ReactNode }) => {
         leads: acc.leads + monthlyAgg.targets.leads,
         appointmentsSet: acc.appointmentsSet + monthlyAgg.targets.appointmentsSet,
         appointmentsComplete: acc.appointmentsComplete + monthlyAgg.targets.appointmentsComplete,
-        jobsBooked: acc.jobsBooked + monthlyAgg.targets.jobsBooked,
+        sales: acc.sales + monthlyAgg.targets.sales,
         salesRevenue: acc.salesRevenue + monthlyAgg.targets.salesRevenue,
         metaBudgetSpent: acc.metaBudgetSpent + monthlyAgg.targets.metaBudgetSpent,
       };
@@ -509,7 +509,7 @@ export const EnhancedDataProvider = ({ children }: { children: ReactNode }) => {
         leads: acc.leads + monthlyAgg.actuals.leads,
         appointmentsSet: acc.appointmentsSet + monthlyAgg.actuals.appointmentsSet,
         appointmentsComplete: acc.appointmentsComplete + monthlyAgg.actuals.appointmentsComplete,
-        jobsBooked: acc.jobsBooked + monthlyAgg.actuals.jobsBooked,
+        sales: acc.sales + monthlyAgg.actuals.sales,
         salesRevenue: acc.salesRevenue + monthlyAgg.actuals.salesRevenue,
         metaBudgetSpent: acc.metaBudgetSpent + monthlyAgg.actuals.metaBudgetSpent,
       };

@@ -50,7 +50,7 @@ export const Dashboard = () => {
     leads: week.leads,
     appointmentsSet: week.appointmentsSet,
     appointmentsComplete: week.appointmentsComplete,
-    jobsBooked: week.jobsBooked,
+    sales: week.sales,
     salesRevenue: week.salesRevenue / 100, // Scale for better visualization
     metaBudgetSpent: week.metaBudgetSpent / 100,
   }));
@@ -59,7 +59,7 @@ export const Dashboard = () => {
   const funnelData = actualData.length > 0 ? [
     { name: 'Leads', value: kpis.totalLeads, fill: '#3b82f6' },
     { name: 'Appointments Set', value: kpis.totalAppointments, fill: '#10b981' },
-    { name: 'Jobs Booked', value: actualData.reduce((sum, week) => sum + week.jobsBooked, 0), fill: '#f59e0b' },
+    { name: 'Sales', value: actualData.reduce((sum, week) => sum + week.sales, 0), fill: '#f59e0b' },
   ] : [];
 
   const KPICard = ({ title, value, icon: Icon, format = 'number', trend = 0 }: any) => (
@@ -145,7 +145,7 @@ export const Dashboard = () => {
               <Tooltip />
               <Line type="monotone" dataKey="leads" stroke="#3b82f6" strokeWidth={2} />
               <Line type="monotone" dataKey="appointmentsSet" stroke="#10b981" strokeWidth={2} />
-              <Line type="monotone" dataKey="jobsBooked" stroke="#f59e0b" strokeWidth={2} />
+              <Line type="monotone" dataKey="sales" stroke="#f59e0b" strokeWidth={2} />
             </LineChart>
           </ResponsiveContainer>
         </Card>

@@ -5,7 +5,7 @@ interface Targets {
   leads: number;
   appointmentsSet: number;
   appointmentsComplete: number;
-  jobsBooked: number;
+  sales: number;
   salesRevenue: number;
   metaBudgetSpent: number;
 }
@@ -15,7 +15,7 @@ interface ActualData {
   leads: number;
   appointmentsSet: number;
   appointmentsComplete: number;
-  jobsBooked: number;
+  sales: number;
   salesRevenue: number;
   metaBudgetSpent: number;
   notes?: string;
@@ -34,7 +34,7 @@ const defaultTargets: Targets = {
   leads: 100,
   appointmentsSet: 50,
   appointmentsComplete: 40,
-  jobsBooked: 20,
+  sales: 20,
   salesRevenue: 25000,
   metaBudgetSpent: 5000,
 };

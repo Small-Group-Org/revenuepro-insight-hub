@@ -18,7 +18,9 @@ import {
   endOfYear,
 } from "date-fns";
 import { getWeekInfo } from "@/utils/weekLogic";
-import { processTargetData } from "@/utils/utils";
+import { processTargetData, calculateReportingFields, calculateFields } from "@/utils/utils";
+import { targetFields, reportingFields } from "@/utils/constant";
+import { FieldValue } from "@/types";
 
 const metricIcons: Record<string, React.ReactNode> = {
   "Appointment Rate": <TrendingUp className="h-5 w-5 text-blue-600" />,
@@ -67,34 +69,119 @@ export const CompareResults = () => {
     getReportingData(startDate, endDate, queryType);
   }, [selectedDate, period, getReportingData]);
 
-  // Aggregate actual data
-  const allMetricKeys = [
-  "appointmentRate", "showRate", "closeRate", "leadToSale",
-  "revenue", "com", "adCom",
-  "costPerLead", "costPerEstimateSet", "costPerEstimate", "costPerJobBooked",
-  "leads", "estimatesSet", "estimates", "jobsBooked", "avgJobSize"
-];
-
-const actualTotals = useMemo(() => {
-  const totals: Record<string, number> = {};
-  // Initialize all keys to 0
-  allMetricKeys.forEach(key => { totals[key] = 0; });
-  if (!reportingData || reportingData.length === 0) return totals;
-  reportingData.forEach((data) => {
-    allMetricKeys.forEach((key) => {
-      totals[key] += data[key] || 0;
-    });
-  });
-  return totals;
-}, [reportingData]);
-
-  // Always process targetData as array
+  // Process target data with all calculated fields
   const processedTargetData = useMemo(() => {
     if (!targetData) return undefined;
-    return processTargetData(Array.isArray(targetData) ? targetData : [targetData]);
-  }, [targetData]);
+    const baseTargetData = processTargetData(Array.isArray(targetData) ? targetData : [targetData]);
+    
+    // Apply all target field calculations
+    return calculateFields(baseTargetData, period, period === 'weekly' ? 7 : 30);
+  }, [targetData, period]);
 
-  // Prepare metrics from API data
+  // Process actual data with all calculated fields
+  const processedActualData = useMemo(() => {
+    if (!reportingData || reportingData.length === 0) return undefined;
+    
+    // Aggregate actual data from reporting fields
+    const aggregatedActual: FieldValue = {};
+    reportingData.forEach((data) => {
+      Object.keys(data).forEach((key) => {
+        if (key !== 'userId' && key !== 'startDate' && key !== 'endDate' && 
+            key !== '_id' && key !== 'createdAt' && key !== 'updatedAt' && key !== '__v') {
+          aggregatedActual[key] = (aggregatedActual[key] || 0) + (data[key] || 0);
+        }
+      });
+    });
+
+    // Add target data for budget calculations
+    const actualWithTargets = {
+      ...aggregatedActual,
+      com: processedTargetData?.com || 0,
+      targetRevenue: processedTargetData?.revenue || 0,
+    };
+
+    // Apply reporting field calculations
+    return calculateReportingFields(actualWithTargets);
+  }, [reportingData, processedTargetData]);
+
+  // Helper function to calculate actual metrics from reporting data
+  const calculateActualMetrics = useMemo(() => {
+    if (!processedActualData) return {};
+    
+    const actual = processedActualData;
+    const metrics: FieldValue = {};
+
+    // Map reporting fields to comparison metrics
+    // Revenue from targetReport
+    metrics.revenue = actual.revenue || 0;
+    
+    // Jobs Booked from targetReport
+    metrics.sales = actual.sales || 0;
+    
+    // Estimates Ran from targetReport
+    metrics.estimatesRan = actual.estimatesRan || 0;
+    
+    // Estimates Set from targetReport
+    metrics.estimatesSet = actual.estimatesSet || 0;
+    
+    // Leads from targetReport
+    metrics.leads = actual.leads || 0;
+    
+    // Budget spent from budgetReport
+    metrics.budgetSpent = actual.budgetSpent || 0;
+    
+    // Calculate funnel rates from actual data
+    if (metrics.leads > 0 && metrics.estimatesSet > 0) {
+      metrics.appointmentRate = Math.round((metrics.estimatesSet / metrics.leads) * 100);
+    }
+    
+    if (metrics.estimatesSet > 0 && metrics.estimatesRan > 0) {
+      metrics.showRate = Math.round((metrics.estimatesRan / metrics.estimatesSet) * 100);
+    }
+    
+    if (metrics.estimatesRan > 0 && metrics.sales > 0) {
+      metrics.closeRate = Math.round((metrics.sales / metrics.estimatesRan) * 100);
+    }
+    
+    // Calculate lead to sale
+    if (metrics.appointmentRate && metrics.showRate && metrics.closeRate) {
+      metrics.leadToSale = Math.round((metrics.appointmentRate * metrics.showRate * metrics.closeRate) / 10000);
+    }
+    
+    // Calculate average job size from actual revenue and jobs booked
+    // This is different from target avgJobSize which is set as a target
+    if (metrics.revenue > 0 && metrics.sales > 0) {
+      metrics.avgJobSize = Math.round(metrics.revenue / metrics.sales);
+    }
+    
+    // Calculate cost metrics if budget is available
+    if (actual.weeklyBudget) {
+      if (metrics.leads > 0) {
+        metrics.cpl = Math.round(actual.weeklyBudget / metrics.leads);
+      }
+      if (metrics.estimatesSet > 0) {
+        metrics.cpEstimateSet = Math.round(actual.weeklyBudget / metrics.estimatesSet);
+      }
+      if (metrics.estimatesRan > 0) {
+        metrics.cpEstimate = Math.round(actual.weeklyBudget / metrics.estimatesRan);
+      }
+      if (metrics.sales > 0) {
+        metrics.cpJobBooked = Math.round(actual.weeklyBudget / metrics.sales);
+      }
+    }
+    
+    // COM% from target data
+    metrics.com = processedTargetData?.com || 0;
+    
+    // Total COM% calculation
+    if (actual.weeklyBudget && metrics.revenue > 0) {
+      metrics.totalCom = Math.round((actual.weeklyBudget / metrics.revenue) * 100);
+    }
+
+    return metrics;
+  }, [processedActualData, processedTargetData]);
+
+  // Prepare metrics from processed data
   const metrics = useMemo(
     () => [
       {
@@ -102,26 +189,26 @@ const actualTotals = useMemo(() => {
         items: [
           {
             name: "Appointment Rate",
-            actual: actualTotals["appointmentRate"] ?? 0,
+            actual: calculateActualMetrics.appointmentRate ?? 0,
             target: processedTargetData?.appointmentRate ?? 0,
             format: "percent",
           },
           {
             name: "Show Rate",
-            actual: actualTotals["showRate"] ?? 0,
+            actual: calculateActualMetrics.showRate ?? 0,
             target: processedTargetData?.showRate ?? 0,
             format: "percent",
           },
           {
             name: "Close Rate",
-            actual: actualTotals["closeRate"] ?? 0,
+            actual: calculateActualMetrics.closeRate ?? 0,
             target: processedTargetData?.closeRate ?? 0,
             format: "percent",
           },
           {
             name: "Lead to Sale",
-            actual: actualTotals["leadToSale"] ?? 0,
-            target: 0,
+            actual: calculateActualMetrics.leadToSale ?? 0,
+            target: processedTargetData?.leadToSale ?? 0,
             format: "percent",
           },
         ],
@@ -131,20 +218,20 @@ const actualTotals = useMemo(() => {
         items: [
           {
             name: "Revenue",
-            actual: actualTotals["revenue"] ?? 0,
+            actual: calculateActualMetrics.revenue ?? 0,
             target: processedTargetData?.revenue ?? 0,
             format: "currency",
           },
           {
             name: "Total COM%",
-            actual: actualTotals["com"] ?? 0,
-            target: processedTargetData?.com ?? 0,
+            actual: calculateActualMetrics.totalCom ?? 0,
+            target: processedTargetData?.totalCom ?? 0,
             format: "percent",
           },
           {
             name: "AD COM%",
-            actual: actualTotals["adCom"] ?? 0,
-            target: 0,
+            actual: calculateActualMetrics.com ?? 0,
+            target: processedTargetData?.com ?? 0,
             format: "percent",
           },
         ],
@@ -154,26 +241,26 @@ const actualTotals = useMemo(() => {
         items: [
           {
             name: "Cost Per Lead",
-            actual: actualTotals["costPerLead"] ?? 0,
-            target: 0,
+            actual: calculateActualMetrics.cpl ?? 0,
+            target: processedTargetData?.cpl ?? 0,
             format: "currency",
           },
           {
             name: "Cost Per Estimate Set",
-            actual: actualTotals["costPerEstimateSet"] ?? 0,
-            target: 0,
+            actual: calculateActualMetrics.cpEstimateSet ?? 0,
+            target: processedTargetData?.cpEstimateSet ?? 0,
             format: "currency",
           },
           {
             name: "Cost Per Estimate",
-            actual: actualTotals["costPerEstimate"] ?? 0,
-            target: 0,
+            actual: calculateActualMetrics.cpEstimate ?? 0,
+            target: processedTargetData?.cpEstimate ?? 0,
             format: "currency",
           },
           {
             name: "Cost Per Job Booked",
-            actual: actualTotals["costPerJobBooked"] ?? 0,
-            target: 0,
+            actual: calculateActualMetrics.cpJobBooked ?? 0,
+            target: processedTargetData?.cpJobBooked ?? 0,
             format: "currency",
           },
         ],
@@ -183,38 +270,38 @@ const actualTotals = useMemo(() => {
         items: [
           {
             name: "Leads",
-            actual: actualTotals["leads"] ?? 0,
-            target: 0,
+            actual: calculateActualMetrics.leads ?? 0,
+            target: processedTargetData?.leads ?? 0,
             format: "number",
           },
           {
             name: "Estimates Set",
-            actual: actualTotals["estimatesSet"] ?? 0,
-            target: 0,
+            actual: calculateActualMetrics.estimatesSet ?? 0,
+            target: processedTargetData?.estimatesSet ?? 0,
             format: "number",
           },
           {
             name: "Estimates",
-            actual: actualTotals["estimates"] ?? 0,
-            target: 0,
+            actual: calculateActualMetrics.estimatesRan ?? 0,
+            target: processedTargetData?.estimatesRan ?? 0,
             format: "number",
           },
           {
             name: "Jobs Booked",
-            actual: actualTotals["jobsBooked"] ?? 0,
-            target: 0,
+            actual: calculateActualMetrics.sales ?? 0,
+            target: processedTargetData?.sales ?? 0,
             format: "number",
           },
           {
             name: "Average Job Size",
-            actual: actualTotals["avgJobSize"] ?? 0,
-            target: 0,
+            actual: calculateActualMetrics.avgJobSize ?? 0,
+            target: processedTargetData?.avgJobSize ?? 0,
             format: "currency",
           },
         ],
       },
     ],
-    [actualTotals, processedTargetData]
+    [calculateActualMetrics, processedTargetData]
   );
 
   // Format value helper
@@ -254,11 +341,11 @@ const actualTotals = useMemo(() => {
           <div className="text-center">
             <div className="flex items-center justify-center gap-4">
               <h1 className="leading-[130%] text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent">
-                Compare & Results
+                Target Vs Actual
               </h1>
             </div>
             <p className="text-gray-600 max-w-2xl mx-auto text-lg mb-10 mt-2">
-              Enter your weekly performance metrics for tracking and analysis
+              Compare your actual performance against targets with calculated metrics
             </p>
           </div>
         </div>

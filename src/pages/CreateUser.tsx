@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
@@ -90,7 +89,6 @@ const CreateUser = () => {
       <div className="max-w-5xl mx-auto w-full">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <UserPlus className="h-8 w-8 text-blue-700" />
             <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent">
               User Management
             </h1>

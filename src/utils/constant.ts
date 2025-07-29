@@ -299,7 +299,7 @@ export const reportingFields: ReportingFieldsConfig = {
     },
     {
       name: "Jobs Booked",
-      value: "jobsBooked",
+      value: "sales",
       type: "number",
       min: 0,
       defaultValue: 0,

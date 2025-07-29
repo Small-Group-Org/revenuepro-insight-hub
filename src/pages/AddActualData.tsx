@@ -210,7 +210,7 @@ React.useEffect(() => {
           <div className="text-center">
             <div className="flex items-center justify-center gap-4">
               <h1 className="leading-[130%] text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent">
-                Add Actual Performance Data
+                Weekly Reporting
               </h1>
             </div>
             <p className="text-gray-600 max-w-2xl mx-auto text-lg mb-10 mt-2">

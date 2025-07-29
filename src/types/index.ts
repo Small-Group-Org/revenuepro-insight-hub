@@ -56,3 +56,16 @@ export interface FieldValue {
     shouldDisableNonRevenueFields: boolean;
     isButtonDisabled: boolean;
   }
+
+export interface Lead {
+  id: string;
+  leadDate: string;
+  name: string;
+  email: string;
+  phone: string;
+  zip: string;
+  service: string;
+  adSetName: string;
+  adName: string;
+  estimateSet: boolean;
+}
