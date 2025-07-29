@@ -169,7 +169,7 @@ export const LeadSheet = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto relative">
                 <Table className="w-full min-w-[1200px]">
                   <TableHeader>
                     <TableRow className="bg-gray-50">
@@ -213,7 +213,7 @@ export const LeadSheet = () => {
                           Ad Name
                         </div>
                       </TableHead>
-                      <TableHead className="font-semibold text-gray-700 w-32">
+                      <TableHead className="font-semibold text-gray-700 w-32 sticky right-0 bg-gray-50 z-10 border-l border-gray-200 shadow-[-4px_0_6px_-1px_rgba(0,0,0,0.1)]">
                         <div className="flex items-center gap-1">
                           Estimate Set
                         </div>
@@ -222,7 +222,7 @@ export const LeadSheet = () => {
                   </TableHeader>
                   <TableBody>
                     {leads.map((lead) => (
-                      <TableRow key={lead.id} className="hover:bg-gray-50">
+                      <TableRow key={lead.id} className={`hover:bg-gray-50 ${lead.estimateSet ? 'bg-green-50' : ''}`}>
                         <TableCell className="font-medium px-3 py-4">
                           {formatDate(lead.leadDate)}
                         </TableCell>
@@ -259,13 +259,13 @@ export const LeadSheet = () => {
                         <TableCell className="px-3 py-4 text-xs">
                           {lead.adName}
                         </TableCell>
-                        <TableCell className="px-3 py-4 text-center">
+                        <TableCell className={`px-3 py-4 text-center sticky right-0 z-10 border-l border-gray-200 shadow-[-4px_0_6px_-1px_rgba(0,0,0,0.1)] ${lead.estimateSet ? 'bg-green-50' : 'bg-white'}`}>
                           <Checkbox
                             checked={lead.estimateSet}
                             onCheckedChange={(checked) => 
                               handleEstimateSetChange(lead.id, checked as boolean)
                             }
-                            className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 "
+                            className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                           />
                         </TableCell>
                       </TableRow>
