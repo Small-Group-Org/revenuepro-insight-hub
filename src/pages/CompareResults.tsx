@@ -18,28 +18,12 @@ import {
   endOfYear,
 } from "date-fns";
 import { getWeekInfo } from "@/utils/weekLogic";
-import { processTargetData, calculateReportingFields, calculateFields } from "@/utils/utils";
+import { processTargetData, calculateReportingFields, calculateFields, calculateManagementCost, getWeeksInMonth } from "@/utils/utils";
 import { targetFields, reportingFields } from "@/utils/constant";
 import { FieldValue } from "@/types";
+import { exportToExcel, ExportData } from "@/utils/excelExport";
 
-const metricIcons: Record<string, React.ReactNode> = {
-  "Appointment Rate": <TrendingUp className="h-5 w-5 text-blue-600" />,
-  "Show Rate": <TrendingUp className="h-5 w-5 text-blue-700" />,
-  "Close Rate": <TrendingUp className="h-5 w-5 text-green-600" />,
-  "Lead to Sale": <TrendingUp className="h-5 w-5 text-purple-600" />,
-  Revenue: <DollarSign className="h-5 w-5 text-yellow-600" />,
-  "Total COM%": <BarChart3 className="h-5 w-5 text-indigo-600" />,
-  "AD COM%": <BarChart3 className="h-5 w-5 text-indigo-700" />,
-  "Cost Per Lead": <DollarSign className="h-5 w-5 text-green-700" />,
-  "Cost Per Estimate Set": <DollarSign className="h-5 w-5 text-blue-700" />,
-  "Cost Per Estimate": <DollarSign className="h-5 w-5 text-blue-600" />,
-  "Cost Per Job Booked": <DollarSign className="h-5 w-5 text-purple-700" />,
-  Leads: <BarChart3 className="h-5 w-5 text-blue-600" />,
-  "Estimates Set": <Target className="h-5 w-5 text-green-600" />,
-  Estimates: <Target className="h-5 w-5 text-green-700" />,
-  "Jobs Booked": <Target className="h-5 w-5 text-purple-600" />,
-  "Average Job Size": <DollarSign className="h-5 w-5 text-yellow-700" />,
-};
+
 
 export const CompareResults = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -157,25 +141,36 @@ export const CompareResults = () => {
     // Calculate cost metrics if budget is available
     if (actual.weeklyBudget) {
       if (metrics.leads > 0) {
-        metrics.cpl = Math.round(actual.weeklyBudget / metrics.leads);
+        metrics.cpl = Math.round(actual.budgetSpent / metrics.leads);
       }
       if (metrics.estimatesSet > 0) {
-        metrics.cpEstimateSet = Math.round(actual.weeklyBudget / metrics.estimatesSet);
+        metrics.cpEstimateSet = Math.round(actual.budgetSpent / metrics.estimatesSet);
       }
       if (metrics.estimatesRan > 0) {
-        metrics.cpEstimate = Math.round(actual.weeklyBudget / metrics.estimatesRan);
+        metrics.cpEstimate = Math.round(actual.budgetSpent / metrics.estimatesRan);
       }
       if (metrics.sales > 0) {
-        metrics.cpJobBooked = Math.round(actual.weeklyBudget / metrics.sales);
+        metrics.cpJobBooked = Math.round(actual.budgetSpent / metrics.sales);
       }
     }
+    
+    // Calculate actual budget from budgetSpent (aggregation of testing, awareness, and lead generation budgets)
+    metrics.budget = actual.budgetSpent || 0;
     
     // COM% from target data
     metrics.com = processedTargetData?.com || 0;
     
-    // Total COM% calculation
-    if (actual.weeklyBudget && metrics.revenue > 0) {
-      metrics.totalCom = Math.round((actual.weeklyBudget / metrics.revenue) * 100);
+    if (metrics.revenue > 0 && period !== "weekly") {
+      let managementCost = 0;
+      const budget = processedTargetData?.weeklyBudget || 0;
+
+      if (period === "monthly") {
+        managementCost = calculateManagementCost(budget);
+      } else if (period === "yearly") {
+        managementCost = calculateManagementCost(budget / 12);
+      }
+
+      metrics.totalCom = Math.round(((managementCost + metrics.budget) / metrics.revenue) * 100);
     }
 
     return metrics;
@@ -191,25 +186,25 @@ export const CompareResults = () => {
             name: "Appointment Rate",
             actual: calculateActualMetrics.appointmentRate ?? 0,
             target: processedTargetData?.appointmentRate ?? 0,
-            format: "percent",
+            format: "percent" as const,
           },
           {
             name: "Show Rate",
             actual: calculateActualMetrics.showRate ?? 0,
             target: processedTargetData?.showRate ?? 0,
-            format: "percent",
+            format: "percent" as const,
           },
           {
             name: "Close Rate",
             actual: calculateActualMetrics.closeRate ?? 0,
             target: processedTargetData?.closeRate ?? 0,
-            format: "percent",
+            format: "percent" as const,
           },
           {
             name: "Lead to Sale",
             actual: calculateActualMetrics.leadToSale ?? 0,
             target: processedTargetData?.leadToSale ?? 0,
-            format: "percent",
+            format: "percent" as const,
           },
         ],
       },
@@ -220,19 +215,19 @@ export const CompareResults = () => {
             name: "Revenue",
             actual: calculateActualMetrics.revenue ?? 0,
             target: processedTargetData?.revenue ?? 0,
-            format: "currency",
+            format: "currency" as const,
           },
-          {
+          ...(period !== "weekly" ? [{
             name: "Total COM%",
             actual: calculateActualMetrics.totalCom ?? 0,
             target: processedTargetData?.totalCom ?? 0,
-            format: "percent",
-          },
+            format: "percent" as const,
+          }] : []),
           {
-            name: "AD COM%",
+            name: "Ad CoM%",
             actual: calculateActualMetrics.com ?? 0,
             target: processedTargetData?.com ?? 0,
-            format: "percent",
+            format: "percent" as const,
           },
         ],
       },
@@ -240,28 +235,34 @@ export const CompareResults = () => {
         category: "Expense Metrics",
         items: [
           {
+            name: "Budget",
+            actual: calculateActualMetrics.budget ?? 0,
+            target: processedTargetData?.budget ?? 0,
+            format: "currency" as const,
+          },
+          {
             name: "Cost Per Lead",
             actual: calculateActualMetrics.cpl ?? 0,
             target: processedTargetData?.cpl ?? 0,
-            format: "currency",
+            format: "currency" as const,
           },
           {
             name: "Cost Per Estimate Set",
             actual: calculateActualMetrics.cpEstimateSet ?? 0,
             target: processedTargetData?.cpEstimateSet ?? 0,
-            format: "currency",
+            format: "currency" as const,
           },
           {
             name: "Cost Per Estimate",
             actual: calculateActualMetrics.cpEstimate ?? 0,
             target: processedTargetData?.cpEstimate ?? 0,
-            format: "currency",
+            format: "currency" as const,
           },
           {
             name: "Cost Per Job Booked",
             actual: calculateActualMetrics.cpJobBooked ?? 0,
             target: processedTargetData?.cpJobBooked ?? 0,
-            format: "currency",
+            format: "currency" as const,
           },
         ],
       },
@@ -272,36 +273,36 @@ export const CompareResults = () => {
             name: "Leads",
             actual: calculateActualMetrics.leads ?? 0,
             target: processedTargetData?.leads ?? 0,
-            format: "number",
+            format: "number" as const,
           },
           {
             name: "Estimates Set",
             actual: calculateActualMetrics.estimatesSet ?? 0,
             target: processedTargetData?.estimatesSet ?? 0,
-            format: "number",
+            format: "number" as const,
           },
           {
             name: "Estimates",
             actual: calculateActualMetrics.estimatesRan ?? 0,
             target: processedTargetData?.estimatesRan ?? 0,
-            format: "number",
+            format: "number" as const,
           },
           {
             name: "Jobs Booked",
             actual: calculateActualMetrics.sales ?? 0,
             target: processedTargetData?.sales ?? 0,
-            format: "number",
+            format: "number" as const,
           },
           {
             name: "Average Job Size",
             actual: calculateActualMetrics.avgJobSize ?? 0,
             target: processedTargetData?.avgJobSize ?? 0,
-            format: "currency",
+            format: "currency" as const,
           },
         ],
       },
     ],
-    [calculateActualMetrics, processedTargetData]
+    [calculateActualMetrics, processedTargetData, period]
   );
 
   // Format value helper
@@ -327,10 +328,29 @@ export const CompareResults = () => {
     setPeriod(newPeriod);
   };
 
-  // Export button handler (TODO)
+  // Export button handler
   const handleExport = () => {
-    // TODO: Implement export logic
-    alert("Export coming soon!");
+    if (!processedActualData || !processedTargetData) {
+      alert("No data available to export. Please wait for data to load.");
+      return;
+    }
+
+    const exportData: ExportData = {
+      metrics,
+      period,
+      selectedDate,
+      actualMetrics: calculateActualMetrics,
+      targetData: processedTargetData
+    };
+
+    try {
+      exportToExcel(exportData);
+      // Show success message
+      alert('Excel file exported successfully!');
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Export failed. Please try again.');
+    }
   };
 
   return (
@@ -356,7 +376,7 @@ export const CompareResults = () => {
             initialDate={selectedDate}
             initialPeriod={period}
             onChange={handleDatePeriodChange}
-            buttonText="Export"
+            buttonText="Export to Excel"
             onButtonClick={handleExport}
             allowedPeriods={["weekly", "monthly", "yearly"]}
           />
@@ -381,6 +401,9 @@ export const CompareResults = () => {
                     Target
                   </th>
                   <th className="text-right p-4 font-semibold text-slate-700">
+                    Progress
+                  </th>
+                  <th className="text-right p-4 font-semibold text-slate-700">
                     Performance
                   </th>
                 </tr>
@@ -393,7 +416,7 @@ export const CompareResults = () => {
                       className="bg-slate-100"
                     >
                       <td
-                        colSpan={4}
+                        colSpan={5}
                         className="font-bold text-blue-900 py-2 pl-4 text-lg"
                       >
                         {section.category}
@@ -410,8 +433,7 @@ export const CompareResults = () => {
                           key={`${section.category}-${item.name}`}
                           className="border-b border-slate-100 hover:bg-slate-50"
                         >
-                          <td className="p-4 font-medium text-slate-900 flex items-center gap-2">
-                            {metricIcons[item.name]}
+                          <td className="p-4 font-medium text-slate-900">
                             {item.name}
                           </td>
                           <td className="p-4 text-right font-bold text-slate-900">
@@ -419,6 +441,11 @@ export const CompareResults = () => {
                           </td>
                           <td className="p-4 text-right font-medium text-slate-700">
                             {formatValue(item.target, item.format)}
+                          </td>
+                          <td className="p-4 text-right font-semibold">
+                            <span className="text-slate-700">
+                              {item.target > 0 ? `${((item.actual / item.target) * 100).toFixed(2)}%` : 'N/A'}
+                            </span>
                           </td>
                           <td className="p-4 text-right font-semibold">
                             <span

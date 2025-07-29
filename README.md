@@ -59,6 +59,34 @@ This project is built with:
 - React
 - shadcn-ui
 - Tailwind CSS
+- xlsx (for Excel export functionality)
+
+## Features
+
+### Excel Export Functionality
+
+The application includes a comprehensive Excel export feature for the Target vs Actual comparison results:
+
+- **Export Location**: Available on the Compare Results page
+- **File Format**: Excel (.xlsx) with proper formatting and styling
+- **Content**: Includes all metrics organized by categories (Funnel Metrics, Revenue Metrics, Expense Metrics, Performance Metrics)
+- **Additional Data**: Summary section with key performance indicators
+- **Formatting**: Proper currency, percentage, and number formatting
+- **Styling**: Headers, category sections, and data are properly styled for readability
+
+To export data:
+1. Navigate to the Compare Results page
+2. Select your desired date and period (weekly/monthly/yearly)
+3. Wait for the data to load
+4. Click the "Export to Excel" button
+5. The file will be automatically downloaded with a descriptive filename
+
+The exported Excel file includes:
+- Report header with period and date information
+- All comparison metrics with actual vs target values
+- Progress percentages and performance indicators
+- Summary section with key metrics
+- Proper column formatting and styling
 
 ## How can I deploy this project?
 
