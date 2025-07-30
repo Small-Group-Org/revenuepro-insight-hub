@@ -18,7 +18,7 @@ import {
   endOfYear,
 } from "date-fns";
 import { getWeekInfo } from "@/utils/weekLogic";
-import { processTargetData, calculateReportingFields, calculateFields, calculateManagementCost, getWeeksInMonth } from "@/utils/utils";
+import { processTargetData, calculateReportingFields, calculateFields, calculateManagementCost, getWeeksInMonth, formatCurrencyValue } from "@/utils/utils";
 import { targetFields, reportingFields } from "@/utils/constant";
 import { FieldValue } from "@/types";
 import { exportToExcel, ExportData } from "@/utils/excelExport";
@@ -116,41 +116,41 @@ export const CompareResults = () => {
     
     // Calculate funnel rates from actual data
     if (metrics.leads > 0 && metrics.estimatesSet > 0) {
-      metrics.appointmentRate = Math.round((metrics.estimatesSet / metrics.leads) * 100);
+      metrics.appointmentRate = (metrics.estimatesSet / metrics.leads) * 100;
     }
     
     if (metrics.estimatesSet > 0 && metrics.estimatesRan > 0) {
-      metrics.showRate = Math.round((metrics.estimatesRan / metrics.estimatesSet) * 100);
+      metrics.showRate = (metrics.estimatesRan / metrics.estimatesSet) * 100;
     }
     
     if (metrics.estimatesRan > 0 && metrics.sales > 0) {
-      metrics.closeRate = Math.round((metrics.sales / metrics.estimatesRan) * 100);
+      metrics.closeRate = (metrics.sales / metrics.estimatesRan) * 100;
     }
     
     // Calculate lead to sale
     if (metrics.appointmentRate && metrics.showRate && metrics.closeRate) {
-      metrics.leadToSale = Math.round((metrics.appointmentRate * metrics.showRate * metrics.closeRate) / 10000);
+      metrics.leadToSale = (metrics.appointmentRate * metrics.showRate * metrics.closeRate) / 10000;
     }
     
     // Calculate average job size from actual revenue and jobs booked
     // This is different from target avgJobSize which is set as a target
     if (metrics.revenue > 0 && metrics.sales > 0) {
-      metrics.avgJobSize = Math.round(metrics.revenue / metrics.sales);
+      metrics.avgJobSize = metrics.revenue / metrics.sales;
     }
     
     // Calculate cost metrics if budget is available
     if (actual.weeklyBudget) {
       if (metrics.leads > 0) {
-        metrics.cpl = Math.round(actual.budgetSpent / metrics.leads);
+        metrics.cpl = actual.budgetSpent / metrics.leads;
       }
       if (metrics.estimatesSet > 0) {
-        metrics.cpEstimateSet = Math.round(actual.budgetSpent / metrics.estimatesSet);
+        metrics.cpEstimateSet = actual.budgetSpent / metrics.estimatesSet;
       }
       if (metrics.estimatesRan > 0) {
-        metrics.cpEstimate = Math.round(actual.budgetSpent / metrics.estimatesRan);
+        metrics.cpEstimate = actual.budgetSpent / metrics.estimatesRan;
       }
       if (metrics.sales > 0) {
-        metrics.cpJobBooked = Math.round(actual.budgetSpent / metrics.sales);
+        metrics.cpJobBooked = actual.budgetSpent / metrics.sales;
       }
     }
     
@@ -170,7 +170,7 @@ export const CompareResults = () => {
         managementCost = calculateManagementCost(budget / 12);
       }
 
-      metrics.totalCom = Math.round(((managementCost + metrics.budget) / metrics.revenue) * 100);
+      metrics.totalCom = ((managementCost + metrics.budget) / metrics.revenue) * 100;
     }
 
     return metrics;
@@ -308,15 +308,12 @@ export const CompareResults = () => {
   // Format value helper
   const formatValue = (value: number, format: string) => {
     if (format === "currency") {
-      return `$${value?.toLocaleString(undefined, {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      })}`;
+      return formatCurrencyValue(value);
     }
     if (format === "percent") {
-      return `${value?.toFixed(2)}%`;
+      return `${value.toFixed(2)}%`;
     }
-    return value?.toLocaleString();
+    return Math.round(value)?.toLocaleString();
   };
 
   // Handler for DatePeriodSelector

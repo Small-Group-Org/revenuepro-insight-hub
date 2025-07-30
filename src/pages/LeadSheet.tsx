@@ -154,8 +154,6 @@ export const LeadSheet = () => {
             initialDate={selectedDate}
             initialPeriod={period}
             onChange={handleDatePeriodChange}
-            buttonText="Save Changes"
-            onButtonClick={handleSave}
             allowedPeriods={['weekly', 'monthly']}
           />
         </div>

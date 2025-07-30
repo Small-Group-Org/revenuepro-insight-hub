@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { calculateAllFields, calculateManagementCost, safePercentage } from "@/utils/utils";
+import { calculateAllFields, calculateManagementCost, safePercentage, formatCurrencyValue } from "@/utils/utils";
 import { FieldValue } from "@/types";
 import { TooltipProvider } from "@radix-ui/react-tooltip";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
@@ -82,15 +82,15 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
     months.forEach((month) => {
       const budget = monthlyBudgets[month] || 0;
       const percentage = totalBudget > 0 ? budget / annualTotals.budget : 0;
-      const monthlyRevenue = Math.round(annualTotals.revenue * percentage);
+      const monthlyRevenue = annualTotals.revenue * percentage;
       const managementCost = calculateManagementCost(budget);
 
       newMonthlyData[month] = {
         budget,
-        leads: Math.round(annualTotals.leads * percentage),
-        estimatesSet: Math.round(annualTotals.estimatesSet * percentage),
-        estimates: Math.round(annualTotals.estimates * percentage),
-        sales: Math.round(annualTotals.sales * percentage),
+        leads: annualTotals.leads * percentage,
+        estimatesSet: annualTotals.estimatesSet * percentage,
+        estimates: annualTotals.estimates * percentage,
+        sales: annualTotals.sales * percentage,
         revenue: monthlyRevenue,
         avgJobSize: annualTotals.avgJobSize,
         com: annualTotals.com,
@@ -183,7 +183,7 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
               <Badge
                 variant="outline"
               >
-                Allocated: ${totalBudget.toLocaleString()}
+                Allocated: {formatCurrencyValue(totalBudget)}
               </Badge>
               <Badge
                 variant={
@@ -192,7 +192,7 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
                     : "success"
                 }
               >
-                Left: {annualTotals.budget - totalBudget >= 0 ? '  ' : '- '}${Math.abs(annualTotals.budget - totalBudget).toLocaleString()}
+                Left: {annualTotals.budget - totalBudget >= 0 ? '  ' : '- '}{formatCurrencyValue(Math.abs(annualTotals.budget - totalBudget))}
               </Badge>
               </div>
             </div>
@@ -288,7 +288,7 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
                       Revenue
                     </label>
                     <div className="text-lg font-semibold text-green-600">
-                      ${selectedMonthData.revenue.toLocaleString()}
+                      {formatCurrencyValue(selectedMonthData.revenue)}
                     </div>
                   </div>
                   <div>
@@ -296,7 +296,7 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
                       Avg Job Size
                     </label>
                     <div className="text-lg font-semibold">
-                      ${selectedMonthData.avgJobSize.toLocaleString()}
+                      {formatCurrencyValue(selectedMonthData.avgJobSize)}
                     </div>
                   </div>
                   <div>
@@ -304,7 +304,7 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
                       Monthly Budget
                     </label>
                     <div className="text-lg font-semibold text-blue-600">
-                      ${selectedMonthData.budget.toLocaleString()}
+                      {formatCurrencyValue(selectedMonthData.budget)}
                     </div>
                   </div>
                   <div>
@@ -339,13 +339,13 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
                   <div>
                     Total Revenue:{" "}
                     <span className="font-semibold">
-                      ${annualTotals.revenue.toLocaleString()}
+                      {formatCurrencyValue(annualTotals.revenue)}
                     </span>
                   </div>
                   <div>
                     Total Budget:{" "}
                     <span className="font-semibold">
-                      ${annualTotals.budget.toLocaleString()}
+                      {formatCurrencyValue(annualTotals.budget)}
                     </span>
                   </div>
                   <div>

@@ -18,13 +18,53 @@ import { getWeekInfo, formatWeekRange } from "./weekLogic";
 
 // Utility for formatting
 export const formatCurrency = (val: number) => {
-  if (isNaN(val) || !isFinite(val)) return "$0";
-  return `$${val.toLocaleString()}`;
+  if (isNaN(val) || !isFinite(val)) return "$0.00";
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(val);
 };
 
 export const formatPercent = (val: number) => {
   if (isNaN(val) || !isFinite(val)) return "0.00%";
   return `${val.toFixed(2)}%`;
+};
+
+// New function to format numbers without currency symbol
+export const formatNumber = (val: number) => {
+  if (isNaN(val) || !isFinite(val)) return "0";
+  return Math.round(val).toLocaleString();
+};
+
+// Comprehensive currency formatter with options
+export const formatCurrencyValue = (value: number, options?: {
+  minimumFractionDigits?: number;
+  maximumFractionDigits?: number;
+  showSymbol?: boolean;
+}) => {
+  if (isNaN(value) || !isFinite(value)) return "$0.00";
+  
+  const {
+    minimumFractionDigits = 2,
+    maximumFractionDigits = 2,
+    showSymbol = true
+  } = options || {};
+  
+  if (showSymbol) {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits,
+      maximumFractionDigits
+    }).format(value);
+  } else {
+    return new Intl.NumberFormat('en-US', {
+      minimumFractionDigits,
+      maximumFractionDigits
+    }).format(value);
+  }
 };
 
 // Safe calculation utilities
@@ -119,60 +159,59 @@ export const calculateFields = (
   
   // Calculate budget fields based on input values (for user input changes)
   if (values.revenue !== undefined && values.avgJobSize !== undefined) {
-    values.sales = Math.round(values.revenue / values.avgJobSize);
-    values.sales = values.sales; // sales is the same as sales
+    values.sales = values.revenue / values.avgJobSize;
   }
   
   if (values.sales !== undefined && values.closeRate !== undefined) {
-    values.estimatesRan = Math.round(values.sales / (values.closeRate / 100));
+    values.estimatesRan = values.sales / (values.closeRate / 100);
   }
   
   if (values.estimatesRan !== undefined && values.showRate !== undefined) {
-    values.estimatesSet = Math.round(values.estimatesRan / (values.showRate / 100));
+    values.estimatesSet = values.estimatesRan / (values.showRate / 100);
   }
   
   if (values.estimatesSet !== undefined && values.appointmentRate !== undefined) {
-    values.leads = Math.round(values.estimatesSet / (values.appointmentRate / 100));
+    values.leads = values.estimatesSet / (values.appointmentRate / 100);
   }
 
   // Calculate funnel rate
   if (values.appointmentRate !== undefined && values.showRate !== undefined && values.closeRate !== undefined) {
-    values.leadToSale = Math.round((values.appointmentRate * values.showRate * values.closeRate) / 10000);
+    values.leadToSale = (values.appointmentRate * values.showRate * values.closeRate) / 10000;
   }
 
   // Calculate budget fields based on period
   if (values.revenue !== undefined && values.com !== undefined) {
     if (period === 'yearly') {
-      values.annualBudget = Math.round(values.revenue * (values.com / 100));
-      values.calculatedMonthlyBudget = Math.round(values.annualBudget / 12);
+      values.annualBudget = values.revenue * (values.com / 100);
+      values.calculatedMonthlyBudget = values.annualBudget / 12;
       values.budget = values.annualBudget;
     } else if (period === 'monthly') {
-      values.calculatedMonthlyBudget = Math.round(values.revenue * (values.com / 100));
+      values.calculatedMonthlyBudget = values.revenue * (values.com / 100);
       values.budget = values.calculatedMonthlyBudget;
     } else if (period === 'weekly') {
-      values.weeklyBudget = Math.round(values.revenue * (values.com / 100));
+      values.weeklyBudget = values.revenue * (values.com / 100);
       values.budget = values.weeklyBudget;
     }
   }
 
   // Calculate daily budget
   if (values.budget !== undefined) {
-    values.dailyBudget = Math.round(values.budget / daysInMonth);
+    values.dailyBudget = values.budget / daysInMonth;
   }
 
   // Calculate cost metrics
   if (values.budget !== undefined) {
     if (values.leads !== undefined && values.leads > 0) {
-      values.cpl = Math.round(values.budget / values.leads);
+      values.cpl = values.budget / values.leads;
     }
     if (values.estimatesSet !== undefined && values.estimatesSet > 0) {
-      values.cpEstimateSet = Math.round(values.budget / values.estimatesSet);
+      values.cpEstimateSet = values.budget / values.estimatesSet;
     }
     if (values.estimatesRan !== undefined && values.estimatesRan > 0) {
-      values.cpEstimate = Math.round(values.budget / values.estimatesRan);
+      values.cpEstimate = values.budget / values.estimatesRan;
     }
     if (values.sales !== undefined && values.sales > 0) {
-      values.cpJobBooked = Math.round(values.budget / values.sales);
+      values.cpJobBooked = values.budget / values.sales;
     }
   }
 
@@ -181,7 +220,7 @@ export const calculateFields = (
     values.managementCost = calculateManagementCost(values.calculatedMonthlyBudget);
     
     if (values.revenue !== undefined && values.revenue > 0) {
-      values.totalCom = Math.round(((values.calculatedMonthlyBudget + values.managementCost) / values.revenue) * 100);
+      values.totalCom = ((values.calculatedMonthlyBudget + values.managementCost) / values.revenue) * 100;
     }
   }
 
@@ -245,20 +284,16 @@ export const processTargetData = (currentTarget: any[] | null): FieldValue => {
       com: weekData.com || 0,
     };
 
-    weekValues.sales = Math.round(weekValues.revenue / weekValues.avgJobSize);
-    weekValues.sales = weekValues.sales; // sales is the same as sales
-    weekValues.estimatesRan = Math.round(weekValues.sales / (weekValues.closeRate / 100));
-    weekValues.estimatesSet = Math.round(weekValues.estimatesRan / (weekValues.showRate / 100));
-    weekValues.leads = Math.round(weekValues.estimatesSet / (weekValues.appointmentRate / 100));
-    weekValues.weeklyBudget = Math.round(weekValues.revenue * (weekValues.com / 100));
+    weekValues.sales = weekValues.revenue / weekValues.avgJobSize;
+    weekValues.estimatesRan = weekValues.sales / (weekValues.closeRate / 100);
+    weekValues.estimatesSet = weekValues.estimatesRan / (weekValues.showRate / 100);
+    weekValues.leads = weekValues.estimatesSet / (weekValues.appointmentRate / 100);
+    weekValues.weeklyBudget = weekValues.revenue * (weekValues.com / 100);
 
     return weekValues;
   });
 
-  const aggregatedValues = aggregateWeeklyFields(weeklyCalculations);
-  const first = currentTarget[0] || {};
-  
-  // Calculate funnel rates using reverse formulas from aggregated data
+  const aggregatedValues = aggregateWeeklyFields(weeklyCalculations);  
   const finalValues: FieldValue = {
     ...getDefaultValues(),
     ...aggregatedValues,
@@ -271,7 +306,7 @@ export const processTargetData = (currentTarget: any[] | null): FieldValue => {
 
   // Calculate COM% using reverse formula: (aggregated weekly budget / total revenue) * 100
   if (finalValues.revenue && finalValues.revenue > 0 && finalValues.weeklyBudget && finalValues.weeklyBudget > 0) {
-    finalValues.com = Number(((finalValues.weeklyBudget / finalValues.revenue) * 100).toFixed(2));
+    finalValues.com = Number(((finalValues.weeklyBudget / finalValues.revenue) * 100).toFixed(1));
   }
 
   // Calculate funnel rates using reverse formulas
@@ -308,60 +343,59 @@ export const calculateFieldsForApiData = (
   // Only calculate budget fields if they don't already exist (preserve reverse-calculated values)
   // Note: avgJobSize and com are now calculated using reverse formulas for monthly/yearly periods
   if (values.revenue !== undefined && values.avgJobSize !== undefined && values.sales === undefined) {
-    values.sales = Math.round(values.revenue / values.avgJobSize);
-    values.sales = values.sales; // sales is the same as sales
+    values.sales = values.revenue / values.avgJobSize;
   }
   
   if (values.sales !== undefined && values.closeRate !== undefined && values.estimatesRan === undefined) {
-    values.estimatesRan = Math.round(values.sales / (values.closeRate / 100));
+    values.estimatesRan = values.sales / (values.closeRate / 100);
   }
   
   if (values.estimatesRan !== undefined && values.showRate !== undefined && values.estimatesSet === undefined) {
-    values.estimatesSet = Math.round(values.estimatesRan / (values.showRate / 100));
+    values.estimatesSet = values.estimatesRan / (values.showRate / 100);
   }
   
   if (values.estimatesSet !== undefined && values.appointmentRate !== undefined && values.leads === undefined) {
-    values.leads = Math.round(values.estimatesSet / (values.appointmentRate / 100));
+    values.leads = values.estimatesSet / (values.appointmentRate / 100);
   }
 
   // Calculate funnel rate
   if (values.appointmentRate !== undefined && values.showRate !== undefined && values.closeRate !== undefined) {
-    values.leadToSale = Math.round((values.appointmentRate * values.showRate * values.closeRate) / 10000);
+    values.leadToSale = (values.appointmentRate * values.showRate * values.closeRate) / 10000;
   }
 
   // Calculate budget fields based on period
   if (values.revenue !== undefined && values.com !== undefined) {
     if (period === 'yearly') {
-      values.annualBudget = Math.round(values.revenue * (values.com / 100));
-      values.calculatedMonthlyBudget = Math.round(values.annualBudget / 12);
+      values.annualBudget = values.revenue * (values.com / 100);
+      values.calculatedMonthlyBudget = values.annualBudget / 12;
       values.budget = values.annualBudget;
     } else if (period === 'monthly') {
-      values.calculatedMonthlyBudget = Math.round(values.revenue * (values.com / 100));
+      values.calculatedMonthlyBudget = values.revenue * (values.com / 100);
       values.budget = values.calculatedMonthlyBudget;
     } else if (period === 'weekly') {
-      values.weeklyBudget = Math.round(values.revenue * (values.com / 100));
+      values.weeklyBudget = values.revenue * (values.com / 100);
       values.budget = values.weeklyBudget;
     }
   }
 
   // Calculate daily budget
   if (values.budget !== undefined) {
-    values.dailyBudget = Math.round(values.budget / daysInMonth);
+    values.dailyBudget = values.budget / daysInMonth;
   }
 
   // Calculate cost metrics
   if (values.budget !== undefined) {
     if (values.leads !== undefined && values.leads > 0) {
-      values.cpl = Math.round(values.budget / values.leads);
+      values.cpl = values.budget / values.leads;
     }
     if (values.estimatesSet !== undefined && values.estimatesSet > 0) {
-      values.cpEstimateSet = Math.round(values.budget / values.estimatesSet);
+      values.cpEstimateSet = values.budget / values.estimatesSet;
     }
     if (values.estimatesRan !== undefined && values.estimatesRan > 0) {
-      values.cpEstimate = Math.round(values.budget / values.estimatesRan);
+      values.cpEstimate = values.budget / values.estimatesRan;
     }
     if (values.sales !== undefined && values.sales > 0) {
-      values.cpJobBooked = Math.round(values.budget / values.sales);
+      values.cpJobBooked = values.budget / values.sales;
     }
   }
 
@@ -370,7 +404,7 @@ export const calculateFieldsForApiData = (
     values.managementCost = calculateManagementCost(values.calculatedMonthlyBudget);
     
     if (values.revenue !== undefined && values.revenue > 0) {
-      values.totalCom = Math.round(((values.calculatedMonthlyBudget + values.managementCost) / values.revenue) * 100);
+      values.totalCom = ((values.calculatedMonthlyBudget + values.managementCost) / values.revenue) * 100;
     }
   }
 
@@ -416,7 +450,7 @@ export function calculateReportingFields(inputValues: FieldValue): FieldValue {
 
   // Calculate budget fields if target revenue and com are available
   if (allValues.targetRevenue !== undefined && allValues.com !== undefined) {
-    allValues.weeklyBudget = Math.round(allValues.targetRevenue * (allValues.com / 100));
+    allValues.weeklyBudget = allValues.targetRevenue * (allValues.com / 100);
     allValues.budget = allValues.weeklyBudget; // For weekly period
   }
 

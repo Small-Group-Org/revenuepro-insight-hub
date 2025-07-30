@@ -87,7 +87,6 @@ export const SetTargets = () => {
   useEffect(() => {
     if (currentTarget) {
       const newValues = processTargetData(currentTarget);
-      console.log("[newValues]", newValues);
       setFieldValues(newValues);
       setLastChanged(null); 
       setPrevValues(newValues);
