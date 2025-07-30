@@ -36,9 +36,7 @@ export const useTargetStore = create<TargetState>((set, get) => ({
         return;
       }
       const response = await upsertTarget({ ...target, userId });
-      if (response.success) {
-        set({ currentTarget: response.data });
-      } else {
+      if (!response.success) {
         set({ error: response.message || 'Failed to update target' });
       }
     } catch (error) {

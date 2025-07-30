@@ -267,12 +267,12 @@ export const processTargetData = (currentTarget: any[] | null): FieldValue => {
 
   // Calculate avgJobSize using reverse formula: revenue / sales
   if (finalValues.revenue && finalValues.revenue > 0 && finalValues.sales && finalValues.sales > 0) {
-    finalValues.avgJobSize = finalValues.revenue / finalValues.sales;
+    finalValues.avgJobSize = Math.round(finalValues.revenue / finalValues.sales);
   }
 
   // Calculate COM% using reverse formula: (aggregated weekly budget / total revenue) * 100
   if (finalValues.revenue && finalValues.revenue > 0 && finalValues.weeklyBudget && finalValues.weeklyBudget > 0) {
-    finalValues.com = (finalValues.weeklyBudget / finalValues.revenue) * 100;
+    finalValues.com = Number(((finalValues.weeklyBudget / finalValues.revenue) * 100).toFixed(1));
   }
 
   // Calculate funnel rates using reverse formulas
