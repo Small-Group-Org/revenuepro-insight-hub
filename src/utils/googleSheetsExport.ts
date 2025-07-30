@@ -30,15 +30,15 @@ export interface ExportData {
 // Format value helper for Google Sheets export
 const formatValueForSheets = (value: number, format: string): string => {
   if (format === "currency") {
-    return `$${value?.toLocaleString(undefined, {
+    return `$${Math.round(value)?.toLocaleString(undefined, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })}`;
   }
   if (format === "percent") {
-    return `${value?.toFixed(2)}%`;
+    return `${Math.round(value)?.toFixed(2)}%`;
   }
-  return value?.toLocaleString();
+  return Math.round(value)?.toLocaleString();
 };
 
 // Calculate percentage difference

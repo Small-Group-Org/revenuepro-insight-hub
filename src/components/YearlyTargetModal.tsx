@@ -82,15 +82,15 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
     months.forEach((month) => {
       const budget = monthlyBudgets[month] || 0;
       const percentage = totalBudget > 0 ? budget / annualTotals.budget : 0;
-      const monthlyRevenue = Math.round(annualTotals.revenue * percentage);
+      const monthlyRevenue = annualTotals.revenue * percentage;
       const managementCost = calculateManagementCost(budget);
 
       newMonthlyData[month] = {
         budget,
-        leads: Math.round(annualTotals.leads * percentage),
-        estimatesSet: Math.round(annualTotals.estimatesSet * percentage),
-        estimates: Math.round(annualTotals.estimates * percentage),
-        sales: Math.round(annualTotals.sales * percentage),
+        leads: annualTotals.leads * percentage,
+        estimatesSet: annualTotals.estimatesSet * percentage,
+        estimates: annualTotals.estimates * percentage,
+        sales: annualTotals.sales * percentage,
         revenue: monthlyRevenue,
         avgJobSize: annualTotals.avgJobSize,
         com: annualTotals.com,

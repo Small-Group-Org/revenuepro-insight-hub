@@ -19,6 +19,7 @@ import {
 import {
   formatCurrency,
   formatPercent,
+  formatNumber,
   calculateManagementCost,
 } from "@/utils/utils";
 import { useTargetStore } from "@/stores/targetStore";
@@ -183,7 +184,7 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
     // Calculate per-week value for monthly budget
     const perWeekValue =
       period === "monthly" && sectionKey === "budget" && currentTarget?.length
-        ? Math.round(value / currentTarget.length)
+        ? value / currentTarget.length
         : null;
 
     return (
@@ -209,12 +210,12 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
           <div className="text-right">
             <span className="text-sm font-semibold text-gray-900">
               {field.unit === "$"
-                ? formatCurrency(Math.round(value))
+                ? formatCurrency(value)
                 : field.unit === "%"
-                ? formatPercent(Math.round(value))
+                ? formatPercent(value)
                 : isNaN(value)
                 ? 0
-                : Math.round(value)}
+                : formatNumber(value)}
             </span>
           </div>
         </div>
@@ -235,7 +236,7 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
                 
                 <div className="text-right">
                   <div className="text-sm font-semibold text-gray-700">
-                    {perWeekValue}
+                    {Math.round(perWeekValue)}
                   </div>
                   <div className="text-[10px] text-gray-500">per week</div>
                 </div>
