@@ -159,24 +159,24 @@ export const calculateFields = (
   
   // Calculate budget fields based on input values (for user input changes)
   if (values.revenue !== undefined && values.avgJobSize !== undefined) {
-    values.sales = values.revenue / values.avgJobSize;
+    values.sales = values.revenue / values.avgJobSize || 0;
   }
   
   if (values.sales !== undefined && values.closeRate !== undefined) {
-    values.estimatesRan = values.sales / (values.closeRate / 100);
+    values.estimatesRan = values.sales / (values.closeRate / 100) || 0;
   }
   
   if (values.estimatesRan !== undefined && values.showRate !== undefined) {
-    values.estimatesSet = values.estimatesRan / (values.showRate / 100);
+    values.estimatesSet = values.estimatesRan / (values.showRate / 100) || 0;
   }
   
   if (values.estimatesSet !== undefined && values.appointmentRate !== undefined) {
-    values.leads = values.estimatesSet / (values.appointmentRate / 100);
+    values.leads = values.estimatesSet / (values.appointmentRate / 100) || 0;
   }
 
   // Calculate funnel rate
   if (values.appointmentRate !== undefined && values.showRate !== undefined && values.closeRate !== undefined) {
-    values.leadToSale = (values.appointmentRate * values.showRate * values.closeRate) / 10000;
+    values.leadToSale = (values.appointmentRate * values.showRate * values.closeRate) / 10000 || 0;
   }
 
   // Calculate budget fields based on period
