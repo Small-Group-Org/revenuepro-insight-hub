@@ -18,7 +18,7 @@ import {
   endOfYear,
 } from "date-fns";
 import { getWeekInfo } from "@/utils/weekLogic";
-import { processTargetData, calculateReportingFields, calculateFields, calculateManagementCost, getWeeksInMonth } from "@/utils/utils";
+import { processTargetData, calculateReportingFields, calculateFields, calculateManagementCost, getWeeksInMonth, formatCurrencyValue } from "@/utils/utils";
 import { targetFields, reportingFields } from "@/utils/constant";
 import { FieldValue } from "@/types";
 import { exportToExcel, ExportData } from "@/utils/excelExport";
@@ -308,13 +308,10 @@ export const CompareResults = () => {
   // Format value helper
   const formatValue = (value: number, format: string) => {
     if (format === "currency") {
-      return `$${Math.round(value)?.toLocaleString(undefined, {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      })}`;
+      return formatCurrencyValue(value);
     }
     if (format === "percent") {
-      return `${Math.round(value)?.toFixed(2)}%`;
+      return `${value.toFixed(2)}%`;
     }
     return Math.round(value)?.toLocaleString();
   };

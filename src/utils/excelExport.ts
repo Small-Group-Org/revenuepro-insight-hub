@@ -1,5 +1,6 @@
 import * as XLSX from 'xlsx';
 import { format } from 'date-fns';
+import { formatCurrencyValue } from './utils';
 
 export interface MetricItem {
   name: string;
@@ -24,13 +25,10 @@ export interface ExportData {
 // Format value helper for Excel export
 const formatValueForExcel = (value: number, format: string): string => {
   if (format === "currency") {
-    return `$${Math.round(value)?.toLocaleString(undefined, {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`;
+    return formatCurrencyValue(value);
   }
   if (format === "percent") {
-    return `${Math.round(value)?.toFixed(2)}%`;
+    return `${value.toFixed(2)}%`;
   }
   return Math.round(value)?.toLocaleString();
 };

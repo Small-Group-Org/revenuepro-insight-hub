@@ -18,19 +18,53 @@ import { getWeekInfo, formatWeekRange } from "./weekLogic";
 
 // Utility for formatting
 export const formatCurrency = (val: number) => {
-  if (isNaN(val) || !isFinite(val)) return "$0";
-  return `$${Math.round(val).toLocaleString()}`;
+  if (isNaN(val) || !isFinite(val)) return "$0.00";
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(val);
 };
 
 export const formatPercent = (val: number) => {
   if (isNaN(val) || !isFinite(val)) return "0.00%";
-  return `${Math.round(val).toFixed(2)}%`;
+  return `${val.toFixed(2)}%`;
 };
 
 // New function to format numbers without currency symbol
 export const formatNumber = (val: number) => {
   if (isNaN(val) || !isFinite(val)) return "0";
   return Math.round(val).toLocaleString();
+};
+
+// Comprehensive currency formatter with options
+export const formatCurrencyValue = (value: number, options?: {
+  minimumFractionDigits?: number;
+  maximumFractionDigits?: number;
+  showSymbol?: boolean;
+}) => {
+  if (isNaN(value) || !isFinite(value)) return "$0.00";
+  
+  const {
+    minimumFractionDigits = 2,
+    maximumFractionDigits = 2,
+    showSymbol = true
+  } = options || {};
+  
+  if (showSymbol) {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits,
+      maximumFractionDigits
+    }).format(value);
+  } else {
+    return new Intl.NumberFormat('en-US', {
+      minimumFractionDigits,
+      maximumFractionDigits
+    }).format(value);
+  }
 };
 
 // Safe calculation utilities

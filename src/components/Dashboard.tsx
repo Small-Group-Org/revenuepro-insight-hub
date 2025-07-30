@@ -15,7 +15,7 @@ import {
   endOfYear,
 } from "date-fns";
 import { getWeekInfo } from '@/utils/weekLogic';
-import { processTargetData, calculateReportingFields, calculateFields, calculateManagementCost } from '@/utils/utils';
+import { processTargetData, calculateReportingFields, calculateFields, calculateManagementCost, formatCurrencyValue } from '@/utils/utils';
 import { FieldValue } from '@/types';
 
 export const Dashboard = () => {
@@ -257,8 +257,8 @@ export const Dashboard = () => {
         <div>
           <p className="text-sm font-medium text-slate-600">{title}</p>
           <p className="text-2xl font-bold text-slate-900">
-            {format === 'currency' ? `$${Math.round(value).toLocaleString()}` : 
-             format === 'percentage' ? `${Math.round(value).toFixed(1)}%` :
+            {format === 'currency' ? formatCurrencyValue(value) : 
+             format === 'percentage' ? `${value.toFixed(1)}%` :
              Math.round(value).toLocaleString()}
           </p>
         </div>
@@ -281,13 +281,10 @@ export const Dashboard = () => {
   // Format value helper
   const formatValue = (value: number, format: string) => {
     if (format === "currency") {
-      return `$${Math.round(value)?.toLocaleString(undefined, {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-      })}`;
+      return formatCurrencyValue(value);
     }
     if (format === "percent") {
-      return `${Math.round(value)?.toFixed(1)}%`;
+      return `${value.toFixed(1)}%`;
     }
     return Math.round(value)?.toLocaleString();
   };
@@ -446,7 +443,7 @@ export const Dashboard = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card className="p-6 bg-gradient-to-r from-blue-50 to-blue-100">
               <div className="text-center">
-                <p className="text-2xl font-bold text-blue-600">${kpis.funnelCost.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-blue-600">{formatCurrencyValue(kpis.funnelCost)}</p>
                 <p className="text-sm text-blue-700">Cost per Lead</p>
               </div>
             </Card>
@@ -458,7 +455,7 @@ export const Dashboard = () => {
             </Card>
             <Card className="p-6 bg-gradient-to-r from-purple-50 to-purple-100">
               <div className="text-center">
-                <p className="text-2xl font-bold text-purple-600">${kpis.totalBudget.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-purple-600">{formatCurrencyValue(kpis.totalBudget)}</p>
                 <p className="text-sm text-purple-700">Total Ad Spend</p>
               </div>
             </Card>
