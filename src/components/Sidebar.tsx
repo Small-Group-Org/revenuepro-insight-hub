@@ -3,6 +3,7 @@ import { BarChart3, Target, Plus, TrendingUp, Menu, X, UserPlus, LogOut, Users }
 import { cn } from '@/lib/utils';
 import { useNavigate, useLocation } from "react-router-dom";
 import { useUserContext } from "../utils/UserContext";
+import UserSelect from './UserSelect';
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -52,6 +53,13 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }: SidebarProp
           </button>
         </div>
       </div>
+
+      {/* User Select for Admin */}
+      {isAdmin && location.pathname !== "/create-user" && (
+        <div className="p-4 border-b border-slate-700">
+          <UserSelect />
+        </div>
+      )}
 
       {/* Navigation */}
       <nav className="flex-1 p-4">

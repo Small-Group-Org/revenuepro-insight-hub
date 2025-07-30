@@ -2,7 +2,6 @@ import { Outlet, useLocation } from "react-router-dom";
 import { Sidebar } from "@/components/Sidebar";
 import { useUserContext } from "@/utils/UserContext";
 import { useState } from "react";
-import UserSelect from "@/components/UserSelect";
 import useAuthStore from "@/stores/authStore";
 import { useNavigate } from "react-router-dom";
 
@@ -32,13 +31,6 @@ export default function AppLayout() {
           onLogout={handleLogout}
         />
         <main className="flex-1 overflow-auto">
-          {user?.role === "ADMIN" && location.pathname !== "/create-user" && (
-            <div className="w-full flex justify-center py-4 bg-gray-100">
-              <div className="w-full max-w-xs">
-                <UserSelect />
-              </div>
-            </div>
-          )}
             <Outlet />
         </main>
       </div>

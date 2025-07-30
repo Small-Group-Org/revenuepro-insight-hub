@@ -24,12 +24,16 @@ const UserSelect: React.FC<UserSelectProps> = ({ value, onChange, placeholder })
 
   return (
     <Select value={value ?? selectedUserId} onValueChange={handleChange} disabled={loading}>
-      <SelectTrigger className="w-full">
+      <SelectTrigger className="w-full rounded-full bg-sidebar border-slate-600 text-slate-200 hover:bg-slate-700">
         <SelectValue placeholder={placeholder || (loading ? "Loading users..." : "Select a user")}/>
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent className="bg-sidebar border-slate-600 rounded-md">
         {users.map(user => (
-          <SelectItem key={user.id} value={user.id}>
+          <SelectItem 
+            key={user.id} 
+            value={user.id}
+            className="text-slate-200 hover:bg-slate-700"
+          >
             {user.name || user.email}
           </SelectItem>
         ))}

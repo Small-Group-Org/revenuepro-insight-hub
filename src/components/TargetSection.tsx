@@ -103,7 +103,7 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
             {showTarget && targetValues[field.value] !== undefined ? 
               `Target: ${field.unit === "$" ? formatCurrency(targetValues[field.value]) : 
                         field.unit === "%" ? formatPercent(targetValues[field.value]) : 
-                        Math.round(targetValues[field.value])}` : ""}
+                        isNaN(targetValues[field.value]) ? 0 : Math.round(targetValues[field.value]) || 0}` : ""}
           </span>
         </Label>
         <div className="relative">
