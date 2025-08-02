@@ -1,6 +1,6 @@
 import * as XLSX from 'xlsx';
 import { format } from 'date-fns';
-import { formatCurrencyValue } from './utils';
+import { formatCurrencyValue } from './page-utils/commonUtils';
 
 export interface MetricItem {
   name: string;

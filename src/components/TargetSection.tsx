@@ -21,7 +21,7 @@ import {
   formatPercent,
   formatNumber,
   calculateManagementCost,
-} from "@/utils/utils";
+} from "@/utils/page-utils/commonUtils";
 import { useTargetStore } from "@/stores/targetStore";
 
 interface TargetSectionProps {
