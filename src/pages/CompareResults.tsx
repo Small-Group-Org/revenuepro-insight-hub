@@ -24,8 +24,7 @@ import { calculateManagementCost, formatCurrencyValue } from "@/utils/page-utils
 import { targetFields, reportingFields } from "@/utils/constant";
 import { FieldValue } from "@/types";
 import { exportToExcel, ExportData } from "@/utils/excelExport";
-
-
+import { useUserStore } from "@/stores/userStore";
 
 export const CompareResults = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -34,7 +33,7 @@ export const CompareResults = () => {
   );
 
   const { reportingData, targetData, getReportingData } = useReportingDataStore();
-
+  const { selectedUserId } = useUserStore();
   // Fetch actual+target data from single API
   useEffect(() => {
     let startDate: string, endDate: string, queryType: string;
@@ -53,7 +52,7 @@ export const CompareResults = () => {
       queryType = "yearly";
     }
     getReportingData(startDate, endDate, queryType);
-  }, [selectedDate, period, getReportingData]);
+  }, [selectedDate, period, selectedUserId, getReportingData]);
 
   // Process target data with all calculated fields
   const processedTargetData = useMemo(() => {

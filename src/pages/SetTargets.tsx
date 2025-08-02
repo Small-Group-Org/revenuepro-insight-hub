@@ -262,8 +262,6 @@ export const SetTargets = () => {
     }
   }, [toast, error, getInputFieldNames, selectedYear, fieldValues]);
 
-  console.log("[calc]", calculatedValues);
-
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="relative z-10 py-12 px-4">

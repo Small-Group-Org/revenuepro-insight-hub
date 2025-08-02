@@ -102,8 +102,6 @@ export const calculateFields = (
     }
   }
 
-  console.log(values.calculatedMonthlyBudget, values.managementCost, values.totalCom);
-
   return values;
 };
 

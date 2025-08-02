@@ -331,3 +331,63 @@ export const reportingFields: ReportingFieldsConfig = {
     },
   ],
 };
+
+export // Chart configuration for each metric
+const chartConfigs = [
+  {
+    key: 'totalCom',
+    title: 'Total CoM%',
+    actualColor: '#3b82f6',
+    targetColor: '#10b981',
+    format: 'percent'
+  },
+  {
+    key: 'revenue',
+    title: 'Total Revenue',
+    actualColor: '#10b981',
+    targetColor: '#059669',
+    format: 'currency'
+  },
+  {
+    key: 'cpEstimateSet',
+    title: 'Cost per Appointment Set',
+    actualColor: '#f59e0b',
+    targetColor: '#d97706',
+    format: 'currency'
+  },
+  {
+    key: 'cpl',
+    title: 'Cost Per Lead',
+    actualColor: '#ef4444',
+    targetColor: '#dc2626',
+    format: 'currency'
+  },
+  {
+    key: 'appointmentRate',
+    title: 'Appointment Rate',
+    actualColor: '#8b5cf6',
+    targetColor: '#7c3aed',
+    format: 'percent'
+  },
+  {
+    key: 'showRate',
+    title: 'Show Rate',
+    actualColor: '#06b6d4',
+    targetColor: '#0891b2',
+    format: 'percent'
+  },
+  {
+    key: 'closeRate',
+    title: 'Close Rate',
+    actualColor: '#84cc16',
+    targetColor: '#65a30d',
+    format: 'percent'
+  },
+  {
+    key: 'avgJobSize',
+    title: 'Average Job Size',
+    actualColor: '#f97316',
+    targetColor: '#ea580c',
+    format: 'currency'
+  }
+];

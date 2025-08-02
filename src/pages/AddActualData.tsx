@@ -13,11 +13,12 @@ import { handleInputDisable } from '@/utils/page-utils/compareUtils';
 import { getDefaultValues, processTargetData } from '@/utils/page-utils/targetUtils';
 import { getWeekInfo } from '@/utils/weekLogic';
 import { IWeeklyTarget } from '@/service/targetService';
+import { useUserStore } from '@/stores/userStore';
 
 export const AddActualData = () => {
   const { reportingData, targetData, getReportingData, upsertReportingData, isLoading, error } = useReportingDataStore();
   const { toast } = useToast();
-
+  const { selectedUserId } = useUserStore();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [period, setPeriod] = useState<PeriodType>('weekly');
 
@@ -28,7 +29,6 @@ export const AddActualData = () => {
   // Use processed target data from store (single API)
   const processedTargetData = useMemo(() => {
     if (!targetData) return undefined;
-    console.log("[targetData]", targetData);
     return processTargetData(targetData);
   }, [targetData]);
 
@@ -65,9 +65,7 @@ export const AddActualData = () => {
       queryType = 'yearly';
     }
     getReportingData(startDate, endDate, queryType);
-  }, [selectedDate, period, getReportingData]);
-
-  // Replace the second useEffect (lines 69-85) with this fixed version:
+  }, [selectedDate, period, selectedUserId, getReportingData]);
 
 React.useEffect(() => {
   if (reportingData && Array.isArray(reportingData)) {
