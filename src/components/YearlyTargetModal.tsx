@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { calculateAllFields, calculateManagementCost, safePercentage, formatCurrencyValue } from "@/utils/utils";
+import { calculateManagementCost, safePercentage, formatCurrencyValue } from "@/utils/page-utils/commonUtils";
+import { calculateFields } from "@/utils/page-utils/targetUtils";
 import { FieldValue } from "@/types";
 import { TooltipProvider } from "@radix-ui/react-tooltip";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
@@ -58,7 +59,7 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
 
   // Calculate annual totals from the provided field values
   const annualTotals = useMemo(() => {
-    const calculated = calculateAllFields(annualFieldValues, 365, "yearly"); // Use 365 days for yearly
+    const calculated = calculateFields(annualFieldValues, "yearly", 365); // Use 365 days for yearly
     return {
       leads: calculated.leads || 0,
       estimatesSet: calculated.estimatesSet || 0,
@@ -256,7 +257,7 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
                       Leads
                     </label>
                     <div className="text-lg font-semibold">
-                      {selectedMonthData.leads.toLocaleString()}
+                      {Math.ceil(Number(selectedMonthData.leads))}
                     </div>
                   </div>
                   <div>
@@ -264,7 +265,7 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
                       Estimates Set
                     </label>
                     <div className="text-lg font-semibold">
-                      {selectedMonthData.estimatesSet.toLocaleString()}
+                      {Math.ceil(Number(selectedMonthData.estimatesSet))}
                     </div>
                   </div>
                   <div>
@@ -272,7 +273,7 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
                       Estimates
                     </label>
                     <div className="text-lg font-semibold">
-                      {selectedMonthData.estimates.toLocaleString()}
+                      {Math.ceil(Number(selectedMonthData.estimates))}
                     </div>
                   </div>
                   <div>
@@ -280,7 +281,7 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
                       Sales
                     </label>
                     <div className="text-lg font-semibold">
-                      {selectedMonthData.sales.toLocaleString()}
+                      {Math.ceil(Number(selectedMonthData.sales))}
                     </div>
                   </div>
                   <div>
@@ -351,13 +352,13 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
                   <div>
                     Total Leads:{" "}
                     <span className="font-semibold">
-                      {annualTotals.leads.toLocaleString()}
+                      {Math.ceil(Number(annualTotals.leads))}
                     </span>
                   </div>
                   <div>
                     Total Sales:{" "}
                     <span className="font-semibold">
-                      {annualTotals.sales.toLocaleString()}
+                      {Math.ceil(Number(annualTotals.sales))}
                     </span>
                   </div>
                 </div>

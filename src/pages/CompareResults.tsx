@@ -18,7 +18,9 @@ import {
   endOfYear,
 } from "date-fns";
 import { getWeekInfo } from "@/utils/weekLogic";
-import { processTargetData, calculateReportingFields, calculateFields, calculateManagementCost, getWeeksInMonth, formatCurrencyValue } from "@/utils/utils";
+import { processTargetData, calculateFields, getWeeksInMonth } from "@/utils/page-utils/targetUtils";
+import { calculateReportingFields } from "@/utils/page-utils/actualDataUtils";
+import { calculateManagementCost, formatCurrencyValue } from "@/utils/page-utils/commonUtils";
 import { targetFields, reportingFields } from "@/utils/constant";
 import { FieldValue } from "@/types";
 import { exportToExcel, ExportData } from "@/utils/excelExport";

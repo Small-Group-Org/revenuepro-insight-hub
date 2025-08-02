@@ -8,13 +8,15 @@ import { useTargetStore } from "../stores/targetStore";
 import { useUserStore } from "../stores/userStore";
 import useAuthStore from "../stores/authStore";
 import { endOfWeek, startOfWeek, format, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
-import { getDaysInMonth, handleInputDisable, targetValidation } from "@/utils/utils";
+import { calculateFields, targetValidation } from "@/utils/page-utils/targetUtils";
+import { getDaysInMonth } from "@/utils/page-utils/commonUtils";
+import { handleInputDisable } from "@/utils/page-utils/compareUtils";
 import { months, targetFields } from "@/utils/constant";
 import { DisableMetadata } from "@/types";
 import { FieldConfig, FieldValue, InputField, PeriodType } from "@/types";
 import type { MonthlyData } from "../components/YearlyTargetModal";
-import { calculateAllFields, getDefaultValues, processTargetData } from "@/utils/utils";
-import { IWeeklyTarget, upsertTarget } from "@/service/targetService";
+import { getDefaultValues, processTargetData } from "@/utils/page-utils/targetUtils";
+import { upsertTarget } from "@/service/targetService";
 
 export const SetTargets = () => {
   const { toast } = useToast();
@@ -39,7 +41,7 @@ export const SetTargets = () => {
   const { user } = useAuthStore();
 
   const calculatedValues = useMemo(() => 
-    calculateAllFields(fieldValues, daysInMonth, period), 
+    calculateFields(fieldValues, period, daysInMonth),
     [fieldValues, daysInMonth, period]
   );
 

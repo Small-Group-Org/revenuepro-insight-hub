@@ -6,7 +6,7 @@ import {
   updateGoogleSheet, 
   formatGoogleSheet 
 } from './googleSheetsConfig';
-import { formatCurrencyValue } from './utils';
+import { formatCurrencyValue } from './page-utils/commonUtils';
 
 export interface MetricItem {
   name: string;

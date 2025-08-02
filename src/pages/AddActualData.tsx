@@ -8,7 +8,9 @@ import { DatePeriodSelector } from '@/components/DatePeriodSelector';
 import { TargetSection } from '@/components/TargetSection';
 import { PeriodType, FieldValue } from '@/types';
 import { reportingFields } from '@/utils/constant';
-import { calculateReportingFields, handleInputDisable, getDefaultValues, processTargetData } from '@/utils/utils';
+import { calculateReportingFields } from '@/utils/page-utils/actualDataUtils';
+import { handleInputDisable } from '@/utils/page-utils/compareUtils';
+import { getDefaultValues, processTargetData } from '@/utils/page-utils/targetUtils';
 import { getWeekInfo } from '@/utils/weekLogic';
 import { IWeeklyTarget } from '@/service/targetService';
 

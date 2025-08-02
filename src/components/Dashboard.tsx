@@ -15,7 +15,9 @@ import {
   endOfYear,
 } from "date-fns";
 import { getWeekInfo } from '@/utils/weekLogic';
-import { processTargetData, calculateReportingFields, calculateFields, calculateManagementCost, formatCurrencyValue } from '@/utils/utils';
+import { processTargetData, calculateFields } from '@/utils/page-utils/targetUtils';
+import { calculateReportingFields } from '@/utils/page-utils/actualDataUtils';
+import { calculateManagementCost, formatCurrencyValue } from '@/utils/page-utils/commonUtils';
 import { FieldValue } from '@/types';
 
 export const Dashboard = () => {
