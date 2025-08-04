@@ -5,6 +5,8 @@ import { format } from 'date-fns';
 import { DatePeriodSelector } from '@/components/DatePeriodSelector';
 import { PeriodType } from '@/types';
 import { Lead } from '@/types';
+import { useLeadStore } from '@/stores/leadStore';
+import { useUserStore } from '@/stores/userStore';
 import {
   Table,
   TableBody,
@@ -21,8 +23,11 @@ export const LeadSheet = () => {
   const { toast } = useToast();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [period, setPeriod] = useState<PeriodType>('weekly');
-  const [leads, setLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [pendingULRLeadId, setPendingULRLeadId] = useState<string | null>(null);
+  
+  const { leads, loading, error, fetchLeads, updateLeadData, updateLeadLocal } = useLeadStore();
+  const { selectedUserId } = useUserStore();
 
   // ULR options based on the image
   const ulrOptions = [
@@ -34,84 +39,22 @@ export const LeadSheet = () => {
     'Unresponsive'
   ];
 
-  // Mock data for demonstration - replace with actual API call
-  const mockLeads: Lead[] = [
-    {
-      id: '1',
-      leadDate: '2024-01-15',
-      name: 'John Smith',
-      email: 'john.smith@email.com',
-      phone: '(555) 123-4567',
-      zip: '12345',
-      service: 'Roofing',
-      adSetName: 'Winter Roofing Campaign',
-      adName: 'Emergency Roof Repair',
-      estimateSet: false,
-      clientId: 'CLT001',
-      unqualifiedLeadReason: 'Bad Phone Number',
-    },
-    {
-      id: '2',
-      leadDate: '2024-01-16',
-      name: 'Sarah Johnson',
-      email: 'sarah.j@email.com',
-      phone: '(555) 234-5678',
-      zip: '23456',
-      service: 'Siding',
-      adSetName: 'Home Improvement',
-      adName: 'Siding Replacement',
-      estimateSet: true,
-      clientId: 'CLT002',
-      unqualifiedLeadReason: undefined, // Should show NA when estimate is set
-    },
-    {
-      id: '3',
-      leadDate: '2024-01-17',
-      name: 'Mike Davis',
-      email: 'mike.davis@email.com',
-      phone: '(555) 345-6789',
-      zip: '34567',
-      service: 'Gutters',
-      adSetName: 'Gutter Maintenance',
-      adName: 'Gutter Cleaning Service',
-      estimateSet: false,
-      clientId: 'CLT003',
-      unqualifiedLeadReason: 'Out of Area',
-    },
-    {
-      id: '4',
-      leadDate: '2024-01-18',
-      name: 'Lisa Wilson',
-      email: 'lisa.wilson@email.com',
-      phone: '(555) 456-7890',
-      zip: '45678',
-      service: 'Windows',
-      adSetName: 'Window Replacement',
-      adName: 'Energy Efficient Windows',
-      estimateSet: true,
-      clientId: 'CLT004',
-      unqualifiedLeadReason: undefined, // Should show NA when estimate is set
-    },
-    {
-      id: '5',
-      leadDate: '2024-01-19',
-      name: 'Robert Brown',
-      email: 'robert.brown@email.com',
-      phone: '(555) 567-8901',
-      zip: '56789',
-      service: 'Roofing',
-      adSetName: 'Summer Roofing',
-      adName: 'Roof Inspection',
-      estimateSet: false,
-      clientId: 'CLT005',
-      unqualifiedLeadReason: 'Job Too Small',
-    },
-  ];
+  useEffect(() => {
+    // Fetch leads when selectedUserId changes
+    if (selectedUserId) {
+      fetchLeads(selectedUserId);
+    }
+  }, [selectedUserId, fetchLeads]);
 
   useEffect(() => {
-    // Load leads data - replace with actual API call
-    setLeads(mockLeads);
-  }, []);
+    if (error) {
+      toast({
+        title: "❌ Error Loading Leads",
+        description: error,
+        variant: "destructive",
+      });
+    }
+  }, [error, toast]);
 
   const handleDatePeriodChange = (date: Date, period: PeriodType) => {
     setSelectedDate(date);
@@ -119,46 +62,75 @@ export const LeadSheet = () => {
     // Here you would typically fetch leads for the selected period
   };
 
-  const handleEstimateSetChange = (leadId: string, checked: boolean) => {
-    setLeads(prevLeads =>
-      prevLeads.map(lead =>
-        lead.id === leadId ? { 
-          ...lead, 
-          estimateSet: checked,
-          unqualifiedLeadReason: checked ? undefined : lead.unqualifiedLeadReason
-        } : lead
-      )
-    );
-  };
+  const handleEstimateSetChange = async (leadId: string, checked: boolean) => {
+    const lead = leads.find(l => l.id === leadId);
+    if (!lead) return;
 
-  const handleULRChange = (leadId: string, value: string) => {
-    setLeads(prevLeads =>
-      prevLeads.map(lead =>
-        lead.id === leadId ? { ...lead, unqualifiedLeadReason: value } : lead
-      )
-    );
-  };
-
-  const handleSave = async () => {
-    setIsLoading(true);
-    try {
-      // Here you would save the updated leads data
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+    if (checked) {
+      // Setting estimate to true - update immediately
+      const result = await updateLeadData({
+        clientId: lead.clientId,
+        id: leadId,
+        estimateSet: true,
+        unqualifiedLeadReason: undefined
+      });
+      
+      if (result.error) {
+        toast({
+          title: "❌ Error Updating Lead",
+          description: result.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "✅ Lead Updated",
+          description: "Estimate has been set for this lead.",
+        });
+      }
+    } else {
+      // Unchecking estimate - user must select ULR first
+      updateLeadLocal(leadId, { estimateSet: false });
+      setPendingULRLeadId(leadId);
       
       toast({
-        title: "✅ Leads Updated Successfully!",
-        description: "Your lead data has been saved.",
+        title: "ℹ️ Select Unqualified Reason",
+        description: "Please select a reason from the dropdown to complete this action.",
       });
-    } catch (error) {
-      toast({
-        title: "❌ Error Saving Leads",
-        description: "Failed to save lead data. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
     }
   };
+
+  const handleULRChange = async (leadId: string, value: string) => {
+    const lead = leads.find(l => l.id === leadId);
+    if (!lead) return;
+
+    // Update the lead with the selected ULR
+    const result = await updateLeadData({
+      clientId: lead.clientId,
+      id: leadId,
+      estimateSet: false,
+      unqualifiedLeadReason: value
+    });
+    
+    if (result.error) {
+      toast({
+        title: "❌ Error Updating Lead",
+        description: result.message,
+        variant: "destructive",
+      });
+      // Revert the estimate set change if update failed
+      updateLeadLocal(leadId, { estimateSet: true });
+    } else {
+      toast({
+        title: "✅ Lead Updated",
+        description: "Unqualified lead reason has been set.",
+      });
+    }
+    
+    // Clear pending state
+    setPendingULRLeadId(null);
+  };
+
+  // Remove the save handler as updates are now automatic
 
   const formatDate = (dateString: string) => {
     return format(new Date(dateString), 'MMM dd, yyyy');
@@ -255,7 +227,7 @@ export const LeadSheet = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {leads.map((lead) => (
+                    {(loading ? [] : leads).map((lead) => (
                       <TableRow key={lead.id} className={`hover:bg-gray-50 ${lead.estimateSet ? 'bg-green-50' : ''}`}>
                         <TableCell className="font-medium px-3 py-4">
                           {formatDate(lead.leadDate)}
@@ -302,7 +274,7 @@ export const LeadSheet = () => {
                             className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                           />
                         </TableCell>
-                        <TableCell className={`px-3 py-4 sticky right-0 z-10 border-l border-gray-200 shadow-[-4px_0_6px_-1px_rgba(0,0,0,0.1)] text-center ${lead.estimateSet ? 'bg-green-50' : 'bg-white'}`}>
+                        <TableCell className={`px-3 py-4 sticky right-0 z-10 border-l border-gray-200 shadow-[-4px_0_6px_-1px_rgba(0,0,0,0.1)] text-center ${lead.estimateSet ? 'bg-green-50' : pendingULRLeadId === lead.id ? 'bg-yellow-50' : 'bg-white'}`}>
                           {lead.estimateSet ? (
                             <span className="text-gray-500 text-sm">NA</span>
                           ) : (
@@ -310,8 +282,8 @@ export const LeadSheet = () => {
                               value={lead.unqualifiedLeadReason || ''}
                               onValueChange={(value) => handleULRChange(lead.id, value)}
                             >
-                              <SelectTrigger className="w-full h-8 text-xs">
-                                <SelectValue placeholder="Select reason..." />
+                              <SelectTrigger className={`w-full h-8 text-xs ${pendingULRLeadId === lead.id ? 'border-yellow-400 ring-2 ring-yellow-200' : ''}`}>
+                                <SelectValue placeholder={pendingULRLeadId === lead.id ? "Select reason required!" : "Select reason..."} />
                               </SelectTrigger>
                               <SelectContent>
                                 {ulrOptions.map((option) => (
@@ -329,7 +301,14 @@ export const LeadSheet = () => {
                 </Table>
               </div>
               
-              {leads.length === 0 && (
+              {loading && (
+                <div className="text-center py-8 text-gray-500">
+                  <Users className="h-12 w-12 mx-auto mb-4 text-gray-300 animate-pulse" />
+                  <p>Loading leads...</p>
+                </div>
+              )}
+              
+              {!loading && leads.length === 0 && (
                 <div className="text-center py-8 text-gray-500">
                   <Users className="h-12 w-12 mx-auto mb-4 text-gray-300" />
                   <p>No leads found for the selected period.</p>
