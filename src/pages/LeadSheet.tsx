@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { Users, Calendar, Phone, Mail, MapPin, Wrench, Tag, FileText, CheckSquare } from 'lucide-react';
+import { Users } from 'lucide-react';
 import { format } from 'date-fns';
 import { DatePeriodSelector } from '@/components/DatePeriodSelector';
 import { PeriodType } from '@/types';
@@ -14,9 +14,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export const LeadSheet = () => {
   const { toast } = useToast();
@@ -24,6 +23,16 @@ export const LeadSheet = () => {
   const [period, setPeriod] = useState<PeriodType>('weekly');
   const [leads, setLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  // ULR options based on the image
+  const ulrOptions = [
+    'Bad Phone Number',
+    'Out of Area',
+    'Job Too Small',
+    'Said Didn\'t Fill Out Form',
+    'No Longer Interested',
+    'Unresponsive'
+  ];
 
   // Mock data for demonstration - replace with actual API call
   const mockLeads: Lead[] = [
@@ -38,6 +47,8 @@ export const LeadSheet = () => {
       adSetName: 'Winter Roofing Campaign',
       adName: 'Emergency Roof Repair',
       estimateSet: false,
+      clientId: 'CLT001',
+      unqualifiedLeadReason: 'Bad Phone Number',
     },
     {
       id: '2',
@@ -50,6 +61,8 @@ export const LeadSheet = () => {
       adSetName: 'Home Improvement',
       adName: 'Siding Replacement',
       estimateSet: true,
+      clientId: 'CLT002',
+      unqualifiedLeadReason: undefined, // Should show NA when estimate is set
     },
     {
       id: '3',
@@ -62,6 +75,8 @@ export const LeadSheet = () => {
       adSetName: 'Gutter Maintenance',
       adName: 'Gutter Cleaning Service',
       estimateSet: false,
+      clientId: 'CLT003',
+      unqualifiedLeadReason: 'Out of Area',
     },
     {
       id: '4',
@@ -74,6 +89,8 @@ export const LeadSheet = () => {
       adSetName: 'Window Replacement',
       adName: 'Energy Efficient Windows',
       estimateSet: true,
+      clientId: 'CLT004',
+      unqualifiedLeadReason: undefined, // Should show NA when estimate is set
     },
     {
       id: '5',
@@ -86,6 +103,8 @@ export const LeadSheet = () => {
       adSetName: 'Summer Roofing',
       adName: 'Roof Inspection',
       estimateSet: false,
+      clientId: 'CLT005',
+      unqualifiedLeadReason: 'Job Too Small',
     },
   ];
 
@@ -103,7 +122,19 @@ export const LeadSheet = () => {
   const handleEstimateSetChange = (leadId: string, checked: boolean) => {
     setLeads(prevLeads =>
       prevLeads.map(lead =>
-        lead.id === leadId ? { ...lead, estimateSet: checked } : lead
+        lead.id === leadId ? { 
+          ...lead, 
+          estimateSet: checked,
+          unqualifiedLeadReason: checked ? undefined : lead.unqualifiedLeadReason
+        } : lead
+      )
+    );
+  };
+
+  const handleULRChange = (leadId: string, value: string) => {
+    setLeads(prevLeads =>
+      prevLeads.map(lead =>
+        lead.id === leadId ? { ...lead, unqualifiedLeadReason: value } : lead
       )
     );
   };
@@ -168,7 +199,7 @@ export const LeadSheet = () => {
             </CardHeader>
             <CardContent className="p-0">
               <div className="overflow-x-auto relative">
-                <Table className="w-full min-w-[1200px]">
+                <Table className="w-full min-w-[1400px]">
                   <TableHeader>
                     <TableRow className="bg-gray-50">
                       <TableHead className="font-semibold text-gray-700 w-32">
@@ -211,9 +242,14 @@ export const LeadSheet = () => {
                           Ad Name
                         </div>
                       </TableHead>
-                      <TableHead className="font-semibold text-gray-700 w-32 sticky right-0 bg-gray-50 z-10 border-l border-gray-200 shadow-[-4px_0_6px_-1px_rgba(0,0,0,0.1)]">
+                      <TableHead className="font-semibold text-gray-700 w-32">
                         <div className="flex items-center gap-1">
                           Estimate Set
+                        </div>
+                      </TableHead>
+                      <TableHead className="font-semibold text-gray-700 w-48 sticky right-0 bg-gray-50 z-10 border-l border-gray-200 shadow-[-4px_0_6px_-1px_rgba(0,0,0,0.1)] text-center">
+                        <div className="flex items-center gap-1">
+                          Unqualified Lead Reason
                         </div>
                       </TableHead>
                     </TableRow>
@@ -257,7 +293,7 @@ export const LeadSheet = () => {
                         <TableCell className="px-3 py-4 text-xs">
                           {lead.adName}
                         </TableCell>
-                        <TableCell className={`px-3 py-4 text-center sticky right-0 z-10 border-l border-gray-200 shadow-[-4px_0_6px_-1px_rgba(0,0,0,0.1)] ${lead.estimateSet ? 'bg-green-50' : 'bg-white'}`}>
+                        <TableCell className="px-3 py-4 text-center">
                           <Checkbox
                             checked={lead.estimateSet}
                             onCheckedChange={(checked) => 
@@ -265,6 +301,27 @@ export const LeadSheet = () => {
                             }
                             className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                           />
+                        </TableCell>
+                        <TableCell className={`px-3 py-4 sticky right-0 z-10 border-l border-gray-200 shadow-[-4px_0_6px_-1px_rgba(0,0,0,0.1)] text-center ${lead.estimateSet ? 'bg-green-50' : 'bg-white'}`}>
+                          {lead.estimateSet ? (
+                            <span className="text-gray-500 text-sm">NA</span>
+                          ) : (
+                            <Select
+                              value={lead.unqualifiedLeadReason || ''}
+                              onValueChange={(value) => handleULRChange(lead.id, value)}
+                            >
+                              <SelectTrigger className="w-full h-8 text-xs">
+                                <SelectValue placeholder="Select reason..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {ulrOptions.map((option) => (
+                                  <SelectItem key={option} value={option} className="text-xs">
+                                    {option}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}
