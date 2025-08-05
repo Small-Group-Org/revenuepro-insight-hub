@@ -70,4 +70,5 @@ export interface Lead {
   estimateSet: boolean;
   clientId: string;
   unqualifiedLeadReason?: string;
+  updatedAt?: string;
 }

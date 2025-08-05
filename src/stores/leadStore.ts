@@ -1,14 +1,21 @@
 import { create } from "zustand";
 import { Lead } from "@/types";
-import { getLeads, updateLead, GetLeadsPayload, UpdateLeadPayload } from "@/service/leadService";
-import { getDummyLeadsForUser } from "@/utils/dummyLeads";
+import { 
+  getLeads, 
+  updateLead,
+  GetLeadsPayload, 
+  UpdateLeadPayload,
+  GetLeadsResponse,
+  UpdateLeadResponse
+} from "@/service/leadService";
+
 
 interface LeadStoreState {
   leads: Lead[];
   loading: boolean;
   error?: string;
-  selectedUserId?: string;
-  fetchLeads: (userId: string) => Promise<void>;
+  selectedClientId?: string;
+  fetchLeads: (clientId?: string, startDate?: string, endDate?: string) => Promise<void>;
   updateLeadData: (payload: UpdateLeadPayload) => Promise<{ error: boolean; message?: string }>;
   updateLeadLocal: (leadId: string, updates: Partial<Lead>) => void;
   clearLeads: () => void;
@@ -18,23 +25,29 @@ export const useLeadStore = create<LeadStoreState>((set, get) => ({
   leads: [],
   loading: false,
   error: undefined,
-  selectedUserId: undefined,
+  selectedClientId: undefined,
 
-  fetchLeads: async (userId: string) => {
-    set({ loading: true, error: undefined, selectedUserId: userId });
+  fetchLeads: async (clientId?: string, startDate?: string, endDate?: string) => {
+    set({ loading: true, error: undefined, selectedClientId: clientId });
     
     try {
-      // For now, use dummy data since API is not ready
-      const dummyLeads = getDummyLeadsForUser(userId);
-      set({ leads: dummyLeads, loading: false });
+      const payload: GetLeadsPayload = {};
+      if (clientId) payload.clientId = clientId;
+      if (startDate) payload.startDate = startDate;
+      if (endDate) payload.endDate = endDate;
+
+      const res = await getLeads(payload);
       
-      // TODO: Replace with actual API call when backend is ready
-      // const res = await getLeads({ userId });
-      // if (!res.error && res.data?.leads) {
-      //   set({ leads: res.data.leads, loading: false });
-      // } else {
-      //   set({ error: res.message || "Failed to fetch leads", loading: false });
-      // }
+      if (!res.error && res.data && res.data.success && res.data.data) {
+        // Map _id to id for compatibility with Lead interface
+        const leadsWithId = res.data.data.map((lead: any) => ({
+          ...lead,
+          id: lead._id || lead.id
+        }));
+        set({ leads: leadsWithId, loading: false });
+      } else {
+        set({ error: res.message || res.data?.message || "Failed to fetch leads", loading: false });
+      }
     } catch (error) {
       set({ 
         error: error instanceof Error ? error.message : "Failed to fetch leads", 
@@ -45,36 +58,27 @@ export const useLeadStore = create<LeadStoreState>((set, get) => ({
 
   updateLeadData: async (payload: UpdateLeadPayload) => {
     try {
-      // For now, just update locally since API is not ready
-      const { leads } = get();
-      const updatedLeads = leads.map(lead => 
-        lead.id === payload.id ? {
-          ...lead,
-          estimateSet: payload.estimateSet,
-          unqualifiedLeadReason: payload.unqualifiedLeadReason
-        } : lead
-      );
-      set({ leads: updatedLeads });
+      const res = await updateLead(payload);
       
-      return { error: false, message: "Lead updated successfully" };
-      
-      // TODO: Replace with actual API call when backend is ready
-      // const res = await updateLead(payload);
-      // if (!res.error) {
-      //   // Update local state optimistically
-      //   const { leads } = get();
-      //   const updatedLeads = leads.map(lead => 
-      //     lead.id === payload.id ? {
-      //       ...lead,
-      //       estimateSet: payload.estimateSet,
-      //       unqualifiedLeadReason: payload.unqualifiedLeadReason
-      //     } : lead
-      //   );
-      //   set({ leads: updatedLeads });
-      //   return { error: false, message: "Lead updated successfully" };
-      // } else {
-      //   return { error: true, message: res.message || "Failed to update lead" };
-      // }
+      if (!res.error && res.data && res.data.success && res.data.data) {
+        // Update local state with the updated lead
+        const { leads } = get();
+        const updatedLead = res.data.data;
+        const updatedLeads = leads.map(lead => 
+          lead.id === payload._id ? {
+            ...lead,
+            id: updatedLead._id || updatedLead.id,
+            estimateSet: updatedLead.estimateSet,
+            unqualifiedLeadReason: updatedLead.unqualifiedLeadReason,
+            updatedAt: updatedLead.updatedAt
+          } : lead
+        );
+        set({ leads: updatedLeads });
+        
+        return { error: false, message: "Lead updated successfully" };
+      } else {
+        return { error: true, message: res.message || res.data?.message || "Failed to update lead" };
+      }
     } catch (error) {
       return { 
         error: true, 
@@ -92,6 +96,6 @@ export const useLeadStore = create<LeadStoreState>((set, get) => ({
   },
 
   clearLeads: () => {
-    set({ leads: [], error: undefined, selectedUserId: undefined });
+    set({ leads: [], error: undefined, selectedClientId: undefined });
   },
 }));

@@ -1,28 +1,51 @@
-import { doPOST, doGET, doPUT } from "@/utils/HttpUtils";
+import { doGET, doPATCH } from "@/utils/HttpUtils";
 import { Lead } from "@/types";
 
 export interface GetLeadsPayload {
-  userId: string;
+  clientId?: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 export interface UpdateLeadPayload {
-  clientId: string; // userId basically
-  id: string; // leadId
+  _id: string;
   estimateSet: boolean;
   unqualifiedLeadReason?: string;
 }
 
 export interface GetLeadsResponse {
-  leads: Lead[];
-  total: number;
+  success: boolean;
+  data: Lead[];
 }
 
-export const getLeads = async (payload: GetLeadsPayload) => {
-  const response = await doGET(`/leads?userId=${payload.userId}`);
+export interface UpdateLeadResponse {
+  success: boolean;
+  data: Lead;
+}
+
+export const getLeads = async (payload?: GetLeadsPayload) => {
+  let url = '/leads';
+  const params = new URLSearchParams();
+  
+  if (payload?.clientId) {
+    params.append('clientId', payload.clientId);
+  }
+  if (payload?.startDate) {
+    params.append('startDate', payload.startDate);
+  }
+  if (payload?.endDate) {
+    params.append('endDate', payload.endDate);
+  }
+  
+  if (params.toString()) {
+    url += `?${params.toString()}`;
+  }
+  
+  const response = await doGET(url);
   return response;
 };
 
 export const updateLead = async (payload: UpdateLeadPayload) => {
-  const response = await doPUT("/leads/update", payload);
+  const response = await doPATCH("/leads", payload);
   return response;
 };

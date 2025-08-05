@@ -42,7 +42,7 @@ export const LeadSheet = () => {
   useEffect(() => {
     // Fetch leads when selectedUserId changes
     if (selectedUserId) {
-      fetchLeads(selectedUserId);
+      fetchLeads(selectedUserId); // Pass selectedUserId as clientId
     }
   }, [selectedUserId, fetchLeads]);
 
@@ -69,8 +69,7 @@ export const LeadSheet = () => {
     if (checked) {
       // Setting estimate to true - update immediately
       const result = await updateLeadData({
-        clientId: lead.clientId,
-        id: leadId,
+        _id: leadId,
         estimateSet: true,
         unqualifiedLeadReason: undefined
       });
@@ -105,8 +104,7 @@ export const LeadSheet = () => {
 
     // Update the lead with the selected ULR
     const result = await updateLeadData({
-      clientId: lead.clientId,
-      id: leadId,
+      _id: leadId,
       estimateSet: false,
       unqualifiedLeadReason: value
     });

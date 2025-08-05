@@ -16,7 +16,7 @@ export const LeadAnalytics = () => {
 
   useEffect(() => {
     if (selectedUserId) {
-      fetchLeads(selectedUserId);
+      fetchLeads(selectedUserId); // Pass selectedUserId as clientId
     }
   }, [selectedUserId, fetchLeads]);
 
