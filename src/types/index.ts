@@ -68,4 +68,7 @@ export interface Lead {
   adSetName: string;
   adName: string;
   estimateSet: boolean;
+  clientId: string;
+  unqualifiedLeadReason?: string;
+  updatedAt?: string;
 }

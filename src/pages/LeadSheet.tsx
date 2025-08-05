@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { Users, Calendar, Phone, Mail, MapPin, Wrench, Tag, FileText, CheckSquare } from 'lucide-react';
-import { format } from 'date-fns';
+import { Users } from 'lucide-react';
+import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { DatePeriodSelector } from '@/components/DatePeriodSelector';
 import { PeriodType } from '@/types';
-import { Lead } from '@/types';
+import { getWeekInfo } from '@/utils/weekLogic';
+import { useLeadStore } from '@/stores/leadStore';
+import { useUserStore } from '@/stores/userStore';
 import {
   Table,
   TableBody,
@@ -14,120 +16,139 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export const LeadSheet = () => {
   const { toast } = useToast();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [period, setPeriod] = useState<PeriodType>('weekly');
-  const [leads, setLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [pendingULRLeadId, setPendingULRLeadId] = useState<string | null>(null);
+  
+  const { leads, loading, error, fetchLeads, updateLeadData, updateLeadLocal } = useLeadStore();
+  const { selectedUserId } = useUserStore();
 
-  // Mock data for demonstration - replace with actual API call
-  const mockLeads: Lead[] = [
-    {
-      id: '1',
-      leadDate: '2024-01-15',
-      name: 'John Smith',
-      email: 'john.smith@email.com',
-      phone: '(555) 123-4567',
-      zip: '12345',
-      service: 'Roofing',
-      adSetName: 'Winter Roofing Campaign',
-      adName: 'Emergency Roof Repair',
-      estimateSet: false,
-    },
-    {
-      id: '2',
-      leadDate: '2024-01-16',
-      name: 'Sarah Johnson',
-      email: 'sarah.j@email.com',
-      phone: '(555) 234-5678',
-      zip: '23456',
-      service: 'Siding',
-      adSetName: 'Home Improvement',
-      adName: 'Siding Replacement',
-      estimateSet: true,
-    },
-    {
-      id: '3',
-      leadDate: '2024-01-17',
-      name: 'Mike Davis',
-      email: 'mike.davis@email.com',
-      phone: '(555) 345-6789',
-      zip: '34567',
-      service: 'Gutters',
-      adSetName: 'Gutter Maintenance',
-      adName: 'Gutter Cleaning Service',
-      estimateSet: false,
-    },
-    {
-      id: '4',
-      leadDate: '2024-01-18',
-      name: 'Lisa Wilson',
-      email: 'lisa.wilson@email.com',
-      phone: '(555) 456-7890',
-      zip: '45678',
-      service: 'Windows',
-      adSetName: 'Window Replacement',
-      adName: 'Energy Efficient Windows',
-      estimateSet: true,
-    },
-    {
-      id: '5',
-      leadDate: '2024-01-19',
-      name: 'Robert Brown',
-      email: 'robert.brown@email.com',
-      phone: '(555) 567-8901',
-      zip: '56789',
-      service: 'Roofing',
-      adSetName: 'Summer Roofing',
-      adName: 'Roof Inspection',
-      estimateSet: false,
-    },
+  // ULR options based on the image
+  const ulrOptions = [
+    'Bad Phone Number',
+    'Out of Area',
+    'Job Too Small',
+    'Said Didn\'t Fill Out Form',
+    'No Longer Interested',
+    'Unresponsive'
   ];
 
+  // Helper function to get date range based on selected date and period
+  const getDateRange = (date: Date, periodType: PeriodType) => {
+    let startDate: string, endDate: string;
+
+    if (periodType === 'weekly') {
+      const weekInfo = getWeekInfo(date);
+      startDate = format(weekInfo.weekStart, 'yyyy-MM-dd');
+      endDate = format(weekInfo.weekEnd, 'yyyy-MM-dd');
+    } else if (periodType === 'monthly') {
+      startDate = format(startOfMonth(date), 'yyyy-MM-dd');
+      endDate = format(endOfMonth(date), 'yyyy-MM-dd');
+    } else {
+      startDate = format(startOfYear(date), 'yyyy-MM-dd');
+      endDate = format(endOfYear(date), 'yyyy-MM-dd');
+    }
+
+    return { startDate, endDate };
+  };
+
+  // Fetch leads when selectedUserId, selectedDate, or period changes
   useEffect(() => {
-    // Load leads data - replace with actual API call
-    setLeads(mockLeads);
-  }, []);
+    if (selectedUserId) {
+      const { startDate, endDate } = getDateRange(selectedDate, period);
+      fetchLeads(selectedUserId, startDate, endDate);
+    }
+  }, [selectedUserId, selectedDate, period, fetchLeads]);
 
-  const handleDatePeriodChange = (date: Date, period: PeriodType) => {
-    setSelectedDate(date);
-    setPeriod(period);
-    // Here you would typically fetch leads for the selected period
-  };
-
-  const handleEstimateSetChange = (leadId: string, checked: boolean) => {
-    setLeads(prevLeads =>
-      prevLeads.map(lead =>
-        lead.id === leadId ? { ...lead, estimateSet: checked } : lead
-      )
-    );
-  };
-
-  const handleSave = async () => {
-    setIsLoading(true);
-    try {
-      // Here you would save the updated leads data
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-      
+  useEffect(() => {
+    if (error) {
       toast({
-        title: "✅ Leads Updated Successfully!",
-        description: "Your lead data has been saved.",
-      });
-    } catch (error) {
-      toast({
-        title: "❌ Error Saving Leads",
-        description: "Failed to save lead data. Please try again.",
+        title: "❌ Error Loading Leads",
+        description: error,
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
+    }
+  }, [error, toast]);
+
+  const handleDatePeriodChange = (date: Date, periodType: PeriodType) => {
+    setSelectedDate(date);
+    setPeriod(periodType);
+    // Leads will be fetched automatically via useEffect
+  };
+
+  const handleEstimateSetChange = async (leadId: string, checked: boolean) => {
+    const lead = leads.find(l => l.id === leadId);
+    if (!lead) return;
+
+    if (checked) {
+      // Setting estimate to true - update immediately
+      const result = await updateLeadData({
+        _id: leadId,
+        estimateSet: true,
+        unqualifiedLeadReason: undefined
+      });
+      
+      if (result.error) {
+        toast({
+          title: "❌ Error Updating Lead",
+          description: result.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "✅ Lead Updated",
+          description: "Estimate has been set for this lead.",
+        });
+      }
+    } else {
+      // Unchecking estimate - user must select ULR first
+      updateLeadLocal(leadId, { estimateSet: false });
+      setPendingULRLeadId(leadId);
+      
+      toast({
+        title: "ℹ️ Select Unqualified Reason",
+        description: "Please select a reason from the dropdown to complete this action.",
+      });
     }
   };
+
+  const handleULRChange = async (leadId: string, value: string) => {
+    const lead = leads.find(l => l.id === leadId);
+    if (!lead) return;
+
+    // Update the lead with the selected ULR
+    const result = await updateLeadData({
+      _id: leadId,
+      estimateSet: false,
+      unqualifiedLeadReason: value
+    });
+    
+    if (result.error) {
+      toast({
+        title: "❌ Error Updating Lead",
+        description: result.message,
+        variant: "destructive",
+      });
+      // Revert the estimate set change if update failed
+      updateLeadLocal(leadId, { estimateSet: true });
+    } else {
+      toast({
+        title: "✅ Lead Updated",
+        description: "Unqualified lead reason has been set.",
+      });
+    }
+    
+    // Clear pending state
+    setPendingULRLeadId(null);
+  };
+
+  // Remove the save handler as updates are now automatic
 
   const formatDate = (dateString: string) => {
     return format(new Date(dateString), 'MMM dd, yyyy');
@@ -168,7 +189,7 @@ export const LeadSheet = () => {
             </CardHeader>
             <CardContent className="p-0">
               <div className="overflow-x-auto relative">
-                <Table className="w-full min-w-[1200px]">
+                <Table className="w-full min-w-[1400px]">
                   <TableHeader>
                     <TableRow className="bg-gray-50">
                       <TableHead className="font-semibold text-gray-700 w-32">
@@ -211,15 +232,20 @@ export const LeadSheet = () => {
                           Ad Name
                         </div>
                       </TableHead>
-                      <TableHead className="font-semibold text-gray-700 w-32 sticky right-0 bg-gray-50 z-10 border-l border-gray-200 shadow-[-4px_0_6px_-1px_rgba(0,0,0,0.1)]">
+                      <TableHead className="font-semibold text-gray-700 w-32">
                         <div className="flex items-center gap-1">
                           Estimate Set
+                        </div>
+                      </TableHead>
+                      <TableHead className="font-semibold text-gray-700 w-48 sticky right-0 bg-gray-50 z-10 border-l border-gray-200 shadow-[-4px_0_6px_-1px_rgba(0,0,0,0.1)] text-center">
+                        <div className="flex items-center gap-1">
+                          Unqualified Lead Reason
                         </div>
                       </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {leads.map((lead) => (
+                    {(loading ? [] : leads).map((lead) => (
                       <TableRow key={lead.id} className={`hover:bg-gray-50 ${lead.estimateSet ? 'bg-green-50' : ''}`}>
                         <TableCell className="font-medium px-3 py-4">
                           {formatDate(lead.leadDate)}
@@ -257,7 +283,7 @@ export const LeadSheet = () => {
                         <TableCell className="px-3 py-4 text-xs">
                           {lead.adName}
                         </TableCell>
-                        <TableCell className={`px-3 py-4 text-center sticky right-0 z-10 border-l border-gray-200 shadow-[-4px_0_6px_-1px_rgba(0,0,0,0.1)] ${lead.estimateSet ? 'bg-green-50' : 'bg-white'}`}>
+                        <TableCell className="px-3 py-4 text-center">
                           <Checkbox
                             checked={lead.estimateSet}
                             onCheckedChange={(checked) => 
@@ -266,13 +292,41 @@ export const LeadSheet = () => {
                             className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                           />
                         </TableCell>
+                        <TableCell className={`px-3 py-4 sticky right-0 z-10 border-l border-gray-200 shadow-[-4px_0_6px_-1px_rgba(0,0,0,0.1)] text-center ${lead.estimateSet ? 'bg-green-50' : pendingULRLeadId === lead.id ? 'bg-yellow-50' : 'bg-white'}`}>
+                          {lead.estimateSet ? (
+                            <span className="text-gray-500 text-sm">NA</span>
+                          ) : (
+                            <Select
+                              value={lead.unqualifiedLeadReason || ''}
+                              onValueChange={(value) => handleULRChange(lead.id, value)}
+                            >
+                              <SelectTrigger className={`w-full h-8 text-xs ${pendingULRLeadId === lead.id ? 'border-yellow-400 ring-2 ring-yellow-200' : ''}`}>
+                                <SelectValue placeholder={pendingULRLeadId === lead.id ? "Select reason required!" : "Select reason..."} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {ulrOptions.map((option) => (
+                                  <SelectItem key={option} value={option} className="text-xs">
+                                    {option}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
               </div>
               
-              {leads.length === 0 && (
+              {loading && (
+                <div className="text-center py-8 text-gray-500">
+                  <Users className="h-12 w-12 mx-auto mb-4 text-gray-300 animate-pulse" />
+                  <p>Loading leads...</p>
+                </div>
+              )}
+              
+              {!loading && leads.length === 0 && (
                 <div className="text-center py-8 text-gray-500">
                   <Users className="h-12 w-12 mx-auto mb-4 text-gray-300" />
                   <p>No leads found for the selected period.</p>

@@ -32,3 +32,8 @@ export const doPUT = async (url: string, data: unknown): Promise<ApiResponse> =>
   return response;
 };
 
+export const doPATCH = async (url: string, data: unknown): Promise<ApiResponse> => {
+  const response = await apiHandler(url, API_METHODS.PATCH, data);
+  return response;
+};
+

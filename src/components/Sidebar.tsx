@@ -24,6 +24,7 @@ const menuItems = [
   { id: 'actuals', label: 'Weekly Reporting', icon: Plus, path: '/actuals' },
   { id: 'compare', label: 'Target Vs Actual', icon: TrendingUp, path: '/compare' },
   { id: 'leads', label: 'Lead Sheet', icon: Users, path: '/leads' },
+  { id: 'analytics', label: 'Lead Analytics', icon: BarChart3, path: '/lead-analytics' },
 ];
 
 export const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }: SidebarProps) => {
