@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Users } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { DatePeriodSelector } from '@/components/DatePeriodSelector';
 import { PeriodType } from '@/types';
-import { Lead } from '@/types';
+import { getWeekInfo } from '@/utils/weekLogic';
 import { useLeadStore } from '@/stores/leadStore';
 import { useUserStore } from '@/stores/userStore';
 import {
@@ -39,12 +39,32 @@ export const LeadSheet = () => {
     'Unresponsive'
   ];
 
-  useEffect(() => {
-    // Fetch leads when selectedUserId changes
-    if (selectedUserId) {
-      fetchLeads(selectedUserId); // Pass selectedUserId as clientId
+  // Helper function to get date range based on selected date and period
+  const getDateRange = (date: Date, periodType: PeriodType) => {
+    let startDate: string, endDate: string;
+
+    if (periodType === 'weekly') {
+      const weekInfo = getWeekInfo(date);
+      startDate = format(weekInfo.weekStart, 'yyyy-MM-dd');
+      endDate = format(weekInfo.weekEnd, 'yyyy-MM-dd');
+    } else if (periodType === 'monthly') {
+      startDate = format(startOfMonth(date), 'yyyy-MM-dd');
+      endDate = format(endOfMonth(date), 'yyyy-MM-dd');
+    } else {
+      startDate = format(startOfYear(date), 'yyyy-MM-dd');
+      endDate = format(endOfYear(date), 'yyyy-MM-dd');
     }
-  }, [selectedUserId, fetchLeads]);
+
+    return { startDate, endDate };
+  };
+
+  // Fetch leads when selectedUserId, selectedDate, or period changes
+  useEffect(() => {
+    if (selectedUserId) {
+      const { startDate, endDate } = getDateRange(selectedDate, period);
+      fetchLeads(selectedUserId, startDate, endDate);
+    }
+  }, [selectedUserId, selectedDate, period, fetchLeads]);
 
   useEffect(() => {
     if (error) {
@@ -56,10 +76,10 @@ export const LeadSheet = () => {
     }
   }, [error, toast]);
 
-  const handleDatePeriodChange = (date: Date, period: PeriodType) => {
+  const handleDatePeriodChange = (date: Date, periodType: PeriodType) => {
     setSelectedDate(date);
-    setPeriod(period);
-    // Here you would typically fetch leads for the selected period
+    setPeriod(periodType);
+    // Leads will be fetched automatically via useEffect
   };
 
   const handleEstimateSetChange = async (leadId: string, checked: boolean) => {
