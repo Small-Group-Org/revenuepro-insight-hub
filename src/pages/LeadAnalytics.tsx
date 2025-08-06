@@ -222,7 +222,7 @@ export const LeadAnalytics = () => {
               </h1>
             </div>
             <p className="text-gray-600 max-w-2xl mx-auto text-lg mb-10 mt-2">
-              Analysis of qualified leads with estimates set - focusing on successful conversions
+              Complete analysis of <span className="font-bold text-blue-700">all-time</span> lead performance - focusing on successful conversions and trends
             </p>
           </div>
 
@@ -236,7 +236,7 @@ export const LeadAnalytics = () => {
               <CardContent>
                 <div className="text-2xl font-bold">{analyticsData.overview.totalLeads}</div>
                 <p className="text-xs text-muted-foreground">
-                  All leads in selected period
+                  All-time lead data
                 </p>
               </CardContent>
             </Card>
@@ -360,8 +360,19 @@ export const LeadAnalytics = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <TrendingUp className="h-5 w-5 text-indigo-600" />
-                  Day of Week Analysis (Total Leads & Estimate Set)
+                    Day of Week Analysis
                 </CardTitle>
+                {/* Color Legend */}
+                <div className="flex items-center gap-4 mt-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded" style={{ backgroundColor: '#94a3b8' }}></div>
+                    <span className="text-sm text-gray-600">Total Leads</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded" style={{ backgroundColor: '#10b981' }}></div>
+                    <span className="text-sm text-gray-600">Estimate Set Leads</span>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 <ChartContainer config={chartConfig} className="h-80">
@@ -375,11 +386,24 @@ export const LeadAnalytics = () => {
                     />
                     <YAxis />
                     <ChartTooltip 
-                      content={<ChartTooltipContent />}
-                      formatter={(value, name) => [
-                        `${value} leads`,
-                        name
-                      ]}
+                      content={({ active, payload, label }) => {
+                        if (active && payload && payload.length && label) {
+                          const data = payload[0].payload;
+                          const percentage = data.total > 0 ? ((data.estimateSet / data.total) * 100).toFixed(1) : '0.0';
+                          return (
+                            <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
+                              <p className="font-semibold text-gray-900 mb-2">{label}</p>
+                              <p className="text-sm text-gray-700">
+                                <span className="font-medium">Total leads:</span> {data.total}
+                              </p>
+                              <p className="text-sm text-gray-700">
+                                <span className="font-medium">Estimate set:</span> {data.estimateSet} ({percentage}%)
+                              </p>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
                     />
                     <Bar dataKey="total" fill="#94a3b8" name="Total Leads" />
                     <Bar dataKey="estimateSet" fill="#10b981" name="Estimate Set Leads" />
