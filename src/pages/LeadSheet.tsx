@@ -21,8 +21,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 export const LeadSheet = () => {
   const { toast } = useToast();
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [period, setPeriod] = useState<PeriodType>('weekly');
+  const [selectedDate, setSelectedDate] = useState<Date>(startOfYear(new Date()));
+  const [period, setPeriod] = useState<PeriodType>('yearly');
   const [isLoading, setIsLoading] = useState(false);
   const [pendingULRLeadId, setPendingULRLeadId] = useState<string | null>(null);
   
@@ -175,7 +175,7 @@ export const LeadSheet = () => {
             initialDate={selectedDate}
             initialPeriod={period}
             onChange={handleDatePeriodChange}
-            allowedPeriods={['weekly', 'monthly']}
+            allowedPeriods={['weekly', 'monthly', 'yearly']}
           />
         </div>
 
