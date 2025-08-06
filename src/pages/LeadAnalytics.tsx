@@ -293,7 +293,7 @@ export const LeadAnalytics = () => {
               </CardContent>
             </Card>
           ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
             {/* Service Analysis */}
             <Card>
               <CardHeader>
@@ -303,7 +303,9 @@ export const LeadAnalytics = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <ChartContainer config={chartConfig} className="h-80">
+                <div className="overflow-x-auto">
+                  <div className="min-w-[600px]">
+                    <ChartContainer config={chartConfig} className="h-80">
                   <PieChart>
                     <Pie
                       data={analyticsData.serviceData}
@@ -326,7 +328,9 @@ export const LeadAnalytics = () => {
                       ]}
                     />
                   </PieChart>
-                </ChartContainer>
+                  </ChartContainer>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
@@ -339,7 +343,9 @@ export const LeadAnalytics = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <ChartContainer config={chartConfig} className="h-80">
+                <div className="overflow-x-auto">
+                  <div className="min-w-[600px]">
+                    <ChartContainer config={chartConfig} className="h-80">
                   <BarChart data={analyticsData.zipData}>
                     <XAxis dataKey="zip" />
                     <YAxis />
@@ -351,7 +357,9 @@ export const LeadAnalytics = () => {
                     />
                     <Bar dataKey="count" fill="#8b5cf6" name="Estimate Set Leads" />
                   </BarChart>
-                </ChartContainer>
+                  </ChartContainer>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
@@ -375,7 +383,9 @@ export const LeadAnalytics = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <ChartContainer config={chartConfig} className="h-80">
+                <div className="overflow-x-auto">
+                  <div className="min-w-[600px]">
+                    <ChartContainer config={chartConfig} className="h-80">
                   <BarChart data={analyticsData.dayOfWeekData}>
                     <XAxis 
                       dataKey="day" 
@@ -408,7 +418,9 @@ export const LeadAnalytics = () => {
                     <Bar dataKey="total" fill="#94a3b8" name="Total Leads" />
                     <Bar dataKey="estimateSet" fill="#10b981" name="Estimate Set Leads" />
                   </BarChart>
-                </ChartContainer>
+                  </ChartContainer>
+                  </div>
+                </div>
               </CardContent>
             </Card>
             
@@ -423,31 +435,35 @@ export const LeadAnalytics = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ChartContainer config={chartConfig} className="h-80">
-                    <PieChart>
-                      <Pie
-                        data={analyticsData.ulrData}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ reason, percentage }) => `${reason}: ${percentage}%`}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="count"
-                      >
-                        {analyticsData.ulrData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <ChartTooltip 
-                        content={<ChartTooltipContent />}
-                        formatter={(value, name, props) => [
-                          `${value} leads (${props.payload.percentage}%)`,
-                          'Count'
-                        ]}
-                      />
-                    </PieChart>
-                  </ChartContainer>
+                  <div className="overflow-x-auto">
+                    <div className="min-w-[600px]">
+                      <ChartContainer config={chartConfig} className="h-80">
+                        <PieChart>
+                          <Pie
+                            data={analyticsData.ulrData}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            label={({ reason, percentage }) => `${reason}: ${percentage}%`}
+                            outerRadius={80}
+                            fill="#8884d8"
+                            dataKey="count"
+                          >
+                            {analyticsData.ulrData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <ChartTooltip 
+                            content={<ChartTooltipContent />}
+                            formatter={(value, name, props) => [
+                              `${value} leads (${props.payload.percentage}%)`,
+                              'Count'
+                            ]}
+                          />
+                        </PieChart>
+                      </ChartContainer>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             )}
