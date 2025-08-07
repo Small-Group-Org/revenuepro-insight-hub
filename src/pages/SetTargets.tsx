@@ -16,7 +16,7 @@ import { DisableMetadata } from "@/types";
 import { FieldConfig, FieldValue, InputField, PeriodType } from "@/types";
 import type { MonthlyData } from "../components/YearlyTargetModal";
 import { getDefaultValues, processTargetData } from "@/utils/page-utils/targetUtils";
-import { upsertTarget } from "@/service/targetService";
+import { IWeeklyTarget, upsertTarget } from "@/service/targetService";
 
 export const SetTargets = () => {
   const { toast } = useToast();
@@ -214,7 +214,8 @@ export const SetTargets = () => {
 
   const handleSaveMonthlyTargets = useCallback(async (monthlyData: { [key: string]: MonthlyData }) => {
     const inputFieldNames = getInputFieldNames();
-   
+    const userId = useUserStore.getState().selectedUserId;
+
     try {
       const targets: any[] = [];
       
@@ -234,6 +235,7 @@ export const SetTargets = () => {
           closeRate: fieldValues?.closeRate,
           com: fieldValues?.com,
           showRate: fieldValues?.showRate,
+          userId,
         };
 
         inputFieldNames.forEach(name => {
@@ -355,6 +357,7 @@ export const SetTargets = () => {
         onSave={handleSaveMonthlyTargets}
         isLoading={isLoading}
         selectedYear={selectedYear}
+        apiData={currentTarget}
       />
     </div>
   );

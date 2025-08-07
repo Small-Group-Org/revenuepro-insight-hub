@@ -69,6 +69,13 @@ export const calculateFields = (
         values.weeklyBudget = values.revenue * budgetPercentage;
         values.budget = values.weeklyBudget;
         break;
+      case 'ytd':
+        const currentMonth = new Date().getMonth();
+        const monthsElapsed = currentMonth + 1;
+        values.annualBudget = values.revenue * budgetPercentage;
+        values.calculatedMonthlyBudget = values.annualBudget / 12;
+        values.budget = values.calculatedMonthlyBudget * monthsElapsed;
+        break;
     }
   }
 
@@ -134,8 +141,7 @@ export const processTargetData = (currentTarget: any[] | null): FieldValue => {
     return getDefaultValues();
   }
 
-  // For weekly period, use normal forward calculation
-  if (currentTarget.length === 1) {
+  if (currentTarget.length === 1 && !Array.isArray(currentTarget[0])) {
     const weekData = currentTarget[0];
     const weekValues: FieldValue = {
       revenue: weekData.revenue || 0,
@@ -149,8 +155,19 @@ export const processTargetData = (currentTarget: any[] | null): FieldValue => {
     return calculateFieldsForApiData(weekValues, 'weekly', 7);
   }
 
-  // For monthly/yearly periods, use reverse calculation flow
-  const weeklyCalculations = currentTarget.map(weekData => {
+  let allWeekData: any[] = [];
+  
+  if (currentTarget.length === 12 && Array.isArray(currentTarget[0])) {
+    currentTarget.forEach(monthData => {
+      if (Array.isArray(monthData)) {
+        allWeekData = allWeekData.concat(monthData);
+      }
+    });
+  } else {
+    allWeekData = currentTarget;
+  }
+
+  const weeklyCalculations = allWeekData.map(weekData => {
     const weekValues: FieldValue = {
       revenue: weekData.revenue || 0,
       avgJobSize: weekData.avgJobSize || 0,
@@ -160,7 +177,6 @@ export const processTargetData = (currentTarget: any[] | null): FieldValue => {
       com: weekData.com || 0,
     };
 
-    // Calculate weekly metrics
     weekValues.sales = safeDivide(weekValues.revenue, weekValues.avgJobSize);
     weekValues.estimatesRan = safeDivide(weekValues.sales, weekValues.closeRate / 100);
     weekValues.estimatesSet = safeDivide(weekValues.estimatesRan, weekValues.showRate / 100);
@@ -254,6 +270,13 @@ export const calculateFieldsForApiData = (
       case 'weekly':
         values.weeklyBudget = values.revenue * budgetPercentage;
         values.budget = values.weeklyBudget;
+        break;
+      case 'ytd':
+        const currentMonth = new Date().getMonth();
+        const monthsElapsed = currentMonth + 1;
+        values.annualBudget = values.revenue * budgetPercentage;
+        values.calculatedMonthlyBudget = values.annualBudget / 12;
+        values.budget = values.calculatedMonthlyBudget * monthsElapsed;
         break;
     }
   }
@@ -373,7 +396,23 @@ export const targetValidation = (
  */
 export const getUniqueQueryTypes = (currentTarget: any[] | null): string[] => {
   if (!currentTarget || currentTarget.length === 0) return [];
-  const queryTypes = currentTarget
+  
+  let allTargetData: any[] = [];
+  
+  // Handle yearly data structure (array of 12 monthly arrays)
+  if (currentTarget.length === 12 && Array.isArray(currentTarget[0])) {
+    // Flatten all weeks from all months
+    currentTarget.forEach(monthData => {
+      if (Array.isArray(monthData)) {
+        allTargetData = allTargetData.concat(monthData);
+      }
+    });
+  } else {
+    // Handle monthly/weekly data structure
+    allTargetData = currentTarget;
+  }
+  
+  const queryTypes = allTargetData
     .map((target) => target.queryType)
     .filter((queryType) => queryType && queryType.trim() !== "");
   return [...new Set(queryTypes)];
@@ -384,7 +423,23 @@ export const getUniqueQueryTypes = (currentTarget: any[] | null): string[] => {
  */
 export const areAllQueryTypesEmpty = (currentTarget: any[] | null): boolean => {
   if (!currentTarget || currentTarget.length === 0) return true;
-  return currentTarget.every(
+  
+  let allTargetData: any[] = [];
+  
+  // Handle yearly data structure (array of 12 monthly arrays)
+  if (currentTarget.length === 12 && Array.isArray(currentTarget[0])) {
+    // Flatten all weeks from all months
+    currentTarget.forEach(monthData => {
+      if (Array.isArray(monthData)) {
+        allTargetData = allTargetData.concat(monthData);
+      }
+    });
+  } else {
+    // Handle monthly/weekly data structure
+    allTargetData = currentTarget;
+  }
+  
+  return allTargetData.every(
     (target) => !target.queryType || target.queryType.trim() === ""
   );
 };
@@ -463,6 +518,11 @@ export const isTimeFrameEditable = (
       const currentYearStart = startOfYear(currentDate);
       const selectedYearStart = startOfYear(selectedDate);
       return !isBefore(selectedYearStart, currentYearStart);
+    case "ytd":
+      const currentYearStartYTD = startOfYear(currentDate);
+      const selectedYearStartYTD = startOfYear(selectedDate);
+      // For YTD, allow current year as it's ongoing
+      return !isBefore(selectedYearStartYTD, currentYearStartYTD);
     default:
       return true;
   }

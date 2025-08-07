@@ -376,7 +376,7 @@ export const CompareResults = () => {
             onChange={handleDatePeriodChange}
             buttonText="Export to Excel"
             onButtonClick={handleExport}
-            allowedPeriods={["weekly", "monthly", "yearly"]}
+            allowedPeriods={["weekly", "monthly", "yearly", "ytd"]}
           />
         </div>
 

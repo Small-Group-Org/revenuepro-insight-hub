@@ -37,6 +37,7 @@ interface YearlyTargetModalProps {
   onSave: (monthlyData: { [key: string]: MonthlyData }) => Promise<void>;
   isLoading: boolean;
   selectedYear: number;
+  apiData?: any[] | null; // Add API data prop
 }
 
 const currentMonthIndex = new Date().getMonth();
@@ -48,10 +49,8 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
   onSave,
   isLoading,
   selectedYear,
+  apiData,
 }) => {
-  const [monthlyBudgets, setMonthlyBudgets] = useState<{
-    [key: string]: number;
-  }>({});
   const [selectedMonth, setSelectedMonth] = useState<string>("January");
   const [monthlyData, setMonthlyData] = useState<{
     [key: string]: MonthlyData;
@@ -72,16 +71,84 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
     };
   }, [annualFieldValues]);
 
-  // Calculate monthly data based on budget percentages
+  // Process API data into monthly format
+  const processApiDataToMonthly = useMemo(() => {
+    if (!apiData || apiData.length !== 12) return {};
+
+    const monthlyDataFromApi: { [key: string]: MonthlyData } = {};
+    
+    // First, calculate total revenue by month and annual total
+    const monthlyRevenues: { [key: string]: number } = {};
+    let annualRevenue = 0;
+
+    apiData.forEach((monthData, monthIndex) => {
+      if (Array.isArray(monthData) && monthData.length > 0) {
+        const monthName = months[monthIndex];
+        
+        // Sum all weekly revenues for this month
+        const monthRevenue = monthData.reduce((sum, weekData) => {
+          return sum + (weekData.revenue || 0);
+        }, 0);
+        
+        monthlyRevenues[monthName] = monthRevenue;
+        annualRevenue += monthRevenue;
+      }
+    });
+
+    // Now calculate monthly data using the revenue percentages
+    apiData.forEach((monthData, monthIndex) => {
+      if (Array.isArray(monthData) && monthData.length > 0) {
+        const monthName = months[monthIndex];
+        const monthRevenue = monthlyRevenues[monthName];
+        const revenuePercentage = annualRevenue > 0 ? monthRevenue / annualRevenue : 0;
+        
+        // Use the annual totals to calculate monthly values based on revenue percentage
+        const monthlyBudget = annualTotals.budget * revenuePercentage;
+        const managementCost = calculateManagementCost(monthlyBudget);
+
+        monthlyDataFromApi[monthName] = {
+          budget: monthlyBudget,
+          leads: annualTotals.leads * revenuePercentage,
+          estimatesSet: annualTotals.estimatesSet * revenuePercentage,
+          estimates: annualTotals.estimates * revenuePercentage,
+          sales: annualTotals.sales * revenuePercentage,
+          revenue: annualTotals.revenue * revenuePercentage,
+          avgJobSize: annualTotals.avgJobSize,
+          com: annualTotals.com,
+          totalCom: safePercentage(((monthlyBudget + managementCost) / (annualTotals.revenue * revenuePercentage)) * 100),
+        };
+      }
+    });
+
+    return monthlyDataFromApi;
+  }, [apiData, annualTotals]);
+
+  // Initialize monthly data from API when modal opens
+  useEffect(() => {
+    if (isOpen && apiData) {
+      const apiMonthlyData = processApiDataToMonthly;
+      if (Object.keys(apiMonthlyData).length > 0) {
+        setMonthlyData(apiMonthlyData);
+      }
+    }
+  }, [isOpen, apiData, processApiDataToMonthly]);
+
+  // Calculate monthly data based on budget percentages or use API data
   const calculateMonthlyData = useMemo(() => {
-    const totalBudget = Object.values(monthlyBudgets).reduce(
-      (sum, budget) => sum + budget,
+    // If we have API data, use it directly
+    if (apiData && Object.keys(processApiDataToMonthly).length > 0) {
+      return processApiDataToMonthly;
+    }
+
+    // Otherwise, calculate based on budget percentages
+    const totalBudget = Object.values(monthlyData).reduce(
+      (sum, data) => sum + data.budget,
       0
     );
     const newMonthlyData: { [key: string]: MonthlyData } = {};
 
     months.forEach((month) => {
-      const budget = monthlyBudgets[month] || 0;
+      const budget = monthlyData[month]?.budget || 0;
       const percentage = totalBudget > 0 ? budget / annualTotals.budget : 0;
       const monthlyRevenue = annualTotals.revenue * percentage;
       const managementCost = calculateManagementCost(budget);
@@ -100,7 +167,7 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
     });
 
     return newMonthlyData;
-  }, [monthlyBudgets, annualTotals]);
+  }, [monthlyData, annualTotals, apiData, processApiDataToMonthly]);
 
   // Update monthly data when calculations change
   useEffect(() => {
@@ -109,10 +176,43 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
 
   const handleBudgetChange = (month: string, value: number) => {
     const validatedValue = Math.max(0, value);
-    setMonthlyBudgets((prev) => ({
-      ...prev,
-      [month]: validatedValue,
-    }));
+    
+    // Update the budget for this month
+    const updatedMonthlyData = { ...monthlyData };
+    updatedMonthlyData[month] = {
+      ...updatedMonthlyData[month],
+      budget: validatedValue,
+    };
+
+    // Calculate total budget
+    const totalBudget = Object.values(updatedMonthlyData).reduce(
+      (sum, data) => sum + data.budget,
+      0
+    );
+
+    // Recalculate all monthly data based on budget percentages
+    const newMonthlyData: { [key: string]: MonthlyData } = {};
+
+    months.forEach((monthName) => {
+      const budget = updatedMonthlyData[monthName]?.budget || 0;
+      const percentage = totalBudget > 0 ? budget / annualTotals.budget : 0;
+      const monthlyRevenue = annualTotals.revenue * percentage;
+      const managementCost = calculateManagementCost(budget);
+
+      newMonthlyData[monthName] = {
+        budget,
+        leads: annualTotals.leads * percentage,
+        estimatesSet: annualTotals.estimatesSet * percentage,
+        estimates: annualTotals.estimates * percentage,
+        sales: annualTotals.sales * percentage,
+        revenue: monthlyRevenue,
+        avgJobSize: annualTotals.avgJobSize,
+        com: annualTotals.com,
+        totalCom: safePercentage(((budget + managementCost) / monthlyRevenue) * 100),
+      };
+    });
+
+    setMonthlyData(newMonthlyData);
   };
 
   const handleSave = async () => {
@@ -120,13 +220,18 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
   };
 
   const handleCancel = () => {
-    setMonthlyBudgets({});
+    // Reset to API data if available, otherwise clear everything
+    if (apiData && Object.keys(processApiDataToMonthly).length > 0) {
+      setMonthlyData(processApiDataToMonthly);
+    } else {
+      setMonthlyData({});
+    }
     setSelectedMonth("January");
     onOpenChange(false);
   };
 
-  const totalBudget = Object.values(monthlyBudgets).reduce(
-    (sum, budget) => sum + budget,
+  const totalBudget = Object.values(monthlyData).reduce(
+    (sum, data) => sum + data.budget,
     0
   );
   const selectedMonthData = monthlyData[selectedMonth] || {
@@ -208,7 +313,7 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
                   </div>
                   <Input
                     type="number"
-                    value={monthlyBudgets[month] || ""}
+                    value={monthlyData[month]?.budget || ""}
                     onChange={(e) =>
                       handleBudgetChange(month, parseFloat(e.target.value) || 0)
                     }
@@ -221,9 +326,9 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
                       idx <= currentMonthIndex
                     }
                   />
-                  {Number(monthlyBudgets[month]) > 0 && annualTotals.budget > 0 && (
+                  {Number(monthlyData[month]?.budget) > 0 && annualTotals.budget > 0 && (
                     <div className="text-xs text-gray-500">
-                      {((monthlyBudgets[month] / annualTotals.budget) * 100).toFixed(1)}
+                      {((monthlyData[month]?.budget / annualTotals.budget) * 100).toFixed(1)}
                       %
                     </div>
                   )}
@@ -237,9 +342,9 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold">{selectedMonth} Details</h3>
               <Badge variant="outline">
-                {monthlyBudgets[selectedMonth] && annualTotals.budget > 0
+                {monthlyData[selectedMonth]?.budget && annualTotals.budget > 0
                   ? `${(
-                      (monthlyBudgets[selectedMonth] / annualTotals.budget) *
+                      (monthlyData[selectedMonth]?.budget / annualTotals.budget) *
                       100
                     ).toFixed(1)}% of annual`
                   : "0% of annual"}

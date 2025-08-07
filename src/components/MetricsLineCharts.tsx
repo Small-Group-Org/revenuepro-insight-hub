@@ -1,11 +1,20 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { BarChart3 } from 'lucide-react';
+import { BarChart3, DollarSign } from 'lucide-react';
 import { formatCurrencyValue } from '@/utils/page-utils/commonUtils';
 
+interface ChartConfig {
+  key: string;
+  title: string;
+  description?: string;
+  actualColor: string;
+  targetColor: string;
+  format: string;
+}
+
 interface MetricsLineChartsProps {
-  comprehensiveChartData: {
+  chartData: {
     [key: string]: Array<{
       week: string;
       actual: number;
@@ -13,67 +22,11 @@ interface MetricsLineChartsProps {
       format: string;
     }>;
   };
+  chartConfigs: ChartConfig[];
+  title: string;
+  icon?: React.ReactNode;
+  gridCols?: string;
 }
-
-// Chart configuration for each metric
-const chartConfigs = [
-  {
-    key: 'totalCom',
-    title: 'Total CoM%',
-    actualColor: '#3b82f6',
-    targetColor: '#10b981',
-    format: 'percent'
-  },
-  {
-    key: 'revenue',
-    title: 'Total Revenue',
-    actualColor: '#10b981',
-    targetColor: '#059669',
-    format: 'currency'
-  },
-  {
-    key: 'cpEstimateSet',
-    title: 'Cost per Appointment Set',
-    actualColor: '#f59e0b',
-    targetColor: '#d97706',
-    format: 'currency'
-  },
-  {
-    key: 'cpl',
-    title: 'Cost Per Lead',
-    actualColor: '#ef4444',
-    targetColor: '#dc2626',
-    format: 'currency'
-  },
-  {
-    key: 'appointmentRate',
-    title: 'Appointment Rate',
-    actualColor: '#8b5cf6',
-    targetColor: '#7c3aed',
-    format: 'percent'
-  },
-  {
-    key: 'showRate',
-    title: 'Show Rate',
-    actualColor: '#06b6d4',
-    targetColor: '#0891b2',
-    format: 'percent'
-  },
-  {
-    key: 'closeRate',
-    title: 'Close Rate',
-    actualColor: '#84cc16',
-    targetColor: '#65a30d',
-    format: 'percent'
-  },
-  {
-    key: 'avgJobSize',
-    title: 'Average Job Size',
-    actualColor: '#f97316',
-    targetColor: '#ea580c',
-    format: 'currency'
-  }
-];
 
 // Format value helper
 const formatValue = (value: number, format: string) => {
@@ -168,20 +121,31 @@ const CustomTooltip = ({ active, payload, label, format }: any) => {
   return null;
 };
 
-export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({ comprehensiveChartData }) => {
+export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({ 
+  chartData, 
+  chartConfigs, 
+  title, 
+  icon = <BarChart3 className="h-5 w-5 text-blue-600" />,
+  gridCols = "grid-cols-1 lg:grid-cols-2"
+}) => {
   return (
     <Card className="p-6">
       <div className="flex items-center gap-2 mb-6">
-        <BarChart3 className="h-5 w-5 text-blue-600" />
-        <h3 className="text-lg font-semibold text-slate-900">Comprehensive Metrics Comparison</h3>
+        {icon}
+        <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className={`grid ${gridCols} gap-8`}>
         {chartConfigs.map((config) => (
           <div key={config.key} className="space-y-3">
-            <h4 className="text-base font-medium text-slate-700">{config.title}</h4>
+            <div>
+              <h4 className="text-base font-medium text-slate-700">{config.title}</h4>
+              {config.description && (
+                <p className="text-sm text-gray-500">{config.description}</p>
+              )}
+            </div>
             <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={comprehensiveChartData[config.key]}>
+              <LineChart data={chartData[config.key]}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis dataKey="week" fontSize={12} />
                 <YAxis fontSize={12} />

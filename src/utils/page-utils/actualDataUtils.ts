@@ -111,6 +111,11 @@ export const isTimeFrameInPast = (
       const selectedYearStart = startOfYear(selectedDate);
       const currentYearStart = startOfYear(currentDate);
       return !isAfter(selectedYearStart, currentYearStart);
+    case "ytd":
+      const selectedYearStartYTD = startOfYear(selectedDate);
+      const currentYearStartYTD = startOfYear(currentDate);
+      // For YTD, allow current year as it's ongoing
+      return !isAfter(selectedYearStartYTD, currentYearStartYTD);
     default:
       return false;
   }
