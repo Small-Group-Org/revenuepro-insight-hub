@@ -172,20 +172,29 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
                 />
               </LineChart>
             </ResponsiveContainer>
+            
+            {/* Individual chart legend */}
+            <div className="flex items-center justify-center gap-4 pt-2">
+              <div className="flex items-center gap-2">
+                <div className="flex items-center">
+                  <div className="w-1 h-0.5" style={{ backgroundColor: config.actualColor }}></div>
+                  <div className="w-1 h-0.5" style={{ backgroundColor: 'white' }}></div>
+                  <div className="w-1 h-0.5" style={{ backgroundColor: config.actualColor }}></div>
+                  <div className="w-1 h-0.5" style={{ backgroundColor: 'white' }}></div>
+                  <div className="w-1 h-0.5" style={{ backgroundColor: config.actualColor }}></div>
+                </div>
+                <span className="text-xs text-gray-600">Actual</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-0.5 border-dashed" style={{ 
+                  backgroundColor: config.targetColor,
+                  borderColor: config.targetColor 
+                }}></div>
+                <span className="text-xs text-gray-600">Target</span>
+              </div>
+            </div>
           </div>
         ))}
-      </div>
-
-      {/* Legend */}
-      <div className="flex items-center justify-center gap-6 mt-8 pt-4 border-t border-gray-200">
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-0.5 bg-blue-500"></div>
-          <span className="text-sm text-gray-600">Actual</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-0.5 bg-green-500 border-dashed border-green-500"></div>
-          <span className="text-sm text-gray-600">Target</span>
-        </div>
       </div>
     </Card>
   );

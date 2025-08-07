@@ -22,6 +22,7 @@ interface DatePeriodSelectorProps {
   allowedPeriods?: PeriodType[];
   disableLogic?: DisableMetadata;
   onDisableStatusChange?: (status: DisableMetadata) => void;
+  onNavigationAttempt?: (newDate: Date, newPeriod: PeriodType) => boolean; // Returns true if navigation should proceed
 }
 
 export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
@@ -33,6 +34,7 @@ export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
   allowedPeriods = ["weekly", "monthly", "yearly"],
   disableLogic,
   onDisableStatusChange,
+  onNavigationAttempt,
 }) => {
   const [selectedDate, setSelectedDate] = useState<Date>(initialDate);
   const [period, setPeriod] = useState<PeriodType>(
@@ -60,7 +62,13 @@ export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
   const getLabel = () => {
     if (period === "weekly") {
       const weekInfo = getWeekInfo(selectedDate);
-      return formatWeekRange(weekInfo.weekStart, weekInfo.weekEnd);
+      const weekRange = formatWeekRange(weekInfo.weekStart, weekInfo.weekEnd);
+      const monthName = format(new Date(weekInfo.belongsToYear, weekInfo.belongsToMonth), 'MMM');
+      return (
+        <span>
+          {weekRange} <span className="text-sm text-gray-500">({monthName})</span>
+        </span>
+      );
     } else if (period === "monthly") {
       return format(selectedDate, "MMMM yyyy");
     } else if (period === "ytd") {
@@ -86,6 +94,12 @@ export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
     } else {
       newDate = new Date(selectedDate.getFullYear() - 1, 0, 1);
     }
+    
+    // Check if navigation should proceed
+    if (onNavigationAttempt && !onNavigationAttempt(newDate, period)) {
+      return; // Navigation blocked by parent component
+    }
+    
     setSelectedDate(newDate);
     onChange?.(newDate, period);
   };
@@ -103,11 +117,22 @@ export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
     } else {
       newDate = new Date(selectedDate.getFullYear() + 1, 0, 1);
     }
+    
+    // Check if navigation should proceed
+    if (onNavigationAttempt && !onNavigationAttempt(newDate, period)) {
+      return; // Navigation blocked by parent component
+    }
+    
     setSelectedDate(newDate);
     onChange?.(newDate, period);
   };
 
   const handlePeriodChange = (value: PeriodType) => {
+    // Check if navigation should proceed
+    if (onNavigationAttempt && !onNavigationAttempt(selectedDate, value)) {
+      return; // Navigation blocked by parent component
+    }
+    
     setPeriod(value);
     onChange?.(selectedDate, value);
   };
@@ -142,10 +167,18 @@ export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="weekly">Week</SelectItem>
-              <SelectItem value="monthly">Month</SelectItem>
-              <SelectItem value="yearly">Year</SelectItem>
-              <SelectItem value="ytd">YTD</SelectItem>
+              {allowedPeriods.includes("weekly") && (
+                <SelectItem value="weekly">Week</SelectItem>
+              )}
+              {allowedPeriods.includes("monthly") && (
+                <SelectItem value="monthly">Month</SelectItem>
+              )}
+              {allowedPeriods.includes("yearly") && (
+                <SelectItem value="yearly">Year</SelectItem>
+              )}
+              {allowedPeriods.includes("ytd") && (
+                <SelectItem value="ytd">YTD</SelectItem>
+              )}
             </SelectContent>
           </Select>
           {onButtonClick && (

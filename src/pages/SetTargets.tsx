@@ -17,6 +17,16 @@ import { FieldConfig, FieldValue, InputField, PeriodType } from "@/types";
 import type { MonthlyData } from "../components/YearlyTargetModal";
 import { getDefaultValues, processTargetData } from "@/utils/page-utils/targetUtils";
 import { IWeeklyTarget, upsertTarget } from "@/service/targetService";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export const SetTargets = () => {
   const { toast } = useToast();
@@ -34,6 +44,10 @@ export const SetTargets = () => {
     format(endOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd')
   );
   const [isYearlyModalOpen, setIsYearlyModalOpen] = useState(false);
+  
+  // New state for confirmation modal
+  const [showUnsavedModal, setShowUnsavedModal] = useState(false);
+  const [pendingDateChange, setPendingDateChange] = useState<{ date: Date; period: PeriodType } | null>(null);
 
   const { upsertWeeklyTarget, isLoading, error, getTargetsForUser, currentTarget } = useTargetStore();
   const selectedYear = selectedDate.getFullYear();
@@ -51,6 +65,78 @@ export const SetTargets = () => {
   );
 
   const [disableStatus, setDisableStatus] = useState(disableLogic);
+
+  const getInputFieldNames = useCallback(() => {
+    const inputNames: string[] = [];
+    Object.values(targetFields).forEach(section => {
+      section.forEach(field => {
+        if (field.fieldType === 'input') {
+          inputNames.push(field.value);
+        }
+      });
+    });
+    return inputNames;
+  }, []);
+
+  // Check if there are unsaved changes
+  const hasUnsavedChanges = useMemo(() => {
+    if (!currentTarget) return false;
+    
+    const currentValues = processTargetData(currentTarget);
+    const inputFieldNames = getInputFieldNames();
+    
+    return inputFieldNames.some(fieldName => {
+      const currentValue = currentValues[fieldName] || 0;
+      const newValue = fieldValues[fieldName] || 0;
+      return Math.abs(currentValue - newValue) > 0.01; // Small tolerance for floating point
+    });
+  }, [currentTarget, fieldValues, getInputFieldNames]);
+
+  // Check for priority conflicts
+  const getPriorityConflict = useCallback((newPeriod: PeriodType) => {
+    if (!currentTarget) return null;
+    
+    const priorityOrder = { yearly: 3, monthly: 2, weekly: 1 };
+    const newPriority = priorityOrder[newPeriod as keyof typeof priorityOrder];
+    
+    // Get unique query types from current target
+    const queryTypes = getUniqueQueryTypes(currentTarget);
+    
+    for (const queryType of queryTypes) {
+      const existingPriority = priorityOrder[queryType as keyof typeof priorityOrder];
+      if (existingPriority > newPriority) {
+        return {
+          existingType: queryType,
+          newType: newPeriod,
+          message: `Cannot save ${newPeriod} targets. ${queryType.charAt(0).toUpperCase() + queryType.slice(1)} targets already exist with higher priority.`
+        };
+      }
+    }
+    
+    return null;
+  }, [currentTarget]);
+
+  // Helper function to get unique query types
+  const getUniqueQueryTypes = useCallback((target: any[] | null): string[] => {
+    if (!target || target.length === 0) return [];
+    
+    let allTargetData: any[] = [];
+    
+    if (target.length === 12 && Array.isArray(target[0])) {
+      target.forEach(monthData => {
+        if (Array.isArray(monthData)) {
+          allTargetData = allTargetData.concat(monthData);
+        }
+      });
+    } else {
+      allTargetData = target;
+    }
+    
+    const queryTypes = allTargetData
+      .map((t) => t.queryType)
+      .filter((queryType) => queryType && queryType.trim() !== "");
+    return [...new Set(queryTypes)];
+  }, []);
 
   useEffect(() => {
     setDaysInMonth(getDaysInMonth(selectedDate));
@@ -141,16 +227,43 @@ export const SetTargets = () => {
     return targetFields[sectionKey];
   }, []);
 
-  const getInputFieldNames = useCallback(() => {
-    const inputNames: string[] = [];
-    Object.values(targetFields).forEach(section => {
-      section.forEach(field => {
-        if (field.fieldType === 'input') {
-          inputNames.push(field.value);
-        }
-      });
-    });
-    return inputNames;
+  const handleDatePeriodChange = useCallback((date: Date, period: PeriodType) => {
+    // Navigation is now handled by onNavigationAttempt prop
+    // This function is called only when navigation is allowed
+    setSelectedDate(date);
+    setPeriod(period);
+    setLastChanged(null);
+  }, []);
+
+  const handleConfirmDateChange = useCallback(() => {
+    if (pendingDateChange) {
+      setSelectedDate(pendingDateChange.date);
+      setPeriod(pendingDateChange.period);
+      setLastChanged(null);
+      setPendingDateChange(null);
+    }
+    setShowUnsavedModal(false);
+  }, [pendingDateChange]);
+
+  const handleCancelDateChange = useCallback(() => {
+    setPendingDateChange(null);
+    setShowUnsavedModal(false);
+  }, []);
+
+  const handleNavigationAttempt = useCallback((newDate: Date, newPeriod: PeriodType) => {
+    // Check if there are unsaved changes
+    if (hasUnsavedChanges) {
+      setPendingDateChange({ date: newDate, period: newPeriod });
+      setShowUnsavedModal(true);
+      return false; // Block navigation
+    }
+    
+    // No unsaved changes, allow navigation
+    return true;
+  }, [hasUnsavedChanges]);
+
+  const handleDisableStatusChange = useCallback((status: DisableMetadata) => {
+    setDisableStatus(status);
   }, []);
 
   const handleSave = useCallback(async () => {
@@ -166,6 +279,17 @@ export const SetTargets = () => {
             <div><em>{zeroFields.join(', ')}</em></div>
           </div>
         ),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check for priority conflicts
+    const priorityConflict = getPriorityConflict(period);
+    if (priorityConflict) {
+      toast({
+        title: "Priority Conflict",
+        description: priorityConflict.message,
         variant: "destructive",
       });
       return;
@@ -200,21 +324,22 @@ export const SetTargets = () => {
         variant: "destructive",
       });
     }
-  }, [upsertWeeklyTarget, selectedStartDate, selectedEndDate, period, fieldValues, toast, error, getInputFieldNames]);
-
-  const handleDatePeriodChange = useCallback((date: Date, period: PeriodType) => {
-    setSelectedDate(date);
-    setPeriod(period);
-    setLastChanged(null);
-  }, []);
-
-  const handleDisableStatusChange = useCallback((status: DisableMetadata) => {
-    setDisableStatus(status);
-  }, []);
+  }, [upsertWeeklyTarget, selectedStartDate, selectedEndDate, period, fieldValues, toast, error, getInputFieldNames, getPriorityConflict]);
 
   const handleSaveMonthlyTargets = useCallback(async (monthlyData: { [key: string]: MonthlyData }) => {
     const inputFieldNames = getInputFieldNames();
     const userId = useUserStore.getState().selectedUserId;
+
+    // Check for priority conflicts for yearly targets
+    const priorityConflict = getPriorityConflict('yearly');
+    if (priorityConflict) {
+      toast({
+        title: "Priority Conflict",
+        description: priorityConflict.message,
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
       const targets: any[] = [];
@@ -262,7 +387,7 @@ export const SetTargets = () => {
         variant: "destructive",
       });
     }
-  }, [toast, error, getInputFieldNames, selectedYear, fieldValues]);
+  }, [toast, error, getInputFieldNames, selectedYear, fieldValues, getPriorityConflict]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -289,6 +414,7 @@ export const SetTargets = () => {
             onButtonClick={handleSave}
             disableLogic={disableLogic}
             onDisableStatusChange={handleDisableStatusChange}
+            onNavigationAttempt={handleNavigationAttempt}
           />
         </div>
 
@@ -359,6 +485,22 @@ export const SetTargets = () => {
         selectedYear={selectedYear}
         apiData={currentTarget}
       />
+
+      {/* Unsaved Changes Confirmation Modal */}
+      <AlertDialog open={showUnsavedModal} onOpenChange={setShowUnsavedModal}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
+            <AlertDialogDescription>
+              Target is not saved, the values will be discarded. Are you sure you want to continue?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelDateChange}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDateChange}>Continue</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

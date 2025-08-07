@@ -380,47 +380,36 @@ export const CompareResults = () => {
           />
         </div>
 
-        {/* Metrics Table */}
-        <Card className="max-w-7xl mx-auto p-6">
-          <h3 className="text-xl font-semibold text-slate-900 mb-6">
-            📊 Performance Comparison
-          </h3>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[600px]">
-              <thead>
-                <tr className="border-b border-slate-200">
-                  <th className="text-left p-4 font-semibold text-slate-700">
-                    Metric
-                  </th>
-                  <th className="text-right p-4 font-semibold text-slate-700">
-                    Actual
-                  </th>
-                  <th className="text-right p-4 font-semibold text-slate-700">
-                    Target
-                  </th>
-                  <th className="text-right p-4 font-semibold text-slate-700">
-                    Progress
-                  </th>
-                  <th className="text-right p-4 font-semibold text-slate-700">
-                    Performance
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {metrics
-                  .map((section) => [
-                    <tr
-                      key={`${section.category}-header`}
-                      className="bg-slate-100"
-                    >
-                      <td
-                        colSpan={5}
-                        className="font-bold text-blue-900 py-2 pl-4 text-lg"
-                      >
-                        {section.category}
-                      </td>
-                    </tr>,
-                    ...section.items.map((item) => {
+        {/* Metrics Tables Grid */}
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {metrics.map((section) => (
+            <Card key={section.category} className="p-6">
+              <h3 className="text-xl font-semibold text-slate-900 mb-6">
+                {section.category}
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-slate-200">
+                      <th className="text-left p-3 font-semibold text-slate-700 text-sm">
+                        Metric
+                      </th>
+                      <th className="text-right p-3 font-semibold text-slate-700 text-sm">
+                        Actual
+                      </th>
+                      <th className="text-right p-3 font-semibold text-slate-700 text-sm">
+                        Target
+                      </th>
+                      <th className="text-right p-3 font-semibold text-slate-700 text-sm">
+                        Progress
+                      </th>
+                      <th className="text-right p-3 font-semibold text-slate-700 text-sm">
+                        Performance
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {section.items.map((item) => {
                       const percent =
                         item.target === 0
                           ? 0
@@ -431,21 +420,21 @@ export const CompareResults = () => {
                           key={`${section.category}-${item.name}`}
                           className="border-b border-slate-100 hover:bg-slate-50"
                         >
-                          <td className="p-4 font-medium text-slate-900">
+                          <td className="p-3 font-medium text-slate-900 text-sm">
                             {item.name}
                           </td>
-                          <td className="p-4 text-right font-bold text-slate-900">
+                          <td className="p-3 text-right font-bold text-slate-900 text-sm">
                             {formatValue(item.actual, item.format)}
                           </td>
-                          <td className="p-4 text-right font-medium text-slate-700">
+                          <td className="p-3 text-right font-medium text-slate-700 text-sm">
                             {formatValue(item.target, item.format)}
                           </td>
-                          <td className="p-4 text-right font-semibold">
+                          <td className="p-3 text-right font-semibold text-sm">
                             <span className="text-slate-700">
                               {item.target > 0 ? `${((item.actual / item.target) * 100).toFixed(2)}%` : 'N/A'}
                             </span>
                           </td>
-                          <td className="p-4 text-right font-semibold">
+                          <td className="p-3 text-right font-semibold">
                             <span
                               className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-bold ${
                                 isPositive
@@ -454,9 +443,9 @@ export const CompareResults = () => {
                               }`}
                             >
                               {isPositive ? (
-                                <TrendingUp className="h-4 w-4 mr-1" />
+                                <TrendingUp className="h-3 w-3 mr-1" />
                               ) : (
-                                <TrendingDown className="h-4 w-4 mr-1" />
+                                <TrendingDown className="h-3 w-3 mr-1" />
                               )}
                               {percent > 0 ? "+" : ""}
                               {percent.toFixed(2)}%
@@ -464,13 +453,13 @@ export const CompareResults = () => {
                           </td>
                         </tr>
                       );
-                    }),
-                  ])
-                  .flat()}
-              </tbody>
-            </table>
-          </div>
-        </Card>
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          ))}
+        </div>
       </div>
     </div>
   );
