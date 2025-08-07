@@ -7,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { format, addWeeks, subWeeks } from "date-fns";
+import { format, addWeeks, subWeeks, startOfYear } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { getWeekInfo, formatWeekRange } from "@/utils/weekLogic";
 import { PeriodType } from "@/types";
@@ -63,6 +63,10 @@ export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
       return formatWeekRange(weekInfo.weekStart, weekInfo.weekEnd);
     } else if (period === "monthly") {
       return format(selectedDate, "MMMM yyyy");
+    } else if (period === "ytd") {
+      const yearStart = startOfYear(selectedDate);
+      const currentDate = new Date();
+      return `YTD ${format(yearStart, "yyyy")} (${format(yearStart, "MMM dd")} - ${format(currentDate, "MMM dd")})`;
     } else {
       return format(selectedDate, "yyyy");
     }
@@ -141,6 +145,7 @@ export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
               <SelectItem value="weekly">Week</SelectItem>
               <SelectItem value="monthly">Month</SelectItem>
               <SelectItem value="yearly">Year</SelectItem>
+              <SelectItem value="ytd">YTD</SelectItem>
             </SelectContent>
           </Select>
           {onButtonClick && (

@@ -1,10 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, FunnelChart, Funnel, Cell } from 'recharts';
-import { Calendar, Filter, TrendingUp, Users, Target as TargetIcon, DollarSign, BarChart3 } from 'lucide-react';
 import { useReportingDataStore } from '@/stores/reportingDataStore';
 import { DatePeriodSelector } from '@/components/DatePeriodSelector';
 import {
@@ -15,16 +12,18 @@ import {
   endOfYear,
 } from "date-fns";
 import { getWeekInfo } from '@/utils/weekLogic';
-import { processTargetData, calculateFields } from '@/utils/page-utils/targetUtils';
+import { processTargetData, calculateFields, getWeeksInMonth } from '@/utils/page-utils/targetUtils';
 import { calculateReportingFields } from '@/utils/page-utils/actualDataUtils';
 import { calculateManagementCost, formatCurrencyValue } from '@/utils/page-utils/commonUtils';
 import { FieldValue } from '@/types';
 import { MetricsLineCharts } from './MetricsLineCharts';
 import { useUserStore } from '@/stores/userStore';
+import { BarChart3 } from 'lucide-react';
+import { comprehensiveChartConfigs } from '@/utils/constant';
 
 export const Dashboard = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [period, setPeriod] = useState<"weekly" | "monthly" | "yearly">("weekly");
+  const [period, setPeriod] = useState<"weekly" | "monthly" | "yearly" | "ytd">("weekly");
 
   const { reportingData, targetData, getReportingData } = useReportingDataStore();
   const { selectedUserId } = useUserStore();
@@ -41,6 +40,10 @@ export const Dashboard = () => {
       startDate = format(startOfMonth(selectedDate), "yyyy-MM-dd");
       endDate = format(endOfMonth(selectedDate), "yyyy-MM-dd");
       queryType = "monthly";
+    } else if (period === "ytd") {
+      startDate = format(startOfYear(selectedDate), "yyyy-MM-dd");
+      endDate = format(new Date(), "yyyy-MM-dd");
+      queryType = "yearly";
     } else {
       startDate = format(startOfYear(selectedDate), "yyyy-MM-dd");
       endDate = format(endOfYear(selectedDate), "yyyy-MM-dd");
@@ -84,133 +87,144 @@ export const Dashboard = () => {
     return calculateReportingFields(actualWithTargets);
   }, [reportingData, processedTargetData]);
 
-  // Helper function to calculate actual metrics from reporting data
-  const calculateActualMetrics = useMemo(() => {
-    if (!processedActualData) return {};
-    
-    const actual = processedActualData;
-    const metrics: FieldValue = {};
-
-    // Map reporting fields to comparison metrics
-    metrics.revenue = actual.revenue || 0;
-    metrics.sales = actual.sales || 0;
-    metrics.estimatesRan = actual.estimatesRan || 0;
-    metrics.estimatesSet = actual.estimatesSet || 0;
-    metrics.leads = actual.leads || 0;
-    metrics.budgetSpent = actual.budgetSpent || 0;
-    
-    // Calculate funnel rates from actual data
-    if (metrics.leads > 0 && metrics.estimatesSet > 0) {
-      metrics.appointmentRate = (metrics.estimatesSet / metrics.leads) * 100;
+  // Helper to get x-axis labels based on period
+  const getXAxisLabels = () => {
+    if (period === 'monthly') {
+      // Get number of weeks in the selected month
+      const weekCount = getWeeksInMonth(selectedDate);
+      return Array.from({ length: weekCount }, (_, i) => `Week ${i + 1}`);
+    } else if (period === 'yearly') {
+      return [
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      ];
+    } else if (period === 'ytd') {
+      const currentMonth = new Date().getMonth();
+      const monthLabels = [
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      ];
+      return monthLabels.slice(0, currentMonth + 1);
     }
-    
-    if (metrics.estimatesSet > 0 && metrics.estimatesRan > 0) {
-      metrics.showRate = (metrics.estimatesRan / metrics.estimatesSet) * 100;
-    }
-    
-    if (metrics.estimatesRan > 0 && metrics.sales > 0) {
-      metrics.closeRate = (metrics.sales / metrics.estimatesRan) * 100;
-    }
-    
-    if (metrics.appointmentRate && metrics.showRate && metrics.closeRate) {
-      metrics.leadToSale = (metrics.appointmentRate * metrics.showRate * metrics.closeRate) / 10000;
-    }
-    
-    if (metrics.revenue > 0 && metrics.sales > 0) {
-      metrics.avgJobSize = metrics.revenue / metrics.sales;
-    }
-    
-    // Calculate cost metrics
-    if (metrics.leads > 0) {
-      metrics.cpl = metrics.budgetSpent / metrics.leads;
-    }
-    if (metrics.estimatesSet > 0) {
-      metrics.cpEstimateSet = metrics.budgetSpent / metrics.estimatesSet;
-    }
-    
-    metrics.budget = metrics.budgetSpent || 0;
-    metrics.com = processedTargetData?.com || 0;
-    
-    if (metrics.revenue > 0 && period !== "weekly") {
-      let managementCost = 0;
-      const budget = processedTargetData?.weeklyBudget || 0;
-
-      if (period === "monthly") {
-        managementCost = calculateManagementCost(budget);
-      } else if (period === "yearly") {
-        managementCost = calculateManagementCost(budget / 12);
-      }
-
-      metrics.totalCom = ((managementCost + metrics.budget) / metrics.revenue) * 100;
-    }
-
-    return metrics;
-  }, [processedActualData, processedTargetData, period]);
+    // fallback - default to 4 weeks
+    return ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
+  };
 
   // Prepare comprehensive comparison chart data
   const comprehensiveChartData = useMemo(() => {
-    const actual = calculateActualMetrics;
-    const target = processedTargetData || {};
+    if (!reportingData || reportingData.length === 0) {
+      return {};
+    }
 
-    // Create time series data for each metric
-    const timePoints = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
+    const xLabels = getXAxisLabels();
     
-    return {
-      totalCom: timePoints.map((week, index) => ({
-        week,
-        actual: (actual.totalCom || 0) * (0.8 + Math.random() * 0.4), // Simulate variation
-        target: target.totalCom || 0,
-        format: "percent"
-      })),
-      revenue: timePoints.map((week, index) => ({
-        week,
-        actual: (actual.revenue || 0) * (0.8 + Math.random() * 0.4),
-        target: target.revenue || 0,
-        format: "currency"
-      })),
-      cpEstimateSet: timePoints.map((week, index) => ({
-        week,
-        actual: (actual.cpEstimateSet || 0) * (0.8 + Math.random() * 0.4),
-        target: target.cpEstimateSet || 0,
-        format: "currency"
-      })),
-      cpl: timePoints.map((week, index) => ({
-        week,
-        actual: (actual.cpl || 0) * (0.8 + Math.random() * 0.4),
-        target: target.cpl || 0,
-        format: "currency"
-      })),
-      appointmentRate: timePoints.map((week, index) => ({
-        week,
-        actual: (actual.appointmentRate || 0) * (0.8 + Math.random() * 0.4),
-        target: target.appointmentRate || 0,
-        format: "percent"
-      })),
-      showRate: timePoints.map((week, index) => ({
-        week,
-        actual: (actual.showRate || 0) * (0.8 + Math.random() * 0.4),
-        target: target.showRate || 0,
-        format: "percent"
-      })),
-      closeRate: timePoints.map((week, index) => ({
-        week,
-        actual: (actual.closeRate || 0) * (0.8 + Math.random() * 0.4),
-        target: target.closeRate || 0,
-        format: "percent"
-      })),
-      avgJobSize: timePoints.map((week, index) => ({
-        week,
-        actual: (actual.avgJobSize || 0) * (0.8 + Math.random() * 0.4),
-        target: target.avgJobSize || 0,
-        format: "currency"
-      }))
+    // Process each data point from the API response
+    const processDataPoint = (dataPoint: any, index: number) => {
+      // Calculate metrics for this individual data point
+      const metrics: FieldValue = {};
+      
+      // Map reporting fields to comparison metrics
+      metrics.revenue = dataPoint.revenue || 0;
+      metrics.sales = dataPoint.sales || 0;
+      metrics.estimatesRan = dataPoint.estimatesRan || 0;
+      metrics.estimatesSet = dataPoint.estimatesSet || 0;
+      metrics.leads = dataPoint.leads || 0;
+      metrics.budgetSpent = dataPoint.budgetSpent || 0;
+      
+      // Calculate funnel rates from actual data
+      if (metrics.leads > 0 && metrics.estimatesSet > 0) {
+        metrics.appointmentRate = (metrics.estimatesSet / metrics.leads) * 100;
+      }
+      
+      if (metrics.estimatesSet > 0 && metrics.estimatesRan > 0) {
+        metrics.showRate = (metrics.estimatesRan / metrics.estimatesSet) * 100;
+      }
+      
+      if (metrics.estimatesRan > 0 && metrics.sales > 0) {
+        metrics.closeRate = (metrics.sales / metrics.estimatesRan) * 100;
+      }
+      
+      if (metrics.appointmentRate && metrics.showRate && metrics.closeRate) {
+        metrics.leadToSale = (metrics.appointmentRate * metrics.showRate * metrics.closeRate) / 10000;
+      }
+      
+      if (metrics.revenue > 0 && metrics.sales > 0) {
+        metrics.avgJobSize = metrics.revenue / metrics.sales;
+      }
+      
+      // Calculate cost metrics
+      if (metrics.leads > 0) {
+        metrics.cpl = metrics.budgetSpent / metrics.leads;
+      }
+      if (metrics.estimatesSet > 0) {
+        metrics.cpEstimateSet = metrics.budgetSpent / metrics.estimatesSet;
+      }
+      
+      metrics.budget = metrics.budgetSpent || 0;
+      
+      // Calculate totalCom if we have target data
+      if (metrics.revenue > 0 && processedTargetData) {
+        const targetCom = processedTargetData.com || 0;
+        const targetBudget = processedTargetData.weeklyBudget || 0;
+        
+        let managementCost = 0;
+        if (period === "monthly") {
+          managementCost = calculateManagementCost(targetBudget);
+        } else if (period === "yearly") {
+          managementCost = calculateManagementCost(targetBudget / 12);
+        } else if (period === "ytd") {
+          const currentMonth = new Date().getMonth();
+          const monthsElapsed = currentMonth + 1;
+          managementCost = calculateManagementCost((targetBudget / 12) * monthsElapsed);
+        }
+        
+        metrics.totalCom = ((managementCost + metrics.budget) / metrics.revenue) * 100;
+      }
+      
+      return metrics;
     };
-  }, [calculateActualMetrics, processedTargetData]);
+
+    // Create chart data structure
+    const chartData: any = {};
+    
+    // Get target values (single values for comparison)
+    const target = processedTargetData || {};
+    
+    // Process each metric type
+    const metricTypes = [
+      'totalCom', 'revenue', 'cpEstimateSet', 'cpl', 
+      'appointmentRate', 'showRate', 'closeRate', 'avgJobSize'
+    ];
+    
+    metricTypes.forEach(metricType => {
+      chartData[metricType] = reportingData.map((dataPoint, index) => {
+        const metrics = processDataPoint(dataPoint, index);
+        const actualValue = metrics[metricType] || 0;
+        
+        return {
+          week: xLabels[index] || `Period ${index + 1}`,
+          actual: actualValue,
+          target: target[metricType] || 0,
+          format: metricType.includes('Rate') || metricType === 'totalCom' ? 'percent' : 
+                 metricType === 'revenue' || metricType === 'avgJobSize' || metricType.includes('cp') ? 'currency' : 'number'
+        };
+      });
+    });
+    
+    console.log("[Chart Data Debug]", { 
+      reportingDataLength: reportingData.length, 
+      xLabels, 
+      period,
+      sampleChartData: chartData.revenue?.[0] 
+    });
+    
+    return chartData;
+  }, [reportingData, processedTargetData, period, selectedDate]);
 
   // Handler for DatePeriodSelector
   const handleDatePeriodChange = (
     date: Date,
-    newPeriod: "weekly" | "monthly" | "yearly"
+    newPeriod: "weekly" | "monthly" | "yearly" | "ytd"
   ) => {
     setSelectedDate(date);
     setPeriod(newPeriod);
@@ -227,24 +241,6 @@ export const Dashboard = () => {
     return Math.round(value)?.toLocaleString();
   };
 
-  // Custom tooltip formatter
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
-          <p className="font-semibold text-gray-900">{label}</p>
-          <p className="text-blue-600">
-            Actual: {formatValue(data.actual, data.format)}
-          </p>
-          <p className="text-green-600">
-            Target: {formatValue(data.target, data.format)}
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -269,13 +265,18 @@ export const Dashboard = () => {
             initialDate={selectedDate}
             initialPeriod={period}
             onChange={handleDatePeriodChange}
-            allowedPeriods={["weekly", "monthly", "yearly"]}
+            allowedPeriods={["monthly", "yearly", "ytd"]}
           />
         </div>
 
         {/* Comprehensive Metrics Comparison Charts */}
         <div className="max-w-7xl mx-auto mb-8">
-          <MetricsLineCharts comprehensiveChartData={comprehensiveChartData} />
+          <MetricsLineCharts 
+            chartData={comprehensiveChartData} 
+            chartConfigs={comprehensiveChartConfigs}
+            title="Comprehensive Metrics Comparison"
+            icon={<BarChart3 className="h-5 w-5 text-blue-600" />}
+          />
         </div>
       </div>
     </div>

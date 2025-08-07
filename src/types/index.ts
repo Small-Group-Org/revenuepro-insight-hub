@@ -1,4 +1,4 @@
-export type PeriodType = 'weekly' | 'monthly' | 'yearly';
+export type PeriodType = 'weekly' | 'monthly' | 'yearly' | 'ytd';
 
 export interface InputField {
   name: string;

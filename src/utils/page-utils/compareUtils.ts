@@ -174,30 +174,30 @@ export const handleInputDisable = (
   }
 
   // Target status logic (only for SetTargets page and when time frame is editable)
-  if (pageType === "setTargets" && currentTarget) {
-    const queryTypes = getUniqueQueryTypes(currentTarget);
-    const hasTargets = queryTypes.length > 0;
+  // if (pageType === "setTargets" && currentTarget) {
+  //   const queryTypes = getUniqueQueryTypes(currentTarget);
+  //   const hasTargets = queryTypes.length > 0;
 
-    // Generate note messages based on target status
-    if (period === "yearly") {
-      if (
-        hasTargets &&
-        queryTypes.includes("monthly") &&
-        queryTypes.length === 1
-      ) {
-        noteMessage =
-          "You have not set target for this year. These are values are calculated using months previous target";
-      }
-    } else if (period === "monthly") {
-      if (queryTypes.includes("yearly")) {
-        const monthName = format(selectedDate, "MMMM");
-        noteMessage = `The target for ${monthName} is already set on yearly basis. You can only update the revenue of ${monthName}`;
-        shouldDisableNonRevenueFields = true;
-        disabledMessage = noteMessage;
-      }
-    }
-    // Removed weekly restrictions - users can now set weekly targets for any upcoming week
-  }
+  //   // Generate note messages based on target status
+  //   if (period === "yearly") {
+  //     if (
+  //       hasTargets &&
+  //       queryTypes.includes("monthly") &&
+  //       queryTypes.length === 1
+  //     ) {
+  //       noteMessage =
+  //         "You have not set target for this year. These are values are calculated using months previous target";
+  //     }
+  //   } else if (period === "monthly") {
+  //     if (queryTypes.includes("yearly")) {
+  //       const monthName = format(selectedDate, "MMMM");
+  //       noteMessage = `The target for ${monthName} is already set on yearly basis. You can only update the revenue of ${monthName}`;
+  //       shouldDisableNonRevenueFields = true;
+  //       disabledMessage = noteMessage;
+  //     }
+  //   }
+  //   // Removed weekly restrictions - users can now set weekly targets for any upcoming week
+  // }
 
   return {
     isDisabled,
