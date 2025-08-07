@@ -10,10 +10,19 @@ import { PeriodType, FieldValue } from '@/types';
 import { reportingFields } from '@/utils/constant';
 import { calculateReportingFields } from '@/utils/page-utils/actualDataUtils';
 import { handleInputDisable } from '@/utils/page-utils/compareUtils';
-import { getDefaultValues, processTargetData } from '@/utils/page-utils/targetUtils';
+import { processTargetData } from '@/utils/page-utils/targetUtils';
 import { getWeekInfo } from '@/utils/weekLogic';
-import { IWeeklyTarget } from '@/service/targetService';
 import { useUserStore } from '@/stores/userStore';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export const AddActualData = () => {
   const { reportingData, targetData, getReportingData, upsertReportingData, isLoading, error } = useReportingDataStore();
@@ -25,6 +34,10 @@ export const AddActualData = () => {
   const [fieldValues, setFieldValues] = useState<FieldValue>({});
   const [lastChanged, setLastChanged] = useState<string | null>(null);
   const [prevValues, setPrevValues] = useState<FieldValue>({});
+  
+  // New state for confirmation modal
+  const [showUnsavedModal, setShowUnsavedModal] = useState(false);
+  const [pendingDateChange, setPendingDateChange] = useState<{ date: Date; period: PeriodType } | null>(null);
 
   // Use processed target data from store (single API)
   const processedTargetData = useMemo(() => {
@@ -119,6 +132,34 @@ React.useEffect(() => {
 
   const { isDisabled, disabledMessage } = disableLogic;
 
+  // Helper to get all input field names from reportingFields
+  const getInputFieldNames = useCallback(() => {
+    const inputNames: string[] = [];
+    Object.values(reportingFields).forEach(section => {
+      section.forEach(field => {
+        if (field.fieldType === 'input') {
+          inputNames.push(field.value);
+        }
+      });
+    });
+    return inputNames;
+  }, []);
+
+  // Check if there are unsaved changes
+  const hasUnsavedChanges = useMemo(() => {
+    if (!reportingData || !Array.isArray(reportingData)) return false;
+    
+    const inputFieldNames = getInputFieldNames();
+    
+    return inputFieldNames.some(fieldName => {
+      const currentValue = fieldValues[fieldName] || 0;
+      const savedValue = reportingData.reduce((sum, data) => {
+        return sum + (data[fieldName] || 0);
+      }, 0);
+      return Math.abs(currentValue - savedValue) > 0.01; // Small tolerance for floating point
+    });
+  }, [reportingData, fieldValues, getInputFieldNames]);
+
   const handleInputChange = useCallback((fieldName: string, value: number) => {
     if (value === undefined || value === null || isNaN(value)) {
       value = 0;
@@ -134,19 +175,6 @@ React.useEffect(() => {
       [fieldName]: validatedValue
     }));
   }, [calculatedValues]);
-
-  // Helper to get all input field names from reportingFields
-  const getInputFieldNames = useCallback(() => {
-    const inputNames: string[] = [];
-    Object.values(reportingFields).forEach(section => {
-      section.forEach(field => {
-        if (field.fieldType === 'input') {
-          inputNames.push(field.value);
-        }
-      });
-    });
-    return inputNames;
-  }, []);
 
   const handleSave = useCallback(async () => {
     const weekInfo = getWeekInfo(selectedDate);
@@ -187,16 +215,42 @@ React.useEffect(() => {
     return `${format(monday, 'MMM dd')} - ${format(sunday, 'MMM dd, yyyy')}`;
   };
 
-  const isExistingData = Array.isArray(reportingData) && reportingData.some(data => data && data.startDate === selectedWeek);
-
   const isHighlighted = useCallback((fieldName: string) => {
     if (!lastChanged) return false;
     return prevValues[fieldName] !== calculatedValues[fieldName];
   }, [lastChanged, prevValues, calculatedValues]);
 
   const handleDatePeriodChange = useCallback((date: Date, period: PeriodType) => {
+    // Navigation is now handled by onNavigationAttempt prop
+    // This function is called only when navigation is allowed
     setSelectedDate(date);
     setPeriod(period);
+  }, []);
+
+  const handleNavigationAttempt = useCallback((newDate: Date, newPeriod: PeriodType) => {
+    // Check if there are unsaved changes
+    if (hasUnsavedChanges) {
+      setPendingDateChange({ date: newDate, period: newPeriod });
+      setShowUnsavedModal(true);
+      return false; // Block navigation
+    }
+    
+    // No unsaved changes, allow navigation
+    return true;
+  }, [hasUnsavedChanges]);
+
+  const handleConfirmDateChange = useCallback(() => {
+    if (pendingDateChange) {
+      setSelectedDate(pendingDateChange.date);
+      setPeriod(pendingDateChange.period);
+      setPendingDateChange(null);
+    }
+    setShowUnsavedModal(false);
+  }, [pendingDateChange]);
+
+  const handleCancelDateChange = useCallback(() => {
+    setPendingDateChange(null);
+    setShowUnsavedModal(false);
   }, []);
 
   const getSectionFields = useCallback((sectionKey: keyof typeof reportingFields) => {
@@ -226,8 +280,8 @@ React.useEffect(() => {
             onChange={handleDatePeriodChange}
             buttonText="Save Report"
             onButtonClick={handleSave}
-            allowedPeriods={['weekly']}
             disableLogic={disableLogic}
+            onNavigationAttempt={handleNavigationAttempt}
           />
         </div>
 
@@ -288,6 +342,22 @@ React.useEffect(() => {
           />
         </div>
       </div>
+
+      {/* Unsaved Changes Confirmation Modal */}
+      <AlertDialog open={showUnsavedModal} onOpenChange={setShowUnsavedModal}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
+            <AlertDialogDescription>
+              Report data is not saved, the values will be discarded. Are you sure you want to continue?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelDateChange}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDateChange}>Continue</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
