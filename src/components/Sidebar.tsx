@@ -24,6 +24,7 @@ const menuItems = [
   { id: 'actuals', label: 'Weekly Reporting', icon: Plus, path: '/actuals' },
   { id: 'compare', label: 'Target Vs Actual', icon: TrendingUp, path: '/compare' },
   { id: 'leads', label: 'Lead Sheet', icon: Users, path: '/leads' },
+  { id: 'analytics', label: 'Lead Analytics', icon: BarChart3, path: '/lead-analytics' },
 ];
 
 export const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }: SidebarProps) => {
@@ -38,8 +39,11 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }: SidebarProp
       isCollapsed ? "w-16" : "w-64"
     )}>
       {/* Header */}
-      <div className="p-4 border-b border-sidebar-border">
-        <div className="flex items-center justify-between">
+      <div className="p-2 border-b border-sidebar-border">
+        <div className={cn(
+          "flex items-center",
+          isCollapsed ? "justify-center" : "justify-between"
+        )}>
           {!isCollapsed && (
             <h1 className="text-xl font-bold text-sidebar-primary">
               RevenuePRO AI
@@ -49,7 +53,7 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }: SidebarProp
             onClick={onToggleCollapse}
             className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors"
           >
-            {isCollapsed ? <Menu size={20} /> : <X size={20} />}
+            {isCollapsed ? <Menu size={24} /> : <X size={20} />}
           </button>
         </div>
       </div>
@@ -62,7 +66,7 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }: SidebarProp
       )}
 
       {/* Navigation */}
-      <nav className="flex-1 p-4">
+      <nav className="flex-1 p-2">
         <div className="space-y-2">
           {menuItems.map(({ id, label, icon: Icon, path }) => (
             <button
@@ -76,7 +80,7 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }: SidebarProp
                   : "text-slate-300"
               )}
             >
-              <Icon size={20} />
+              <Icon size={isCollapsed ? 24 : 20} />
               {!isCollapsed && (
                 <span className="font-medium">{label}</span>
               )}
@@ -94,7 +98,7 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }: SidebarProp
                   : "text-slate-300"
               )}
             >
-              <UserPlus size={20} />
+              <UserPlus size={isCollapsed ? 24 : 20} />
               {!isCollapsed && (
                 <span className="font-medium">Create User</span>
               )}
@@ -104,7 +108,7 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }: SidebarProp
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-slate-700">
+      <div className="p-2 border-t border-slate-700">
         <button
           onClick={onLogout}
           className={cn(
@@ -113,7 +117,7 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }: SidebarProp
             "text-red-400"
           )}
         >
-          <LogOut size={20} />
+          <LogOut size={isCollapsed ? 24 : 20} />
           {!isCollapsed && (
             <span className="font-medium">Logout</span>
           )}

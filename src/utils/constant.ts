@@ -5,6 +5,7 @@ export const API_METHODS = {
   POST: "POST",
   DELETE: "DELETE",
   PUT: "PUT",
+  PATCH: "PATCH",
 };
 
 export const tabs = ["basic", "templates", "target"];
