@@ -333,6 +333,77 @@ export const reportingFields: ReportingFieldsConfig = {
   ],
 };
 
+export const generalMetricsChartConfigs = [
+  {
+    key: "totalCom",
+    title: "Total CoM%",
+    description: "Management fee + ad spend / total revenue",
+    actualColor: "#3b82f6",
+    targetColor: "#10b981",
+    format: "percent",
+  },
+  {
+    key: "appointmentRate",
+    title: "Appointment Rate",
+    description: "Estimates set / leads",
+    actualColor: "#8b5cf6",
+    targetColor: "#7c3aed",
+    format: "percent",
+  },
+  {
+    key: "showRate",
+    title: "Show Rate",
+    description: "Estimates ran / estimates set",
+    actualColor: "#06b6d4",
+    targetColor: "#0891b2",
+    format: "percent",
+  },
+  {
+    key: "closeRate",
+    title: "Close Rate",
+    description: "Sales / estimates ran",
+    actualColor: "#84cc16",
+    targetColor: "#65a30d",
+    format: "percent",
+  },
+  {
+    key: "avgJobSize",
+    title: "Average Job Size",
+    description: "Revenue / sales",
+    actualColor: "#f97316",
+    targetColor: "#ea580c",
+    format: "currency",
+  },
+];
+
+export const performanceMetricsChartConfigs = [
+  {
+    key: "revenue",
+    title: "Total Revenue",
+    description: "Total revenue generated",
+    actualColor: "#10b981",
+    targetColor: "#059669",
+    format: "currency",
+  },
+  {
+    key: "cpEstimateSet",
+    title: "Cost per Appointment Set",
+    description: "Budget spent / estimates set",
+    actualColor: "#f59e0b",
+    targetColor: "#d97706",
+    format: "currency",
+  },
+  {
+    key: "cpl",
+    title: "Cost Per Lead",
+    description: "Budget spent / leads",
+    actualColor: "#ef4444",
+    targetColor: "#dc2626",
+    format: "currency",
+  },
+];
+
+// Keep the old config for backward compatibility
 export const comprehensiveChartConfigs = [
   {
     key: "totalCom",

@@ -17,6 +17,16 @@ import { FieldConfig, FieldValue, InputField, PeriodType } from "@/types";
 import type { MonthlyData } from "../components/YearlyTargetModal";
 import { getDefaultValues, processTargetData } from "@/utils/page-utils/targetUtils";
 import { IWeeklyTarget, upsertTarget } from "@/service/targetService";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export const SetTargets = () => {
   const { toast } = useToast();
@@ -34,6 +44,14 @@ export const SetTargets = () => {
     format(endOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd')
   );
   const [isYearlyModalOpen, setIsYearlyModalOpen] = useState(false);
+  
+  // New state for confirmation modal
+  const [showUnsavedModal, setShowUnsavedModal] = useState(false);
+  const [pendingDateChange, setPendingDateChange] = useState<{ date: Date; period: PeriodType } | null>(null);
+  
+  // New state for priority conflict confirmation modal
+  const [showPriorityModal, setShowPriorityModal] = useState(false);
+  const [pendingSaveData, setPendingSaveData] = useState<any>(null);
 
   const { upsertWeeklyTarget, isLoading, error, getTargetsForUser, currentTarget } = useTargetStore();
   const selectedYear = selectedDate.getFullYear();
@@ -51,6 +69,85 @@ export const SetTargets = () => {
   );
 
   const [disableStatus, setDisableStatus] = useState(disableLogic);
+
+  const getInputFieldNames = useCallback(() => {
+    const inputNames: string[] = [];
+    Object.values(targetFields).forEach(section => {
+      section.forEach(field => {
+        if (field.fieldType === 'input') {
+          inputNames.push(field.value);
+        }
+      });
+    });
+    return inputNames;
+  }, []);
+
+  // Check if there are unsaved changes
+  const hasUnsavedChanges = useMemo(() => {
+    // Don't detect unsaved changes when priority modal is open (we're in the process of saving)
+    if (showPriorityModal) {
+      return false;
+    }
+    
+    if (!currentTarget) return false;
+    
+    const currentValues = processTargetData(currentTarget);
+    const inputFieldNames = getInputFieldNames();
+    
+    return inputFieldNames.some(fieldName => {
+      const currentValue = currentValues[fieldName] || 0;
+      const newValue = fieldValues[fieldName] || 0;
+      return Math.abs(currentValue - newValue) > 0.01; // Small tolerance for floating point
+    });
+  }, [currentTarget, fieldValues, getInputFieldNames, showPriorityModal]);
+
+  // Check for priority conflicts
+  const getPriorityConflict = useCallback((newPeriod: PeriodType) => {
+    if (!currentTarget) return null;
+    
+    const priorityOrder = { yearly: 3, monthly: 2, weekly: 1 };
+    const newPriority = priorityOrder[newPeriod as keyof typeof priorityOrder];
+    
+    // Get unique query types from current target
+    const queryTypes = getUniqueQueryTypes(currentTarget);
+    
+    for (const queryType of queryTypes) {
+      const existingPriority = priorityOrder[queryType as keyof typeof priorityOrder];
+      if (existingPriority > newPriority) {
+        const monthName = format(selectedDate, 'MMMM');
+        return {
+          existingType: queryType,
+          newType: newPeriod,
+          monthName: monthName,
+          message: `The target for ${monthName} is already set in ${queryType} basis. Are you sure you want to update the target?`
+        };
+      }
+    }
+    
+    return null;
+  }, [currentTarget, selectedDate]);
+
+  // Helper function to get unique query types
+  const getUniqueQueryTypes = useCallback((target: any[] | null): string[] => {
+    if (!target || target.length === 0) return [];
+    
+    let allTargetData: any[] = [];
+    
+    if (target.length === 12 && Array.isArray(target[0])) {
+      target.forEach(monthData => {
+        if (Array.isArray(monthData)) {
+          allTargetData = allTargetData.concat(monthData);
+        }
+      });
+    } else {
+      allTargetData = target;
+    }
+    
+    const queryTypes = allTargetData
+      .map((t) => t.queryType)
+      .filter((queryType) => queryType && queryType.trim() !== "");
+    return [...new Set(queryTypes)];
+  }, []);
 
   useEffect(() => {
     setDaysInMonth(getDaysInMonth(selectedDate));
@@ -141,16 +238,48 @@ export const SetTargets = () => {
     return targetFields[sectionKey];
   }, []);
 
-  const getInputFieldNames = useCallback(() => {
-    const inputNames: string[] = [];
-    Object.values(targetFields).forEach(section => {
-      section.forEach(field => {
-        if (field.fieldType === 'input') {
-          inputNames.push(field.value);
-        }
-      });
-    });
-    return inputNames;
+  const handleDatePeriodChange = useCallback((date: Date, period: PeriodType) => {
+    // Navigation is now handled by onNavigationAttempt prop
+    // This function is called only when navigation is allowed
+    setSelectedDate(date);
+    setPeriod(period);
+    setLastChanged(null);
+  }, []);
+
+  const handleConfirmDateChange = useCallback(() => {
+    if (pendingDateChange) {
+      setSelectedDate(pendingDateChange.date);
+      setPeriod(pendingDateChange.period);
+      setLastChanged(null);
+      setPendingDateChange(null);
+    }
+    setShowUnsavedModal(false);
+  }, [pendingDateChange]);
+
+  const handleCancelDateChange = useCallback(() => {
+    setPendingDateChange(null);
+    setShowUnsavedModal(false);
+  }, []);
+
+  const handleNavigationAttempt = useCallback((newDate: Date, newPeriod: PeriodType) => {
+    // Don't show unsaved changes modal if priority modal is open (we're in the process of saving)
+    if (showPriorityModal) {
+      return true; // Allow navigation when priority modal is open
+    }
+    
+    // Check if there are unsaved changes
+    if (hasUnsavedChanges) {
+      setPendingDateChange({ date: newDate, period: newPeriod });
+      setShowUnsavedModal(true);
+      return false; // Block navigation
+    }
+    
+    // No unsaved changes, allow navigation
+    return true;
+  }, [hasUnsavedChanges, showPriorityModal]);
+
+  const handleDisableStatusChange = useCallback((status: DisableMetadata) => {
+    setDisableStatus(status);
   }, []);
 
   const handleSave = useCallback(async () => {
@@ -171,12 +300,39 @@ export const SetTargets = () => {
       return;
     }
 
+    // Check for priority conflicts
+    const priorityConflict = getPriorityConflict(period);
+    if (priorityConflict) {
+      // Store the save data and show confirmation modal
+      const inputData: { [key: string]: number | undefined } = {};
+      inputFieldNames.forEach(name => {
+        inputData[name] = fieldValues[name];
+      });
+
+      const saveData = {
+        startDate: selectedStartDate,
+        endDate: selectedEndDate,
+        queryType: period,
+        ...inputData
+      };
+
+      setPendingSaveData(saveData);
+      setShowPriorityModal(true);
+      return;
+    }
+
+    // No priority conflict, proceed with save
+    await performSave();
+  }, [upsertWeeklyTarget, selectedStartDate, selectedEndDate, period, fieldValues, toast, error, getInputFieldNames, getPriorityConflict]);
+
+  const performSave = useCallback(async () => {
     if (period === 'yearly') {
       setIsYearlyModalOpen(true);
       return;
     }
 
     try {
+      const inputFieldNames = getInputFieldNames();
       const inputData: { [key: string]: number | undefined } = {};
       inputFieldNames.forEach(name => {
         inputData[name] = fieldValues[name];
@@ -202,17 +358,12 @@ export const SetTargets = () => {
     }
   }, [upsertWeeklyTarget, selectedStartDate, selectedEndDate, period, fieldValues, toast, error, getInputFieldNames]);
 
-  const handleDatePeriodChange = useCallback((date: Date, period: PeriodType) => {
-    setSelectedDate(date);
-    setPeriod(period);
-    setLastChanged(null);
+  const handleCancelPrioritySave = useCallback(() => {
+    setShowPriorityModal(false);
+    setPendingSaveData(null);
   }, []);
 
-  const handleDisableStatusChange = useCallback((status: DisableMetadata) => {
-    setDisableStatus(status);
-  }, []);
-
-  const handleSaveMonthlyTargets = useCallback(async (monthlyData: { [key: string]: MonthlyData }) => {
+  const performSaveMonthlyTargets = useCallback(async (monthlyData: { [key: string]: MonthlyData }) => {
     const inputFieldNames = getInputFieldNames();
     const userId = useUserStore.getState().selectedUserId;
 
@@ -264,6 +415,49 @@ export const SetTargets = () => {
     }
   }, [toast, error, getInputFieldNames, selectedYear, fieldValues]);
 
+  const handleConfirmPrioritySave = useCallback(async () => {
+    setShowPriorityModal(false);
+    if (pendingSaveData) {
+      try {
+        if (pendingSaveData.monthlyData) {
+          // Handle yearly target save
+          await performSaveMonthlyTargets(pendingSaveData.monthlyData);
+        } else {
+          // Handle regular target save
+          await upsertWeeklyTarget(pendingSaveData);
+          toast({
+            title: "✅ Targets Saved Successfully!",
+            description: `Your ${period} target values have been updated.`,
+          });
+        }
+        setPendingSaveData(null);
+      } catch (err) {
+        toast({
+          title: "❌ Error Saving Targets",
+          description: error || "Failed to save targets. Please try again.",
+          variant: "destructive",
+        });
+      }
+    }
+  }, [upsertWeeklyTarget, pendingSaveData, period, toast, error, performSaveMonthlyTargets]);
+
+  const handleSaveMonthlyTargets = useCallback(async (monthlyData: { [key: string]: MonthlyData }) => {
+    const inputFieldNames = getInputFieldNames();
+    const userId = useUserStore.getState().selectedUserId;
+
+    // Check for priority conflicts for yearly targets
+    const priorityConflict = getPriorityConflict('yearly');
+    if (priorityConflict) {
+      // Store the monthly data and show confirmation modal
+      setPendingSaveData({ monthlyData, userId, selectedYear, fieldValues });
+      setShowPriorityModal(true);
+      return;
+    }
+
+    // No priority conflict, proceed with save
+    await performSaveMonthlyTargets(monthlyData);
+  }, [toast, error, getInputFieldNames, selectedYear, fieldValues, getPriorityConflict, performSaveMonthlyTargets]);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="relative z-10 py-12 px-4">
@@ -289,6 +483,7 @@ export const SetTargets = () => {
             onButtonClick={handleSave}
             disableLogic={disableLogic}
             onDisableStatusChange={handleDisableStatusChange}
+            onNavigationAttempt={handleNavigationAttempt}
           />
         </div>
 
@@ -359,6 +554,43 @@ export const SetTargets = () => {
         selectedYear={selectedYear}
         apiData={currentTarget}
       />
+
+      {/* Unsaved Changes Confirmation Modal */}
+      <AlertDialog open={showUnsavedModal} onOpenChange={setShowUnsavedModal}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
+            <AlertDialogDescription>
+              Target is not saved, the values will be discarded. Are you sure you want to continue?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelDateChange}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDateChange}>Continue</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Priority Conflict Confirmation Modal */}
+      <AlertDialog open={showPriorityModal} onOpenChange={setShowPriorityModal}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Priority Conflict</AlertDialogTitle>
+            <AlertDialogDescription>
+              {(() => {
+                const priorityConflict = pendingSaveData?.monthlyData ? 
+                  getPriorityConflict('yearly') : 
+                  getPriorityConflict(period);
+                return priorityConflict?.message || '';
+              })()}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelPrioritySave}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmPrioritySave}>Continue</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

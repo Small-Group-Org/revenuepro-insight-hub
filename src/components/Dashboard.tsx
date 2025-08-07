@@ -11,32 +11,24 @@ import {
   startOfYear,
   endOfYear,
 } from "date-fns";
-import { getWeekInfo } from '@/utils/weekLogic';
 import { processTargetData, calculateFields, getWeeksInMonth } from '@/utils/page-utils/targetUtils';
-import { calculateReportingFields } from '@/utils/page-utils/actualDataUtils';
-import { calculateManagementCost, formatCurrencyValue } from '@/utils/page-utils/commonUtils';
+import { calculateManagementCost } from '@/utils/page-utils/commonUtils';
 import { FieldValue } from '@/types';
 import { MetricsLineCharts } from './MetricsLineCharts';
 import { useUserStore } from '@/stores/userStore';
-import { BarChart3 } from 'lucide-react';
-import { comprehensiveChartConfigs } from '@/utils/constant';
+import { BarChart3, TrendingUp } from 'lucide-react';
+import { generalMetricsChartConfigs, performanceMetricsChartConfigs } from '@/utils/constant';
 
 export const Dashboard = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [period, setPeriod] = useState<"weekly" | "monthly" | "yearly" | "ytd">("weekly");
+  const [period, setPeriod] = useState<"weekly" | "monthly" | "yearly" | "ytd">("monthly");
 
   const { reportingData, targetData, getReportingData } = useReportingDataStore();
   const { selectedUserId } = useUserStore();
 
-  // Fetch actual+target data from single API
   useEffect(() => {
     let startDate: string, endDate: string, queryType: string;
-    if (period === "weekly") {
-      const weekInfo = getWeekInfo(selectedDate);
-      startDate = format(weekInfo.weekStart, "yyyy-MM-dd");
-      endDate = format(weekInfo.weekEnd, "yyyy-MM-dd");
-      queryType = "weekly";
-    } else if (period === "monthly") {
+    if (period === "monthly") {
       startDate = format(startOfMonth(selectedDate), "yyyy-MM-dd");
       endDate = format(endOfMonth(selectedDate), "yyyy-MM-dd");
       queryType = "monthly";
@@ -52,45 +44,15 @@ export const Dashboard = () => {
     getReportingData(startDate, endDate, queryType);
   }, [selectedDate, period, selectedUserId, getReportingData]);
 
-  // Process target data with all calculated fields
   const processedTargetData = useMemo(() => {
     if (!targetData) return undefined;
     const baseTargetData = processTargetData(Array.isArray(targetData) ? targetData : [targetData]);
     
-    // Apply all target field calculations
     return calculateFields(baseTargetData, period, period === 'weekly' ? 7 : 30);
   }, [targetData, period]);
 
-  // Process actual data with all calculated fields
-  const processedActualData = useMemo(() => {
-    if (!reportingData || reportingData.length === 0) return undefined;
-    
-    // Aggregate actual data from reporting fields
-    const aggregatedActual: FieldValue = {};
-    reportingData.forEach((data) => {
-      Object.keys(data).forEach((key) => {
-        if (key !== 'userId' && key !== 'startDate' && key !== 'endDate' && 
-            key !== '_id' && key !== 'createdAt' && key !== 'updatedAt' && key !== '__v') {
-          aggregatedActual[key] = (aggregatedActual[key] || 0) + (data[key] || 0);
-        }
-      });
-    });
-
-    // Add target data for budget calculations
-    const actualWithTargets = {
-      ...aggregatedActual,
-      com: processedTargetData?.com || 0,
-      targetRevenue: processedTargetData?.revenue || 0,
-    };
-
-    // Apply reporting field calculations
-    return calculateReportingFields(actualWithTargets);
-  }, [reportingData, processedTargetData]);
-
-  // Helper to get x-axis labels based on period
   const getXAxisLabels = () => {
     if (period === 'monthly') {
-      // Get number of weeks in the selected month
       const weekCount = getWeeksInMonth(selectedDate);
       return Array.from({ length: weekCount }, (_, i) => `Week ${i + 1}`);
     } else if (period === 'yearly') {
@@ -110,20 +72,16 @@ export const Dashboard = () => {
     return ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
   };
 
-  // Prepare comprehensive comparison chart data
   const comprehensiveChartData = useMemo(() => {
     if (!reportingData || reportingData.length === 0) {
       return {};
     }
 
     const xLabels = getXAxisLabels();
-    
-    // Process each data point from the API response
+
     const processDataPoint = (dataPoint: any, index: number) => {
-      // Calculate metrics for this individual data point
       const metrics: FieldValue = {};
       
-      // Map reporting fields to comparison metrics
       metrics.revenue = dataPoint.revenue || 0;
       metrics.sales = dataPoint.sales || 0;
       metrics.estimatesRan = dataPoint.estimatesRan || 0;
@@ -131,7 +89,6 @@ export const Dashboard = () => {
       metrics.leads = dataPoint.leads || 0;
       metrics.budgetSpent = dataPoint.budgetSpent || 0;
       
-      // Calculate funnel rates from actual data
       if (metrics.leads > 0 && metrics.estimatesSet > 0) {
         metrics.appointmentRate = (metrics.estimatesSet / metrics.leads) * 100;
       }
@@ -184,13 +141,8 @@ export const Dashboard = () => {
       return metrics;
     };
 
-    // Create chart data structure
     const chartData: any = {};
-    
-    // Get target values (single values for comparison)
     const target = processedTargetData || {};
-    
-    // Process each metric type
     const metricTypes = [
       'totalCom', 'revenue', 'cpEstimateSet', 'cpl', 
       'appointmentRate', 'showRate', 'closeRate', 'avgJobSize'
@@ -211,17 +163,9 @@ export const Dashboard = () => {
       });
     });
     
-    console.log("[Chart Data Debug]", { 
-      reportingDataLength: reportingData.length, 
-      xLabels, 
-      period,
-      sampleChartData: chartData.revenue?.[0] 
-    });
-    
     return chartData;
   }, [reportingData, processedTargetData, period, selectedDate]);
 
-  // Handler for DatePeriodSelector
   const handleDatePeriodChange = (
     date: Date,
     newPeriod: "weekly" | "monthly" | "yearly" | "ytd"
@@ -230,17 +174,7 @@ export const Dashboard = () => {
     setPeriod(newPeriod);
   };
 
-  // Format value helper
-  const formatValue = (value: number, format: string) => {
-    if (format === "currency") {
-      return formatCurrencyValue(value);
-    }
-    if (format === "percent") {
-      return `${value.toFixed(1)}%`;
-    }
-    return Math.round(value)?.toLocaleString();
-  };
-
+  console.log("[Comprehensive Chart Data]", {comprehensiveChartData});
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -269,13 +203,23 @@ export const Dashboard = () => {
           />
         </div>
 
-        {/* Comprehensive Metrics Comparison Charts */}
+        {/* General Metrics Charts */}
         <div className="max-w-7xl mx-auto mb-8">
           <MetricsLineCharts 
             chartData={comprehensiveChartData} 
-            chartConfigs={comprehensiveChartConfigs}
-            title="Comprehensive Metrics Comparison"
+            chartConfigs={generalMetricsChartConfigs}
+            title="General Metrics"
             icon={<BarChart3 className="h-5 w-5 text-blue-600" />}
+          />
+        </div>
+
+        {/* Performance Metrics Charts */}
+        <div className="max-w-7xl mx-auto mb-8">
+          <MetricsLineCharts 
+            chartData={comprehensiveChartData} 
+            chartConfigs={performanceMetricsChartConfigs}
+            title="Performance Metrics"
+            icon={<TrendingUp className="h-5 w-5 text-green-600" />}
           />
         </div>
       </div>
