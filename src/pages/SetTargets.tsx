@@ -45,11 +45,8 @@ export const SetTargets = () => {
   );
   const [isYearlyModalOpen, setIsYearlyModalOpen] = useState(false);
   
-  // New state for confirmation modal
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
   const [pendingDateChange, setPendingDateChange] = useState<{ date: Date; period: PeriodType } | null>(null);
-  
-  // New state for priority conflict confirmation modal
   const [showPriorityModal, setShowPriorityModal] = useState(false);
   const [pendingSaveData, setPendingSaveData] = useState<any>(null);
 
@@ -82,9 +79,7 @@ export const SetTargets = () => {
     return inputNames;
   }, []);
 
-  // Check if there are unsaved changes
   const hasUnsavedChanges = useMemo(() => {
-    // Don't detect unsaved changes when priority modal is open (we're in the process of saving)
     if (showPriorityModal) {
       return false;
     }
@@ -101,7 +96,6 @@ export const SetTargets = () => {
     });
   }, [currentTarget, fieldValues, getInputFieldNames, showPriorityModal]);
 
-  // Check for priority conflicts
   const getPriorityConflict = useCallback((newPeriod: PeriodType) => {
     if (!currentTarget) return null;
     

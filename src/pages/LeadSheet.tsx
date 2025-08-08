@@ -192,6 +192,16 @@ export const LeadSheet = () => {
                 <Table className="w-full min-w-[1400px]">
                   <TableHeader>
                     <TableRow className="bg-gray-50">
+                      <TableHead className="font-semibold text-gray-700 w-32 sticky left-0 bg-gray-50 z-10 border-r border-gray-200 shadow-[4px_0_6px_-1px_rgba(0,0,0,0.1)]">
+                        <div className="flex items-center gap-1">
+                          Estimate Set
+                        </div>
+                      </TableHead>
+                      <TableHead className="font-semibold text-gray-700 w-48 sticky left-32 bg-gray-50 z-10 border-r border-gray-200 shadow-[4px_0_6px_-1px_rgba(0,0,0,0.1)]">
+                        <div className="flex items-center gap-1">
+                          Unqualified Lead Reason
+                        </div>
+                      </TableHead>
                       <TableHead className="font-semibold text-gray-700 w-32">
                         <div className="flex items-center gap-1">
                           Lead Date
@@ -232,21 +242,41 @@ export const LeadSheet = () => {
                           Ad Name
                         </div>
                       </TableHead>
-                      <TableHead className="font-semibold text-gray-700 w-32">
-                        <div className="flex items-center gap-1">
-                          Estimate Set
-                        </div>
-                      </TableHead>
-                      <TableHead className="font-semibold text-gray-700 w-48 sticky right-0 bg-gray-50 z-10 border-l border-gray-200 shadow-[-4px_0_6px_-1px_rgba(0,0,0,0.1)] text-center">
-                        <div className="flex items-center gap-1">
-                          Unqualified Lead Reason
-                        </div>
-                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {(loading ? [] : leads).map((lead) => (
                       <TableRow key={lead.id} className={`hover:bg-gray-50 ${lead.estimateSet ? 'bg-green-50' : ''}`}>
+                        <TableCell className={`px-3 py-4 text-center sticky left-0 z-10 border-r border-gray-200 shadow-[4px_0_6px_-1px_rgba(0,0,0,0.1)] ${lead.estimateSet ? 'bg-green-50' : 'bg-white'}`}>
+                          <Checkbox
+                            checked={lead.estimateSet}
+                            onCheckedChange={(checked) => 
+                              handleEstimateSetChange(lead.id, checked as boolean)
+                            }
+                            className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                          />
+                        </TableCell>
+                        <TableCell className={`px-3 py-4 sticky left-32 z-10 border-r border-gray-200 shadow-[4px_0_6px_-1px_rgba(0,0,0,0.1)] text-center ${lead.estimateSet ? 'bg-green-50' : pendingULRLeadId === lead.id ? 'bg-yellow-50' : 'bg-white'}`}>
+                          {lead.estimateSet ? (
+                            <span className="text-gray-500 text-sm">NA</span>
+                          ) : (
+                            <Select
+                              value={lead.unqualifiedLeadReason || ''}
+                              onValueChange={(value) => handleULRChange(lead.id, value)}
+                            >
+                              <SelectTrigger className={`w-full h-8 text-xs ${pendingULRLeadId === lead.id ? 'border-yellow-400 ring-2 ring-yellow-200' : ''}`}>
+                                <SelectValue placeholder={pendingULRLeadId === lead.id ? "Select reason required!" : "Select reason..."} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {ulrOptions.map((option) => (
+                                  <SelectItem key={option} value={option} className="text-xs">
+                                    {option}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        </TableCell>
                         <TableCell className="font-medium px-3 py-4">
                           {formatDate(lead.leadDate)}
                         </TableCell>
@@ -282,36 +312,6 @@ export const LeadSheet = () => {
                         </TableCell>
                         <TableCell className="px-3 py-4 text-xs">
                           {lead.adName}
-                        </TableCell>
-                        <TableCell className="px-3 py-4 text-center">
-                          <Checkbox
-                            checked={lead.estimateSet}
-                            onCheckedChange={(checked) => 
-                              handleEstimateSetChange(lead.id, checked as boolean)
-                            }
-                            className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                          />
-                        </TableCell>
-                        <TableCell className={`px-3 py-4 sticky right-0 z-10 border-l border-gray-200 shadow-[-4px_0_6px_-1px_rgba(0,0,0,0.1)] text-center ${lead.estimateSet ? 'bg-green-50' : pendingULRLeadId === lead.id ? 'bg-yellow-50' : 'bg-white'}`}>
-                          {lead.estimateSet ? (
-                            <span className="text-gray-500 text-sm">NA</span>
-                          ) : (
-                            <Select
-                              value={lead.unqualifiedLeadReason || ''}
-                              onValueChange={(value) => handleULRChange(lead.id, value)}
-                            >
-                              <SelectTrigger className={`w-full h-8 text-xs ${pendingULRLeadId === lead.id ? 'border-yellow-400 ring-2 ring-yellow-200' : ''}`}>
-                                <SelectValue placeholder={pendingULRLeadId === lead.id ? "Select reason required!" : "Select reason..."} />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {ulrOptions.map((option) => (
-                                  <SelectItem key={option} value={option} className="text-xs">
-                                    {option}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          )}
                         </TableCell>
                       </TableRow>
                     ))}
