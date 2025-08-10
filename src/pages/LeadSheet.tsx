@@ -31,6 +31,50 @@ export const LeadSheet = () => {
   const { leads, loading, error, fetchLeads, updateLeadData, updateLeadLocal } = useLeadStore();
   const { selectedUserId } = useUserStore();
 
+  // Helper functions to reduce code duplication
+  const findLead = useCallback((leadId: string) => leads.find(l => l.id === leadId), [leads]);
+
+  const showErrorToast = useCallback((message: string) => {
+    toast({
+      title: "❌ Error Updating Lead",
+      description: message,
+      variant: "destructive",
+    });
+  }, [toast]);
+
+  const showSuccessToast = useCallback((message: string) => {
+    toast({
+      title: "✅ Lead Updated",
+      description: message,
+    });
+  }, [toast]);
+
+  const clearULRStates = useCallback(() => {
+    setPendingULRLeadId(null);
+    setShowCustomInput(null);
+    setCustomULR('');
+  }, []);
+
+  const handleLeadUpdate = useCallback(async (
+    leadId: string, 
+    updateData: { estimateSet: boolean; unqualifiedLeadReason?: string },
+    successMessage: string,
+    revertOnError = false
+  ) => {
+    const result = await updateLeadData({ _id: leadId, ...updateData });
+    
+    if (result.error) {
+      showErrorToast(result.message);
+      if (revertOnError) {
+        updateLeadLocal(leadId, { estimateSet: true });
+      }
+      return false;
+    } else {
+      showSuccessToast(successMessage);
+      return true;
+    }
+  }, [updateLeadData, updateLeadLocal, showErrorToast, showSuccessToast]);
+
   // ULR options - moved outside component to prevent recreation
   const ULR_OPTIONS = [
     'Bad Phone Number',
@@ -87,29 +131,16 @@ export const LeadSheet = () => {
   }, []);
 
   const handleEstimateSetChange = useCallback(async (leadId: string, checked: boolean) => {
-    const lead = leads.find(l => l.id === leadId);
+    const lead = findLead(leadId);
     if (!lead) return;
 
     if (checked) {
       // Setting estimate to true - update immediately
-      const result = await updateLeadData({
-        _id: leadId,
-        estimateSet: true,
-        unqualifiedLeadReason: undefined
-      });
-      
-      if (result.error) {
-        toast({
-          title: "❌ Error Updating Lead",
-          description: result.message,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "✅ Lead Updated",
-          description: "Estimate has been set for this lead.",
-        });
-      }
+      await handleLeadUpdate(
+        leadId,
+        { estimateSet: true, unqualifiedLeadReason: undefined },
+        "Estimate has been set for this lead."
+      );
     } else {
       // Unchecking estimate - user must select ULR first
       updateLeadLocal(leadId, { estimateSet: false });
@@ -120,10 +151,10 @@ export const LeadSheet = () => {
         description: "Please select a reason from the dropdown to complete this action.",
       });
     }
-  }, [leads, updateLeadData, updateLeadLocal, toast]);
+  }, [findLead, handleLeadUpdate, updateLeadLocal, toast]);
 
   const handleULRChange = useCallback(async (leadId: string, value: string) => {
-    const lead = leads.find(l => l.id === leadId);
+    const lead = findLead(leadId);
     if (!lead) return;
 
     if (value === 'custom') {
@@ -136,72 +167,39 @@ export const LeadSheet = () => {
     }
 
     // Update the lead with the selected ULR
-    const result = await updateLeadData({
-      _id: leadId,
-      estimateSet: false,
-      unqualifiedLeadReason: value
-    });
+    const success = await handleLeadUpdate(
+      leadId,
+      { estimateSet: false, unqualifiedLeadReason: value },
+      "Unqualified lead reason has been set.",
+      true // revert on error
+    );
     
-    if (result.error) {
-      toast({
-        title: "❌ Error Updating Lead",
-        description: result.message,
-        variant: "destructive",
-      });
-      // Revert the estimate set change if update failed
-      updateLeadLocal(leadId, { estimateSet: true });
-    } else {
-      toast({
-        title: "✅ Lead Updated",
-        description: "Unqualified lead reason has been set.",
-      });
+    if (success) {
+      clearULRStates();
     }
-    
-    // Clear pending state
-    setPendingULRLeadId(null);
-    setShowCustomInput(null);
-  }, [leads, updateLeadData, updateLeadLocal, toast]);
+  }, [findLead, handleLeadUpdate, clearULRStates]);
 
   const handleCustomULRSubmit = useCallback(async (leadId: string) => {
     if (!customULR.trim()) {
-      toast({
-        title: "❌ Invalid Input",
-        description: "Please enter a custom reason.",
-        variant: "destructive",
-      });
+      showErrorToast("Please enter a custom reason.");
       return;
     }
 
-    const lead = leads.find(l => l.id === leadId);
+    const lead = findLead(leadId);
     if (!lead) return;
 
     // Update the lead with the custom ULR
-    const result = await updateLeadData({
-      _id: leadId,
-      estimateSet: false,
-      unqualifiedLeadReason: customULR.trim()
-    });
+    const success = await handleLeadUpdate(
+      leadId,
+      { estimateSet: false, unqualifiedLeadReason: customULR.trim() },
+      "Custom unqualified lead reason has been set.",
+      true // revert on error
+    );
     
-    if (result.error) {
-      toast({
-        title: "❌ Error Updating Lead",
-        description: result.message,
-        variant: "destructive",
-      });
-      // Revert the estimate set change if update failed
-      updateLeadLocal(leadId, { estimateSet: true });
-    } else {
-      toast({
-        title: "✅ Lead Updated",
-        description: "Custom unqualified lead reason has been set.",
-      });
+    if (success) {
+      clearULRStates();
     }
-    
-    // Clear states
-    setPendingULRLeadId(null);
-    setShowCustomInput(null);
-    setCustomULR('');
-  }, [customULR, leads, updateLeadData, updateLeadLocal, toast]);
+  }, [customULR, findLead, handleLeadUpdate, showErrorToast, clearULRStates]);
 
   // Remove the save handler as updates are now automatic
 
