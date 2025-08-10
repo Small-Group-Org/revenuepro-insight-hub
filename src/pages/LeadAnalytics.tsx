@@ -4,15 +4,23 @@ import { useUserStore } from '@/stores/userStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line } from 'recharts';
-import { TrendingUp, MapPin, Wrench, Tag, FileText, Users, CheckCircle, XCircle } from 'lucide-react';
+import { TrendingUp, MapPin, Wrench, Tag, FileText, Users, CheckCircle, XCircle, Calendar } from 'lucide-react';
 import { Lead } from '@/types';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { format, startOfMonth, endOfMonth, startOfYear, endOfYear, subMonths, subQuarters, subYears } from 'date-fns';
 
 const COLORS = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#f97316', '#06b6d4', '#8b5cf6', '#10b981', '#f59e0b'];
+
+// Time period constants in days
+const DAYS_IN_MONTH = 30;
+const DAYS_IN_QUARTER = 90;
+const DAYS_IN_YEAR = 365;
 
 export const LeadAnalytics = () => {
   const { leads, loading, error, fetchLeads } = useLeadStore();
   const { selectedUserId } = useUserStore();
   const [selectedMetric, setSelectedMetric] = useState<string>('overview');
+  const [timeFilter, setTimeFilter] = useState<'all' | 'monthly' | 'quarterly' | 'yearly'>('all');
 
   useEffect(() => {
     if (selectedUserId) {
@@ -20,17 +28,44 @@ export const LeadAnalytics = () => {
     }
   }, [selectedUserId, fetchLeads]);
 
+  // Filter leads based on time period
+  const filteredLeads = useMemo(() => {
+    if (timeFilter === 'all') return leads;
+    
+    const now = new Date();
+    let startDate: Date;
+    
+    switch (timeFilter) {
+      case 'monthly':
+        // Last 1 month from today
+        startDate = new Date(now.getTime() - (DAYS_IN_MONTH * 24 * 60 * 60 * 1000));
+        break;
+      case 'quarterly':
+        // Last 3 months from today
+        startDate = new Date(now.getTime() - (DAYS_IN_QUARTER * 24 * 60 * 60 * 1000));
+        break;
+      case 'yearly':
+        // Last 1 year from today
+        startDate = new Date(now.getTime() - (DAYS_IN_YEAR * 24 * 60 * 60 * 1000));
+        break;
+      default:
+        return leads;
+    }
+    
+    return leads.filter(lead => new Date(lead.leadDate) >= startDate);
+  }, [leads, timeFilter]);
+
   // Analytics Data Processing
   const analyticsData = useMemo(() => {
-    if (!leads.length) return null;
+    if (!filteredLeads.length) return null;
 
-    const totalLeads = leads.length;
-    const estimateSetCount = leads.filter(lead => lead.estimateSet).length;
+    const totalLeads = filteredLeads.length;
+    const estimateSetCount = filteredLeads.filter(lead => lead.estimateSet).length;
     const unqualifiedCount = totalLeads - estimateSetCount;
     const conversionRate = ((estimateSetCount / totalLeads) * 100).toFixed(1);
 
     // Filter leads with estimates set for chart analysis
-    const estimateSetLeads = leads.filter(lead => lead.estimateSet);
+    const estimateSetLeads = filteredLeads.filter(lead => lead.estimateSet);
 
     // Zip Code Analysis (Only Estimate Set Leads)
     const zipAnalysis = estimateSetLeads.reduce((acc, lead) => {
@@ -61,7 +96,7 @@ export const LeadAnalytics = () => {
       .sort((a, b) => b.count - a.count) : [];
 
     // Ad Set Analysis (All Leads + Estimate Set Leads)
-    const adSetAnalysis = leads.reduce((acc, lead) => {
+    const adSetAnalysis = filteredLeads.reduce((acc, lead) => {
       if (!acc[lead.adSetName]) {
         acc[lead.adSetName] = { total: 0, estimateSet: 0 };
       }
@@ -82,7 +117,7 @@ export const LeadAnalytics = () => {
       .sort((a, b) => b.estimateSet - a.estimateSet);
 
     // Ad Name Analysis (All Leads + Estimate Set Leads)
-    const adNameAnalysis = leads.reduce((acc, lead) => {
+    const adNameAnalysis = filteredLeads.reduce((acc, lead) => {
       if (!acc[lead.adName]) {
         acc[lead.adName] = { total: 0, estimateSet: 0 };
       }
@@ -121,7 +156,7 @@ export const LeadAnalytics = () => {
       .sort((a, b) => new Date(a.date + ', 2024').getTime() - new Date(b.date + ', 2024').getTime()) : [];
 
     // Day of Week Analysis (Both Total Leads and Estimate Set Leads)
-    const dayOfWeekAnalysis = leads.reduce((acc, lead) => {
+    const dayOfWeekAnalysis = filteredLeads.reduce((acc, lead) => {
       const dayOfWeek = new Date(lead.leadDate).toLocaleDateString('en-US', { weekday: 'long' });
       if (!acc[dayOfWeek]) {
         acc[dayOfWeek] = { total: 0, estimateSet: 0 };
@@ -146,7 +181,7 @@ export const LeadAnalytics = () => {
       });
 
     // Unqualified Reasons Analysis
-    const ulrAnalysis = leads
+    const ulrAnalysis = filteredLeads
       .filter(lead => !lead.estimateSet && lead.unqualifiedLeadReason)
       .reduce((acc, lead) => {
         const reason = lead.unqualifiedLeadReason!;
@@ -177,7 +212,7 @@ export const LeadAnalytics = () => {
       dayOfWeekData,
       ulrData
     };
-  }, [leads]);
+  }, [filteredLeads]);
 
   if (loading) {
     return (
@@ -221,9 +256,25 @@ export const LeadAnalytics = () => {
                 Lead Analytics
               </h1>
             </div>
-            <p className="text-gray-600 max-w-2xl mx-auto text-lg mb-10 mt-2">
-              Complete analysis of <span className="font-bold text-blue-700">all-time</span> lead performance - focusing on successful conversions and trends
-            </p>
+            <div className="flex items-center justify-center gap-4 mb-10 mt-2">
+              <p className="text-gray-600 text-lg">
+                Complete analysis of lead performance - focusing on successful conversions and trends
+              </p>
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-gray-500" />
+                <Select value={timeFilter} onValueChange={(value: any) => setTimeFilter(value)}>
+                  <SelectTrigger className="w-32 h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Time</SelectItem>
+                    <SelectItem value="monthly">Last Month</SelectItem>
+                    <SelectItem value="quarterly">Last Quarter</SelectItem>
+                    <SelectItem value="yearly">Last Year</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
 
           {/* Overview Cards */}

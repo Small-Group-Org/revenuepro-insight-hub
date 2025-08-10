@@ -56,7 +56,6 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
     [key: string]: MonthlyData;
   }>({});
 
-  // Calculate annual totals from the provided field values
   const annualTotals = useMemo(() => {
     const calculated = calculateFields(annualFieldValues, "yearly", 365); // Use 365 days for yearly
     return {
@@ -71,13 +70,11 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
     };
   }, [annualFieldValues]);
 
-  // Process API data into monthly format
   const processApiDataToMonthly = useMemo(() => {
     if (!apiData || apiData.length !== 12) return {};
 
     const monthlyDataFromApi: { [key: string]: MonthlyData } = {};
     
-    // First, calculate total revenue by month and annual total
     const monthlyRevenues: { [key: string]: number } = {};
     let annualRevenue = 0;
 
@@ -85,7 +82,6 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
       if (Array.isArray(monthData) && monthData.length > 0) {
         const monthName = months[monthIndex];
         
-        // Sum all weekly revenues for this month
         const monthRevenue = monthData.reduce((sum, weekData) => {
           return sum + (weekData.revenue || 0);
         }, 0);
@@ -95,14 +91,12 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
       }
     });
 
-    // Now calculate monthly data using the revenue percentages
     apiData.forEach((monthData, monthIndex) => {
       if (Array.isArray(monthData) && monthData.length > 0) {
         const monthName = months[monthIndex];
         const monthRevenue = monthlyRevenues[monthName];
         const revenuePercentage = annualRevenue > 0 ? monthRevenue / annualRevenue : 0;
         
-        // Use the annual totals to calculate monthly values based on revenue percentage
         const monthlyBudget = annualTotals.budget * revenuePercentage;
         const managementCost = calculateManagementCost(monthlyBudget);
 
@@ -123,7 +117,6 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
     return monthlyDataFromApi;
   }, [apiData, annualTotals]);
 
-  // Initialize monthly data from API when modal opens
   useEffect(() => {
     if (isOpen && apiData) {
       const apiMonthlyData = processApiDataToMonthly;
@@ -133,64 +126,49 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
     }
   }, [isOpen, apiData, processApiDataToMonthly]);
 
-  // Calculate monthly data based on budget percentages or use API data
-  const calculateMonthlyData = useMemo(() => {
-    // If we have API data, use it directly
-    if (apiData && Object.keys(processApiDataToMonthly).length > 0) {
-      return processApiDataToMonthly;
-    }
-
-    // Otherwise, calculate based on budget percentages
-    const totalBudget = Object.values(monthlyData).reduce(
-      (sum, data) => sum + data.budget,
-      0
-    );
-    const newMonthlyData: { [key: string]: MonthlyData } = {};
-
-    months.forEach((month) => {
-      const budget = monthlyData[month]?.budget || 0;
-      const percentage = totalBudget > 0 ? budget / annualTotals.budget : 0;
-      const monthlyRevenue = annualTotals.revenue * percentage;
-      const managementCost = calculateManagementCost(budget);
-
-      newMonthlyData[month] = {
-        budget,
-        leads: annualTotals.leads * percentage,
-        estimatesSet: annualTotals.estimatesSet * percentage,
-        estimates: annualTotals.estimates * percentage,
-        sales: annualTotals.sales * percentage,
-        revenue: monthlyRevenue,
-        avgJobSize: annualTotals.avgJobSize,
-        com: annualTotals.com,
-        totalCom: safePercentage(((budget + managementCost) / monthlyRevenue) * 100),
-      };
-    });
-
-    return newMonthlyData;
-  }, [monthlyData, annualTotals, apiData, processApiDataToMonthly]);
-
-  // Update monthly data when calculations change
+  // Handle initial calculation when component mounts or annualTotals change
   useEffect(() => {
-    setMonthlyData(calculateMonthlyData);
-  }, [calculateMonthlyData]);
+    // Only calculate if we don't have monthlyData and no API data is being processed
+    if (Object.keys(monthlyData).length === 0 && !apiData) {
+      const newMonthlyData: { [key: string]: MonthlyData } = {};
+
+      months.forEach((month) => {
+        const budget = 0; // Start with 0 budget
+        const percentage = 0; // Start with 0 percentage
+        const monthlyRevenue = annualTotals.revenue * percentage;
+        const managementCost = calculateManagementCost(budget);
+
+        newMonthlyData[month] = {
+          budget,
+          leads: annualTotals.leads * percentage,
+          estimatesSet: annualTotals.estimatesSet * percentage,
+          estimates: annualTotals.estimates * percentage,
+          sales: annualTotals.sales * percentage,
+          revenue: monthlyRevenue,
+          avgJobSize: annualTotals.avgJobSize,
+          com: annualTotals.com,
+          totalCom: safePercentage(((budget + managementCost) / monthlyRevenue) * 100),
+        };
+      });
+
+      setMonthlyData(newMonthlyData);
+    }
+  }, [annualTotals, apiData]); // Only depend on annualTotals and apiData, not monthlyData
 
   const handleBudgetChange = (month: string, value: number) => {
     const validatedValue = Math.max(0, value);
     
-    // Update the budget for this month
     const updatedMonthlyData = { ...monthlyData };
     updatedMonthlyData[month] = {
       ...updatedMonthlyData[month],
       budget: validatedValue,
     };
-
-    // Calculate total budget
+    
     const totalBudget = Object.values(updatedMonthlyData).reduce(
       (sum, data) => sum + data.budget,
       0
     );
 
-    // Recalculate all monthly data based on budget percentages
     const newMonthlyData: { [key: string]: MonthlyData } = {};
 
     months.forEach((monthName) => {
@@ -220,7 +198,6 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
   };
 
   const handleCancel = () => {
-    // Reset to API data if available, otherwise clear everything
     if (apiData && Object.keys(processApiDataToMonthly).length > 0) {
       setMonthlyData(processApiDataToMonthly);
     } else {

@@ -45,8 +45,6 @@ export const SetTargets = () => {
   );
   const [isYearlyModalOpen, setIsYearlyModalOpen] = useState(false);
   
-  const [showUnsavedModal, setShowUnsavedModal] = useState(false);
-  const [pendingDateChange, setPendingDateChange] = useState<{ date: Date; period: PeriodType } | null>(null);
   const [showPriorityModal, setShowPriorityModal] = useState(false);
   const [pendingSaveData, setPendingSaveData] = useState<any>(null);
 
@@ -78,23 +76,6 @@ export const SetTargets = () => {
     });
     return inputNames;
   }, []);
-
-  const hasUnsavedChanges = useMemo(() => {
-    if (showPriorityModal) {
-      return false;
-    }
-    
-    if (!currentTarget) return false;
-    
-    const currentValues = processTargetData(currentTarget);
-    const inputFieldNames = getInputFieldNames();
-    
-    return inputFieldNames.some(fieldName => {
-      const currentValue = currentValues[fieldName] || 0;
-      const newValue = fieldValues[fieldName] || 0;
-      return Math.abs(currentValue - newValue) > 0.01; // Small tolerance for floating point
-    });
-  }, [currentTarget, fieldValues, getInputFieldNames, showPriorityModal]);
 
   const getPriorityConflict = useCallback((newPeriod: PeriodType) => {
     if (!currentTarget) return null;
@@ -233,44 +214,10 @@ export const SetTargets = () => {
   }, []);
 
   const handleDatePeriodChange = useCallback((date: Date, period: PeriodType) => {
-    // Navigation is now handled by onNavigationAttempt prop
-    // This function is called only when navigation is allowed
     setSelectedDate(date);
     setPeriod(period);
     setLastChanged(null);
   }, []);
-
-  const handleConfirmDateChange = useCallback(() => {
-    if (pendingDateChange) {
-      setSelectedDate(pendingDateChange.date);
-      setPeriod(pendingDateChange.period);
-      setLastChanged(null);
-      setPendingDateChange(null);
-    }
-    setShowUnsavedModal(false);
-  }, [pendingDateChange]);
-
-  const handleCancelDateChange = useCallback(() => {
-    setPendingDateChange(null);
-    setShowUnsavedModal(false);
-  }, []);
-
-  const handleNavigationAttempt = useCallback((newDate: Date, newPeriod: PeriodType) => {
-    // Don't show unsaved changes modal if priority modal is open (we're in the process of saving)
-    if (showPriorityModal) {
-      return true; // Allow navigation when priority modal is open
-    }
-    
-    // Check if there are unsaved changes
-    if (hasUnsavedChanges) {
-      setPendingDateChange({ date: newDate, period: newPeriod });
-      setShowUnsavedModal(true);
-      return false; // Block navigation
-    }
-    
-    // No unsaved changes, allow navigation
-    return true;
-  }, [hasUnsavedChanges, showPriorityModal]);
 
   const handleDisableStatusChange = useCallback((status: DisableMetadata) => {
     setDisableStatus(status);
@@ -477,7 +424,7 @@ export const SetTargets = () => {
             onButtonClick={handleSave}
             disableLogic={disableLogic}
             onDisableStatusChange={handleDisableStatusChange}
-            onNavigationAttempt={handleNavigationAttempt}
+            onNavigationAttempt={() => true} // Always allow navigation
           />
         </div>
 
@@ -548,22 +495,6 @@ export const SetTargets = () => {
         selectedYear={selectedYear}
         apiData={currentTarget}
       />
-
-      {/* Unsaved Changes Confirmation Modal */}
-      <AlertDialog open={showUnsavedModal} onOpenChange={setShowUnsavedModal}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
-            <AlertDialogDescription>
-              Target is not saved, the values will be discarded. Are you sure you want to continue?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleCancelDateChange}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmDateChange}>Continue</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* Priority Conflict Confirmation Modal */}
       <AlertDialog open={showPriorityModal} onOpenChange={setShowPriorityModal}>
