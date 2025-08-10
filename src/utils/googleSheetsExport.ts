@@ -60,8 +60,6 @@ export const exportToGoogleSheets = async (data: ExportData): Promise<string> =>
   try {
     // Check if Google API credentials are configured
     if (!process.env.REACT_APP_GOOGLE_CLIENT_ID || !process.env.REACT_APP_GOOGLE_API_KEY) {
-      // Fallback to CSV export that can be imported to Google Sheets
-      console.log('Google API credentials not configured, using CSV fallback');
       return await exportToCSVAndOpenGoogleSheets(data);
     }
     
@@ -96,8 +94,6 @@ export const exportToGoogleSheets = async (data: ExportData): Promise<string> =>
     return sheetUrl;
   } catch (error) {
     console.error('Google Sheets export failed:', error);
-    // Fallback to CSV method
-    console.log('Falling back to CSV export method');
     return await exportToCSVAndOpenGoogleSheets(data);
   }
 };

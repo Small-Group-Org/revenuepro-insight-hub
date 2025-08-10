@@ -100,11 +100,10 @@ React.useEffect(() => {
 
 
   const calculatedValues = useMemo(() => {
-    // For Add Actual Data, use target revenue for budget calculation
     const combinedValues = {
-      ...fieldValues, // User input (actual revenue, etc.)
-      com: processedTargetData?.com || 0, // Use target com percentage
-      targetRevenue: processedTargetData?.revenue || 0, // Add target revenue
+      ...fieldValues,
+      com: processedTargetData?.com || 0,
+      targetRevenue: processedTargetData?.revenue || 0,
     };
     
     return calculateReportingFields(combinedValues);

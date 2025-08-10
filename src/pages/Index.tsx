@@ -11,8 +11,6 @@ const Index = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const handleLogout = () => {
-    // Add logout logic here
-    console.log('Logout clicked');
   };
 
   return (
