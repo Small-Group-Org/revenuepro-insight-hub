@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { useNavigate, useLocation } from "react-router-dom";
 import { useUserContext } from "../utils/UserContext";
 import UserSelect from './UserSelect';
+import { menuItems } from '@/utils/constant';
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -18,14 +19,6 @@ interface UserWithRole {
   role?: string;
 }
 
-const menuItems = [
-  { id: 'dashboard', label: 'Dashboard', icon: BarChart3, path: '/' },
-  { id: 'settargets', label: 'Set Targets', icon: Target, path: '/targets' },
-  { id: 'actuals', label: 'Weekly Reporting', icon: Plus, path: '/actuals' },
-  { id: 'compare', label: 'Target Vs Actual', icon: TrendingUp, path: '/compare' },
-  { id: 'leads', label: 'Lead Sheet', icon: Users, path: '/leads' },
-  { id: 'analytics', label: 'Lead Analytics', icon: BarChart3, path: '/lead-analytics' },
-];
 
 export const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }: SidebarProps) => {
   const navigate = useNavigate();
@@ -45,9 +38,7 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }: SidebarProp
           isCollapsed ? "justify-center" : "justify-between"
         )}>
           {!isCollapsed && (
-            <h1 className="text-xl font-bold text-sidebar-primary">
-              RevenuePRO AI
-            </h1>
+            <img src="/logo.png" alt="logo" className="w-[75%]" />
           )}
           <button
             onClick={onToggleCollapse}
@@ -60,8 +51,8 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }: SidebarProp
 
       {/* User Select for Admin */}
       {isAdmin && location.pathname !== "/create-user" && (
-        <div className="p-4 border-b border-slate-700">
-          <UserSelect />
+        <div className={`p-2 border-b border-slate-700 ${isCollapsed ? "p-0" : "px-2 py-4"}`}>
+          <UserSelect isCollapsed={isCollapsed} />
         </div>
       )}
 
@@ -122,12 +113,6 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }: SidebarProp
             <span className="font-medium">Logout</span>
           )}
         </button>
-        <div className={cn(
-          "text-xs text-slate-400 mt-2",
-          isCollapsed ? "text-center" : ""
-        )}>
-          {isCollapsed ? "v1.0" : "RevenuePRO AI v1.0"}
-        </div>
       </div>
     </div>
   );
