@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Users } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
@@ -25,22 +25,70 @@ export const LeadSheet = () => {
   const [period, setPeriod] = useState<PeriodType>('yearly');
   const [isLoading, setIsLoading] = useState(false);
   const [pendingULRLeadId, setPendingULRLeadId] = useState<string | null>(null);
+  const [customULR, setCustomULR] = useState<string>('');
+  const [showCustomInput, setShowCustomInput] = useState<string | null>(null);
   
   const { leads, loading, error, fetchLeads, updateLeadData, updateLeadLocal } = useLeadStore();
   const { selectedUserId } = useUserStore();
 
-  // ULR options based on the image
-  const ulrOptions = [
+  // Helper functions to reduce code duplication
+  const findLead = useCallback((leadId: string) => leads.find(l => l.id === leadId), [leads]);
+
+  const showErrorToast = useCallback((message: string) => {
+    toast({
+      title: "❌ Error Updating Lead",
+      description: message,
+      variant: "destructive",
+    });
+  }, [toast]);
+
+  const showSuccessToast = useCallback((message: string) => {
+    toast({
+      title: "✅ Lead Updated",
+      description: message,
+    });
+  }, [toast]);
+
+  const clearULRStates = useCallback(() => {
+    setPendingULRLeadId(null);
+    setShowCustomInput(null);
+    setCustomULR('');
+  }, []);
+
+  const handleLeadUpdate = useCallback(async (
+    leadId: string, 
+    updateData: { estimateSet: boolean; unqualifiedLeadReason?: string },
+    successMessage: string,
+    revertOnError = false
+  ) => {
+    const result = await updateLeadData({ _id: leadId, ...updateData });
+    
+    if (result.error) {
+      showErrorToast(result.message);
+      if (revertOnError) {
+        updateLeadLocal(leadId, { estimateSet: true });
+      }
+      return false;
+    } else {
+      showSuccessToast(successMessage);
+      return true;
+    }
+  }, [updateLeadData, updateLeadLocal, showErrorToast, showSuccessToast]);
+
+  // ULR options - moved outside component to prevent recreation
+  const ULR_OPTIONS = [
     'Bad Phone Number',
     'Out of Area',
     'Job Too Small',
     'Said Didn\'t Fill Out Form',
     'No Longer Interested',
-    'Unresponsive'
+    'Service we don\'t offer',
+    'Never responded',
+    'In contact, estimate not yet set',
   ];
 
   // Helper function to get date range based on selected date and period
-  const getDateRange = (date: Date, periodType: PeriodType) => {
+  const getDateRange = useCallback((date: Date, periodType: PeriodType) => {
     let startDate: string, endDate: string;
 
     if (periodType === 'weekly') {
@@ -56,7 +104,7 @@ export const LeadSheet = () => {
     }
 
     return { startDate, endDate };
-  };
+  }, []);
 
   // Fetch leads when selectedUserId, selectedDate, or period changes
   useEffect(() => {
@@ -64,7 +112,7 @@ export const LeadSheet = () => {
       const { startDate, endDate } = getDateRange(selectedDate, period);
       fetchLeads(selectedUserId, startDate, endDate);
     }
-  }, [selectedUserId, selectedDate, period, fetchLeads]);
+  }, [selectedUserId, selectedDate, period, fetchLeads, getDateRange]);
 
   useEffect(() => {
     if (error) {
@@ -76,36 +124,23 @@ export const LeadSheet = () => {
     }
   }, [error, toast]);
 
-  const handleDatePeriodChange = (date: Date, periodType: PeriodType) => {
+  const handleDatePeriodChange = useCallback((date: Date, periodType: PeriodType) => {
     setSelectedDate(date);
     setPeriod(periodType);
     // Leads will be fetched automatically via useEffect
-  };
+  }, []);
 
-  const handleEstimateSetChange = async (leadId: string, checked: boolean) => {
-    const lead = leads.find(l => l.id === leadId);
+  const handleEstimateSetChange = useCallback(async (leadId: string, checked: boolean) => {
+    const lead = findLead(leadId);
     if (!lead) return;
 
     if (checked) {
       // Setting estimate to true - update immediately
-      const result = await updateLeadData({
-        _id: leadId,
-        estimateSet: true,
-        unqualifiedLeadReason: undefined
-      });
-      
-      if (result.error) {
-        toast({
-          title: "❌ Error Updating Lead",
-          description: result.message,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "✅ Lead Updated",
-          description: "Estimate has been set for this lead.",
-        });
-      }
+      await handleLeadUpdate(
+        leadId,
+        { estimateSet: true, unqualifiedLeadReason: undefined },
+        "Estimate has been set for this lead."
+      );
     } else {
       // Unchecking estimate - user must select ULR first
       updateLeadLocal(leadId, { estimateSet: false });
@@ -116,43 +151,61 @@ export const LeadSheet = () => {
         description: "Please select a reason from the dropdown to complete this action.",
       });
     }
-  };
+  }, [findLead, handleLeadUpdate, updateLeadLocal, toast]);
 
-  const handleULRChange = async (leadId: string, value: string) => {
-    const lead = leads.find(l => l.id === leadId);
+  const handleULRChange = useCallback(async (leadId: string, value: string) => {
+    const lead = findLead(leadId);
     if (!lead) return;
 
-    // Update the lead with the selected ULR
-    const result = await updateLeadData({
-      _id: leadId,
-      estimateSet: false,
-      unqualifiedLeadReason: value
-    });
-    
-    if (result.error) {
-      toast({
-        title: "❌ Error Updating Lead",
-        description: result.message,
-        variant: "destructive",
-      });
-      // Revert the estimate set change if update failed
-      updateLeadLocal(leadId, { estimateSet: true });
-    } else {
-      toast({
-        title: "✅ Lead Updated",
-        description: "Unqualified lead reason has been set.",
-      });
+    if (value === 'custom') {
+      // Show custom input for this lead with current value pre-filled only if it's a custom reason
+      setShowCustomInput(leadId);
+      const currentReason = lead.unqualifiedLeadReason || '';
+      const isCustomReason = currentReason && !ULR_OPTIONS.includes(currentReason);
+      setCustomULR(isCustomReason ? currentReason : '');
+      return;
     }
+
+    // Update the lead with the selected ULR
+    const success = await handleLeadUpdate(
+      leadId,
+      { estimateSet: false, unqualifiedLeadReason: value },
+      "Unqualified lead reason has been set.",
+      true // revert on error
+    );
     
-    // Clear pending state
-    setPendingULRLeadId(null);
-  };
+    if (success) {
+      clearULRStates();
+    }
+  }, [findLead, handleLeadUpdate, clearULRStates]);
+
+  const handleCustomULRSubmit = useCallback(async (leadId: string) => {
+    if (!customULR.trim()) {
+      showErrorToast("Please enter a custom reason.");
+      return;
+    }
+
+    const lead = findLead(leadId);
+    if (!lead) return;
+
+    // Update the lead with the custom ULR
+    const success = await handleLeadUpdate(
+      leadId,
+      { estimateSet: false, unqualifiedLeadReason: customULR.trim() },
+      "Custom unqualified lead reason has been set.",
+      true // revert on error
+    );
+    
+    if (success) {
+      clearULRStates();
+    }
+  }, [customULR, findLead, handleLeadUpdate, showErrorToast, clearULRStates]);
 
   // Remove the save handler as updates are now automatic
 
-  const formatDate = (dateString: string) => {
+  const formatDate = useCallback((dateString: string) => {
     return format(new Date(dateString), 'MMM dd, yyyy');
-  };
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -259,20 +312,60 @@ export const LeadSheet = () => {
                         <TableCell className={`px-3 py-4 sticky left-32 z-10 border-r border-gray-200 shadow-[4px_0_6px_-1px_rgba(0,0,0,0.1)] text-center ${lead.estimateSet ? 'bg-green-50' : pendingULRLeadId === lead.id ? 'bg-yellow-50' : 'bg-white'}`}>
                           {lead.estimateSet ? (
                             <span className="text-gray-500 text-sm">NA</span>
+                          ) : showCustomInput === lead.id ? (
+                            <div className="flex flex-col gap-2">
+                              <input
+                                type="text"
+                                value={customULR}
+                                onChange={(e) => setCustomULR(e.target.value)}
+                                placeholder="Enter custom reason..."
+                                className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                onKeyPress={(e) => e.key === 'Enter' && handleCustomULRSubmit(lead.id)}
+                              />
+                              <div className="flex gap-1">
+                                <button
+                                  onClick={() => handleCustomULRSubmit(lead.id)}
+                                  className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setShowCustomInput(null);
+                                    setCustomULR('');
+                                  }}
+                                  className="px-2 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
                           ) : (
                             <Select
                               value={lead.unqualifiedLeadReason || ''}
                               onValueChange={(value) => handleULRChange(lead.id, value)}
                             >
-                              <SelectTrigger className={`w-full h-8 text-xs ${pendingULRLeadId === lead.id ? 'border-yellow-400 ring-2 ring-yellow-200' : ''}`}>
-                                <SelectValue placeholder={pendingULRLeadId === lead.id ? "Select reason required!" : "Select reason..."} />
+                              <SelectTrigger 
+                                className={`w-full h-8 text-xs border-0 shadow-none ${pendingULRLeadId === lead.id ? 'ring-2 ring-yellow-200 bg-yellow-50' : 'hover:bg-gray-50'}`}
+                                title={lead.unqualifiedLeadReason || "Select unqualified lead reason"}
+                              >
+                                <SelectValue placeholder={pendingULRLeadId === lead.id ? "Select reason required!" : "Select reason..."}>
+                                  {lead.unqualifiedLeadReason && !ULR_OPTIONS.includes(lead.unqualifiedLeadReason) ? (
+                                    <span className="text-blue-600 font-medium">"{lead.unqualifiedLeadReason}"</span>
+                                  ) : (
+                                    lead.unqualifiedLeadReason
+                                  )}
+                                </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
-                                {ulrOptions.map((option) => (
+                                {ULR_OPTIONS.map((option) => (
                                   <SelectItem key={option} value={option} className="text-xs">
                                     {option}
                                   </SelectItem>
                                 ))}
+                                <SelectItem value="custom" className="text-xs font-medium text-blue-600">
+                                  + Add Custom Reason
+                                </SelectItem>
                               </SelectContent>
                             </Select>
                           )}
