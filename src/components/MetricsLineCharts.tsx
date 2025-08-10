@@ -177,18 +177,18 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
             <div className="flex items-center justify-center gap-4 pt-2">
               <div className="flex items-center gap-2">
                 <div className="flex items-center">
-                  <div className="w-1 h-0.5" style={{ backgroundColor: config.actualColor }}></div>
+                  <div className="w-1 h-0.5" style={{ backgroundColor: config.targetColor }}></div>
                   <div className="w-1 h-0.5" style={{ backgroundColor: 'white' }}></div>
-                  <div className="w-1 h-0.5" style={{ backgroundColor: config.actualColor }}></div>
+                  <div className="w-1 h-0.5" style={{ backgroundColor: config.targetColor }}></div>
                   <div className="w-1 h-0.5" style={{ backgroundColor: 'white' }}></div>
-                  <div className="w-1 h-0.5" style={{ backgroundColor: config.actualColor }}></div>
+                  <div className="w-1 h-0.5" style={{ backgroundColor: config.targetColor }}></div>
                 </div>
                 <span className="text-xs text-gray-600">Actual</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-0.5 border-dashed" style={{ 
-                  backgroundColor: config.targetColor,
-                  borderColor: config.targetColor 
+                  backgroundColor: config.actualColor,
+                  borderColor: config.actualColor 
                 }}></div>
                 <span className="text-xs text-gray-600">Target</span>
               </div>

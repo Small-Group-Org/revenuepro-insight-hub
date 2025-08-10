@@ -333,6 +333,123 @@ export const reportingFields: ReportingFieldsConfig = {
   ],
 };
 
+// Revenue Metrics
+export const revenueMetricsChartConfigs = [
+  {
+    key: "totalCom",
+    title: "Total CoM%",
+    description: "Management fee + ad spend / total revenue",
+    actualColor: "#3b82f6",
+    targetColor: "#10b981",
+    format: "percent",
+  },
+  {
+    key: "revenue",
+    title: "Total Revenue",
+    description: "Total revenue generated",
+    actualColor: "#10b981",
+    targetColor: "#059669",
+    format: "currency",
+  },
+];
+
+// Funnel Metrics
+export const funnelMetricsChartConfigs = [
+  {
+    key: "appointmentRate",
+    title: "Appointment Rate",
+    description: "Estimates set / leads",
+    actualColor: "#8b5cf6",
+    targetColor: "#7c3aed",
+    format: "percent",
+  },
+  {
+    key: "showRate",
+    title: "Show Rate",
+    description: "Estimates ran / estimates set",
+    actualColor: "#06b6d4",
+    targetColor: "#0891b2",
+    format: "percent",
+  },
+  {
+    key: "closeRate",
+    title: "Close Rate",
+    description: "Sales / estimates ran",
+    actualColor: "#84cc16",
+    targetColor: "#65a30d",
+    format: "percent",
+  },
+  {
+    key: "leadToSale",
+    title: "Lead to Sale Rate",
+    description: "Sales / leads",
+    actualColor: "#f97316",
+    targetColor: "#ea580c",
+    format: "percent",
+  },
+];
+
+// Performance Metrics
+export const performanceMetricsChartConfigs = [
+  {
+    key: "cpl",
+    title: "Cost Per Lead",
+    description: "Budget spent / leads",
+    actualColor: "#ef4444",
+    targetColor: "#dc2626",
+    format: "currency",
+  },
+  {
+    key: "cpEstimateSet",
+    title: "Cost per Appointment Set",
+    description: "Budget spent / estimates set",
+    actualColor: "#f59e0b",
+    targetColor: "#d97706",
+    format: "currency",
+  },
+  {
+    key: "leads",
+    title: "Number of Leads",
+    description: "Total leads generated",
+    actualColor: "#6366f1",
+    targetColor: "#4f46e5",
+    format: "number",
+  },
+  {
+    key: "estimatesSet",
+    title: "Number of Appointments Set",
+    description: "Total appointments scheduled",
+    actualColor: "#8b5cf6",
+    targetColor: "#7c3aed",
+    format: "number",
+  },
+  {
+    key: "estimatesRan",
+    title: "Number of Appointments",
+    description: "Total appointments completed",
+    actualColor: "#06b6d4",
+    targetColor: "#0891b2",
+    format: "number",
+  },
+  {
+    key: "sales",
+    title: "Number of Jobs Booked",
+    description: "Total jobs booked",
+    actualColor: "#10b981",
+    targetColor: "#059669",
+    format: "number",
+  },
+  {
+    key: "avgJobSize",
+    title: "Average Job Size",
+    description: "Revenue / sales",
+    actualColor: "#f97316",
+    targetColor: "#ea580c",
+    format: "currency",
+  },
+];
+
+// Keep the old configs for backward compatibility
 export const generalMetricsChartConfigs = [
   {
     key: "totalCom",
@@ -376,7 +493,7 @@ export const generalMetricsChartConfigs = [
   },
 ];
 
-export const performanceMetricsChartConfigs = [
+export const oldPerformanceMetricsChartConfigs = [
   {
     key: "revenue",
     title: "Total Revenue",
@@ -399,66 +516,6 @@ export const performanceMetricsChartConfigs = [
     description: "Budget spent / leads",
     actualColor: "#ef4444",
     targetColor: "#dc2626",
-    format: "currency",
-  },
-];
-
-// Keep the old config for backward compatibility
-export const comprehensiveChartConfigs = [
-  {
-    key: "totalCom",
-    title: "Total CoM%",
-    actualColor: "#3b82f6",
-    targetColor: "#10b981",
-    format: "percent",
-  },
-  {
-    key: "revenue",
-    title: "Total Revenue",
-    actualColor: "#10b981",
-    targetColor: "#059669",
-    format: "currency",
-  },
-  {
-    key: "cpEstimateSet",
-    title: "Cost per Appointment Set",
-    actualColor: "#f59e0b",
-    targetColor: "#d97706",
-    format: "currency",
-  },
-  {
-    key: "cpl",
-    title: "Cost Per Lead",
-    actualColor: "#ef4444",
-    targetColor: "#dc2626",
-    format: "currency",
-  },
-  {
-    key: "appointmentRate",
-    title: "Appointment Rate",
-    actualColor: "#8b5cf6",
-    targetColor: "#7c3aed",
-    format: "percent",
-  },
-  {
-    key: "showRate",
-    title: "Show Rate",
-    actualColor: "#06b6d4",
-    targetColor: "#0891b2",
-    format: "percent",
-  },
-  {
-    key: "closeRate",
-    title: "Close Rate",
-    actualColor: "#84cc16",
-    targetColor: "#65a30d",
-    format: "percent",
-  },
-  {
-    key: "avgJobSize",
-    title: "Average Job Size",
-    actualColor: "#f97316",
-    targetColor: "#ea580c",
     format: "currency",
   },
 ];
