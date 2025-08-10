@@ -181,6 +181,29 @@ export const CompareResults = () => {
   const metrics = useMemo(
     () => [
       {
+        category: "Revenue Metrics",
+        items: [
+          {
+            name: "Revenue",
+            actual: calculateActualMetrics.revenue ?? 0,
+            target: processedTargetData?.revenue ?? 0,
+            format: "currency" as const,
+          },
+          ...(period !== "weekly" ? [{
+            name: "Total COM%",
+            actual: calculateActualMetrics.totalCom ?? 0,
+            target: processedTargetData?.totalCom ?? 0,
+            format: "percent" as const,
+          }] : []),
+          {
+            name: "Ad CoM%",
+            actual: calculateActualMetrics.com ?? 0,
+            target: processedTargetData?.com ?? 0,
+            format: "percent" as const,
+          },
+        ],
+      },
+      {
         category: "Funnel Metrics",
         items: [
           {
@@ -206,64 +229,6 @@ export const CompareResults = () => {
             actual: calculateActualMetrics.leadToSale ?? 0,
             target: processedTargetData?.leadToSale ?? 0,
             format: "percent" as const,
-          },
-        ],
-      },
-      {
-        category: "Revenue Metrics",
-        items: [
-          {
-            name: "Revenue",
-            actual: calculateActualMetrics.revenue ?? 0,
-            target: processedTargetData?.revenue ?? 0,
-            format: "currency" as const,
-          },
-          ...(period !== "weekly" ? [{
-            name: "Total COM%",
-            actual: calculateActualMetrics.totalCom ?? 0,
-            target: processedTargetData?.totalCom ?? 0,
-            format: "percent" as const,
-          }] : []),
-          {
-            name: "Ad CoM%",
-            actual: calculateActualMetrics.com ?? 0,
-            target: processedTargetData?.com ?? 0,
-            format: "percent" as const,
-          },
-        ],
-      },
-      {
-        category: "Expense Metrics",
-        items: [
-          {
-            name: "Budget",
-            actual: calculateActualMetrics.budget ?? 0,
-            target: processedTargetData?.budget ?? 0,
-            format: "currency" as const,
-          },
-          {
-            name: "Cost Per Lead",
-            actual: calculateActualMetrics.cpl ?? 0,
-            target: processedTargetData?.cpl ?? 0,
-            format: "currency" as const,
-          },
-          {
-            name: "Cost Per Estimate Set",
-            actual: calculateActualMetrics.cpEstimateSet ?? 0,
-            target: processedTargetData?.cpEstimateSet ?? 0,
-            format: "currency" as const,
-          },
-          {
-            name: "Cost Per Estimate",
-            actual: calculateActualMetrics.cpEstimate ?? 0,
-            target: processedTargetData?.cpEstimate ?? 0,
-            format: "currency" as const,
-          },
-          {
-            name: "Cost Per Job Booked",
-            actual: calculateActualMetrics.cpJobBooked ?? 0,
-            target: processedTargetData?.cpJobBooked ?? 0,
-            format: "currency" as const,
           },
         ],
       },
@@ -302,6 +267,42 @@ export const CompareResults = () => {
           },
         ],
       },
+      {
+        category: "Expense Metrics",
+        items: [
+          {
+            name: "Budget",
+            actual: calculateActualMetrics.budget ?? 0,
+            target: processedTargetData?.budget ?? 0,
+            format: "currency" as const,
+          },
+          {
+            name: "Cost Per Lead",
+            actual: calculateActualMetrics.cpl ?? 0,
+            target: processedTargetData?.cpl ?? 0,
+            format: "currency" as const,
+          },
+          {
+            name: "Cost Per Estimate Set",
+            actual: calculateActualMetrics.cpEstimateSet ?? 0,
+            target: processedTargetData?.cpEstimateSet ?? 0,
+            format: "currency" as const,
+          },
+          {
+            name: "Cost Per Estimate",
+            actual: calculateActualMetrics.cpEstimate ?? 0,
+            target: processedTargetData?.cpEstimate ?? 0,
+            format: "currency" as const,
+          },
+          {
+            name: "Cost Per Job Booked",
+            actual: calculateActualMetrics.cpJobBooked ?? 0,
+            target: processedTargetData?.cpJobBooked ?? 0,
+            format: "currency" as const,
+          },
+        ],
+      },
+      
     ],
     [calculateActualMetrics, processedTargetData, period]
   );

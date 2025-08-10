@@ -1,7 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { Card } from '@/components/ui/card';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, FunnelChart, Funnel, Cell } from 'recharts';
+import { useEffect } from 'react';
 import { useReportingDataStore } from '@/stores/reportingDataStore';
 import { DatePeriodSelector } from '@/components/DatePeriodSelector';
 import {
@@ -11,20 +9,31 @@ import {
   startOfYear,
   endOfYear,
 } from "date-fns";
-import { processTargetData, calculateFields, getWeeksInMonth } from '@/utils/page-utils/targetUtils';
-import { calculateManagementCost } from '@/utils/page-utils/commonUtils';
-import { FieldValue } from '@/types';
 import { MetricsLineCharts } from './MetricsLineCharts';
+import { DualMetricChart } from './DualMetricChart';
+import { DashboardTopCards } from './DashboardTopCards';
 import { useUserStore } from '@/stores/userStore';
-import { BarChart3, TrendingUp } from 'lucide-react';
-import { generalMetricsChartConfigs, performanceMetricsChartConfigs } from '@/utils/constant';
+import { TrendingUp, DollarSign, Filter, Users, Calendar } from 'lucide-react';
+import { 
+  revenueMetricsChartConfigs, 
+  funnelMetricsChartConfigs, 
+  performanceMetricsChartConfigs 
+} from '@/utils/constant';
+import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
 
 export const Dashboard = () => {
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [period, setPeriod] = useState<"weekly" | "monthly" | "yearly" | "ytd">("monthly");
-
-  const { reportingData, targetData, getReportingData } = useReportingDataStore();
+  const { reportingData, getReportingData } = useReportingDataStore();
   const { selectedUserId } = useUserStore();
+  const { 
+    comprehensiveChartData, 
+    period, 
+    selectedDate, 
+    setSelectedDate, 
+    setPeriod, 
+    processedTargetData, 
+    dualMetricConfigs,
+    dualMetricChartsData
+  } = useDashboardMetrics();
 
   useEffect(() => {
     let startDate: string, endDate: string, queryType: string;
@@ -44,128 +53,6 @@ export const Dashboard = () => {
     getReportingData(startDate, endDate, queryType);
   }, [selectedDate, period, selectedUserId, getReportingData]);
 
-  const processedTargetData = useMemo(() => {
-    if (!targetData) return undefined;
-    const baseTargetData = processTargetData(Array.isArray(targetData) ? targetData : [targetData]);
-    
-    return calculateFields(baseTargetData, period, period === 'weekly' ? 7 : 30);
-  }, [targetData, period]);
-
-  const getXAxisLabels = () => {
-    if (period === 'monthly') {
-      const weekCount = getWeeksInMonth(selectedDate);
-      return Array.from({ length: weekCount }, (_, i) => `Week ${i + 1}`);
-    } else if (period === 'yearly') {
-      return [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-      ];
-    } else if (period === 'ytd') {
-      const currentMonth = new Date().getMonth();
-      const monthLabels = [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-      ];
-      return monthLabels.slice(0, currentMonth + 1);
-    }
-    // fallback - default to 4 weeks
-    return ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
-  };
-
-  const comprehensiveChartData = useMemo(() => {
-    if (!reportingData || reportingData.length === 0) {
-      return {};
-    }
-
-    const xLabels = getXAxisLabels();
-
-    const processDataPoint = (dataPoint: any, index: number) => {
-      const metrics: FieldValue = {};
-      
-      metrics.revenue = dataPoint.revenue || 0;
-      metrics.sales = dataPoint.sales || 0;
-      metrics.estimatesRan = dataPoint.estimatesRan || 0;
-      metrics.estimatesSet = dataPoint.estimatesSet || 0;
-      metrics.leads = dataPoint.leads || 0;
-      metrics.budgetSpent = dataPoint.budgetSpent || 0;
-      
-      if (metrics.leads > 0 && metrics.estimatesSet > 0) {
-        metrics.appointmentRate = (metrics.estimatesSet / metrics.leads) * 100;
-      }
-      
-      if (metrics.estimatesSet > 0 && metrics.estimatesRan > 0) {
-        metrics.showRate = (metrics.estimatesRan / metrics.estimatesSet) * 100;
-      }
-      
-      if (metrics.estimatesRan > 0 && metrics.sales > 0) {
-        metrics.closeRate = (metrics.sales / metrics.estimatesRan) * 100;
-      }
-      
-      if (metrics.appointmentRate && metrics.showRate && metrics.closeRate) {
-        metrics.leadToSale = (metrics.appointmentRate * metrics.showRate * metrics.closeRate) / 10000;
-      }
-      
-      if (metrics.revenue > 0 && metrics.sales > 0) {
-        metrics.avgJobSize = metrics.revenue / metrics.sales;
-      }
-      
-      // Calculate cost metrics
-      if (metrics.leads > 0) {
-        metrics.cpl = metrics.budgetSpent / metrics.leads;
-      }
-      if (metrics.estimatesSet > 0) {
-        metrics.cpEstimateSet = metrics.budgetSpent / metrics.estimatesSet;
-      }
-      
-      metrics.budget = metrics.budgetSpent || 0;
-      
-      // Calculate totalCom if we have target data
-      if (metrics.revenue > 0 && processedTargetData) {
-        const targetCom = processedTargetData.com || 0;
-        const targetBudget = processedTargetData.weeklyBudget || 0;
-        
-        let managementCost = 0;
-        if (period === "monthly") {
-          managementCost = calculateManagementCost(targetBudget);
-        } else if (period === "yearly") {
-          managementCost = calculateManagementCost(targetBudget / 12);
-        } else if (period === "ytd") {
-          const currentMonth = new Date().getMonth();
-          const monthsElapsed = currentMonth + 1;
-          managementCost = calculateManagementCost((targetBudget / 12) * monthsElapsed);
-        }
-        
-        metrics.totalCom = ((managementCost + metrics.budget) / metrics.revenue) * 100;
-      }
-      
-      return metrics;
-    };
-
-    const chartData: any = {};
-    const target = processedTargetData || {};
-    const metricTypes = [
-      'totalCom', 'revenue', 'cpEstimateSet', 'cpl', 
-      'appointmentRate', 'showRate', 'closeRate', 'avgJobSize'
-    ];
-    
-    metricTypes.forEach(metricType => {
-      chartData[metricType] = reportingData.map((dataPoint, index) => {
-        const metrics = processDataPoint(dataPoint, index);
-        const actualValue = metrics[metricType] || 0;
-        
-        return {
-          week: xLabels[index] || `Period ${index + 1}`,
-          actual: actualValue,
-          target: target[metricType] || 0,
-          format: metricType.includes('Rate') || metricType === 'totalCom' ? 'percent' : 
-                 metricType === 'revenue' || metricType === 'avgJobSize' || metricType.includes('cp') ? 'currency' : 'number'
-        };
-      });
-    });
-    
-    return chartData;
-  }, [reportingData, processedTargetData, period, selectedDate]);
-
   const handleDatePeriodChange = (
     date: Date,
     newPeriod: "weekly" | "monthly" | "yearly" | "ytd"
@@ -174,7 +61,16 @@ export const Dashboard = () => {
     setPeriod(newPeriod);
   };
 
-  console.log("[Comprehensive Chart Data]", {comprehensiveChartData});
+  // Icon mapping for dual metric charts
+  const getDualMetricIcon = (key: string) => {
+    const iconMap = {
+      leads: <Users className="h-5 w-5 text-indigo-600" />,
+      appointmentsSet: <Calendar className="h-5 w-5 text-purple-600" />,
+      appointments: <Calendar className="h-5 w-5 text-cyan-600" />,
+      jobsBooked: <DollarSign className="h-5 w-5 text-green-600" />
+    };
+    return iconMap[key as keyof typeof iconMap] || <TrendingUp className="h-5 w-5 text-gray-600" />;
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -203,14 +99,50 @@ export const Dashboard = () => {
           />
         </div>
 
-        {/* General Metrics Charts */}
+        {/* Top Cards */}
+        <div className="max-w-7xl mx-auto">
+          <DashboardTopCards 
+            reportingData={reportingData || []}
+            processedTargetData={processedTargetData}
+            period={period}
+          />
+        </div>
+
+        {/* Revenue Metrics Charts */}
         <div className="max-w-7xl mx-auto mb-8">
           <MetricsLineCharts 
             chartData={comprehensiveChartData} 
-            chartConfigs={generalMetricsChartConfigs}
-            title="General Metrics"
-            icon={<BarChart3 className="h-5 w-5 text-blue-600" />}
+            chartConfigs={revenueMetricsChartConfigs}
+            title="Revenue Metrics"
+            icon={<DollarSign className="h-5 w-5 text-green-600" />}
           />
+        </div>
+
+        {/* Funnel Metrics Charts */}
+        <div className="max-w-7xl mx-auto mb-8">
+          <MetricsLineCharts 
+            chartData={comprehensiveChartData} 
+            chartConfigs={funnelMetricsChartConfigs}
+            title="Funnel Metrics"
+            icon={<Filter className="h-5 w-5 text-purple-600" />}
+          />
+        </div>
+
+        {/* Dual Metric Charts - Optimized */}
+        <div className="max-w-7xl mx-auto mb-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {dualMetricConfigs.map((config) => (
+              <DualMetricChart
+                key={config.key}
+                chartData={dualMetricChartsData[config.key] || []}
+                title={config.title}
+                description={config.description}
+                metric1Config={config.metric1Config}
+                metric2Config={config.metric2Config}
+                icon={getDualMetricIcon(config.key)}
+              />
+            ))}
+          </div>
         </div>
 
         {/* Performance Metrics Charts */}
@@ -219,7 +151,8 @@ export const Dashboard = () => {
             chartData={comprehensiveChartData} 
             chartConfigs={performanceMetricsChartConfigs}
             title="Performance Metrics"
-            icon={<TrendingUp className="h-5 w-5 text-green-600" />}
+            icon={<TrendingUp className="h-5 w-5 text-blue-600" />}
+            gridCols="grid-cols-1 lg:grid-cols-2 xl:grid-cols-3"
           />
         </div>
       </div>
