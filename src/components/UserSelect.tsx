@@ -1,14 +1,17 @@
 import React, { useEffect } from "react";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "../components/ui/select";
 import { useUserStore } from "../stores/userStore";
+import { Users } from "lucide-react";
+import { getInitials } from "@/utils/utils";
 
 interface UserSelectProps {
   value?: string;
   onChange?: (userId: string) => void;
   placeholder?: string;
+  isCollapsed?: boolean;
 }
 
-const UserSelect: React.FC<UserSelectProps> = ({ value, onChange, placeholder }) => {
+const UserSelect: React.FC<UserSelectProps> = ({ value, onChange, placeholder, isCollapsed = false }) => {
   const { users, loading, fetchUsers, selectedUserId, setSelectedUserId } = useUserStore();
   useEffect(() => {
     if (users?.length === 0) {
@@ -21,6 +24,27 @@ const UserSelect: React.FC<UserSelectProps> = ({ value, onChange, placeholder })
     setSelectedUserId(userId);
     if (onChange) onChange(userId);
   };
+
+  if (isCollapsed) {
+    const selectedUser = users.find(user => user.id === (value ?? selectedUserId));
+    
+    return (
+      <div className="flex justify-center">
+        <button
+          className="p-1 hover:bg-slate-800 rounded-lg transition-colors text-slate-300"
+          title={selectedUser ? `${selectedUser.name || selectedUser.email}` : "User Selection"}
+        >
+          {selectedUser ? (
+            <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-sm font-medium text-white">
+              {getInitials(selectedUser.name || selectedUser.email)}
+            </div>
+          ) : (
+            <Users size={20} />
+          )}
+        </button>
+      </div>
+    );
+  }
 
   return (
     <Select value={value ?? selectedUserId} onValueChange={handleChange} disabled={loading}>

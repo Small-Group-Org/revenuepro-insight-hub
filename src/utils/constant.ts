@@ -1,4 +1,6 @@
 import { TargetFieldsConfig, ReportingFieldsConfig } from "@/types";
+import { Plus, Users, Target, TrendingUp } from "lucide-react";
+import { BarChart3 } from "lucide-react";
 
 export const API_METHODS = {
   GET: "GET",
@@ -14,6 +16,15 @@ export const tabs = ["basic", "templates", "target"];
 export const API_URL =
   "https://revenue-pro-backend-1057029383450.asia-south2.run.app/api/v1";
 // export const API_URL = " http://localhost:4000/api/v1";
+
+export const menuItems = [
+  { id: 'dashboard', label: 'Dashboard', icon: BarChart3, path: '/' },
+  { id: 'settargets', label: 'Set Targets', icon: Target, path: '/targets' },
+  { id: 'actuals', label: 'Weekly Reporting', icon: Plus, path: '/actuals' },
+  { id: 'compare', label: 'Target Vs Actual', icon: TrendingUp, path: '/compare' },
+  { id: 'leads', label: 'Lead Sheet', icon: Users, path: '/leads' },
+  { id: 'analytics', label: 'Lead Analytics', icon: BarChart3, path: '/lead-analytics' },
+];
 
 export const months = [
   "January",
