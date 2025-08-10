@@ -55,7 +55,7 @@ const DualMetricTooltip = ({ active, payload, label, metric1Config, metric2Confi
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: metric1Config.actualColor }}></div>
-              <span className="text-sm font-medium text-gray-700">{metric1Config.title}</span>
+              <span className="text-xs font-medium text-gray-700">{metric1Config.title}</span>
             </div>
             <span className="text-sm font-bold" style={{ color: metric1Config.actualColor }}>
               {formatValue(metric1Actual, metric1Config.format)}
@@ -66,7 +66,7 @@ const DualMetricTooltip = ({ active, payload, label, metric1Config, metric2Confi
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: metric2Config.actualColor }}></div>
-              <span className="text-sm font-medium text-gray-700">{metric2Config.title}</span>
+              <span className="text-xs font-medium text-gray-700">{metric2Config.title}</span>
             </div>
             <span className="text-sm font-bold" style={{ color: metric2Config.actualColor }}>
               {formatValue(metric2Actual, metric2Config.format)}
@@ -82,7 +82,6 @@ const DualMetricTooltip = ({ active, payload, label, metric1Config, metric2Confi
 export const DualMetricChart: React.FC<DualMetricChartProps> = ({ 
   chartData, 
   title, 
-  description,
   metric1Config,
   metric2Config,
   icon 
@@ -93,10 +92,6 @@ export const DualMetricChart: React.FC<DualMetricChartProps> = ({
         {icon}
         <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
       </div>
-      
-      {description && (
-        <p className="text-sm text-gray-500 mb-4">{description}</p>
-      )}
       
       <ResponsiveContainer width="100%" height={300}>
         <LineChart data={chartData}>

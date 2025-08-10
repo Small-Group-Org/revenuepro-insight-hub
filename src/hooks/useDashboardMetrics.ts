@@ -56,7 +56,7 @@ export const useDashboardMetrics = () => {
     metrics.estimatesRan = dataPoint.estimatesRan || 0;
     metrics.estimatesSet = dataPoint.estimatesSet || 0;
     metrics.leads = dataPoint.leads || 0;
-    metrics.budgetSpent = dataPoint.budgetSpent || 0;
+    metrics.budgetSpent = dataPoint.awarenessBrandingBudgetSpent + dataPoint.leadGenerationBudgetSpent + dataPoint.testingBudgetSpent;
 
     if (metrics.leads > 0 && metrics.estimatesSet > 0) {
       metrics.appointmentRate = (metrics.estimatesSet / metrics.leads) * 100;
@@ -97,31 +97,7 @@ export const useDashboardMetrics = () => {
 
     // Calculate totalCom if we have target data
     if (metrics.revenue > 0 && processedTargetData) {
-      let targetCom = 0;
-      let targetBudget = 0;
-
-      if (Array.isArray(processedTargetData)) {
-        const targetDataPoint = processedTargetData[index] || processedTargetData[0];
-        targetCom = targetDataPoint?.com || 0;
-        targetBudget = targetDataPoint?.weeklyBudget || 0;
-      } else {
-        // For weekly period, use the single target data point
-        targetCom = processedTargetData.com || 0;
-        targetBudget = processedTargetData.weeklyBudget || 0;
-      }
-
-      let managementCost = 0;
-      if (period === "monthly") {
-        managementCost = calculateManagementCost(targetBudget);
-      } else if (period === "yearly") {
-        managementCost = calculateManagementCost(targetBudget / 12);
-      } else if (period === "ytd") {
-        const currentMonth = new Date().getMonth();
-        const monthsElapsed = currentMonth + 1;
-        managementCost = calculateManagementCost(
-          (targetBudget / 12) * monthsElapsed
-        );
-      }
+      let managementCost = calculateManagementCost(metrics.budget);
 
       metrics.totalCom =
         ((managementCost + metrics.budget) / metrics.revenue) * 100;
@@ -178,12 +154,22 @@ export const useDashboardMetrics = () => {
 
     const xLabels = getXAxisLabels(period, selectedDate);
     const chartData: any = {};
-    console.log("[]", {processedTargetData, processedActualData});
 
     metricTypes.forEach((metricType) => {
       chartData[metricType] = xLabels.map((label, index) => {
         const actualValue = getValueFromProcessedData(processedActualData, index, metricType);
         const targetValue = getValueFromProcessedData(processedTargetData, index, metricType);
+
+        // Show message for Total CoM% when period is monthly
+        if (metricType === "totalCom" && period === "monthly") {
+          return {
+            week: label || `Period ${index + 1}`,
+            actual: null,
+            target: null,
+            message: "Total CoM% is not available for the selected period",
+            format: "percent",
+          };
+        }
 
         return {
           week: label || `Period ${index + 1}`,

@@ -124,9 +124,16 @@ export const handleInputDisable = (
   let noteMessage: string | null = null;
   let shouldDisableNonRevenueFields = false;
   let isButtonDisabled = false;
-
+  return {
+    isDisabled: false,
+    disabledMessage: null,
+    noteMessage: null,
+    shouldDisableNonRevenueFields: false,
+    isButtonDisabled: false,
+  }
   // For AddActualData page, check if the time frame is in the past (only past dates allowed)
   if (pageType === "addActualData") {
+    
     const isInPast = isTimeFrameInPast(period, selectedDate);
     if (!isInPast) {
       // Future date logic for actual data - disable everything

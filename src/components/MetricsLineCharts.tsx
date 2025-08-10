@@ -17,9 +17,10 @@ interface MetricsLineChartsProps {
   chartData: {
     [key: string]: Array<{
       week: string;
-      actual: number;
-      target: number;
+      actual: number | null;
+      target: number | null;
       format: string;
+      message?: string;
     }>;
   };
   chartConfigs: ChartConfig[];
@@ -136,65 +137,83 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
       </div>
       
       <div className={`grid ${gridCols} gap-8`}>
-        {chartConfigs.map((config) => (
-          <div key={config.key} className="space-y-3">
-            <div>
-              <h4 className="text-base font-medium text-slate-700">{config.title}</h4>
-              {config.description && (
-                <p className="text-sm text-gray-500">{config.description}</p>
+        {chartConfigs.map((config) => {
+          const chartDataForConfig = chartData[config.key];
+          const hasMessage = chartDataForConfig && chartDataForConfig.some(item => item.message);
+          
+          return (
+            <div key={config.key} className="space-y-3">
+              <div>
+                <h4 className="text-base font-medium text-slate-700">{config.title}</h4>
+                {config.description && (
+                  <p className="text-sm text-gray-500">{config.description}</p>
+                )}
+              </div>
+              
+              {hasMessage ? (
+                <div className="h-[250px] flex items-center justify-center bg-gray-50 rounded-lg border border-gray-200">
+                  <div className="text-center">
+                    <p className="text-gray-500 text-sm">
+                      {chartDataForConfig[0]?.message || "Data not available"}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={250}>
+                  <LineChart data={chartData[config.key]}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                    <XAxis dataKey="week" fontSize={12} />
+                    <YAxis fontSize={12} />
+                    <Tooltip 
+                      content={<CustomTooltip format={config.format} />}
+                      cursor={{ strokeDasharray: '3 3', stroke: '#e2e8f0' }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="actual" 
+                      stroke={config.actualColor} 
+                      strokeWidth={3}
+                      dot={{ fill: config.actualColor, strokeWidth: 2, r: 4 }}
+                      activeDot={{ r: 6, stroke: config.actualColor, strokeWidth: 2 }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="target" 
+                      stroke={config.targetColor} 
+                      strokeWidth={3}
+                      strokeDasharray="5 5"
+                      dot={{ fill: config.targetColor, strokeWidth: 2, r: 4 }}
+                      activeDot={{ r: 6, stroke: config.targetColor, strokeWidth: 2 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
+              
+              {/* Individual chart legend - only show if no message */}
+              {!hasMessage && (
+                <div className="flex items-center justify-center gap-4 pt-2">
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center">
+                      <div className="w-1 h-0.5" style={{ backgroundColor: config.targetColor }}></div>
+                      <div className="w-1 h-0.5" style={{ backgroundColor: 'white' }}></div>
+                      <div className="w-1 h-0.5" style={{ backgroundColor: config.targetColor }}></div>
+                      <div className="w-1 h-0.5" style={{ backgroundColor: 'white' }}></div>
+                      <div className="w-1 h-0.5" style={{ backgroundColor: config.targetColor }}></div>
+                    </div>
+                    <span className="text-xs text-gray-600">Actual</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-0.5 border-dashed" style={{ 
+                      backgroundColor: config.actualColor,
+                      borderColor: config.actualColor 
+                    }}></div>
+                    <span className="text-xs text-gray-600">Target</span>
+                  </div>
+                </div>
               )}
             </div>
-            <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={chartData[config.key]}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="week" fontSize={12} />
-                <YAxis fontSize={12} />
-                <Tooltip 
-                  content={<CustomTooltip format={config.format} />}
-                  cursor={{ strokeDasharray: '3 3', stroke: '#e2e8f0' }}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="actual" 
-                  stroke={config.actualColor} 
-                  strokeWidth={3}
-                  dot={{ fill: config.actualColor, strokeWidth: 2, r: 4 }}
-                  activeDot={{ r: 6, stroke: config.actualColor, strokeWidth: 2 }}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="target" 
-                  stroke={config.targetColor} 
-                  strokeWidth={3}
-                  strokeDasharray="5 5"
-                  dot={{ fill: config.targetColor, strokeWidth: 2, r: 4 }}
-                  activeDot={{ r: 6, stroke: config.targetColor, strokeWidth: 2 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-            
-            {/* Individual chart legend */}
-            <div className="flex items-center justify-center gap-4 pt-2">
-              <div className="flex items-center gap-2">
-                <div className="flex items-center">
-                  <div className="w-1 h-0.5" style={{ backgroundColor: config.targetColor }}></div>
-                  <div className="w-1 h-0.5" style={{ backgroundColor: 'white' }}></div>
-                  <div className="w-1 h-0.5" style={{ backgroundColor: config.targetColor }}></div>
-                  <div className="w-1 h-0.5" style={{ backgroundColor: 'white' }}></div>
-                  <div className="w-1 h-0.5" style={{ backgroundColor: config.targetColor }}></div>
-                </div>
-                <span className="text-xs text-gray-600">Actual</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-0.5 border-dashed" style={{ 
-                  backgroundColor: config.actualColor,
-                  borderColor: config.actualColor 
-                }}></div>
-                <span className="text-xs text-gray-600">Target</span>
-              </div>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </Card>
   );

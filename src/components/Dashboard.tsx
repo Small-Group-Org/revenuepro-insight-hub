@@ -136,7 +136,6 @@ export const Dashboard = () => {
                 key={config.key}
                 chartData={dualMetricChartsData[config.key] || []}
                 title={config.title}
-                description={config.description}
                 metric1Config={config.metric1Config}
                 metric2Config={config.metric2Config}
                 icon={getDualMetricIcon(config.key)}
