@@ -105,7 +105,11 @@ export const calculateFields = (
     values.managementCost = calculateManagementCost(values.calculatedMonthlyBudget);
     
     if (values.revenue !== undefined && values.revenue > 0) {
-      values.totalCom = ((values.calculatedMonthlyBudget + values.managementCost) / values.revenue) * 100;
+      if(period === 'monthly') {
+        values.totalCom = ((values.calculatedMonthlyBudget + values.managementCost) / values.revenue) * 100;
+      } else if(period === 'yearly') {
+        values.totalCom = (((values.calculatedMonthlyBudget + values.managementCost) * 12) / values.revenue) * 100;
+      }
     }
   }
 
