@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Users } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
@@ -31,8 +31,8 @@ export const LeadSheet = () => {
   const { leads, loading, error, fetchLeads, updateLeadData, updateLeadLocal } = useLeadStore();
   const { selectedUserId } = useUserStore();
 
-  // ULR options based on the image
-  const ulrOptions = [
+  // ULR options - moved outside component to prevent recreation
+  const ULR_OPTIONS = [
     'Bad Phone Number',
     'Out of Area',
     'Job Too Small',
@@ -44,7 +44,7 @@ export const LeadSheet = () => {
   ];
 
   // Helper function to get date range based on selected date and period
-  const getDateRange = (date: Date, periodType: PeriodType) => {
+  const getDateRange = useCallback((date: Date, periodType: PeriodType) => {
     let startDate: string, endDate: string;
 
     if (periodType === 'weekly') {
@@ -60,7 +60,7 @@ export const LeadSheet = () => {
     }
 
     return { startDate, endDate };
-  };
+  }, []);
 
   // Fetch leads when selectedUserId, selectedDate, or period changes
   useEffect(() => {
@@ -68,7 +68,7 @@ export const LeadSheet = () => {
       const { startDate, endDate } = getDateRange(selectedDate, period);
       fetchLeads(selectedUserId, startDate, endDate);
     }
-  }, [selectedUserId, selectedDate, period, fetchLeads]);
+  }, [selectedUserId, selectedDate, period, fetchLeads, getDateRange]);
 
   useEffect(() => {
     if (error) {
@@ -80,13 +80,13 @@ export const LeadSheet = () => {
     }
   }, [error, toast]);
 
-  const handleDatePeriodChange = (date: Date, periodType: PeriodType) => {
+  const handleDatePeriodChange = useCallback((date: Date, periodType: PeriodType) => {
     setSelectedDate(date);
     setPeriod(periodType);
     // Leads will be fetched automatically via useEffect
-  };
+  }, []);
 
-  const handleEstimateSetChange = async (leadId: string, checked: boolean) => {
+  const handleEstimateSetChange = useCallback(async (leadId: string, checked: boolean) => {
     const lead = leads.find(l => l.id === leadId);
     if (!lead) return;
 
@@ -120,9 +120,9 @@ export const LeadSheet = () => {
         description: "Please select a reason from the dropdown to complete this action.",
       });
     }
-  };
+  }, [leads, updateLeadData, updateLeadLocal, toast]);
 
-  const handleULRChange = async (leadId: string, value: string) => {
+  const handleULRChange = useCallback(async (leadId: string, value: string) => {
     const lead = leads.find(l => l.id === leadId);
     if (!lead) return;
 
@@ -130,7 +130,7 @@ export const LeadSheet = () => {
       // Show custom input for this lead with current value pre-filled only if it's a custom reason
       setShowCustomInput(leadId);
       const currentReason = lead.unqualifiedLeadReason || '';
-      const isCustomReason = currentReason && !ulrOptions.includes(currentReason);
+      const isCustomReason = currentReason && !ULR_OPTIONS.includes(currentReason);
       setCustomULR(isCustomReason ? currentReason : '');
       return;
     }
@@ -160,9 +160,9 @@ export const LeadSheet = () => {
     // Clear pending state
     setPendingULRLeadId(null);
     setShowCustomInput(null);
-  };
+  }, [leads, updateLeadData, updateLeadLocal, toast]);
 
-  const handleCustomULRSubmit = async (leadId: string) => {
+  const handleCustomULRSubmit = useCallback(async (leadId: string) => {
     if (!customULR.trim()) {
       toast({
         title: "❌ Invalid Input",
@@ -201,13 +201,13 @@ export const LeadSheet = () => {
     setPendingULRLeadId(null);
     setShowCustomInput(null);
     setCustomULR('');
-  };
+  }, [customULR, leads, updateLeadData, updateLeadLocal, toast]);
 
   // Remove the save handler as updates are now automatic
 
-  const formatDate = (dateString: string) => {
+  const formatDate = useCallback((dateString: string) => {
     return format(new Date(dateString), 'MMM dd, yyyy');
-  };
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -352,7 +352,7 @@ export const LeadSheet = () => {
                                 title={lead.unqualifiedLeadReason || "Select unqualified lead reason"}
                               >
                                 <SelectValue placeholder={pendingULRLeadId === lead.id ? "Select reason required!" : "Select reason..."}>
-                                  {lead.unqualifiedLeadReason && !ulrOptions.includes(lead.unqualifiedLeadReason) ? (
+                                  {lead.unqualifiedLeadReason && !ULR_OPTIONS.includes(lead.unqualifiedLeadReason) ? (
                                     <span className="text-blue-600 font-medium">"{lead.unqualifiedLeadReason}"</span>
                                   ) : (
                                     lead.unqualifiedLeadReason
@@ -360,7 +360,7 @@ export const LeadSheet = () => {
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
-                                {ulrOptions.map((option) => (
+                                {ULR_OPTIONS.map((option) => (
                                   <SelectItem key={option} value={option} className="text-xs">
                                     {option}
                                   </SelectItem>
