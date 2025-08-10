@@ -25,6 +25,8 @@ export const LeadSheet = () => {
   const [period, setPeriod] = useState<PeriodType>('yearly');
   const [isLoading, setIsLoading] = useState(false);
   const [pendingULRLeadId, setPendingULRLeadId] = useState<string | null>(null);
+  const [customULR, setCustomULR] = useState<string>('');
+  const [showCustomInput, setShowCustomInput] = useState<string | null>(null);
   
   const { leads, loading, error, fetchLeads, updateLeadData, updateLeadLocal } = useLeadStore();
   const { selectedUserId } = useUserStore();
@@ -36,7 +38,9 @@ export const LeadSheet = () => {
     'Job Too Small',
     'Said Didn\'t Fill Out Form',
     'No Longer Interested',
-    'Unresponsive'
+    'Service we don\'t offer',
+    'Never responded',
+    'In contact, estimate not yet set',
   ];
 
   // Helper function to get date range based on selected date and period
@@ -122,6 +126,15 @@ export const LeadSheet = () => {
     const lead = leads.find(l => l.id === leadId);
     if (!lead) return;
 
+    if (value === 'custom') {
+      // Show custom input for this lead with current value pre-filled only if it's a custom reason
+      setShowCustomInput(leadId);
+      const currentReason = lead.unqualifiedLeadReason || '';
+      const isCustomReason = currentReason && !ulrOptions.includes(currentReason);
+      setCustomULR(isCustomReason ? currentReason : '');
+      return;
+    }
+
     // Update the lead with the selected ULR
     const result = await updateLeadData({
       _id: leadId,
@@ -146,6 +159,48 @@ export const LeadSheet = () => {
     
     // Clear pending state
     setPendingULRLeadId(null);
+    setShowCustomInput(null);
+  };
+
+  const handleCustomULRSubmit = async (leadId: string) => {
+    if (!customULR.trim()) {
+      toast({
+        title: "❌ Invalid Input",
+        description: "Please enter a custom reason.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const lead = leads.find(l => l.id === leadId);
+    if (!lead) return;
+
+    // Update the lead with the custom ULR
+    const result = await updateLeadData({
+      _id: leadId,
+      estimateSet: false,
+      unqualifiedLeadReason: customULR.trim()
+    });
+    
+    if (result.error) {
+      toast({
+        title: "❌ Error Updating Lead",
+        description: result.message,
+        variant: "destructive",
+      });
+      // Revert the estimate set change if update failed
+      updateLeadLocal(leadId, { estimateSet: true });
+    } else {
+      toast({
+        title: "✅ Lead Updated",
+        description: "Custom unqualified lead reason has been set.",
+      });
+    }
+    
+    // Clear states
+    setPendingULRLeadId(null);
+    setShowCustomInput(null);
+    setCustomULR('');
   };
 
   // Remove the save handler as updates are now automatic
@@ -259,13 +314,50 @@ export const LeadSheet = () => {
                         <TableCell className={`px-3 py-4 sticky left-32 z-10 border-r border-gray-200 shadow-[4px_0_6px_-1px_rgba(0,0,0,0.1)] text-center ${lead.estimateSet ? 'bg-green-50' : pendingULRLeadId === lead.id ? 'bg-yellow-50' : 'bg-white'}`}>
                           {lead.estimateSet ? (
                             <span className="text-gray-500 text-sm">NA</span>
+                          ) : showCustomInput === lead.id ? (
+                            <div className="flex flex-col gap-2">
+                              <input
+                                type="text"
+                                value={customULR}
+                                onChange={(e) => setCustomULR(e.target.value)}
+                                placeholder="Enter custom reason..."
+                                className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                onKeyPress={(e) => e.key === 'Enter' && handleCustomULRSubmit(lead.id)}
+                              />
+                              <div className="flex gap-1">
+                                <button
+                                  onClick={() => handleCustomULRSubmit(lead.id)}
+                                  className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setShowCustomInput(null);
+                                    setCustomULR('');
+                                  }}
+                                  className="px-2 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
                           ) : (
                             <Select
                               value={lead.unqualifiedLeadReason || ''}
                               onValueChange={(value) => handleULRChange(lead.id, value)}
                             >
-                              <SelectTrigger className={`w-full h-8 text-xs ${pendingULRLeadId === lead.id ? 'border-yellow-400 ring-2 ring-yellow-200' : ''}`}>
-                                <SelectValue placeholder={pendingULRLeadId === lead.id ? "Select reason required!" : "Select reason..."} />
+                              <SelectTrigger 
+                                className={`w-full h-8 text-xs border-0 shadow-none ${pendingULRLeadId === lead.id ? 'ring-2 ring-yellow-200 bg-yellow-50' : 'hover:bg-gray-50'}`}
+                                title={lead.unqualifiedLeadReason || "Select unqualified lead reason"}
+                              >
+                                <SelectValue placeholder={pendingULRLeadId === lead.id ? "Select reason required!" : "Select reason..."}>
+                                  {lead.unqualifiedLeadReason && !ulrOptions.includes(lead.unqualifiedLeadReason) ? (
+                                    <span className="text-blue-600 font-medium">"{lead.unqualifiedLeadReason}"</span>
+                                  ) : (
+                                    lead.unqualifiedLeadReason
+                                  )}
+                                </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
                                 {ulrOptions.map((option) => (
@@ -273,6 +365,9 @@ export const LeadSheet = () => {
                                     {option}
                                   </SelectItem>
                                 ))}
+                                <SelectItem value="custom" className="text-xs font-medium text-blue-600">
+                                  + Add Custom Reason
+                                </SelectItem>
                               </SelectContent>
                             </Select>
                           )}
