@@ -37,7 +37,7 @@ export const updateUser = async (payload: UpdateUserPayload) => {
 };
 
 export const deleteUser = async (userId: string) => {
-  const response = await doDELETE(`/admin/users/delete/${userId}`);
+  const response = await doDELETE(`/admin/users/${userId}`);
   return response;
 };
 
