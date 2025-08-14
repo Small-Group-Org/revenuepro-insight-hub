@@ -27,6 +27,7 @@ export const LeadSheet = () => {
   const [pendingULRLeadId, setPendingULRLeadId] = useState<string | null>(null);
   const [customULR, setCustomULR] = useState<string>('');
   const [showCustomInput, setShowCustomInput] = useState<string | null>(null);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   
   const { leads, loading, error, fetchLeads, updateLeadData, updateLeadLocal } = useLeadStore();
   const { selectedUserId } = useUserStore();
@@ -207,6 +208,44 @@ export const LeadSheet = () => {
     return format(new Date(dateString), 'MMM dd, yyyy');
   }, []);
 
+  // Generate random lead score (temporary - will be replaced with API call)
+  const generateLeadScore = useCallback((lead: any) => {
+    // Simple algorithm based on lead properties
+    let score = 50; // Base score
+    
+    // Estimate set adds points
+    if (lead.estimateSet) score += 30;
+    
+    // Service type affects score
+    if (lead.service === 'Roofing') score += 15;
+    else if (lead.service === 'Siding') score += 10;
+    else if (lead.service === 'Windows') score += 8;
+    
+    // Zip code analysis (simplified)
+    if (lead.zip && lead.zip.length === 5) score += 5;
+    
+    // Random variation to simulate real scoring
+    score += Math.floor(Math.random() * 20) - 10;
+    
+    return Math.max(0, Math.min(100, score));
+  }, []);
+
+  // Sort leads by score only
+  const sortedLeads = useMemo(() => {
+    const leadsWithScores = leads.map(lead => ({
+      ...lead,
+      score: generateLeadScore(lead)
+    }));
+
+    return leadsWithScores.sort((a, b) => {
+      return sortOrder === 'desc' ? b.score - a.score : a.score - b.score;
+    });
+  }, [leads, sortOrder, generateLeadScore]);
+
+  const handleSortChange = useCallback(() => {
+    setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc');
+  }, [sortOrder]);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="relative z-10 py-12 px-4 ">
@@ -260,6 +299,17 @@ export const LeadSheet = () => {
                           Lead Date
                         </div>
                       </TableHead>
+                      <TableHead className="font-semibold text-gray-700 w-24">
+                        <button 
+                          onClick={handleSortChange}
+                          className="flex items-center justify-between w-full hover:text-blue-600 transition-colors"
+                        >
+                          <span>Lead Score</span>
+                          <span className="text-blue-600">
+                            {sortOrder === 'desc' ? '↓' : '↑'}
+                          </span>
+                        </button>
+                      </TableHead>
                       <TableHead className="font-semibold text-gray-700 w-40">
                         <div className="flex items-center gap-1">
                           Name
@@ -298,7 +348,7 @@ export const LeadSheet = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {(loading ? [] : leads).map((lead) => (
+                    {(loading ? [] : sortedLeads).map((lead) => (
                       <TableRow key={lead.id} className={`hover:bg-gray-50 ${lead.estimateSet ? 'bg-green-50' : ''}`}>
                         <TableCell className={`px-3 py-4 text-center sticky left-0 z-10 border-r border-gray-200 shadow-[4px_0_6px_-1px_rgba(0,0,0,0.1)] ${lead.estimateSet ? 'bg-green-50' : 'bg-white'}`}>
                           <Checkbox
@@ -372,6 +422,18 @@ export const LeadSheet = () => {
                         </TableCell>
                         <TableCell className="font-medium px-3 py-4">
                           {formatDate(lead.leadDate)}
+                        </TableCell>
+                        <TableCell className="px-3 py-4 text-center">
+                          <span 
+                            className={`text-sm font-semibold px-2 py-1 rounded ${
+                              lead.score >= 80 ? 'bg-green-100 text-green-800' :
+                              lead.score >= 60 ? 'bg-yellow-100 text-yellow-800' :
+                              lead.score >= 40 ? 'bg-orange-100 text-orange-800' :
+                              'bg-red-100 text-red-800'
+                            }`}
+                          >
+                            {lead.score}
+                          </span>
                         </TableCell>
                         <TableCell className="font-medium text-gray-900 px-3 py-4">
                           {lead.name}
