@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { calculateManagementCost, safePercentage, formatCurrencyValue } from "@/utils/page-utils/commonUtils";
-import { calculateFields } from "@/utils/page-utils/targetUtils";
+import { calculateFields, processTargetData } from "@/utils/page-utils/targetUtils";
 import { FieldValue } from "@/types";
 import { TooltipProvider } from "@radix-ui/react-tooltip";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
@@ -55,6 +55,7 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
   const [monthlyData, setMonthlyData] = useState<{
     [key: string]: MonthlyData;
   }>({});
+  const [hasUserModifiedData, setHasUserModifiedData] = useState(false);
 
   const annualTotals = useMemo(() => {
     const calculated = calculateFields(annualFieldValues, "yearly", 365); // Use 365 days for yearly
@@ -75,66 +76,123 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
 
     const monthlyDataFromApi: { [key: string]: MonthlyData } = {};
     
-    const monthlyRevenues: { [key: string]: number } = {};
-    let annualRevenue = 0;
+    if (!hasUserModifiedData) {
+      apiData.forEach((monthData, monthIndex) => {
+        if (Array.isArray(monthData) && monthData.length > 0) {
+          const monthName = months[monthIndex];
+          
+          const monthAggregated = monthData.reduce((acc, weekData) => {
+            return {
+              revenue: (acc.revenue || 0) + (weekData.revenue || 0),
+              avgJobSize: weekData.avgJobSize || acc.avgJobSize || 0,
+              appointmentRate: weekData.appointmentRate || acc.appointmentRate || 0,
+              showRate: weekData.showRate || acc.showRate || 0,
+              closeRate: weekData.closeRate || acc.closeRate || 0,
+              com: weekData.com || acc.com || 0,
+            };
+          }, {} as any);
 
-    apiData.forEach((monthData, monthIndex) => {
-      if (Array.isArray(monthData) && monthData.length > 0) {
-        const monthName = months[monthIndex];
-        
-        const monthRevenue = monthData.reduce((sum, weekData) => {
-          return sum + (weekData.revenue || 0);
-        }, 0);
-        
-        monthlyRevenues[monthName] = monthRevenue;
-        annualRevenue += monthRevenue;
-      }
-    });
+          let monthlyValues: MonthlyData = {
+            budget: 0,
+            leads: 0,
+            estimatesSet: 0,
+            estimates: 0,
+            sales: 0,
+            revenue: monthAggregated.revenue || 0,
+            avgJobSize: monthAggregated.avgJobSize || annualFieldValues.avgJobSize || 0,
+            com: monthAggregated.com || annualFieldValues.com || 0,
+            totalCom: 0,
+          };
 
-    apiData.forEach((monthData, monthIndex) => {
-      if (Array.isArray(monthData) && monthData.length > 0) {
-        const monthName = months[monthIndex];
-        const monthRevenue = monthlyRevenues[monthName];
-        const revenuePercentage = annualRevenue > 0 ? monthRevenue / annualRevenue : 0;
-        
-        const monthlyBudget = annualTotals.budget * revenuePercentage;
-        const managementCost = calculateManagementCost(monthlyBudget);
+          if (monthlyValues.revenue > 0 && monthlyValues.avgJobSize > 0) {
+            monthlyValues.sales = (monthlyValues.revenue / monthlyValues.avgJobSize);
+          }
 
-        monthlyDataFromApi[monthName] = {
-          budget: monthlyBudget,
-          leads: annualTotals.leads * revenuePercentage,
-          estimatesSet: annualTotals.estimatesSet * revenuePercentage,
-          estimates: annualTotals.estimates * revenuePercentage,
-          sales: annualTotals.sales * revenuePercentage,
-          revenue: annualTotals.revenue * revenuePercentage,
-          avgJobSize: annualTotals.avgJobSize,
-          com: annualTotals.com,
-          totalCom: safePercentage(((monthlyBudget + managementCost) / (annualTotals.revenue * revenuePercentage)) * 100),
-        };
-      }
-    });
+          if (monthlyValues.sales > 0 && monthAggregated.closeRate > 0) {
+            monthlyValues.estimates = (monthlyValues.sales / (monthAggregated.closeRate / 100));
+          }
+
+          if (monthlyValues.estimates > 0 && monthAggregated.showRate > 0) {
+            monthlyValues.estimatesSet = (monthlyValues.estimates / (monthAggregated.showRate / 100));
+          }
+
+          if (monthlyValues.estimatesSet > 0 && monthAggregated.appointmentRate > 0) {
+            monthlyValues.leads = (monthlyValues.estimatesSet / (monthAggregated.appointmentRate / 100));
+          }
+
+          if (monthlyValues.revenue > 0 && monthlyValues.com > 0) {
+            monthlyValues.budget = monthlyValues.revenue * (monthlyValues.com / 100);
+          }
+
+          if (monthlyValues.budget > 0 && monthlyValues.revenue > 0) {
+            const managementCost = calculateManagementCost(monthlyValues.budget);
+            monthlyValues.totalCom = safePercentage(((monthlyValues.budget + managementCost) / monthlyValues.revenue) * 100);
+          }
+
+          monthlyDataFromApi[monthName] = monthlyValues;
+        }
+      });
+    } else {
+      const monthlyRevenues: { [key: string]: number } = {};
+      let annualRevenue = 0;
+
+      apiData.forEach((monthData, monthIndex) => {
+        if (Array.isArray(monthData) && monthData.length > 0) {
+          const monthName = months[monthIndex];
+          
+          const monthRevenue = monthData.reduce((sum, weekData) => {
+            return sum + (weekData.revenue || 0);
+          }, 0);
+          
+          monthlyRevenues[monthName] = monthRevenue;
+          annualRevenue += monthRevenue;
+        }
+      });
+
+      apiData.forEach((monthData, monthIndex) => {
+        if (Array.isArray(monthData) && monthData.length > 0) {
+          const monthName = months[monthIndex];
+          const monthRevenue = monthlyRevenues[monthName];
+          const revenuePercentage = annualRevenue > 0 ? monthRevenue / annualRevenue : 0;
+          
+          const monthlyBudget = annualTotals.budget * revenuePercentage;
+          const managementCost = calculateManagementCost(monthlyBudget);
+
+          monthlyDataFromApi[monthName] = {
+            budget: monthlyBudget,
+            leads: annualTotals.leads * revenuePercentage,
+            estimatesSet: annualTotals.estimatesSet * revenuePercentage,
+            estimates: annualTotals.estimates * revenuePercentage,
+            sales: annualTotals.sales * revenuePercentage,
+            revenue: annualTotals.revenue * revenuePercentage,
+            avgJobSize: annualTotals.avgJobSize,
+            com: annualTotals.com,
+            totalCom: safePercentage(((monthlyBudget + managementCost) / (annualTotals.revenue * revenuePercentage)) * 100),
+          };
+        }
+      });
+    }
 
     return monthlyDataFromApi;
-  }, [apiData, annualTotals]);
+  }, [apiData, annualTotals, hasUserModifiedData]);
 
   useEffect(() => {
     if (isOpen && apiData) {
       const apiMonthlyData = processApiDataToMonthly;
       if (Object.keys(apiMonthlyData).length > 0) {
         setMonthlyData(apiMonthlyData);
+        setHasUserModifiedData(false); // Reset modification flag for fresh data
       }
     }
   }, [isOpen, apiData, processApiDataToMonthly]);
 
-  // Handle initial calculation when component mounts or annualTotals change
   useEffect(() => {
-    // Only calculate if we don't have monthlyData and no API data is being processed
     if (Object.keys(monthlyData).length === 0 && !apiData) {
       const newMonthlyData: { [key: string]: MonthlyData } = {};
 
       months.forEach((month) => {
-        const budget = 0; // Start with 0 budget
-        const percentage = 0; // Start with 0 percentage
+        const budget = 0;
+        const percentage = 0;
         const monthlyRevenue = annualTotals.revenue * percentage;
         const managementCost = calculateManagementCost(budget);
 
@@ -153,9 +211,15 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
 
       setMonthlyData(newMonthlyData);
     }
-  }, [annualTotals, apiData]); // Only depend on annualTotals and apiData, not monthlyData
+  }, [annualTotals, apiData]);
 
   const handleBudgetChange = (month: string, value: number) => {
+    // Mark that user has modified data - this switches the calculation logic
+    // from reverse calculation to revenue percentage-based calculation
+    if (!hasUserModifiedData) {
+      setHasUserModifiedData(true);
+    }
+
     const validatedValue = Math.max(0, value);
     
     const updatedMonthlyData = { ...monthlyData };
@@ -204,6 +268,7 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
       setMonthlyData({});
     }
     setSelectedMonth("January");
+    setHasUserModifiedData(false); // Reset the modification flag
     onOpenChange(false);
   };
 
@@ -290,7 +355,7 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
                   </div>
                   <Input
                     type="number"
-                    value={monthlyData[month]?.budget || ""}
+                    value={Math.ceil(monthlyData[month]?.budget) || ""}
                     onChange={(e) =>
                       handleBudgetChange(month, parseFloat(e.target.value) || 0)
                     }
