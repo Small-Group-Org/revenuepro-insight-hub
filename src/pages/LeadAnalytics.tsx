@@ -4,7 +4,7 @@ import { useUserStore } from '@/stores/userStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line } from 'recharts';
-import { TrendingUp, MapPin, Wrench, Tag, FileText, Users, CheckCircle, XCircle, Calendar } from 'lucide-react';
+import { TrendingUp, MapPin, Wrench, Tag, FileText, Users, CheckCircle, XCircle, Calendar, BarChart3 } from 'lucide-react';
 import { Lead } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear, subMonths, subQuarters, subYears } from 'date-fns';
@@ -247,11 +247,14 @@ export const LeadAnalytics = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="relative z-10 py-12 px-4">
+      <div className="relative z-10 pt-4 pb-12 px-4">
         <div className="max-w-7xl mx-auto space-y-10">
           {/* Header */}
           <div className="text-center">
             <div className="flex items-center justify-center gap-4">
+            <div className="w-10 h-10 bg-gradient-to-r from-primary to-primary/60 rounded-xl flex items-center justify-center shadow-lg">
+                <BarChart3 className="w-5 h-5 text-primary-foreground" />
+              </div>
               <h1 className="leading-[130%] text-4xl font-bold text-gradient-primary">
                 Lead Analytics
               </h1>
@@ -335,7 +338,7 @@ export const LeadAnalytics = () => {
           {/* Charts Grid */}
           {analyticsData.overview.estimateSetCount === 0 ? (
             <Card className="mx-auto max-w-md">
-              <CardContent className="text-center py-12">
+              <CardContent className="text-center pt-4 pb-12">
                 <CheckCircle className="h-16 w-16 mx-auto mb-4 text-gray-300" />
                 <h3 className="text-lg font-semibold text-gray-700 mb-2">No Estimate Set Leads</h3>
                 <p className="text-gray-500">

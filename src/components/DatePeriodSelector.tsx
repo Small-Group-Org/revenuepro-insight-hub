@@ -142,18 +142,28 @@ export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
       <div className="flex items-center justify-between w-full py-2 px-4 bg-card rounded-xl shadow border border-border">
         <div className="flex items-center gap-2">
           <button
-            className="rounded-full bg-muted hover:bg-muted/80 p-2 transition"
+            className={`rounded-full p-2 transition ${
+              period === "ytd" 
+                ? "bg-muted/50 cursor-not-allowed opacity-50" 
+                : "bg-muted hover:bg-muted/80"
+            }`}
             onClick={handlePrev}
             aria-label="Previous"
             type="button"
+            disabled={period === "ytd"}
           >
             <ChevronLeft className="h-5 w-5 text-muted-foreground" />
           </button>
           <button
-            className="rounded-full bg-muted hover:bg-muted/80 p-2 transition"
+            className={`rounded-full p-2 transition ${
+              period === "ytd" 
+                ? "bg-muted/50 cursor-not-allowed opacity-50" 
+                : "bg-muted hover:bg-muted/80"
+            }`}
             onClick={handleNext}
             aria-label="Next"
             type="button"
+            disabled={period === "ytd"}
           >
             <ChevronRight className="h-5 w-5 text-muted-foreground" />
           </button>

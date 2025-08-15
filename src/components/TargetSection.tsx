@@ -190,25 +190,33 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
     return (
       <div
         key={field.value}
-        className={`bg-gradient-secondary/80 backdrop-blur-sm p-3 rounded-xl border border-border/40 ${
+        className={`${
           isHighlightedField
-            ? "bg-gradient-accent/80 border-primary/40"
-            : "hover:shadow-md"
-        }`}
+            ? "bg-gradient-to-r from-[#28282b] to-[#404040] backdrop-blur-sm border-primary/40"
+            : "bg-card/80 backdrop-blur-sm hover:shadow-md"
+        } p-3 rounded-xl border border-border/40`}
       >
         <div className="flex items-center justify-between">
           <div className="flex-1">
-            <div className="text-sm font-medium text-card-foreground">
-              {field.name}
-            </div>
+                         <div className={`text-sm font-medium ${
+               isHighlightedField ? "text-white/90" : "text-card-foreground"
+             }`}>
+               {field.name}
+             </div>
             {field.description && (
-              <div className="text-[10px] mt-[2px] text-muted-foreground">
+              <div className={`text-[10px] mt-[2px] ${
+                isHighlightedField ? "text-white/70" : "text-muted-foreground"
+              }`}>
                 {field.description}
               </div>
             )}
           </div>
           <div className="text-right">
-            <span className="text-sm font-semibold text-card-foreground">
+            <span className={`text-base ${
+              isHighlightedField ? "font-bold" : "font-semibold"
+            } ${
+              isHighlightedField ? "text-white/90" : "text-card-foreground"
+            }`}>
               {field.unit === "$"
                 ? formatCurrency(value)
                 : field.unit === "%"
@@ -226,19 +234,29 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="">
-                  <span className="text-xs font-medium text-card-foreground">
+                  <span className={`text-xs font-medium ${
+                    isHighlightedField ? "text-white/90" : "text-card-foreground"
+                  }`}>
                     Weekly Allocation
                   </span>
-                  <div className="text-[10px] text-muted-foreground">
+                  <div className={`text-[10px] font-medium ${
+                    isHighlightedField ? "text-white/70" : "text-muted-foreground"
+                  }`}>
                   {currentTarget?.length || 0} weeks
                 </div>
                 </div>
                 
                 <div className="text-right">
-                  <div className="text-sm font-semibold text-card-foreground">
+                  <div className={`text-sm ${
+                    isHighlightedField ? "font-bold" : "font-semibold"
+                  } ${
+                    isHighlightedField ? "text-white/90" : "text-card-foreground"
+                  }`}>
                     {Math.round(perWeekValue)}
                   </div>
-                  <div className="text-[10px] text-muted-foreground">per week</div>
+                  <div className={`text-[10px] font-medium ${
+                    isHighlightedField ? "text-white/70" : "text-muted-foreground"
+                  }`}>per week</div>
                 </div>
               </div>
             </div>
