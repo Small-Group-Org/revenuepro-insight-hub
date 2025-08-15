@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { Users, Lock } from 'lucide-react';
+import { Users, Lock, TrendingUp, Calendar, MapPin, Phone, Mail, Tag, Target, Star } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { DatePeriodSelector } from '@/components/DatePeriodSelector';
 import { PeriodType } from '@/types';
@@ -9,17 +9,10 @@ import { useLeadStore } from '@/stores/leadStore';
 import { useUserStore } from '@/stores/userStore';
 import { useRoleAccess } from '@/hooks/useRoleAccess';
 import { handleInputDisable } from '@/utils/page-utils/compareUtils';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 
 export const LeadSheet = () => {
   const { toast } = useToast();
@@ -213,8 +206,6 @@ export const LeadSheet = () => {
     }
   }, [customULR, findLead, handleLeadUpdate, showErrorToast, clearULRStates]);
 
-  // Remove the save handler as updates are now automatic
-
   const formatDate = useCallback((dateString: string) => {
     return format(new Date(dateString), 'MMM dd, yyyy');
   }, []);
@@ -257,25 +248,35 @@ export const LeadSheet = () => {
     setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc');
   }, [sortOrder]);
 
+  // Get score color and label
+  const getScoreInfo = useCallback((score: number) => {
+    if (score >= 80) return { color: 'bg-gradient-to-r from-green-500 to-emerald-600', textColor: 'text-white', label: 'Excellent' };
+    if (score >= 60) return { color: 'bg-gradient-to-r from-yellow-500 to-orange-500', textColor: 'text-white', label: 'Good' };
+    if (score >= 40) return { color: 'bg-gradient-to-r from-orange-500 to-red-500', textColor: 'text-white', label: 'Fair' };
+    return { color: 'bg-gradient-to-r from-red-500 to-pink-600', textColor: 'text-white', label: 'Poor' };
+  }, []);
+
   return (
-    <div className="min-h-screen bg-background">
-      <div className="relative z-10 pt-4 pb-12 px-4 ">
-        <div className="max-w-7xl mx-auto space-y-10">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      <div className="relative z-10 pt-6 pb-16 px-4">
+        <div className="max-w-7xl mx-auto space-y-8">
+          {/* Header */}
           <div className="text-center">
-            <div className="flex items-center justify-center gap-4">
-            <div className="w-10 h-10 bg-gradient-to-r from-primary to-primary/60 rounded-xl flex items-center justify-center shadow-lg">
+            <div className="flex items-center justify-center gap-4 mb-4">
+              <div className="w-10 h-10 bg-gradient-to-r from-primary to-primary/60 rounded-xl flex items-center justify-center shadow-lg">
                 <Users className="w-5 h-5 text-primary-foreground" />
               </div>
-              <h1 className="leading-[130%] text-4xl font-bold text-gradient-primary">
+              <h1 className="leading-[130%] text-3xl font-bold text-gradient-primary">
                 Lead Sheet
               </h1>
             </div>
-            <p className="text-muted-foreground max-w-2xl mx-auto text-lg mb-10 mt-2">
+            <p className="text-muted-foreground max-w-2xl mx-auto text-base mb-6 mt-2">
               Track and manage your leads with detailed information and estimate status
             </p>
           </div>
         </div>
 
+        {/* Controls */}
         <div className="max-w-7xl mx-auto mb-8">
           <DatePeriodSelector
             initialDate={selectedDate}
@@ -286,125 +287,214 @@ export const LeadSheet = () => {
           />
         </div>
 
-        <div className="w-full">
-          <Card className="shadow-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-primary" />
-                Lead Management
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto relative">
-                <Table className="w-full min-w-[1400px]">
-                  <TableHeader>
-                    <TableRow className="bg-muted">
-                      <TableHead className="font-semibold text-muted-foreground w-32 sticky left-0 bg-muted z-10 border-r border-border shadow-[4px_0_6px_-1px_rgba(0,0,0,0.1)]">
-                        <div className="flex items-center gap-1">
-                          Estimate Set
-                          {isDisabled && (
-                            <div title="Restricted to Revenue PRO team">
-                              <Lock className="h-3 w-3 text-amber-600" />
+        {/* Sort Toggle */}
+        <div className="max-w-7xl mx-auto mb-4">
+          <button 
+            onClick={handleSortChange}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors duration-200 text-sm text-gray-700"
+          >
+            <TrendingUp className="w-4 h-4 text-gray-500" />
+            <span>Sort by Score: {sortOrder === 'desc' ? 'High → Low' : 'Low → High'}</span>
+          </button>
+        </div>
+
+        {/* Statistics Cards */}
+        <div className="max-w-7xl mx-auto mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Total Leads Card */}
+            <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 shadow-md">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                    <Users className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-blue-800">{sortedLeads.length}</div>
+                    <div className="text-sm text-blue-600 font-medium">Total Leads</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Total Estimates Set Card */}
+            <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 shadow-md">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
+                    <Target className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-green-800">
+                      {sortedLeads.filter(l => l.estimateSet).length}
+                    </div>
+                    <div className="text-sm text-green-600 font-medium">Estimates Set</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Lead Cards */}
+        <div className="max-w-7xl mx-auto space-y-3">
+          {loading ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground animate-pulse" />
+              <p className="text-lg">Loading leads...</p>
+            </div>
+          ) : sortedLeads.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+              <p className="text-lg">No leads found for the selected period.</p>
+            </div>
+          ) : (
+            sortedLeads.map((lead) => {
+              const scoreInfo = getScoreInfo(lead.score);
+              return (
+                <Card 
+                  key={lead.id} 
+                  className={`w-full transition-all duration-300 hover:shadow-xl border-2 ${
+                    lead.estimateSet 
+                      ? 'border-green-200 bg-gradient-to-r from-green-50/50 to-emerald-50/50' 
+                      : 'border-border hover:border-primary/30'
+                  } ${isDisabled ? 'opacity-60' : ''}`}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex flex-col lg:flex-row gap-4 items-start">
+                      {/* Left Section - Lead Score (Main Focus) */}
+                      <div className="flex-shrink-0">
+                        <div className={`${scoreInfo.color} rounded-xl p-4 text-center shadow-lg min-w-[120px]`}>
+                          <div className="text-2xl font-bold ${scoreInfo.textColor} mb-1">
+                            {lead.score}
+                          </div>
+                          <div className={`text-xs font-medium ${scoreInfo.textColor} opacity-90`}>
+                            {scoreInfo.label}
+                          </div>
+                          <div className="mt-1">
+                            <Star className={`w-4 h-4 mx-auto ${scoreInfo.textColor} opacity-80`} />
+                          </div>
                             </div>
-                          )}
                         </div>
-                      </TableHead>
-                      <TableHead className="font-semibold text-muted-foreground w-48 sticky left-32 bg-muted z-10 border-r border-border shadow-[4px_0_6px_-1px_rgba(0,0,0,0.1)]">
-                        <div className="flex items-center gap-1">
-                          Unqualified Lead Reason
-                          {isDisabled && (
-                            <div title="Restricted to Revenue PRO team">
-                              <Lock className="h-3 w-3 text-amber-600" />
+
+                      {/* Center Section - Lead Details */}
+                      <div className="flex-1 min-w-0">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                          {/* Name and Service */}
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <Users className="w-4 h-4 text-muted-foreground" />
+                              <span className="font-semibold text-base text-card-foreground truncate">
+                                {lead.name}
+                              </span>
                             </div>
-                          )}
+                            <Badge variant="secondary" className="w-fit text-xs">
+                              <Tag className="w-3 h-3 mr-1" />
+                              {lead.service}
+                            </Badge>
                         </div>
-                      </TableHead>
-                      <TableHead className="font-semibold text-muted-foreground w-32">
-                        <div className="flex items-center gap-1">
-                          Lead Date
+
+                          {/* Contact Info */}
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 text-sm">
+                              <Mail className="w-4 h-4 text-muted-foreground" />
+                              <a 
+                                href={`mailto:${lead.email}`}
+                                className="text-blue-600 hover:text-blue-800 hover:underline truncate"
+                              >
+                                {lead.email}
+                              </a>
                         </div>
-                      </TableHead>
-                      <TableHead className="font-semibold text-muted-foreground w-24">
-                        <button 
-                          onClick={handleSortChange}
-                          className="flex items-center justify-between w-full hover:text-primary transition-colors"
-                        >
-                          <span>Lead Score</span>
-                          <span className="text-primary">
-                            {sortOrder === 'desc' ? '↓' : '↑'}
-                          </span>
-                        </button>
-                      </TableHead>
-                      <TableHead className="font-semibold text-muted-foreground w-40">
-                        <div className="flex items-center gap-1">
-                          Name
+                            <div className="flex items-center gap-2 text-sm">
+                              <Phone className="w-4 h-4 text-muted-foreground" />
+                              <a 
+                                href={`tel:${lead.phone}`}
+                                className="text-blue-600 hover:text-blue-800 hover:underline"
+                              >
+                                {lead.phone}
+                              </a>
+                            </div>
+                          </div>
+
+                          {/* Location and Date */}
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 text-sm">
+                              <MapPin className="w-4 h-4 text-muted-foreground" />
+                              <span className="text-muted-foreground">ZIP: {lead.zip}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm">
+                              <Calendar className="w-4 h-4 text-muted-foreground" />
+                              <span className="text-muted-foreground">{formatDate(lead.leadDate)}</span>
                         </div>
-                      </TableHead>
-                      <TableHead className="font-semibold text-muted-foreground w-48">
-                        <div className="flex items-center gap-1">
-                          Email
                         </div>
-                      </TableHead>
-                      <TableHead className="font-semibold text-muted-foreground w-36">
-                        <div className="flex items-center gap-1">
-                          Phone
+
+                          {/* Ad Information */}
+                          <div className="space-y-1 md:col-span-2 lg:col-span-3">
+                            <div className="flex items-center gap-2 text-sm">
+                              <Target className="w-4 h-4 text-muted-foreground" />
+                              <span className="text-muted-foreground">
+                                <span className="font-medium">Ad Set:</span> {lead.adSetName}
+                              </span>
                         </div>
-                      </TableHead>
-                      <TableHead className="font-semibold text-muted-foreground w-20">
-                        <div className="flex items-center gap-1">
-                          Zip
+                            <div className="flex items-center gap-2 text-sm">
+                              <Target className="w-4 h-4 text-muted-foreground" />
+                              <span className="text-muted-foreground">
+                                <span className="font-medium">Ad:</span> {lead.adName}
+                              </span>
                         </div>
-                      </TableHead>
-                      <TableHead className="font-semibold text-muted-foreground w-32">
-                        <div className="flex items-center gap-1">
-                          Service
                         </div>
-                      </TableHead>
-                      <TableHead className="font-semibold text-muted-foreground w-48">
-                        <div className="flex items-center gap-1">
-                          Ad Set Name
                         </div>
-                      </TableHead>
-                      <TableHead className="font-semibold text-gray-700 w-48">
-                        <div className="flex items-center gap-1">
-                          Ad Name
                         </div>
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {(loading ? [] : sortedLeads).map((lead) => (
-                                              <TableRow key={lead.id} className={`hover:bg-muted/50 ${lead.estimateSet ? 'bg-success/10' : ''}`}>
-                                                  <TableCell className={`px-3 py-4 text-center sticky left-0 z-10 border-r border-border shadow-[4px_0_6px_-1px_rgba(0,0,0,0.1)] ${lead.estimateSet ? 'bg-success/10' : 'bg-card'} ${isDisabled ? 'opacity-60' : ''}`}>
+
+                      {/* Right Section - Actions */}
+                      <div className="flex-shrink-0 space-y-3 min-w-[180px]">
+                        {/* Estimate Set Checkbox */}
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                           <Checkbox
                             checked={lead.estimateSet}
                             onCheckedChange={(checked) => 
                               !isDisabled ? handleEstimateSetChange(lead.id, checked as boolean) : undefined
                             }
-                            className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                              className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 ring-2 ring-primary/20 hover:ring-primary/40 transition-all duration-200"
                             disabled={isDisabled}
                             title={isDisabled ? "Only Revenue PRO team members can modify this field" : "Click to change estimate status"}
                           />
-                        </TableCell>
-                        <TableCell className={`px-3 py-4 sticky left-32 z-10 border-r border-gray-200 shadow-[4px_0_6px_-1px_rgba(0,0,0,0.1)] text-center ${lead.estimateSet ? 'bg-green-50' : pendingULRLeadId === lead.id ? 'bg-yellow-50' : 'bg-white'} ${isDisabled ? 'opacity-60' : ''}`}>
+                            <span>Estimate Set</span>
+                            {isDisabled && (
+                              <Lock className="h-3 w-3 text-amber-600" />
+                            )}
+                          </label>
+                        </div>
+
+                        {/* Unqualified Lead Reason */}
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-muted-foreground">
+                            Unqualified Reason
+                            {isDisabled && (
+                              <Lock className="h-3 w-3 text-amber-600 ml-1 inline" />
+                            )}
+                          </label>
+                          
                           {lead.estimateSet ? (
-                            <span className="text-gray-500 text-sm">NA</span>
+                            <div className="px-3 py-2 bg-green-100 text-green-800 rounded-lg text-sm font-medium border-2 border-green-200 shadow-sm">
+                              Estimate Set ✓
+                            </div>
                           ) : showCustomInput === lead.id ? (
-                            <div className="flex flex-col gap-2">
+                            <div className="space-y-2">
                               <input
                                 type="text"
                                 value={customULR}
                                 onChange={(e) => setCustomULR(e.target.value)}
                                 placeholder="Enter custom reason..."
-                                className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-blue-50/50 shadow-sm transition-all duration-200"
                                 onKeyPress={(e) => e.key === 'Enter' && handleCustomULRSubmit(lead.id)}
                                 disabled={isDisabled}
                                 title={isDisabled ? "Only Revenue PRO team members can modify this field" : "Enter a custom unqualified lead reason"}
                               />
-                                                              <div className="flex gap-1">
+                              <div className="flex gap-2">
                                   <button
                                     onClick={() => handleCustomULRSubmit(lead.id)}
-                                    className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  className="px-3 py-1 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
                                     disabled={isDisabled}
                                     title={isDisabled ? "Only Revenue PRO team members can modify this field" : "Save custom reason"}
                                   >
@@ -415,8 +505,7 @@ export const LeadSheet = () => {
                                       setShowCustomInput(null);
                                       setCustomULR('');
                                     }}
-                                    className="px-2 py-1 text-xs bg-muted-foreground text-primary-foreground rounded hover:bg-muted-foreground/80 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    disabled={isDisabled}
+                                  className="px-3 py-1 text-xs bg-muted-foreground text-primary-foreground rounded-md hover:bg-muted-foreground/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
                                     title={isDisabled ? "Only Revenue PRO team members can modify this field" : "Cancel custom reason input"}
                                   >
                                     Cancel
@@ -430,7 +519,11 @@ export const LeadSheet = () => {
                               disabled={isDisabled}
                             >
                               <SelectTrigger 
-                                className={`w-full h-8 text-xs border-0 shadow-none ${pendingULRLeadId === lead.id ? 'ring-2 ring-warning/40 bg-warning/10' : 'hover:bg-muted/50'}`}
+                                className={`w-full h-9 text-sm border-2 ${
+                                  pendingULRLeadId === lead.id 
+                                    ? 'ring-2 ring-warning/40 bg-warning/10 border-warning-300 shadow-lg' 
+                                    : 'border-blue-300 hover:border-blue-400 bg-blue-50/50 hover:bg-blue-100/50'
+                                } transition-all duration-200 shadow-sm`}
                                 title={isDisabled ? "Only Revenue PRO team members can modify this field" : (lead.unqualifiedLeadReason || "Select unqualified lead reason")}
                               >
                                 <SelectValue placeholder={pendingULRLeadId === lead.id ? "Select reason required!" : "Select reason..."}>
@@ -443,86 +536,24 @@ export const LeadSheet = () => {
                               </SelectTrigger>
                               <SelectContent>
                                 {ULR_OPTIONS.map((option) => (
-                                  <SelectItem key={option} value={option} className="text-xs">
+                                  <SelectItem key={option} value={option} className="text-sm">
                                     {option}
                                   </SelectItem>
                                 ))}
-                                <SelectItem value="custom" className="text-xs font-medium text-blue-600">
+                                <SelectItem value="custom" className="text-sm font-medium text-blue-600">
                                   + Add Custom Reason
                                 </SelectItem>
                               </SelectContent>
                             </Select>
                           )}
-                        </TableCell>
-                        <TableCell className="font-medium px-3 py-4">
-                          {formatDate(lead.leadDate)}
-                        </TableCell>
-                        <TableCell className="px-3 py-4 text-center">
-                          <span 
-                            className={`text-sm font-semibold px-2 py-1 rounded ${
-                              lead.score >= 80 ? 'bg-green-100 text-green-800' :
-                              lead.score >= 60 ? 'bg-yellow-100 text-yellow-800' :
-                              lead.score >= 40 ? 'bg-orange-100 text-orange-800' :
-                              'bg-red-100 text-red-800'
-                            }`}
-                          >
-                            {lead.score}
-                          </span>
-                        </TableCell>
-                        <TableCell className="font-medium text-card-foreground px-3 py-4">
-                          {lead.name}
-                        </TableCell>
-                        <TableCell className="px-3 py-4">
-                          <a 
-                            href={`mailto:${lead.email}`}
-                            className="text-blue-600 hover:text-blue-800 hover:underline"
-                          >
-                            {lead.email}
-                          </a>
-                        </TableCell>
-                        <TableCell className="px-3 py-4">
-                          <a 
-                            href={`tel:${lead.phone}`}
-                            className="text-blue-600 hover:text-blue-800 hover:underline"
-                          >
-                            {lead.phone}
-                          </a>
-                        </TableCell>
-                        <TableCell className="px-3 py-4">
-                          {lead.zip}
-                        </TableCell>
-                        <TableCell className="px-3 py-4">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            {lead.service}
-                          </span>
-                        </TableCell>
-                        <TableCell className="px-3 py-4 text-xs">
-                          {lead.adSetName}
-                        </TableCell>
-                        <TableCell className="px-3 py-4 text-xs">
-                          {lead.adName}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
               </div>
-              
-              {loading && (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground animate-pulse" />
-                  <p>Loading leads...</p>
                 </div>
-              )}
-              
-              {!loading && leads.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <p>No leads found for the selected period.</p>
                 </div>
-              )}
             </CardContent>
           </Card>
+              );
+            })
+          )}
         </div>
       </div>
     </div>
