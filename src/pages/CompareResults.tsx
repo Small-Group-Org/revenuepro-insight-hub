@@ -353,17 +353,17 @@ export const CompareResults = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <div className="relative z-10 py-12 px-4">
         <div className="max-w-7xl mx-auto space-y-10">
           {/* Header */}
           <div className="text-center">
             <div className="flex items-center justify-center gap-4">
-              <h1 className="leading-[130%] text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent">
+              <h1 className="leading-[130%] text-4xl font-bold text-gradient-primary">
                 Target Vs Actual
               </h1>
             </div>
-            <p className="text-gray-600 max-w-2xl mx-auto text-lg mb-10 mt-2">
+            <p className="text-muted-foreground max-w-2xl mx-auto text-lg mb-10 mt-2">
               Compare your actual performance against targets with calculated metrics
             </p>
           </div>
@@ -385,26 +385,26 @@ export const CompareResults = () => {
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6">
           {metrics.map((section) => (
             <Card key={section.category} className="p-6">
-              <h3 className="text-xl font-semibold text-slate-900 mb-6">
+                            <h3 className="text-xl font-semibold text-card-foreground mb-6">
                 {section.category}
               </h3>
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-slate-200">
-                      <th className="text-left p-3 font-semibold text-slate-700 text-sm">
+                    <tr className="border-b border-border">
+                      <th className="text-left p-3 font-semibold text-muted-foreground text-sm">
                         Metric
                       </th>
-                      <th className="text-right p-3 font-semibold text-slate-700 text-sm">
+                      <th className="text-right p-3 font-semibold text-muted-foreground text-sm">
                         Actual
                       </th>
-                      <th className="text-right p-3 font-semibold text-slate-700 text-sm">
+                      <th className="text-right p-3 font-semibold text-muted-foreground text-sm">
                         Target
                       </th>
-                      <th className="text-right p-3 font-semibold text-slate-700 text-sm">
+                          <th className="text-right p-3 font-semibold text-muted-foreground text-sm">
                         Progress
                       </th>
-                      <th className="text-right p-3 font-semibold text-slate-700 text-sm">
+                      <th className="text-right p-3 font-semibold text-muted-foreground text-sm">
                         Performance
                       </th>
                     </tr>
@@ -419,19 +419,19 @@ export const CompareResults = () => {
                       return (
                         <tr
                           key={`${section.category}-${item.name}`}
-                          className="border-b border-slate-100 hover:bg-slate-50"
+                          className="border-b border-border hover:bg-muted/50"
                         >
-                          <td className="p-3 font-medium text-slate-900 text-sm">
+                          <td className="p-3 font-medium text-card-foreground text-sm">
                             {item.name}
                           </td>
-                          <td className="p-3 text-right font-bold text-slate-900 text-sm">
+                          <td className="p-3 text-right font-bold text-card-foreground text-sm">
                             {formatValue(item.actual, item.format)}
                           </td>
-                          <td className="p-3 text-right font-medium text-slate-700 text-sm">
+                          <td className="p-3 text-right font-medium text-muted-foreground text-sm">
                             {formatValue(item.target, item.format)}
                           </td>
                           <td className="p-3 text-right font-semibold text-sm">
-                            <span className="text-slate-700">
+                            <span className="text-muted-foreground">
                               {item.target > 0 ? `${((item.actual / item.target) * 100).toFixed(2)}%` : 'N/A'}
                             </span>
                           </td>
@@ -439,8 +439,8 @@ export const CompareResults = () => {
                             <span
                               className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-bold ${
                                 isPositive
-                                  ? "bg-green-100 text-green-700"
-                                  : "bg-red-100 text-red-700"
+                                  ? "bg-success/20 text-success"
+                                  : "bg-destructive/20 text-destructive"
                               }`}
                             >
                               {isPositive ? (

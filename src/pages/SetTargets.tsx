@@ -400,16 +400,16 @@ export const SetTargets = () => {
   }, [toast, error, getInputFieldNames, selectedYear, fieldValues, getPriorityConflict, performSaveMonthlyTargets]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <div className="relative z-10 py-12 px-4">
         <div className="max-w-7xl mx-auto space-y-10">
           <div className="text-center">
             <div className="flex items-center justify-center gap-4">
-              <h1 className="leading-[130%] text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent">
+              <h1 className="leading-[130%] text-4xl font-bold text-gradient-primary">
                 Set Targets
               </h1>
             </div>
-            <p className="text-gray-600 max-w-2xl mx-auto text-lg mb-10 mt-2">
+            <p className="text-muted-foreground max-w-2xl mx-auto text-lg mb-10 mt-2">
               Configure your business targets and KPIs with precision
             </p>
           </div>
@@ -432,8 +432,8 @@ export const SetTargets = () => {
           <TargetSection
             sectionKey="funnelRate"
             title="Funnel Rates"
-            icon={<TrendingUp className="h-5 w-5 text-gray-600" />}
-            gradientClass="bg-gradient-to-r from-blue-50/50 to-purple-50/50"
+            icon={<TrendingUp className="h-5 w-5 text-primary" />}
+            gradientClass="bg-gradient-primary/10"
             fields={getSectionFields('funnelRate')}
             fieldValues={fieldValues}
             calculatedValues={calculatedValues}
@@ -450,8 +450,8 @@ export const SetTargets = () => {
           <TargetSection
             sectionKey="budget"
             title={`${period.charAt(0).toUpperCase() + period.slice(1)} Targets`}
-            icon={<Calculator className="h-5 w-5 text-gray-600" />}
-            gradientClass="bg-gradient-to-r from-green-50/50 to-blue-50/50"
+            icon={<Calculator className="h-5 w-5 text-accent" />}
+            gradientClass="bg-gradient-accent/10"
             fields={getSectionFields('budget')}
             fieldValues={fieldValues}
             calculatedValues={calculatedValues}
@@ -468,8 +468,8 @@ export const SetTargets = () => {
           <TargetSection
             sectionKey="budgetTarget"
             title="Budget Targets"
-            icon={<DollarSign className="h-5 w-5 text-gray-600" />}
-            gradientClass="bg-gradient-to-r from-emerald-50/50 to-teal-50/50"
+            icon={<DollarSign className="h-5 w-5 text-success" />}
+            gradientClass="bg-gradient-secondary/10"
             fields={getSectionFields('budgetTarget')}
             fieldValues={fieldValues}
             calculatedValues={calculatedValues}

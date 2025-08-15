@@ -31,11 +31,11 @@ const UserSelect: React.FC<UserSelectProps> = ({ value, onChange, placeholder, i
     return (
       <div className="flex justify-center">
         <button
-          className="p-1 hover:bg-slate-800 rounded-lg transition-colors text-slate-300"
+          className="p-1 hover:bg-sidebar-accent rounded-lg transition-colors text-sidebar-foreground"
           title={selectedUser ? `${selectedUser.name || selectedUser.email}` : "User Selection"}
         >
           {selectedUser ? (
-            <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-sm font-medium text-white">
+            <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-sm font-medium text-primary-foreground">
               {getInitials(selectedUser.name || selectedUser.email)}
             </div>
           ) : (
@@ -48,15 +48,15 @@ const UserSelect: React.FC<UserSelectProps> = ({ value, onChange, placeholder, i
 
   return (
     <Select value={value ?? selectedUserId} onValueChange={handleChange} disabled={loading}>
-      <SelectTrigger className="w-full rounded-full bg-sidebar border-slate-600 text-slate-200 hover:bg-slate-700">
+      <SelectTrigger className="w-full rounded-full bg-sidebar border-sidebar-border text-sidebar-foreground hover:bg-sidebar-accent">
         <SelectValue placeholder={placeholder || (loading ? "Loading users..." : "Select a user")}/>
       </SelectTrigger>
-      <SelectContent className="bg-sidebar border-slate-600 rounded-md">
+      <SelectContent className="bg-sidebar border-sidebar-border rounded-md">
         {users.map(user => (
           <SelectItem 
             key={user.id} 
             value={user.id}
-            className="text-slate-200 hover:bg-slate-700"
+            className="text-sidebar-foreground hover:bg-sidebar-accent"
           >
             {user.name || user.email}
           </SelectItem>

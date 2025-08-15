@@ -41,7 +41,7 @@ const formatValue = (value: number, format: string) => {
 };
 
 // Custom tooltip component
-const CustomTooltip = ({ active, payload, label, format }: any) => {
+const CustomTooltip = ({ active, payload, label, format, actualColor, targetColor }: any) => {
   if (active && payload && payload.length) {
     const actualValue = payload[0]?.value || 0;
     const targetValue = payload[1]?.value || 0;
@@ -52,49 +52,49 @@ const CustomTooltip = ({ active, payload, label, format }: any) => {
     const differencePercent = targetValue > 0 ? (difference / targetValue) * 100 : 0;
     
     return (
-      <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-4 min-w-[220px]">
+      <div className="bg-card border border-border rounded-lg shadow-lg p-4 min-w-[220px]">
         <div className="mb-3">
-          <p className="text-sm font-semibold text-gray-900 mb-1">{label}</p>
-          <div className="w-full h-0.5 bg-gradient-to-r from-blue-500 to-green-500 rounded"></div>
+          <p className="text-sm font-semibold text-card-foreground mb-1">{label}</p>
+          <div className="w-full h-0.5 bg-gradient-primary rounded"></div>
         </div>
         
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-              <span className="text-sm font-medium text-gray-700">Actual</span>
+              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: actualColor }}></div>
+              <span className="text-sm font-medium text-card-foreground">Actual</span>
             </div>
-            <span className="text-sm font-bold text-blue-600">
+            <span className="text-sm font-bold" style={{ color: actualColor }}>
               {formatValue(actualValue, format)}
             </span>
           </div>
           
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-green-500"></div>
-              <span className="text-sm font-medium text-gray-700">Target</span>
+              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: targetColor }}></div>
+              <span className="text-sm font-medium text-card-foreground">Target</span>
             </div>
-            <span className="text-sm font-bold text-green-600">
+            <span className="text-sm font-bold" style={{ color: targetColor }}>
               {formatValue(targetValue, format)}
             </span>
           </div>
           
           {/* Performance metrics */}
           {targetValue > 0 && (
-            <div className="mt-3 pt-2 border-t border-gray-100 space-y-2">
+            <div className="mt-3 pt-2 border-t border-border space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500">Performance</span>
+                <span className="text-xs text-muted-foreground">Performance</span>
                 <span className={`text-xs font-semibold ${
-                  performancePercent >= 100 ? 'text-green-600' : 'text-red-600'
+                  performancePercent >= 100 ? 'text-success' : 'text-destructive'
                 }`}>
                   {performancePercent.toFixed(1)}%
                 </span>
               </div>
               
               <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500">Difference</span>
+                <span className="text-xs text-muted-foreground">Difference</span>
                 <span className={`text-xs font-semibold ${
-                  difference >= 0 ? 'text-green-600' : 'text-red-600'
+                  difference >= 0 ? 'text-success' : 'text-destructive'
                 }`}>
                   {difference >= 0 ? '+' : ''}{formatValue(difference, format)}
                   <span className="ml-1">
@@ -103,10 +103,10 @@ const CustomTooltip = ({ active, payload, label, format }: any) => {
                 </span>
               </div>
               
-              <div className="mt-1 w-full bg-gray-200 rounded-full h-1.5">
+              <div className="mt-1 w-full bg-muted rounded-full h-1.5">
                 <div 
                   className={`h-1.5 rounded-full ${
-                    performancePercent >= 100 ? 'bg-green-500' : 'bg-red-500'
+                    performancePercent >= 100 ? 'bg-success' : 'bg-destructive'
                   }`}
                   style={{ 
                     width: `${Math.min(performancePercent, 100)}%` 
@@ -126,14 +126,14 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
   chartData, 
   chartConfigs, 
   title, 
-  icon = <BarChart3 className="h-5 w-5 text-blue-600" />,
+  icon = <BarChart3 className="h-5 w-5 text-primary" />,
   gridCols = "grid-cols-1 lg:grid-cols-2"
 }) => {
   return (
-    <Card className="p-6">
+    <Card className="p-6 bg-gradient-to-br from-background via-muted/15 to-primary/3 shadow-lg border border-border hover:shadow-2xl hover:border-primary/10 transition-all duration-300 group backdrop-blur-sm">
       <div className="flex items-center gap-2 mb-6">
         {icon}
-        <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
+        <h3 className="text-[20px] font-semibold text-card-foreground">{title}</h3>
       </div>
       
       <div className={`grid ${gridCols} gap-8`}>
@@ -144,16 +144,13 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
           return (
             <div key={config.key} className="space-y-3">
               <div>
-                <h4 className="text-base font-medium text-slate-700">{config.title}</h4>
-                {config.description && (
-                  <p className="text-sm text-gray-500">{config.description}</p>
-                )}
+                <h4 className="text-base font-medium text-card-foreground">{config.title}</h4>
               </div>
               
               {hasMessage ? (
-                <div className="h-[250px] flex items-center justify-center bg-gray-50 rounded-lg border border-gray-200">
+                <div className="h-[250px] flex items-center justify-center bg-muted/50 rounded-lg border border-border">
                   <div className="text-center">
-                    <p className="text-gray-500 text-sm">
+                    <p className="text-muted-foreground text-sm">
                       {chartDataForConfig[0]?.message || "Data not available"}
                     </p>
                   </div>
@@ -163,9 +160,14 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
                   <LineChart data={chartData[config.key]}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                     <XAxis dataKey="week" fontSize={12} />
-                    <YAxis fontSize={12} />
+                    <YAxis 
+                      fontSize={12} 
+                      domain={config.format === "percent" ? [0, 100] : undefined}
+                      tickFormatter={config.format === "percent" ? (value) => `${value}%` : 
+                                   config.format === "currency" ? (value) => `$${value.toLocaleString()}` : undefined}
+                    />
                     <Tooltip 
-                      content={<CustomTooltip format={config.format} />}
+                      content={<CustomTooltip format={config.format} actualColor={config.actualColor} targetColor={config.targetColor} />}
                       cursor={{ strokeDasharray: '3 3', stroke: '#e2e8f0' }}
                     />
                     <Line 
@@ -200,14 +202,14 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
                       <div className="w-1 h-0.5" style={{ backgroundColor: 'white' }}></div>
                       <div className="w-1 h-0.5" style={{ backgroundColor: config.targetColor }}></div>
                     </div>
-                    <span className="text-xs text-gray-600">Actual</span>
+                    <span className="text-xs text-muted-foreground">Actual</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-0.5 border-dashed" style={{ 
                       backgroundColor: config.actualColor,
                       borderColor: config.actualColor 
                     }}></div>
-                    <span className="text-xs text-gray-600">Target</span>
+                    <span className="text-xs text-muted-foreground">Target</span>
                   </div>
                 </div>
               )}

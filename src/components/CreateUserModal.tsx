@@ -84,20 +84,20 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="name" className="block text-sm font-medium mb-1">Name</label>
-            <Input id="name" type="text" value={currentUserData.name} onChange={handleChange} required={!isCreating} disabled={loading} placeholder="Enter user name" />
+            <label htmlFor="name" className="block text-sm font-medium mb-1 text-card-foreground">Name</label>
+            <Input id="name" type="text" value={currentUserData.name} onChange={handleChange} required={!isCreating} disabled={loading} placeholder="Enter user name" className="border-border focus:ring-primary" />
           </div>
           <div>
-            <label htmlFor="email" className="block text-sm font-medium mb-1">Email</label>
-            <Input id="email" type="email" value={currentUserData.email} onChange={handleChange} required disabled={loading} placeholder="Enter user email" />
+            <label htmlFor="email" className="block text-sm font-medium mb-1 text-card-foreground">Email</label>
+            <Input id="email" type="email" value={currentUserData.email} onChange={handleChange} required disabled={loading} placeholder="Enter user email" className="border-border focus:ring-primary" />
           </div>
           {isCreating && (
             <div>
-              <label htmlFor="password" className="block text-sm font-medium mb-1">Password</label>
-              <Input id="password" type="password" value={currentUserData.password} onChange={handleChange} required disabled={loading} placeholder="Enter password" />
+              <label htmlFor="password" className="block text-sm font-medium mb-1 text-card-foreground">Password</label>
+              <Input id="password" type="password" value={currentUserData.password} onChange={handleChange} required disabled={loading} placeholder="Enter password" className="border-border focus:ring-primary" />
             </div>
           )}
-          <Button type="submit" className="w-full" disabled={loading}>{loading ? (isCreating ? "Creating..." : "Saving...") : (isCreating ? "Create User" : "Save changes")}</Button>
+          <Button type="submit" className="w-full bg-gradient-primary hover:bg-gradient-accent text-primary-foreground" disabled={loading}>{loading ? (isCreating ? "Creating..." : "Saving...") : (isCreating ? "Create User" : "Save changes")}</Button>
         </form>
       </DialogContent>
     </Dialog>
