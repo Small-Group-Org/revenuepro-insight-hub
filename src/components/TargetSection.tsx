@@ -98,8 +98,8 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
           htmlFor={field.value}
           className="flex items-center justify-between"
         >
-          <span className="text-sm font-medium text-gray-700">{field.name}</span>
-          <span className="text-[10px] text-gray-500">
+          <span className="text-sm font-medium text-card-foreground">{field.name}</span>
+          <span className="text-[10px] text-muted-foreground">
             {showTarget && targetValues[field.value] !== undefined ? 
               `Target: ${field.unit === "$" ? formatCurrency(targetValues[field.value]) : 
                         field.unit === "%" ? formatPercent(targetValues[field.value]) : 
@@ -149,14 +149,14 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
             onWheel={(e) => e.currentTarget.blur()}
             className={`appearance-none pr-12 ${
               isFieldDisabled
-                ? "bg-gray-100 text-gray-500 cursor-not-allowed"
+                ? "bg-muted text-muted-foreground cursor-not-allowed"
                 : ""
             }`}
             style={{ MozAppearance: "textfield" }}
             disabled={isLoading || isFieldDisabled}
           />
           {field.unit && (
-            <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
+            <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground text-sm">
               {field.unit}
             </span>
           )}
@@ -190,25 +190,25 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
     return (
       <div
         key={field.value}
-        className={`bg-gradient-to-r from-gray-50/80 to-gray-100/80 backdrop-blur-sm p-3 rounded-xl border border-gray-200/40 ${
+        className={`bg-gradient-secondary/80 backdrop-blur-sm p-3 rounded-xl border border-border/40 ${
           isHighlightedField
-            ? "bg-gradient-to-r from-sky-100/80 border-blue-200 via-blue-100/80 to-transparentd border-sky-200/60"
-            : "hover:shadow-mdd"
+            ? "bg-gradient-accent/80 border-primary/40"
+            : "hover:shadow-md"
         }`}
       >
         <div className="flex items-center justify-between">
           <div className="flex-1">
-            <div className="text-sm font-medium text-gray-900">
+            <div className="text-sm font-medium text-card-foreground">
               {field.name}
             </div>
             {field.description && (
-              <div className="text-[10px] mt-[2px] text-gray-500">
+              <div className="text-[10px] mt-[2px] text-muted-foreground">
                 {field.description}
               </div>
             )}
           </div>
           <div className="text-right">
-            <span className="text-sm font-semibold text-gray-900">
+            <span className="text-sm font-semibold text-card-foreground">
               {field.unit === "$"
                 ? formatCurrency(value)
                 : field.unit === "%"
@@ -222,23 +222,23 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
 
         {/* Enhanced per-week breakdown for monthly budget */}
         {perWeekValue !== null && (
-          <div className="mt-3 pt-3 border-t border-gray-200/40">
+          <div className="mt-3 pt-3 border-t border-border/40">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="">
-                  <span className="text-xs font-medium text-gray-700">
+                  <span className="text-xs font-medium text-card-foreground">
                     Weekly Allocation
                   </span>
-                  <div className="text-[10px] text-gray-500">
+                  <div className="text-[10px] text-muted-foreground">
                   {currentTarget?.length || 0} weeks
                 </div>
                 </div>
                 
                 <div className="text-right">
-                  <div className="text-sm font-semibold text-gray-700">
+                  <div className="text-sm font-semibold text-card-foreground">
                     {Math.round(perWeekValue)}
                   </div>
-                  <div className="text-[10px] text-gray-500">per week</div>
+                  <div className="text-[10px] text-muted-foreground">per week</div>
                 </div>
               </div>
             </div>
@@ -249,12 +249,12 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
   };
 
   return (
-    <Card className="bg-white/90 backdrop-blur-sm border border-white/20 shadow-xl hover:shadow-2xld">
-      <div className={`p-6 border-b border-gray-100/50 ${gradientClass}`}>
+    <Card className="bg-card/90 backdrop-blur-sm border border-border/20 shadow-xl hover:shadow-2xl">
+      <div className={`p-6 border-b border-border/50 ${gradientClass}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             {icon}
-            <h2 className="text-lg font-semibold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+            <h2 className="text-lg font-semibold text-gradient-primary">
               {title}
             </h2>
           </div>

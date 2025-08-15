@@ -65,10 +65,10 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }: SidebarProp
               onClick={() => navigate(path)}
               className={cn(
                 "w-full flex items-center gap-3 p-3 rounded-lg transition-all duration-200",
-                "hover:bg-slate-800",
+                "hover:bg-sidebar-accent",
                 location.pathname === path 
-                  ? "bg-blue-600 shadow-md" 
-                  : "text-slate-300"
+                  ? "bg-gradient-accent shadow-md" 
+                  : "text-sidebar-foreground"
               )}
             >
               <Icon size={isCollapsed ? 24 : 20} />
@@ -81,13 +81,13 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }: SidebarProp
           {isAdmin && (
             <button
               onClick={() => navigate('/create-user')}
-              className={cn(
-                "w-full flex items-center gap-3 p-3 rounded-lg transition-all duration-200",
-                "hover:bg-slate-800",
-                location.pathname === '/create-user'
-                  ? "bg-blue-600 shadow-md"
-                  : "text-slate-300"
-              )}
+                          className={cn(
+              "w-full flex items-center gap-3 p-3 rounded-lg transition-all duration-200",
+              "hover:bg-sidebar-accent",
+              location.pathname === '/create-user'
+                ? "bg-gradient-accent shadow-md"
+                : "text-sidebar-foreground"
+            )}
             >
               <UserPlus size={isCollapsed ? 24 : 20} />
               {!isCollapsed && (

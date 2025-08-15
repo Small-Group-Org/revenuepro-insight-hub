@@ -247,16 +247,16 @@ export const LeadSheet = () => {
   }, [sortOrder]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <div className="relative z-10 py-12 px-4 ">
         <div className="max-w-7xl mx-auto space-y-10">
           <div className="text-center">
             <div className="flex items-center justify-center gap-4">
-              <h1 className="leading-[130%] text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent">
+              <h1 className="leading-[130%] text-4xl font-bold text-gradient-primary">
                 Lead Sheet
               </h1>
             </div>
-            <p className="text-gray-600 max-w-2xl mx-auto text-lg mb-10 mt-2">
+            <p className="text-muted-foreground max-w-2xl mx-auto text-lg mb-10 mt-2">
               Track and manage your leads with detailed information and estimate status
             </p>
           </div>
@@ -275,7 +275,7 @@ export const LeadSheet = () => {
           <Card className="shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-blue-600" />
+                <Users className="h-5 w-5 text-primary" />
                 Lead Management
               </CardTitle>
             </CardHeader>
@@ -283,59 +283,59 @@ export const LeadSheet = () => {
               <div className="overflow-x-auto relative">
                 <Table className="w-full min-w-[1400px]">
                   <TableHeader>
-                    <TableRow className="bg-gray-50">
-                      <TableHead className="font-semibold text-gray-700 w-32 sticky left-0 bg-gray-50 z-10 border-r border-gray-200 shadow-[4px_0_6px_-1px_rgba(0,0,0,0.1)]">
+                    <TableRow className="bg-muted">
+                      <TableHead className="font-semibold text-muted-foreground w-32 sticky left-0 bg-muted z-10 border-r border-border shadow-[4px_0_6px_-1px_rgba(0,0,0,0.1)]">
                         <div className="flex items-center gap-1">
                           Estimate Set
                         </div>
                       </TableHead>
-                      <TableHead className="font-semibold text-gray-700 w-48 sticky left-32 bg-gray-50 z-10 border-r border-gray-200 shadow-[4px_0_6px_-1px_rgba(0,0,0,0.1)]">
+                      <TableHead className="font-semibold text-muted-foreground w-48 sticky left-32 bg-muted z-10 border-r border-border shadow-[4px_0_6px_-1px_rgba(0,0,0,0.1)]">
                         <div className="flex items-center gap-1">
                           Unqualified Lead Reason
                         </div>
                       </TableHead>
-                      <TableHead className="font-semibold text-gray-700 w-32">
+                      <TableHead className="font-semibold text-muted-foreground w-32">
                         <div className="flex items-center gap-1">
                           Lead Date
                         </div>
                       </TableHead>
-                      <TableHead className="font-semibold text-gray-700 w-24">
+                      <TableHead className="font-semibold text-muted-foreground w-24">
                         <button 
                           onClick={handleSortChange}
-                          className="flex items-center justify-between w-full hover:text-blue-600 transition-colors"
+                          className="flex items-center justify-between w-full hover:text-primary transition-colors"
                         >
                           <span>Lead Score</span>
-                          <span className="text-blue-600">
+                          <span className="text-primary">
                             {sortOrder === 'desc' ? '↓' : '↑'}
                           </span>
                         </button>
                       </TableHead>
-                      <TableHead className="font-semibold text-gray-700 w-40">
+                      <TableHead className="font-semibold text-muted-foreground w-40">
                         <div className="flex items-center gap-1">
                           Name
                         </div>
                       </TableHead>
-                      <TableHead className="font-semibold text-gray-700 w-48">
+                      <TableHead className="font-semibold text-muted-foreground w-48">
                         <div className="flex items-center gap-1">
                           Email
                         </div>
                       </TableHead>
-                      <TableHead className="font-semibold text-gray-700 w-36">
+                      <TableHead className="font-semibold text-muted-foreground w-36">
                         <div className="flex items-center gap-1">
                           Phone
                         </div>
                       </TableHead>
-                      <TableHead className="font-semibold text-gray-700 w-20">
+                      <TableHead className="font-semibold text-muted-foreground w-20">
                         <div className="flex items-center gap-1">
                           Zip
                         </div>
                       </TableHead>
-                      <TableHead className="font-semibold text-gray-700 w-32">
+                      <TableHead className="font-semibold text-muted-foreground w-32">
                         <div className="flex items-center gap-1">
                           Service
                         </div>
                       </TableHead>
-                      <TableHead className="font-semibold text-gray-700 w-48">
+                      <TableHead className="font-semibold text-muted-foreground w-48">
                         <div className="flex items-center gap-1">
                           Ad Set Name
                         </div>
@@ -349,8 +349,8 @@ export const LeadSheet = () => {
                   </TableHeader>
                   <TableBody>
                     {(loading ? [] : sortedLeads).map((lead) => (
-                      <TableRow key={lead.id} className={`hover:bg-gray-50 ${lead.estimateSet ? 'bg-green-50' : ''}`}>
-                        <TableCell className={`px-3 py-4 text-center sticky left-0 z-10 border-r border-gray-200 shadow-[4px_0_6px_-1px_rgba(0,0,0,0.1)] ${lead.estimateSet ? 'bg-green-50' : 'bg-white'}`}>
+                                              <TableRow key={lead.id} className={`hover:bg-muted/50 ${lead.estimateSet ? 'bg-success/10' : ''}`}>
+                                                  <TableCell className={`px-3 py-4 text-center sticky left-0 z-10 border-r border-border shadow-[4px_0_6px_-1px_rgba(0,0,0,0.1)] ${lead.estimateSet ? 'bg-success/10' : 'bg-card'}`}>
                           <Checkbox
                             checked={lead.estimateSet}
                             onCheckedChange={(checked) => 
@@ -384,7 +384,7 @@ export const LeadSheet = () => {
                                     setShowCustomInput(null);
                                     setCustomULR('');
                                   }}
-                                  className="px-2 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
+                                  className="px-2 py-1 text-xs bg-muted-foreground text-primary-foreground rounded hover:bg-muted-foreground/80"
                                 >
                                   Cancel
                                 </button>
@@ -396,7 +396,7 @@ export const LeadSheet = () => {
                               onValueChange={(value) => handleULRChange(lead.id, value)}
                             >
                               <SelectTrigger 
-                                className={`w-full h-8 text-xs border-0 shadow-none ${pendingULRLeadId === lead.id ? 'ring-2 ring-yellow-200 bg-yellow-50' : 'hover:bg-gray-50'}`}
+                                className={`w-full h-8 text-xs border-0 shadow-none ${pendingULRLeadId === lead.id ? 'ring-2 ring-warning/40 bg-warning/10' : 'hover:bg-muted/50'}`}
                                 title={lead.unqualifiedLeadReason || "Select unqualified lead reason"}
                               >
                                 <SelectValue placeholder={pendingULRLeadId === lead.id ? "Select reason required!" : "Select reason..."}>
@@ -435,7 +435,7 @@ export const LeadSheet = () => {
                             {lead.score}
                           </span>
                         </TableCell>
-                        <TableCell className="font-medium text-gray-900 px-3 py-4">
+                        <TableCell className="font-medium text-card-foreground px-3 py-4">
                           {lead.name}
                         </TableCell>
                         <TableCell className="px-3 py-4">
@@ -475,15 +475,15 @@ export const LeadSheet = () => {
               </div>
               
               {loading && (
-                <div className="text-center py-8 text-gray-500">
-                  <Users className="h-12 w-12 mx-auto mb-4 text-gray-300 animate-pulse" />
+                <div className="text-center py-8 text-muted-foreground">
+                  <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground animate-pulse" />
                   <p>Loading leads...</p>
                 </div>
               )}
               
               {!loading && leads.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  <Users className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                <div className="text-center py-8 text-muted-foreground">
+                  <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                   <p>No leads found for the selected period.</p>
                 </div>
               )}

@@ -216,10 +216,10 @@ export const LeadAnalytics = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <Users className="h-12 w-12 mx-auto mb-4 text-gray-300 animate-pulse" />
-          <p className="text-gray-500">Loading analytics...</p>
+          <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground animate-pulse" />
+          <p className="text-muted-foreground">Loading analytics...</p>
         </div>
       </div>
     );
@@ -227,10 +227,10 @@ export const LeadAnalytics = () => {
 
   if (error || !analyticsData) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <Users className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-          <p className="text-gray-500">{error || 'No data available for analysis'}</p>
+          <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+          <p className="text-muted-foreground">{error || 'No data available for analysis'}</p>
         </div>
       </div>
     );
@@ -246,22 +246,22 @@ export const LeadAnalytics = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <div className="relative z-10 py-12 px-4">
         <div className="max-w-7xl mx-auto space-y-10">
           {/* Header */}
           <div className="text-center">
             <div className="flex items-center justify-center gap-4">
-              <h1 className="leading-[130%] text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent">
+              <h1 className="leading-[130%] text-4xl font-bold text-gradient-primary">
                 Lead Analytics
               </h1>
             </div>
             <div className="flex items-center justify-center gap-4 mb-10 mt-2">
-              <p className="text-gray-600 text-lg">
+              <p className="text-muted-foreground text-lg">
                 Complete analysis of lead performance - focusing on successful conversions and trends
               </p>
               <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-gray-500" />
+                <Calendar className="h-4 w-4 text-muted-foreground" />
                 <Select value={timeFilter} onValueChange={(value: any) => setTimeFilter(value)}>
                   <SelectTrigger className="w-32 h-8 text-xs">
                     <SelectValue />
@@ -542,7 +542,7 @@ export const LeadAnalytics = () => {
                   </thead>
                   <tbody>
                     {analyticsData.adSetData.map((adSet, index) => (
-                      <tr key={adSet.adSetName} className="border-b hover:bg-gray-50">
+                      <tr key={adSet.adSetName} className="border-b hover:bg-muted/50">
                         <td className="p-2 font-medium">{adSet.adSetName}</td>
                         <td className="text-right p-2">{adSet.total}</td>
                         <td className="text-right p-2 text-green-600 font-medium">{adSet.estimateSet}</td>
@@ -580,7 +580,7 @@ export const LeadAnalytics = () => {
                   </thead>
                   <tbody>
                     {analyticsData.adNameData.map((ad, index) => (
-                      <tr key={ad.adName} className="border-b hover:bg-gray-50">
+                      <tr key={ad.adName} className="border-b hover:bg-muted/50">
                         <td className="p-2 font-medium">{ad.adName}</td>
                         <td className="text-right p-2">{ad.total}</td>
                         <td className="text-right p-2 text-green-600 font-medium">{ad.estimateSet}</td>

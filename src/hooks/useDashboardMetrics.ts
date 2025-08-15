@@ -31,8 +31,7 @@ export const useDashboardMetrics = () => {
     }
 
     if (period === "monthly") {
-      const weekCount = getWeeksInMonth(selectedDate);
-      return Array.from({ length: weekCount }, (_, i) => {
+      return Array.from({ length: data.length }, (_, i) => {
         return data[i] ? processFunction(data[i], i) : fallbackFunction();
       });
     }
@@ -152,7 +151,7 @@ export const useDashboardMetrics = () => {
       return {};
     }
 
-    const xLabels = getXAxisLabels(period, selectedDate);
+    const xLabels = getXAxisLabels(period, selectedDate, period === "monthly" ? reportingData.length : undefined);
     const chartData: any = {};
 
     metricTypes.forEach((metricType) => {
@@ -196,7 +195,7 @@ export const useDashboardMetrics = () => {
         return [];
       }
 
-      const xLabels = getXAxisLabels(period, selectedDate);
+      const xLabels = getXAxisLabels(period, selectedDate, period === "monthly" ? reportingData.length : undefined);
 
       return xLabels.map((label, index) => {
         const metric1Actual = getValueFromProcessedData(processedActualData, index, metric1Key);

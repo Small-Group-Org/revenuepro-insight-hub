@@ -207,16 +207,16 @@ React.useEffect(() => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <div className="relative z-10 py-12 px-4">
         <div className="max-w-7xl mx-auto space-y-10">
           <div className="text-center">
             <div className="flex items-center justify-center gap-4">
-              <h1 className="leading-[130%] text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent">
+              <h1 className="leading-[130%] text-4xl font-bold text-gradient-primary">
                 Weekly Reporting
               </h1>
             </div>
-            <p className="text-gray-600 max-w-2xl mx-auto text-lg mb-10 mt-2">
+            <p className="text-muted-foreground max-w-2xl mx-auto text-lg mb-10 mt-2">
               Enter your weekly performance metrics for tracking and analysis
             </p>
           </div>
@@ -239,8 +239,8 @@ React.useEffect(() => {
           <TargetSection
             sectionKey="targets"
             title="Performance"
-            icon={<TrendingUp className="h-5 w-5 text-gray-600" />}
-            gradientClass="bg-gradient-to-r from-green-50/50 to-blue-50/50"
+            icon={<TrendingUp className="h-5 w-5 text-primary" />}
+            gradientClass="bg-gradient-primary/10"
             fields={getSectionFields('targets')}
             fieldValues={fieldValues}
             calculatedValues={calculatedValues}
@@ -257,8 +257,8 @@ React.useEffect(() => {
           <TargetSection
             sectionKey="budgetReport"
             title="Budget Report"
-            icon={<DollarSign className="h-5 w-5 text-gray-600" />}
-            gradientClass="bg-gradient-to-r from-blue-50/50 to-purple-50/50"
+            icon={<DollarSign className="h-5 w-5 text-success" />}
+            gradientClass="bg-gradient-secondary/10"
             fields={getSectionFields('budgetReport')}
             fieldValues={fieldValues}
             calculatedValues={calculatedValues}
@@ -275,8 +275,8 @@ React.useEffect(() => {
           <TargetSection
             sectionKey="targetReport"
             title="Target Report"
-            icon={<TrendingUp className="h-5 w-5 text-gray-600" />}
-            gradientClass="bg-gradient-to-r from-green-50/50 to-blue-50/50"
+            icon={<TrendingUp className="h-5 w-5 text-accent" />}
+            gradientClass="bg-gradient-accent/10"
             fields={getSectionFields('targetReport')}
             fieldValues={fieldValues}
             calculatedValues={calculatedValues}

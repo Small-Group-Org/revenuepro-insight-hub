@@ -44,10 +44,10 @@ const DualMetricTooltip = ({ active, payload, label, metric1Config, metric2Confi
     const metric2Actual = payload.find((p: any) => p.dataKey === 'metric2Actual')?.value || 0;
     
     return (
-      <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-4 min-w-[220px]">
+      <div className="bg-card rounded-lg shadow-lg p-4 min-w-[220px]">
         <div className="mb-3">
-          <p className="text-sm font-semibold text-gray-900 mb-1">{label}</p>
-          <div className="w-full h-0.5 bg-gradient-to-r from-blue-500 to-green-500 rounded"></div>
+          <p className="text-sm font-semibold text-card-foreground mb-1">{label}</p>
+          <div className="w-full h-0.5 bg-gradient-primary rounded"></div>
         </div>
         
         <div className="space-y-3">
@@ -55,7 +55,7 @@ const DualMetricTooltip = ({ active, payload, label, metric1Config, metric2Confi
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: metric1Config.actualColor }}></div>
-              <span className="text-xs font-medium text-gray-700">{metric1Config.title}</span>
+              <span className="text-xs font-medium text-card-foreground">{metric1Config.title}</span>
             </div>
             <span className="text-sm font-bold" style={{ color: metric1Config.actualColor }}>
               {formatValue(metric1Actual, metric1Config.format)}
@@ -66,7 +66,7 @@ const DualMetricTooltip = ({ active, payload, label, metric1Config, metric2Confi
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: metric2Config.actualColor }}></div>
-              <span className="text-xs font-medium text-gray-700">{metric2Config.title}</span>
+              <span className="text-xs font-medium text-card-foreground">{metric2Config.title}</span>
             </div>
             <span className="text-sm font-bold" style={{ color: metric2Config.actualColor }}>
               {formatValue(metric2Actual, metric2Config.format)}
@@ -87,10 +87,10 @@ export const DualMetricChart: React.FC<DualMetricChartProps> = ({
   icon 
 }) => {
   return (
-    <Card className="p-6">
+    <div className="p-6">
       <div className="flex items-center gap-2 mb-6">
         {icon}
-        <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
+        <h3 className="text-lg font-semibold text-card-foreground">{title}</h3>
       </div>
       
       <ResponsiveContainer width="100%" height={300}>
@@ -117,7 +117,11 @@ export const DualMetricChart: React.FC<DualMetricChartProps> = ({
             content={<DualMetricTooltip metric1Config={metric1Config} metric2Config={metric2Config} />}
             cursor={{ strokeDasharray: '3 3', stroke: '#e2e8f0' }}
           />
-          <Legend />
+          <Legend 
+            wrapperStyle={{ fontSize: '12px' }}
+            iconSize={12}
+            iconType="line"
+          />
           
           {/* Metric 1 Line */}
           <Line 
@@ -144,6 +148,6 @@ export const DualMetricChart: React.FC<DualMetricChartProps> = ({
           />
         </LineChart>
       </ResponsiveContainer>
-    </Card>
+    </div>
   );
 }; 

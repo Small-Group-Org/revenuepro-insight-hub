@@ -76,7 +76,7 @@ const CreateUser = () => {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50 py-6 px-2 sm:px-4 md:px-8">
+    <div className="flex flex-col min-h-screen bg-background py-6 px-2 sm:px-4 md:px-8">
       <CreateUserModal
         isOpen={isModalOpen}
         onOpenChange={setIsModalOpen}
@@ -89,45 +89,45 @@ const CreateUser = () => {
       <div className="max-w-5xl mx-auto w-full">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold text-gradient-primary">
               User Management
             </h1>
           </div>
           <Button
             onClick={handleCreateClick}
-            className="bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold shadow hover:from-blue-700 hover:to-purple-700"
+            className="bg-gradient-primary hover:bg-gradient-accent text-primary-foreground font-semibold shadow"
           >
             <UserPlus className="h-5 w-5 mr-2" />
             Add User
           </Button>
         </div>
 
-        <Card className="w-full shadow-lg">
+        <Card className="w-full shadow-lg bg-card border-border">
           <CardHeader>
-            <CardTitle>All Users</CardTitle>
+            <CardTitle className="text-card-foreground">All Users</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto rounded-lg border border-slate-200">
+            <div className="overflow-x-auto rounded-lg border border-border">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-slate-100">
-                    <TableHead>Email</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>User ID</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                  <TableRow className="bg-muted">
+                    <TableHead className="text-muted-foreground">Email</TableHead>
+                    <TableHead className="text-muted-foreground">Name</TableHead>
+                    <TableHead className="text-muted-foreground">Role</TableHead>
+                    <TableHead className="text-muted-foreground">User ID</TableHead>
+                    <TableHead className="text-right text-muted-foreground">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {fetchingUsers ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8">
+                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                         Loading...
                       </TableCell>
                     </TableRow>
                   ) : users.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8">
+                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                         No users found.
                       </TableCell>
                     </TableRow>
@@ -136,28 +136,28 @@ const CreateUser = () => {
                       <TableRow
                         key={user.id}
                         className={`transition-colors ${
-                          idx % 2 === 0 ? "bg-white" : "bg-slate-50"
-                        } hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50`}
+                          idx % 2 === 0 ? "bg-card" : "bg-muted/50"
+                        } hover:bg-accent/10`}
                       >
-                        <TableCell>{user.email}</TableCell>
-                        <TableCell>{user.name || "-"}</TableCell>
+                        <TableCell className="text-card-foreground">{user.email}</TableCell>
+                        <TableCell className="text-card-foreground">{user.name || "-"}</TableCell>
                         <TableCell>
                           <span
                             className={`inline-block px-2 py-1 rounded text-xs font-semibold ${
                               user.role === "ADMIN"
-                                ? "bg-blue-100 text-blue-800"
-                                : "bg-purple-100 text-purple-800"
+                                ? "bg-primary/20 text-primary"
+                                : "bg-accent/20 text-accent-foreground"
                             }`}
                           >
                             {user.role}
                           </span>
                         </TableCell>
-                        <TableCell className="font-mono text-xs break-all">{user.id}</TableCell>
+                        <TableCell className="font-mono text-xs break-all text-muted-foreground">{user.id}</TableCell>
                         <TableCell className="text-right flex flex-wrap gap-2 justify-end">
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="flex items-center gap-1 px-3 py-1 border border-blue-200 text-blue-700 font-medium rounded-md transition-colors hover:bg-blue-100 hover:text-blue-900"
+                            className="flex items-center gap-1 px-3 py-1 border border-primary/20 text-primary font-medium rounded-md transition-colors hover:bg-primary/10 hover:text-primary"
                             onClick={() => handleEditClick(user.id)}
                             aria-label="Edit"
                             title="Edit"
@@ -168,7 +168,7 @@ const CreateUser = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="flex items-center gap-1 px-3 py-1 border border-red-200 text-red-700 font-medium rounded-md transition-colors hover:bg-red-100 hover:text-red-900"
+                            className="flex items-center gap-1 px-3 py-1 border border-destructive/20 text-destructive font-medium rounded-md transition-colors hover:bg-destructive/10 hover:text-destructive"
                             onClick={() => handleDeleteClick(user.id)}
                             aria-label="Delete"
                             title="Delete"

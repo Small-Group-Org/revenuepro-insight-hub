@@ -31,38 +31,51 @@ const TopCard: React.FC<TopCardProps> = ({ title, icon, description, trend, metr
   };
 
   return (
-    <Card className="bg-white shadow-sm border-0 hover:shadow-md transition-shadow duration-200">
-      <CardHeader className="pb-3">
+    <Card className="bg-gradient-to-br from-background via-muted/15 to-primary/3 shadow-lg border border-border hover:shadow-2xl hover:border-primary/10 transition-all duration-300 group hover:scale-105 backdrop-blur-sm">
+      <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            {icon}
-            <CardTitle className="text-sm font-medium text-gray-600">{title}</CardTitle>
+            <CardTitle className="text-sm font-medium text-card-foreground">{title}</CardTitle>
           </div>
-          {trend && (
-            <div className={`flex items-center gap-1 text-xs font-medium ${
-              trend.isPositive ? 'text-green-600' : 'text-red-600'
-            }`}>
-              <span>{trend.isPositive ? '+' : ''}{trend.value.toFixed(1)}%</span>
-              <TrendingUp className={`h-3 w-3 ${trend.isPositive ? 'rotate-0' : 'rotate-180'}`} />
-            </div>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-0 relative">
+        <div className="min-h-[80px] flex flex-col gap-4 mt-1 justify-center">
+          {metrics.length === 1 ? (
+            <>
+              <div className="flex flex-col justify-center">
+                <span className={`font-bold text-card-foreground transition-all duration-300 text-[30px]`}>
+                  {formatValue(metrics[0].value, metrics[0].format)}
+                </span>
+              </div>
+              <div className="flex flex-col justify-center mt-auto">
+                <span className="text-[11px] text-muted-foreground/70 italic">
+                  {description}
+                </span>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex flex-col justify-center">
+                <span className={`font-bold text-card-foreground transition-all duration-300 text-[30px]`}>
+                  {formatValue(metrics[0].value, metrics[0].format)}
+                </span>
+              </div>
+              <div className="flex flex-col justify-center mt-auto">
+                <span className="text-xs text-muted-foreground">{metrics[1].label}</span>
+                <span className={`font-bold text-card-foreground transition-all duration-300 text-sm`}>
+                  {formatValue(metrics[1].value, metrics[1].format)}
+                </span>
+              </div>
+            </>
           )}
         </div>
-        {description && (
-          <p className="text-xs text-gray-500 mt-1">{description}</p>
-        )}
-      </CardHeader>
-      <CardContent className="pt-0">
-        <div className="min-h-[60px] flex flex-col gap-3 mt-1">
-          {metrics.map((metric, index) => (
-            <div key={index} className="flex items-baseline justify-between">
-              <span className="text-xs text-gray-600">{metric.label}</span>
-              <span className={`font-semibold text-gray-900 ${
-                metrics.length === 1 ? 'text-[20px]' : 'text-[16px]'
-              }`}>
-                {formatValue(metric.value, metric.format)}
-              </span>
-            </div>
-          ))}
+        
+        {/* Bottom right corner icon */}
+        <div className="absolute bottom-3 right-3 opacity-40 group-hover:opacity-70 transition-all duration-300">
+          <div className="text-2xl">
+            {icon}
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -159,7 +172,7 @@ export const DashboardTopCards: React.FC<DashboardTopCardsProps> = ({
   const cards = [
     {
       title: "Revenue",
-      icon: <DollarSign className="h-4 w-4 text-green-600" />,
+      icon: <DollarSign className="h-5 w-5 opacity-50 text-success" />,
       metrics: [
         {
           label: "Total Revenue",
@@ -167,26 +180,28 @@ export const DashboardTopCards: React.FC<DashboardTopCardsProps> = ({
           format: 'currency' as const
         },
         {
-          label: "Average Job Size",
+          label: "Avg. Job Size",
           value: aggregatedMetrics.avgJobSize,
           format: 'currency' as const
         }
-      ]
+      ],
+      description: "Total revenue generated from all jobs."
     },
     {
       title: "Total CoM %",
-      icon: <Target className="h-4 w-4 text-purple-600" />,
+      icon: <Target className="h-5 w-5 opacity-50 text-primary" />,
       metrics: [
         {
-          label: "Total CoM",
+          label: "Total CoM %",
           value: aggregatedMetrics.totalCom,
           format: 'percent' as const
         }
-      ]
+      ],
+      description: "Total cost of management as a percentage of total revenue."
     },
     {
       title: "Lead Performance",
-      icon: <Users className="h-4 w-4 text-indigo-600" />,
+      icon: <Users className="h-5 w-5 opacity-50 text-accent" />,
       metrics: [
         {
           label: "Total Leads",
@@ -198,11 +213,12 @@ export const DashboardTopCards: React.FC<DashboardTopCardsProps> = ({
           value: aggregatedMetrics.costPerLead,
           format: 'currency' as const
         }
-      ]
+      ],
+      description: "Total number of leads generated."
     },
     {
       title: "Appointment Metrics",
-      icon: <Calendar className="h-4 w-4 text-teal-600" />,
+      icon: <Calendar className="h-5 w-5 opacity-50 text-primary-light" />,
       metrics: [
         {
           label: "Appointments Set",
@@ -214,18 +230,20 @@ export const DashboardTopCards: React.FC<DashboardTopCardsProps> = ({
           value: aggregatedMetrics.costPerAppointmentSet,
           format: 'currency' as const
         }
-      ]
+      ],
+      description: "Total number of appointments scheduled."
     },
     {
       title: "Appointment Rate %",
-      icon: <TrendingUp className="h-4 w-4 text-emerald-600" />,
+      icon: <TrendingUp className="h-5 w-5 opacity-50 text-warning" />,
       metrics: [
         {
-          label: "Appointment Rate",
+          label: "Appointment Rate %",
           value: aggregatedMetrics.appointmentRate,
           format: 'percent' as const
         }
-      ]
+      ],
+      description: "Percentage of leads that resulted in an appointment."
     }
   ];
 
@@ -237,6 +255,7 @@ export const DashboardTopCards: React.FC<DashboardTopCardsProps> = ({
           title={card.title}
           icon={card.icon}
           metrics={card.metrics}
+          description={card.description}
         />
       ))}
     </div>

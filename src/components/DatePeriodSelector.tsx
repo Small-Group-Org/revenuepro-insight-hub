@@ -66,7 +66,7 @@ export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
       const monthName = format(new Date(weekInfo.belongsToYear, weekInfo.belongsToMonth), 'MMM');
       return (
         <span>
-          {weekRange} <span className="text-sm text-gray-500">({monthName})</span>
+          {weekRange} <span className="text-sm text-muted-foreground">({monthName})</span>
         </span>
       );
     } else if (period === "monthly") {
@@ -139,25 +139,25 @@ export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between w-full py-2 px-4 bg-white rounded-xl shadow border border-gray-200">
+      <div className="flex items-center justify-between w-full py-2 px-4 bg-card rounded-xl shadow border border-border">
         <div className="flex items-center gap-2">
           <button
-            className="rounded-full bg-gray-100 hover:bg-gray-200 p-2 transition"
+            className="rounded-full bg-muted hover:bg-muted/80 p-2 transition"
             onClick={handlePrev}
             aria-label="Previous"
             type="button"
           >
-            <ChevronLeft className="h-5 w-5 text-gray-500" />
+            <ChevronLeft className="h-5 w-5 text-muted-foreground" />
           </button>
           <button
-            className="rounded-full bg-gray-100 hover:bg-gray-200 p-2 transition"
+            className="rounded-full bg-muted hover:bg-muted/80 p-2 transition"
             onClick={handleNext}
             aria-label="Next"
             type="button"
           >
-            <ChevronRight className="h-5 w-5 text-gray-500" />
+            <ChevronRight className="h-5 w-5 text-muted-foreground" />
           </button>
-          <span className="ml-4 text-xl font-medium text-gray-900">
+          <span className="ml-4 text-xl font-medium text-card-foreground">
             {getLabel()}
           </span>
         </div>
@@ -184,7 +184,7 @@ export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
           {onButtonClick && (
             <Button
               onClick={onButtonClick}
-              className="bg-gray-900 hover:bg-gray-800 text-white px-6 h-[38px]"
+              className="bg-gradient-primary hover:bg-gradient-accent text-primary-foreground px-6 h-[38px]"
               type="button"
               disabled={
                 finalDisableLogic.isButtonDisabled ||
@@ -197,8 +197,8 @@ export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
         </div>
       </div>
       {finalDisableLogic.noteMessage && (
-        <div className="px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-sm text-blue-800">
+        <div className="px-4 py-2 bg-accent/10 border border-accent/20 rounded-lg">
+          <p className="text-sm text-accent-foreground">
             {finalDisableLogic.noteMessage}
           </p>
         </div>

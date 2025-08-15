@@ -1,9 +1,9 @@
 import { PeriodType } from "@/types";
 import { getWeeksInMonth } from "date-fns";
 
-export   const getXAxisLabels = (period: PeriodType, selectedDate: Date) => {
+export const getXAxisLabels = (period: PeriodType, selectedDate: Date, dataLength?: number) => {
     if (period === 'monthly') {
-      const weekCount = getWeeksInMonth(selectedDate);
+      const weekCount = dataLength || getWeeksInMonth(selectedDate);
       return Array.from({ length: weekCount }, (_, i) => `Week ${i + 1}`);
     } else if (period === 'yearly') {
       return [

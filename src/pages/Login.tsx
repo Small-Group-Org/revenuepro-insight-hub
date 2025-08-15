@@ -54,16 +54,16 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Welcome Back</CardTitle>
-          <CardDescription>Sign in to your account</CardDescription>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-secondary">
+      <Card className="w-full max-w-md bg-card border-border shadow-lg">
+        <CardHeader className="text-center">
+          <CardTitle className="text-gradient-primary text-2xl">Welcome Back</CardTitle>
+          <CardDescription className="text-muted-foreground">Sign in to your account</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium">
+              <label htmlFor="email" className="text-sm font-medium text-card-foreground">
                 Email
               </label>
               <Input
@@ -74,10 +74,11 @@ export default function Login() {
                 placeholder="Enter your email"
                 required
                 disabled={isLoading}
+                className="border-border focus:ring-primary"
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium">
+              <label htmlFor="password" className="text-sm font-medium text-card-foreground">
                 Password
               </label>
               <Input
@@ -88,9 +89,10 @@ export default function Login() {
                 placeholder="Enter your password"
                 required
                 disabled={isLoading}
+                className="border-border focus:ring-primary"
               />
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type="submit" className="w-full bg-gradient-primary hover:bg-gradient-accent text-primary-foreground" disabled={isLoading}>
               {isLoading ? "Signing in..." : "Sign In"}
             </Button>
           </form>

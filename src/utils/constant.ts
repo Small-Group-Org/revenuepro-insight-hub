@@ -347,20 +347,20 @@ export const reportingFields: ReportingFieldsConfig = {
 // Revenue Metrics
 export const revenueMetricsChartConfigs = [
   {
-    key: "totalCom",
-    title: "Total CoM%",
-    description: "Management fee + ad spend / total revenue",
-    actualColor: "#3b82f6",
-    targetColor: "#10b981",
-    format: "percent",
-  },
-  {
     key: "revenue",
     title: "Total Revenue",
     description: "Total revenue generated",
     actualColor: "#10b981",
     targetColor: "#059669",
     format: "currency",
+  },
+  {
+    key: "totalCom",
+    title: "Total CoM%",
+    description: "Management fee + ad spend / total revenue",
+    actualColor: "#3b82f6",
+    targetColor: "#10b981",
+    format: "percent",
   },
 ];
 
