@@ -405,7 +405,7 @@ export const SetTargets = () => {
         <div className="max-w-7xl mx-auto space-y-10">
           <div className="text-center">
             <div className="flex items-center justify-center gap-4">
-              <div className="w-10 h-10 bg-gradient-to-r from-primary to-primary/60 rounded-xl flex items-center justify-center shadow-lg">
+              <div className="w-10 h-10 bg-gradient-to-r from-primary to-primary/60 rounded-lg  flex items-center justify-center shadow-lg">
                 <Target className="w-5 h-5 text-primary-foreground" />
               </div>
               <h1 className="leading-[130%] text-4xl font-bold text-gradient-primary">
