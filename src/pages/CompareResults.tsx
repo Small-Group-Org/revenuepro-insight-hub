@@ -353,45 +353,48 @@ export const CompareResults = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="relative z-10 pt-4 pb-12 px-4">
-        <div className="max-w-7xl mx-auto space-y-10">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      <div className="relative z-10 pt-6 pb-16 px-4">
+        <div className="max-w-7xl mx-auto space-y-12">
           {/* Header */}
           <div className="text-center">
-            <div className="flex items-center justify-center gap-4">
+            <div className="flex items-center justify-center gap-4 mb-6">
+              <div className="w-10 h-10 bg-gradient-to-r from-primary to-primary/60 rounded-xl flex items-center justify-center shadow-lg">
+                <TrendingUp className="w-5 h-5 text-primary-foreground" />
+              </div>
               <h1 className="leading-[130%] text-4xl font-bold text-gradient-primary">
                 Target Vs Actual
               </h1>
             </div>
-            <p className="text-muted-foreground max-w-2xl mx-auto text-lg mb-10 mt-2">
+            <p className="text-muted-foreground max-w-2xl mx-auto text-lg mb-8 mt-2">
               Compare your actual performance against targets with calculated metrics
             </p>
           </div>
         </div>
 
         {/* Controls */}
-        <div className="max-w-7xl mx-auto mb-8">
-          <DatePeriodSelector
-            initialDate={selectedDate}
-            initialPeriod={period}
-            onChange={handleDatePeriodChange}
-            buttonText="Export to Excel"
-            onButtonClick={handleExport}
-            allowedPeriods={["weekly", "monthly", "yearly", "ytd"]}
-          />
+        <div className="max-w-7xl mx-auto mb-10">
+            <DatePeriodSelector
+              initialDate={selectedDate}
+              initialPeriod={period}
+              onChange={handleDatePeriodChange}
+              buttonText="Export to Excel"
+              onButtonClick={handleExport}
+              allowedPeriods={["weekly", "monthly", "yearly", "ytd"]}
+            />
         </div>
 
         {/* Metrics Tables Grid */}
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
           {metrics.map((section) => (
-            <Card key={section.category} className="p-6">
-                            <h3 className="text-xl font-semibold text-card-foreground mb-6">
+            <Card key={section.category} className="p-6 shadow-lg transition-all duration-300 border hover:shadow-2xl border-primary/10 bg-gradient-to-br from-card to-card/80 backdrop-blur-sm">
+              <h3 className="text-xl font-semibold text-card-foreground mb-6 flex items-center gap-2">
                 {section.category}
               </h3>
-              <div className="overflow-x-auto">
+              <div className="overflow-hidden rounded-lg border border-border/50">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-border">
+                    <tr className="bg-muted/30 border-b border-border/50">
                       <th className="text-left p-3 font-semibold text-muted-foreground text-sm">
                         Metric
                       </th>
@@ -401,7 +404,7 @@ export const CompareResults = () => {
                       <th className="text-right p-3 font-semibold text-muted-foreground text-sm">
                         Target
                       </th>
-                          <th className="text-right p-3 font-semibold text-muted-foreground text-sm">
+                      <th className="text-right p-3 font-semibold text-muted-foreground text-sm">
                         Progress
                       </th>
                       <th className="text-right p-3 font-semibold text-muted-foreground text-sm">
@@ -410,46 +413,72 @@ export const CompareResults = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {section.items.map((item) => {
+                    {section.items.map((item, index) => {
                       const percent =
                         item.target === 0
                           ? 0
                           : ((item.actual - item.target) / item.target) * 100;
                       const isPositive = percent >= 0;
+                      const progressPercent = item.target > 0 ? (item.actual / item.target) * 100 : 0;
+                      
                       return (
                         <tr
                           key={`${section.category}-${item.name}`}
-                          className="border-b border-border hover:bg-muted/50"
+                          className={`border-b border-border/30 hover:bg-muted/30 hover:shadow-md transition-all duration-300 cursor-pointer group ${
+                            index % 2 === 0 ? 'bg-background/50' : 'bg-muted/5'
+                          }`}
                         >
-                          <td className="p-3 font-medium text-card-foreground text-sm">
-                            {item.name}
+                          <td className="px-3 py-5 font-medium text-card-foreground text-sm group-hover:text-primary transition-colors duration-200">
+                            <div className="flex items-center gap-3">
+                              {item.name}
+                            </div>
                           </td>
                           <td className="p-3 text-right font-bold text-card-foreground text-sm">
-                            {formatValue(item.actual, item.format)}
+                            <span className="px-2 py-1 rounded-lg bg-primary/10 text-primary font-semibold group-hover:bg-primary/20 group-hover:shadow-sm transition-all duration-200">
+                              {formatValue(item.actual, item.format)}
+                            </span>
                           </td>
                           <td className="p-3 text-right font-medium text-muted-foreground text-sm">
-                            {formatValue(item.target, item.format)}
+                            <span className="px-3 py-2 rounded-lg bg-muted/30 text-muted-foreground group-hover:bg-muted/50 group-hover:shadow-sm transition-all duration-200">
+                              {formatValue(item.target, item.format)}
+                            </span>
                           </td>
                           <td className="p-3 text-right font-semibold text-sm">
-                            <span className="text-muted-foreground">
-                              {item.target > 0 ? `${((item.actual / item.target) * 100).toFixed(2)}%` : 'N/A'}
-                            </span>
+                            <div className="flex flex-col items-end gap-2">
+                              <span className="text-muted-foreground text-sm group-hover:text-foreground transition-colors duration-200">
+                                {item.target > 0 ? `${progressPercent.toFixed(1)}%` : 'N/A'}
+                              </span>
+                              {item.target > 0 && (
+                                <div className="w-20 h-2 bg-muted rounded-full overflow-hidden group-hover:shadow-inner transition-all duration-200">
+                                  <div 
+                                    className={`h-full rounded-full transition-all duration-300 ${
+                                      progressPercent >= 100 
+                                        ? 'bg-success' 
+                                        : progressPercent >= 80 
+                                        ? 'bg-warning' 
+                                        : 'bg-destructive'
+                                    }`}
+                                    style={{ width: `${Math.min(progressPercent, 100)}%` }}
+                                  ></div>
+                                </div>
+                              )}
+                            </div>
                           </td>
                           <td className="p-3 text-right font-semibold">
                             <span
                               className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-bold ${
                                 isPositive
-                                  ? "bg-success/20 text-success"
-                                  : "bg-destructive/20 text-destructive"
+                                  ? "bg-success/20 text-success border border-success/30 hover:bg-success/30 hover:shadow-lg"
+                                  : "bg-destructive/20 text-destructive border border-destructive/30 hover:bg-destructive/30 hover:shadow-lg"
                               }`}
                             >
                               {isPositive ? (
-                                <TrendingUp className="h-3 w-3 mr-1" />
+                                <TrendingUp className="h-4 w-4 mr-2" />
                               ) : (
-                                <TrendingDown className="h-3 w-3 mr-1" />
+                                <TrendingDown className="h-4 w-4 mr-2" />
                               )}
                               {percent > 0 ? "+" : ""}
-                              {percent.toFixed(2)}%
+                              {percent.toFixed(1)}%
                             </span>
                           </td>
                         </tr>

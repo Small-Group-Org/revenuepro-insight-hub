@@ -4,7 +4,7 @@ import { useUserStore } from '@/stores/userStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line } from 'recharts';
-import { TrendingUp, MapPin, Wrench, Tag, FileText, Users, CheckCircle, XCircle, Calendar } from 'lucide-react';
+import { TrendingUp, MapPin, Wrench, Tag, FileText, Users, CheckCircle, XCircle, Calendar, BarChart3 } from 'lucide-react';
 import { Lead } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear, subMonths, subQuarters, subYears } from 'date-fns';
@@ -252,6 +252,9 @@ export const LeadAnalytics = () => {
           {/* Header */}
           <div className="text-center">
             <div className="flex items-center justify-center gap-4">
+            <div className="w-10 h-10 bg-gradient-to-r from-primary to-primary/60 rounded-xl flex items-center justify-center shadow-lg">
+                <BarChart3 className="w-5 h-5 text-primary-foreground" />
+              </div>
               <h1 className="leading-[130%] text-4xl font-bold text-gradient-primary">
                 Lead Analytics
               </h1>

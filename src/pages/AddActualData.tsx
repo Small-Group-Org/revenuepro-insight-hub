@@ -2,7 +2,7 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useReportingDataStore } from '@/stores/reportingDataStore';
 import { useToast } from '@/hooks/use-toast';
-import { DollarSign, TrendingUp } from 'lucide-react';
+import { DollarSign, Plus, TrendingUp } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { DatePeriodSelector } from '@/components/DatePeriodSelector';
 import { TargetSection } from '@/components/TargetSection';
@@ -178,21 +178,12 @@ React.useEffect(() => {
     }
   }, [selectedDate, fieldValues, upsertReportingData, toast, getInputFieldNames, error]);
 
-  const getWeekRange = (mondayDate: string) => {
-    const monday = new Date(mondayDate);
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    return `${format(monday, 'MMM dd')} - ${format(sunday, 'MMM dd, yyyy')}`;
-  };
-
   const isHighlighted = useCallback((fieldName: string) => {
     if (!lastChanged) return false;
     return prevValues[fieldName] !== calculatedValues[fieldName];
   }, [lastChanged, prevValues, calculatedValues]);
 
   const handleDatePeriodChange = useCallback((date: Date, period: PeriodType) => {
-    // Navigation is now handled by onNavigationAttempt prop
-    // This function is called only when navigation is allowed
     setSelectedDate(date);
     setPeriod(period);
   }, []);
@@ -212,6 +203,9 @@ React.useEffect(() => {
         <div className="max-w-7xl mx-auto space-y-10">
           <div className="text-center">
             <div className="flex items-center justify-center gap-4">
+            <div className="w-10 h-10 bg-gradient-to-r from-primary to-primary/60 rounded-xl flex items-center justify-center shadow-lg">
+                <Plus className="w-5 h-5 text-primary-foreground" />
+              </div>
               <h1 className="leading-[130%] text-4xl font-bold text-gradient-primary">
                 Weekly Reporting
               </h1>
