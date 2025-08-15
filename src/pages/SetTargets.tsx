@@ -401,7 +401,7 @@ export const SetTargets = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="relative z-10 py-12 px-4">
+      <div className="relative z-10 pt-4 pb-12 px-4">
         <div className="max-w-7xl mx-auto space-y-10">
           <div className="text-center">
             <div className="flex items-center justify-center gap-4">

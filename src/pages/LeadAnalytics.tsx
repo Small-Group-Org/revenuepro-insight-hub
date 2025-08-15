@@ -247,7 +247,7 @@ export const LeadAnalytics = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="relative z-10 py-12 px-4">
+      <div className="relative z-10 pt-4 pb-12 px-4">
         <div className="max-w-7xl mx-auto space-y-10">
           {/* Header */}
           <div className="text-center">
@@ -335,7 +335,7 @@ export const LeadAnalytics = () => {
           {/* Charts Grid */}
           {analyticsData.overview.estimateSetCount === 0 ? (
             <Card className="mx-auto max-w-md">
-              <CardContent className="text-center py-12">
+              <CardContent className="text-center pt-4 pb-12">
                 <CheckCircle className="h-16 w-16 mx-auto mb-4 text-gray-300" />
                 <h3 className="text-lg font-semibold text-gray-700 mb-2">No Estimate Set Leads</h3>
                 <p className="text-gray-500">

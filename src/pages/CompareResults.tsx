@@ -354,7 +354,7 @@ export const CompareResults = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="relative z-10 py-12 px-4">
+      <div className="relative z-10 pt-4 pb-12 px-4">
         <div className="max-w-7xl mx-auto space-y-10">
           {/* Header */}
           <div className="text-center">
