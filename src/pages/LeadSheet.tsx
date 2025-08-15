@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { Users } from 'lucide-react';
+import { Users, Lock } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { DatePeriodSelector } from '@/components/DatePeriodSelector';
 import { PeriodType } from '@/types';
 import { getWeekInfo } from '@/utils/weekLogic';
 import { useLeadStore } from '@/stores/leadStore';
 import { useUserStore } from '@/stores/userStore';
+import { useRoleAccess } from '@/hooks/useRoleAccess';
+import { handleInputDisable } from '@/utils/page-utils/compareUtils';
 import {
   Table,
   TableBody,
@@ -21,6 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 export const LeadSheet = () => {
   const { toast } = useToast();
+  const { userRole } = useRoleAccess();
   const [selectedDate, setSelectedDate] = useState<Date>(startOfYear(new Date()));
   const [period, setPeriod] = useState<PeriodType>('yearly');
   const [isLoading, setIsLoading] = useState(false);
@@ -31,6 +34,14 @@ export const LeadSheet = () => {
   
   const { leads, loading, error, fetchLeads, updateLeadData, updateLeadLocal } = useLeadStore();
   const { selectedUserId } = useUserStore();
+
+  // Calculate disable logic for LeadSheet page with role-based restrictions
+  const disableLogic = useMemo(() => 
+    handleInputDisable(period, selectedDate, null, 'leadSheet', userRole), 
+    [period, selectedDate, userRole]
+  );
+
+  const { isDisabled } = disableLogic;
 
   // Helper functions to reduce code duplication
   const findLead = useCallback((leadId: string) => leads.find(l => l.id === leadId), [leads]);
@@ -271,6 +282,7 @@ export const LeadSheet = () => {
             initialPeriod={period}
             onChange={handleDatePeriodChange}
             allowedPeriods={['weekly', 'monthly', 'yearly']}
+            disableLogic={disableLogic}
           />
         </div>
 
@@ -290,11 +302,21 @@ export const LeadSheet = () => {
                       <TableHead className="font-semibold text-muted-foreground w-32 sticky left-0 bg-muted z-10 border-r border-border shadow-[4px_0_6px_-1px_rgba(0,0,0,0.1)]">
                         <div className="flex items-center gap-1">
                           Estimate Set
+                          {isDisabled && (
+                            <div title="Restricted to Revenue PRO team">
+                              <Lock className="h-3 w-3 text-amber-600" />
+                            </div>
+                          )}
                         </div>
                       </TableHead>
                       <TableHead className="font-semibold text-muted-foreground w-48 sticky left-32 bg-muted z-10 border-r border-border shadow-[4px_0_6px_-1px_rgba(0,0,0,0.1)]">
                         <div className="flex items-center gap-1">
                           Unqualified Lead Reason
+                          {isDisabled && (
+                            <div title="Restricted to Revenue PRO team">
+                              <Lock className="h-3 w-3 text-amber-600" />
+                            </div>
+                          )}
                         </div>
                       </TableHead>
                       <TableHead className="font-semibold text-muted-foreground w-32">
@@ -353,16 +375,18 @@ export const LeadSheet = () => {
                   <TableBody>
                     {(loading ? [] : sortedLeads).map((lead) => (
                                               <TableRow key={lead.id} className={`hover:bg-muted/50 ${lead.estimateSet ? 'bg-success/10' : ''}`}>
-                                                  <TableCell className={`px-3 py-4 text-center sticky left-0 z-10 border-r border-border shadow-[4px_0_6px_-1px_rgba(0,0,0,0.1)] ${lead.estimateSet ? 'bg-success/10' : 'bg-card'}`}>
+                                                  <TableCell className={`px-3 py-4 text-center sticky left-0 z-10 border-r border-border shadow-[4px_0_6px_-1px_rgba(0,0,0,0.1)] ${lead.estimateSet ? 'bg-success/10' : 'bg-card'} ${isDisabled ? 'opacity-60' : ''}`}>
                           <Checkbox
                             checked={lead.estimateSet}
                             onCheckedChange={(checked) => 
-                              handleEstimateSetChange(lead.id, checked as boolean)
+                              !isDisabled ? handleEstimateSetChange(lead.id, checked as boolean) : undefined
                             }
                             className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                            disabled={isDisabled}
+                            title={isDisabled ? "Only Revenue PRO team members can modify this field" : "Click to change estimate status"}
                           />
                         </TableCell>
-                        <TableCell className={`px-3 py-4 sticky left-32 z-10 border-r border-gray-200 shadow-[4px_0_6px_-1px_rgba(0,0,0,0.1)] text-center ${lead.estimateSet ? 'bg-green-50' : pendingULRLeadId === lead.id ? 'bg-yellow-50' : 'bg-white'}`}>
+                        <TableCell className={`px-3 py-4 sticky left-32 z-10 border-r border-gray-200 shadow-[4px_0_6px_-1px_rgba(0,0,0,0.1)] text-center ${lead.estimateSet ? 'bg-green-50' : pendingULRLeadId === lead.id ? 'bg-yellow-50' : 'bg-white'} ${isDisabled ? 'opacity-60' : ''}`}>
                           {lead.estimateSet ? (
                             <span className="text-gray-500 text-sm">NA</span>
                           ) : showCustomInput === lead.id ? (
@@ -374,33 +398,40 @@ export const LeadSheet = () => {
                                 placeholder="Enter custom reason..."
                                 className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 onKeyPress={(e) => e.key === 'Enter' && handleCustomULRSubmit(lead.id)}
+                                disabled={isDisabled}
+                                title={isDisabled ? "Only Revenue PRO team members can modify this field" : "Enter a custom unqualified lead reason"}
                               />
-                              <div className="flex gap-1">
-                                <button
-                                  onClick={() => handleCustomULRSubmit(lead.id)}
-                                  className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
-                                >
-                                  Save
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    setShowCustomInput(null);
-                                    setCustomULR('');
-                                  }}
-                                  className="px-2 py-1 text-xs bg-muted-foreground text-primary-foreground rounded hover:bg-muted-foreground/80"
-                                >
-                                  Cancel
-                                </button>
-                              </div>
+                                                              <div className="flex gap-1">
+                                  <button
+                                    onClick={() => handleCustomULRSubmit(lead.id)}
+                                    className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    disabled={isDisabled}
+                                    title={isDisabled ? "Only Revenue PRO team members can modify this field" : "Save custom reason"}
+                                  >
+                                    Save
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setShowCustomInput(null);
+                                      setCustomULR('');
+                                    }}
+                                    className="px-2 py-1 text-xs bg-muted-foreground text-primary-foreground rounded hover:bg-muted-foreground/80 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    disabled={isDisabled}
+                                    title={isDisabled ? "Only Revenue PRO team members can modify this field" : "Cancel custom reason input"}
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
                             </div>
                           ) : (
                             <Select
                               value={lead.unqualifiedLeadReason || ''}
-                              onValueChange={(value) => handleULRChange(lead.id, value)}
+                              onValueChange={(value) => !isDisabled ? handleULRChange(lead.id, value) : undefined}
+                              disabled={isDisabled}
                             >
                               <SelectTrigger 
                                 className={`w-full h-8 text-xs border-0 shadow-none ${pendingULRLeadId === lead.id ? 'ring-2 ring-warning/40 bg-warning/10' : 'hover:bg-muted/50'}`}
-                                title={lead.unqualifiedLeadReason || "Select unqualified lead reason"}
+                                title={isDisabled ? "Only Revenue PRO team members can modify this field" : (lead.unqualifiedLeadReason || "Select unqualified lead reason")}
                               >
                                 <SelectValue placeholder={pendingULRLeadId === lead.id ? "Select reason required!" : "Select reason..."}>
                                   {lead.unqualifiedLeadReason && !ULR_OPTIONS.includes(lead.unqualifiedLeadReason) ? (

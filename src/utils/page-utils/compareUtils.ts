@@ -117,26 +117,47 @@ export const handleInputDisable = (
   period: PeriodType,
   selectedDate: Date,
   currentTarget: any[] | null = null,
-  pageType: "setTargets" | "addActualData" = "setTargets"
+  pageType: "setTargets" | "addActualData" | "leadSheet" = "setTargets",
+  userRole?: string
 ): DisableMetadata => {
   let isDisabled = false;
   let disabledMessage: string | null = null;
   let noteMessage: string | null = null;
   let shouldDisableNonRevenueFields = false;
   let isButtonDisabled = false;
-  return {
-    isDisabled: false,
-    disabledMessage: null,
-    noteMessage: null,
-    shouldDisableNonRevenueFields: false,
-    isButtonDisabled: false,
+
+  // Role-based restrictions
+  if (pageType === "addActualData" && userRole !== 'ADMIN') {
+    isDisabled = true;
+    isButtonDisabled = true;
+    disabledMessage = "Only Revenue PRO team members can modify actual data";
+    noteMessage = "Access restricted to Revenue PRO team members";
+    return {
+      isDisabled,
+      disabledMessage,
+      noteMessage,
+      shouldDisableNonRevenueFields,
+      isButtonDisabled,
+    };
   }
-  // For AddActualData page, check if the time frame is in the past (only past dates allowed)
+
+  if (pageType === "leadSheet" && userRole !== 'ADMIN') {
+    isDisabled = true;
+    isButtonDisabled = true;
+    disabledMessage = "Only Revenue PRO team members can modify lead sheet data";
+    noteMessage = "Access restricted to Revenue PRO team members";
+    return {
+      isDisabled,
+      disabledMessage,
+      noteMessage,
+      shouldDisableNonRevenueFields,
+      isButtonDisabled,
+    };
+  }
+
   if (pageType === "addActualData") {
-    
     const isInPast = isTimeFrameInPast(period, selectedDate);
     if (!isInPast) {
-      // Future date logic for actual data - disable everything
       isDisabled = true;
       isButtonDisabled = true;
       disabledMessage = "Actual data can only be entered for past dates";

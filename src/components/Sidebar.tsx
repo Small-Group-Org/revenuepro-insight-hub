@@ -34,7 +34,7 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }: SidebarProp
       {/* Header */}
       <div className="p-2 border-b border-sidebar-border">
         <div className={cn(
-          "flex items-center",
+          "flex items-center py-2",
           isCollapsed ? "justify-center" : "justify-between"
         )}>
           {!isCollapsed && (
