@@ -139,7 +139,7 @@ export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between w-full py-2 px-4 bg-card rounded-xl shadow border border-border">
+      <div className="flex items-center justify-between w-full py-2 px-4 bg-card rounded-lg shadow border border-border">
         <div className="flex items-center gap-2">
           <button
             className={`rounded-full p-2 transition ${
@@ -207,8 +207,8 @@ export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
         </div>
       </div>
       {finalDisableLogic.noteMessage && (
-        <div className="px-4 py-2 bg-accent/10 border border-accent/20 rounded-lg">
-          <p className="text-sm text-accent-foreground">
+        <div className="px-4 py-2 bg-orange-50 border border-orange-200 rounded-lg">
+          <p className="text-sm text-orange-800">
             {finalDisableLogic.noteMessage}
           </p>
         </div>

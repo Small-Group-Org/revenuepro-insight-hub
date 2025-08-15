@@ -13,11 +13,13 @@ import { handleInputDisable } from '@/utils/page-utils/compareUtils';
 import { processTargetData } from '@/utils/page-utils/targetUtils';
 import { getWeekInfo } from '@/utils/weekLogic';
 import { useUserStore } from '@/stores/userStore';
+import { useRoleAccess } from '@/hooks/useRoleAccess';
 
 export const AddActualData = () => {
   const { reportingData, targetData, getReportingData, upsertReportingData, isLoading, error } = useReportingDataStore();
   const { toast } = useToast();
   const { selectedUserId } = useUserStore();
+  const { userRole } = useRoleAccess();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [period, setPeriod] = useState<PeriodType>('weekly');
 
@@ -73,13 +75,10 @@ React.useEffect(() => {
     reportingData.forEach(data => {
       if (!data) return;
       
-      // Process each field from the actual data
       Object.keys(data).forEach(key => {
-        // Skip metadata fields
         if (key !== 'userId' && key !== 'startDate' && key !== 'endDate' && 
             key !== '_id' && key !== 'createdAt' && key !== 'updatedAt' && key !== '__v') {
           
-          // Sum up the values (for monthly data with multiple weeks)
           newValues[key] = (newValues[key] || 0) + (data[key] || 0);
         }
       });
@@ -109,10 +108,10 @@ React.useEffect(() => {
     return calculateReportingFields(combinedValues);
   }, [fieldValues, processedTargetData]);
 
-  // Calculate disable logic for AddActualData page
+  // Calculate disable logic for AddActualData page with role-based restrictions
   const disableLogic = useMemo(() => 
-    handleInputDisable(period, selectedDate, null, 'addActualData'), 
-    [period, selectedDate]
+    handleInputDisable(period, selectedDate, null, 'addActualData', userRole), 
+    [period, selectedDate, userRole]
   );
 
   const { isDisabled, disabledMessage } = disableLogic;
@@ -251,7 +250,7 @@ React.useEffect(() => {
           <TargetSection
             sectionKey="budgetReport"
             title="Budget Report"
-            icon={<DollarSign className="h-5 w-5 text-success" />}
+            icon={<DollarSign className="h-5 w-5 text-primary" />}
             gradientClass="bg-gradient-secondary/10"
             fields={getSectionFields('budgetReport')}
             fieldValues={fieldValues}
