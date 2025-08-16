@@ -3,15 +3,30 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
+# Copy package files first (for better caching)
+# This layer will only rebuild if package.json or bun.lockb changes
 COPY package*.json ./
 COPY bun.lockb ./
 
 # Install dependencies
+# This layer will only rebuild if package files change
 RUN npm ci
 
-# Copy source code
-COPY . .
+# Copy source code in layers for better caching
+# Copy configuration files first (they change less frequently)
+COPY tsconfig*.json ./
+COPY vite.config.ts ./
+COPY tailwind.config.ts ./
+COPY postcss.config.js ./
+COPY components.json ./
+COPY eslint.config.js ./
+
+# Copy public assets (they change less frequently)
+COPY public/ ./public/
+
+# Copy source code (this will trigger rebuild when source changes)
+COPY src/ ./src/
+COPY index.html ./
 
 # Build the application
 RUN npm run build
