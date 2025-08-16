@@ -294,7 +294,7 @@ export const LeadSheet = () => {
             className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors duration-200 text-sm text-gray-700"
           >
             <TrendingUp className="w-4 h-4 text-gray-500" />
-            <span>Sort by Score: {sortOrder === 'desc' ? 'High → Low' : 'Low → High'}</span>
+            <span>Sort by Lead Score: {sortOrder === 'desc' ? 'High → Low' : 'Low → High'}</span>
           </button>
         </div>
 
