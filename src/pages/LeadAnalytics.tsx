@@ -7,20 +7,26 @@ import { BarChart, Bar, XAxis, YAxis, PieChart, Pie, Cell, ResponsiveContainer, 
 import { TrendingUp, MapPin, Wrench, Tag, FileText, Users, CheckCircle, XCircle, Calendar, BarChart3 } from 'lucide-react';
 import { Lead } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { format, startOfMonth, endOfMonth, startOfYear, endOfYear, subMonths, subQuarters, subYears } from 'date-fns';
+import { format, startOfMonth, endOfMonth, startOfYear, endOfYear, startOfQuarter, endOfQuarter, subMonths, subQuarters, subYears } from 'date-fns';
 
 const COLORS = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#f97316', '#06b6d4', '#8b5cf6', '#10b981', '#f59e0b'];
 
-// Time period constants in days
-const DAYS_IN_MONTH = 30;
-const DAYS_IN_QUARTER = 90;
-const DAYS_IN_YEAR = 365;
+// Time filter labels for display
+const TIME_FILTER_LABELS: Record<string, string> = {
+  all: 'All Time',
+  this_month: 'This Month',
+  last_month: 'Last Month',
+  this_quarter: 'This Quarter',
+  last_quarter: 'Last Quarter',
+  this_year: 'This Year',
+  last_year: 'Last Year',
+};
 
 export const LeadAnalytics = () => {
   const { leads, loading, error, fetchLeads } = useLeadStore();
   const { selectedUserId } = useUserStore();
   const [selectedMetric, setSelectedMetric] = useState<string>('overview');
-  const [timeFilter, setTimeFilter] = useState<'all' | 'monthly' | 'quarterly' | 'yearly'>('all');
+  const [timeFilter, setTimeFilter] = useState<'all' | 'this_month' | 'last_month' | 'this_quarter' | 'last_quarter' | 'this_year' | 'last_year'>('all');
 
   useEffect(() => {
     if (selectedUserId) {
@@ -31,28 +37,53 @@ export const LeadAnalytics = () => {
   // Filter leads based on time period
   const filteredLeads = useMemo(() => {
     if (timeFilter === 'all') return leads;
-    
+
     const now = new Date();
-    let startDate: Date;
-    
+    let startDate: Date | null = null;
+    let endDate: Date | null = null;
+
     switch (timeFilter) {
-      case 'monthly':
-        // Last 1 month from today
-        startDate = new Date(now.getTime() - (DAYS_IN_MONTH * 24 * 60 * 60 * 1000));
+      case 'this_month': {
+        startDate = startOfMonth(now);
+        endDate = endOfMonth(now);
         break;
-      case 'quarterly':
-        // Last 3 months from today
-        startDate = new Date(now.getTime() - (DAYS_IN_QUARTER * 24 * 60 * 60 * 1000));
+      }
+      case 'last_month': {
+        const lastMonth = subMonths(now, 1);
+        startDate = startOfMonth(lastMonth);
+        endDate = endOfMonth(lastMonth);
         break;
-      case 'yearly':
-        // Last 1 year from today
-        startDate = new Date(now.getTime() - (DAYS_IN_YEAR * 24 * 60 * 60 * 1000));
+      }
+      case 'this_quarter': {
+        startDate = startOfQuarter(now);
+        endDate = endOfQuarter(now);
         break;
+      }
+      case 'last_quarter': {
+        const lastQuarter = subQuarters(now, 1);
+        startDate = startOfQuarter(lastQuarter);
+        endDate = endOfQuarter(lastQuarter);
+        break;
+      }
+      case 'this_year': {
+        startDate = startOfYear(now);
+        endDate = endOfYear(now);
+        break;
+      }
+      case 'last_year': {
+        const lastYear = subYears(now, 1);
+        startDate = startOfYear(lastYear);
+        endDate = endOfYear(lastYear);
+        break;
+      }
       default:
         return leads;
     }
-    
-    return leads.filter(lead => new Date(lead.leadDate) >= startDate);
+
+    return leads.filter(lead => {
+      const leadDate = new Date(lead.leadDate);
+      return (!startDate || leadDate >= startDate) && (!endDate || leadDate <= endDate);
+    });
   }, [leads, timeFilter]);
 
   // Analytics Data Processing
@@ -214,27 +245,6 @@ export const LeadAnalytics = () => {
     };
   }, [filteredLeads]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground animate-pulse" />
-          <p className="text-muted-foreground">Loading analytics...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !analyticsData) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-          <p className="text-muted-foreground">{error || 'No data available for analysis'}</p>
-        </div>
-      </div>
-    );
-  }
 
   const chartConfig = {
     count: {
@@ -266,19 +276,48 @@ export const LeadAnalytics = () => {
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
                 <Select value={timeFilter} onValueChange={(value: any) => setTimeFilter(value)}>
-                  <SelectTrigger className="w-32 h-8 text-xs">
+                  <SelectTrigger className="w-40 h-8 text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="this_month">This Month</SelectItem>
+                    <SelectItem value="this_quarter">This Quarter</SelectItem>
+                    <SelectItem value="last_quarter">Last Quarter</SelectItem>
+                    <SelectItem value="this_year">This Year</SelectItem>
+                    <SelectItem value="last_month">Last Month</SelectItem>
+                    <SelectItem value="last_year">Last Year</SelectItem>
                     <SelectItem value="all">All Time</SelectItem>
-                    <SelectItem value="monthly">Last Month</SelectItem>
-                    <SelectItem value="quarterly">Last Quarter</SelectItem>
-                    <SelectItem value="yearly">Last Year</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
           </div>
+
+          {/* Loading / Error / No-data States below header */}
+          {loading ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="text-center">
+                <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground animate-pulse" />
+                <p className="text-muted-foreground">Loading analytics...</p>
+              </div>
+            </div>
+          ) : error ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="text-center">
+                <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-muted-foreground">{error}</p>
+              </div>
+            </div>
+          ) : !analyticsData ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="text-center">
+                <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-muted-foreground">No leads data available for "{TIME_FILTER_LABELS[timeFilter] || 'the selected range'}".</p>
+                <p className="text-xs text-muted-foreground">Try selecting a different time period above.</p>
+              </div>
+            </div>
+          ) : (
+          <>
 
           {/* Overview Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -290,7 +329,7 @@ export const LeadAnalytics = () => {
               <CardContent>
                 <div className="text-2xl font-bold">{analyticsData.overview.totalLeads}</div>
                 <p className="text-xs text-muted-foreground">
-                  All-time lead data
+                  {TIME_FILTER_LABELS[timeFilter] || 'All Time'}
                 </p>
               </CardContent>
             </Card>
@@ -599,6 +638,8 @@ export const LeadAnalytics = () => {
               </div>
             </CardContent>
           </Card>
+          </>
+          )}
         </div>
       </div>
     </div>
