@@ -3,24 +3,30 @@ import { useLeadStore } from '@/stores/leadStore';
 import { useUserStore } from '@/stores/userStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { BarChart, Bar, XAxis, YAxis, PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, PieChart, Pie, Cell } from 'recharts';
 import { TrendingUp, MapPin, Wrench, Tag, FileText, Users, CheckCircle, XCircle, Calendar, BarChart3 } from 'lucide-react';
-import { Lead } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { format, startOfMonth, endOfMonth, startOfYear, endOfYear, subMonths, subQuarters, subYears } from 'date-fns';
+import { startOfMonth, endOfMonth, startOfYear, endOfYear, startOfQuarter, endOfQuarter, subMonths, subQuarters, subYears } from 'date-fns';
+import { TopCard } from '@/components/DashboardTopCards';
 
 const COLORS = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#f97316', '#06b6d4', '#8b5cf6', '#10b981', '#f59e0b'];
 
-// Time period constants in days
-const DAYS_IN_MONTH = 30;
-const DAYS_IN_QUARTER = 90;
-const DAYS_IN_YEAR = 365;
+// Time filter labels for display
+const TIME_FILTER_LABELS: Record<string, string> = {
+  all: 'All Time',
+  this_month: 'This Month',
+  last_month: 'Last Month',
+  this_quarter: 'This Quarter',
+  last_quarter: 'Last Quarter',
+  this_year: 'This Year',
+  last_year: 'Last Year',
+};
 
 export const LeadAnalytics = () => {
   const { leads, loading, error, fetchLeads } = useLeadStore();
   const { selectedUserId } = useUserStore();
   const [selectedMetric, setSelectedMetric] = useState<string>('overview');
-  const [timeFilter, setTimeFilter] = useState<'all' | 'monthly' | 'quarterly' | 'yearly'>('all');
+  const [timeFilter, setTimeFilter] = useState<'all' | 'this_month' | 'last_month' | 'this_quarter' | 'last_quarter' | 'this_year' | 'last_year'>('all');
 
   useEffect(() => {
     if (selectedUserId) {
@@ -31,28 +37,53 @@ export const LeadAnalytics = () => {
   // Filter leads based on time period
   const filteredLeads = useMemo(() => {
     if (timeFilter === 'all') return leads;
-    
+
     const now = new Date();
-    let startDate: Date;
-    
+    let startDate: Date | null = null;
+    let endDate: Date | null = null;
+
     switch (timeFilter) {
-      case 'monthly':
-        // Last 1 month from today
-        startDate = new Date(now.getTime() - (DAYS_IN_MONTH * 24 * 60 * 60 * 1000));
+      case 'this_month': {
+        startDate = startOfMonth(now);
+        endDate = endOfMonth(now);
         break;
-      case 'quarterly':
-        // Last 3 months from today
-        startDate = new Date(now.getTime() - (DAYS_IN_QUARTER * 24 * 60 * 60 * 1000));
+      }
+      case 'last_month': {
+        const lastMonth = subMonths(now, 1);
+        startDate = startOfMonth(lastMonth);
+        endDate = endOfMonth(lastMonth);
         break;
-      case 'yearly':
-        // Last 1 year from today
-        startDate = new Date(now.getTime() - (DAYS_IN_YEAR * 24 * 60 * 60 * 1000));
+      }
+      case 'this_quarter': {
+        startDate = startOfQuarter(now);
+        endDate = endOfQuarter(now);
         break;
+      }
+      case 'last_quarter': {
+        const lastQuarter = subQuarters(now, 1);
+        startDate = startOfQuarter(lastQuarter);
+        endDate = endOfQuarter(lastQuarter);
+        break;
+      }
+      case 'this_year': {
+        startDate = startOfYear(now);
+        endDate = endOfYear(now);
+        break;
+      }
+      case 'last_year': {
+        const lastYear = subYears(now, 1);
+        startDate = startOfYear(lastYear);
+        endDate = endOfYear(lastYear);
+        break;
+      }
       default:
         return leads;
     }
-    
-    return leads.filter(lead => new Date(lead.leadDate) >= startDate);
+
+    return leads.filter(lead => {
+      const leadDate = new Date(lead.leadDate);
+      return (!startDate || leadDate >= startDate) && (!endDate || leadDate <= endDate);
+    });
   }, [leads, timeFilter]);
 
   // Analytics Data Processing
@@ -60,12 +91,13 @@ export const LeadAnalytics = () => {
     if (!filteredLeads.length) return null;
 
     const totalLeads = filteredLeads.length;
-    const estimateSetCount = filteredLeads.filter(lead => lead.estimateSet).length;
-    const unqualifiedCount = totalLeads - estimateSetCount;
-    const conversionRate = ((estimateSetCount / totalLeads) * 100).toFixed(1);
 
     // Filter leads with estimates set for chart analysis
-    const estimateSetLeads = filteredLeads.filter(lead => lead.estimateSet);
+    const estimateSetLeads = filteredLeads.filter(lead => lead.status === 'estimate_set');
+
+    const estimateSetCount = estimateSetLeads.length;
+    const unqualifiedCount = totalLeads - estimateSetCount;
+    const conversionRate = ((estimateSetCount / totalLeads) * 100).toFixed(1);
 
     // Zip Code Analysis (Only Estimate Set Leads)
     const zipAnalysis = estimateSetLeads.reduce((acc, lead) => {
@@ -101,7 +133,7 @@ export const LeadAnalytics = () => {
         acc[lead.adSetName] = { total: 0, estimateSet: 0 };
       }
       acc[lead.adSetName].total += 1;
-      if (lead.estimateSet) {
+      if (lead.status === 'estimate_set') {
         acc[lead.adSetName].estimateSet += 1;
       }
       return acc;
@@ -122,7 +154,7 @@ export const LeadAnalytics = () => {
         acc[lead.adName] = { total: 0, estimateSet: 0 };
       }
       acc[lead.adName].total += 1;
-      if (lead.estimateSet) {
+      if (lead.status === 'estimate_set') {
         acc[lead.adName].estimateSet += 1;
       }
       return acc;
@@ -162,7 +194,7 @@ export const LeadAnalytics = () => {
         acc[dayOfWeek] = { total: 0, estimateSet: 0 };
       }
       acc[dayOfWeek].total += 1;
-      if (lead.estimateSet) {
+      if (lead.status === 'estimate_set') {
         acc[dayOfWeek].estimateSet += 1;
       }
       return acc;
@@ -182,7 +214,7 @@ export const LeadAnalytics = () => {
 
     // Unqualified Reasons Analysis
     const ulrAnalysis = filteredLeads
-      .filter(lead => !lead.estimateSet && lead.unqualifiedLeadReason)
+      .filter(lead => lead.status === 'unqualified' && lead.unqualifiedLeadReason)
       .reduce((acc, lead) => {
         const reason = lead.unqualifiedLeadReason!;
         acc[reason] = (acc[reason] || 0) + 1;
@@ -214,27 +246,68 @@ export const LeadAnalytics = () => {
     };
   }, [filteredLeads]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground animate-pulse" />
-          <p className="text-muted-foreground">Loading analytics...</p>
-        </div>
-      </div>
-    );
-  }
+  // Top Ads and Ad Sets Analysis (Last 2 Weeks - Independent of time filter)
+  const topPerformersData = useMemo(() => {
+    // Calculate last 2 weeks date range
+    const now = new Date();
+    const twoWeeksAgo = new Date(now.getTime() - (14 * 24 * 60 * 60 * 1000));
+    
+    // Filter leads from last 2 weeks for top performers analysis
+    const lastTwoWeeksLeads = leads.filter(lead => {
+      const leadDate = new Date(lead.leadDate);
+      return leadDate >= twoWeeksAgo && leadDate <= now;
+    });
 
-  if (error || !analyticsData) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-          <p className="text-muted-foreground">{error || 'No data available for analysis'}</p>
-        </div>
-      </div>
-    );
-  }
+    // Top Ads by Estimate Set Count (Last 2 Weeks)
+    const topAdsAnalysis = lastTwoWeeksLeads.reduce((acc, lead) => {
+      if (!acc[lead.adName]) {
+        acc[lead.adName] = { total: 0, estimateSet: 0 };
+      }
+      acc[lead.adName].total += 1;
+      if (lead.status === 'estimate_set') {
+        acc[lead.adName].estimateSet += 1;
+      }
+      return acc;
+    }, {} as Record<string, { total: number; estimateSet: number }>);
+
+    const topAdsData = Object.entries(topAdsAnalysis)
+      .map(([adName, data]) => ({ 
+        adName, 
+        total: data.total,
+        estimateSet: data.estimateSet,
+        percentage: data.total > 0 ? ((data.estimateSet / data.total) * 100).toFixed(1) : '0.0'
+      }))
+      .sort((a, b) => b.estimateSet - a.estimateSet)
+      .slice(0, 10); // Top 10 ads
+
+    // Top Ad Sets by Estimate Set Count (Last 2 Weeks)
+    const topAdSetsAnalysis = lastTwoWeeksLeads.reduce((acc, lead) => {
+      if (!acc[lead.adSetName]) {
+        acc[lead.adSetName] = { total: 0, estimateSet: 0 };
+      }
+      acc[lead.adSetName].total += 1;
+      if (lead.status === 'estimate_set') {
+        acc[lead.adSetName].estimateSet += 1;
+      }
+      return acc;
+    }, {} as Record<string, { total: number; estimateSet: number }>);
+
+    const topAdSetsData = Object.entries(topAdSetsAnalysis)
+      .map(([adSetName, data]) => ({ 
+        adSetName, 
+        total: data.total,
+        estimateSet: data.estimateSet,
+        percentage: data.total > 0 ? ((data.estimateSet / data.total) * 100).toFixed(1) : '0.0'
+      }))
+      .sort((a, b) => b.estimateSet - a.estimateSet)
+      .slice(0, 10); // Top 10 ad sets
+
+    return {
+      topAdsData,
+      topAdSetsData
+    };
+  }, [leads]);
+
 
   const chartConfig = {
     count: {
@@ -266,73 +339,112 @@ export const LeadAnalytics = () => {
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
                 <Select value={timeFilter} onValueChange={(value: any) => setTimeFilter(value)}>
-                  <SelectTrigger className="w-32 h-8 text-xs">
+                  <SelectTrigger className="w-40 h-8 text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="this_month">This Month</SelectItem>
+                    <SelectItem value="this_quarter">This Quarter</SelectItem>
+                    <SelectItem value="last_quarter">Last Quarter</SelectItem>
+                    <SelectItem value="this_year">This Year</SelectItem>
+                    <SelectItem value="last_month">Last Month</SelectItem>
+                    <SelectItem value="last_year">Last Year</SelectItem>
                     <SelectItem value="all">All Time</SelectItem>
-                    <SelectItem value="monthly">Last Month</SelectItem>
-                    <SelectItem value="quarterly">Last Quarter</SelectItem>
-                    <SelectItem value="yearly">Last Year</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
           </div>
 
+          {/* Loading / Error / No-data States below header */}
+          {loading ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="text-center">
+                <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground animate-pulse" />
+                <p className="text-muted-foreground">Loading analytics...</p>
+              </div>
+            </div>
+          ) : error ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="text-center">
+                <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-muted-foreground">{error}</p>
+              </div>
+            </div>
+          ) : !analyticsData ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="text-center">
+                <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-muted-foreground">No leads data available for "{TIME_FILTER_LABELS[timeFilter] || 'the selected range'}".</p>
+                <p className="text-xs text-muted-foreground">Try selecting a different time period above.</p>
+              </div>
+            </div>
+          ) : (
+          <>
+
           {/* Overview Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Leads</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{analyticsData.overview.totalLeads}</div>
-                <p className="text-xs text-muted-foreground">
-                  All-time lead data
-                </p>
-              </CardContent>
-            </Card>
+            <TopCard
+              title="Total Leads"
+              icon={<Users className="h-5 w-5 opacity-50 text-accent" />}
+              metrics={[
+                {
+                  label: "Total Leads",
+                  value: analyticsData.overview.totalLeads,
+                  format: 'number' as const
+                }
+              ]}
+              description={TIME_FILTER_LABELS[timeFilter] || 'All Time'}
+            />
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Estimates Set</CardTitle>
-                <CheckCircle className="h-4 w-4 text-green-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600">{analyticsData.overview.estimateSetCount}</div>
-                <p className="text-xs text-muted-foreground">
-                  {analyticsData.overview.conversionRate}% conversion rate
-                </p>
-              </CardContent>
-            </Card>
+            <TopCard
+              title="Estimates Set"
+              icon={<CheckCircle className="h-5 w-5 opacity-50 text-green-600" />}
+              metrics={[
+                {
+                  label: "Estimates Set",
+                  value: analyticsData.overview.estimateSetCount,
+                  format: 'number' as const
+                },
+                {
+                  label: "Conversion Rate",
+                  value: parseFloat(analyticsData.overview.conversionRate),
+                  format: 'percent' as const
+                }
+              ]}
+              description="Leads with estimates set"
+            />
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Unqualified</CardTitle>
-                <XCircle className="h-4 w-4 text-red-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-red-600">{analyticsData.overview.unqualifiedCount}</div>
-                <p className="text-xs text-muted-foreground">
-                  {(100 - parseFloat(analyticsData.overview.conversionRate)).toFixed(1)}% unqualified
-                </p>
-              </CardContent>
-            </Card>
+            <TopCard
+              title="Unqualified"
+              icon={<XCircle className="h-5 w-5 opacity-50 text-red-600" />}
+              metrics={[
+                {
+                  label: "Unqualified",
+                  value: analyticsData.overview.unqualifiedCount,
+                  format: 'number' as const
+                },
+                {
+                  label: "Unqualified %",
+                  value: 100 - parseFloat(analyticsData.overview.conversionRate),
+                  format: 'percent' as const
+                }
+              ]}
+              description="Leads marked as unqualified"
+            />
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
-                <TrendingUp className="h-4 w-4 text-blue-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-blue-600">{analyticsData.overview.conversionRate}%</div>
-                <p className="text-xs text-muted-foreground">
-                  Estimate to lead ratio
-                </p>
-              </CardContent>
-            </Card>
+            <TopCard
+              title="Conversion Rate"
+              icon={<TrendingUp className="h-5 w-5 opacity-50 text-blue-600" />}
+              metrics={[
+                {
+                  label: "Conversion Rate",
+                  value: parseFloat(analyticsData.overview.conversionRate),
+                  format: 'percent' as const
+                }
+              ]}
+              description="Estimate to lead ratio"
+            />
           </div>
 
           {/* Charts Grid */}
@@ -524,81 +636,184 @@ export const LeadAnalytics = () => {
           </div>
           )}
 
-          {/* Ad Set Performance Table */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Tag className="h-5 w-5 text-orange-600" />
-                Ad Set Performance
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-2">Ad Set Name</th>
-                      <th className="text-right p-2">Total Leads</th>
-                      <th className="text-right p-2">Estimate Set</th>
-                      <th className="text-right p-2">Estimate Set %</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {analyticsData.adSetData.map((adSet, index) => (
-                      <tr key={adSet.adSetName} className="border-b hover:bg-muted/50">
-                        <td className="p-2 font-medium">{adSet.adSetName}</td>
-                        <td className="text-right p-2">{adSet.total}</td>
-                        <td className="text-right p-2 text-green-600 font-medium">{adSet.estimateSet}</td>
-                        <td className="text-right p-2">
-                          <span className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">
-                            {adSet.percentage}%
-                          </span>
-                        </td>
+          {/* Performance Tables Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Ad Set Performance Table */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Tag className="h-5 w-5 text-orange-600" />
+                  Ad Set Performance
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left p-2">Ad Set Name</th>
+                        <th className="text-right p-2">Total Leads</th>
+                        <th className="text-right p-2">Estimate Set</th>
+                        <th className="text-right p-2">Estimate Set %</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
+                    </thead>
+                    <tbody>
+                      {analyticsData.adSetData.map((adSet, index) => (
+                        <tr key={adSet.adSetName} className="border-b hover:bg-muted/50">
+                          <td className="p-2 font-medium">{adSet.adSetName}</td>
+                          <td className="text-right p-2">{adSet.total}</td>
+                          <td className="text-right p-2 text-green-600 font-medium">{adSet.estimateSet}</td>
+                          <td className="text-right p-2">
+                            <span className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">
+                              {adSet.percentage}%
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
 
-          {/* Ad Name Performance Table */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5 text-green-600" />
-                Ad Name Performance
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-2">Ad Name</th>
-                      <th className="text-right p-2">Total Leads</th>
-                      <th className="text-right p-2">Estimate Set</th>
-                      <th className="text-right p-2">Estimate Set %</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {analyticsData.adNameData.map((ad, index) => (
-                      <tr key={ad.adName} className="border-b hover:bg-muted/50">
-                        <td className="p-2 font-medium">{ad.adName}</td>
-                        <td className="text-right p-2">{ad.total}</td>
-                        <td className="text-right p-2 text-green-600 font-medium">{ad.estimateSet}</td>
-                        <td className="text-right p-2">
-                          <span className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">
-                            {ad.percentage}%
-                          </span>
-                        </td>
+            {/* Ad Name Performance Table */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-green-600" />
+                  Ad Name Performance
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left p-2">Ad Name</th>
+                        <th className="text-right p-2">Total Leads</th>
+                        <th className="text-right p-2">Estimate Set</th>
+                        <th className="text-right p-2">Estimate Set %</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
+                    </thead>
+                    <tbody>
+                      {analyticsData.adNameData.map((ad, index) => (
+                        <tr key={ad.adName} className="border-b hover:bg-muted/50">
+                          <td className="p-2 font-medium">{ad.adName}</td>
+                          <td className="text-right p-2">{ad.total}</td>
+                          <td className="text-right p-2 text-green-600 font-medium">{ad.estimateSet}</td>
+                          <td className="text-right p-2">
+                            <span className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">
+                              {ad.percentage}%
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Top Ads by Estimate Set Count (Last 2 Weeks) */}
+            {topPerformersData.topAdsData.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-green-600" />
+                    Top Ads by Estimate Set Count (Last 2 Weeks)
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Performance ranking based on estimate set count over the past 2 weeks
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left p-2">Rank</th>
+                          <th className="text-left p-2">Ad Name</th>
+                          <th className="text-right p-2">Total Leads</th>
+                          <th className="text-right p-2">Estimate Set</th>
+                          <th className="text-right p-2">Estimate Set %</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {topPerformersData.topAdsData.map((ad, index) => (
+                          <tr key={ad.adName} className="border-b hover:bg-muted/50">
+                            <td className="p-2 font-medium">
+                              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-800 text-xs font-bold">
+                                #{index + 1}
+                              </span>
+                            </td>
+                            <td className="p-2 font-medium">{ad.adName}</td>
+                            <td className="text-right p-2">{ad.total}</td>
+                            <td className="text-right p-2 text-green-600 font-medium">{ad.estimateSet}</td>
+                            <td className="text-right p-2">
+                              <span className="px-2 py-1 rounded text-xs bg-green-100 text-green-800">
+                                {ad.percentage}%
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Top Ad Sets by Estimate Set Count (Last 2 Weeks) */}
+            {topPerformersData.topAdSetsData.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Tag className="h-5 w-5 text-orange-600" />
+                    Top Ad Sets by Estimate Set Count (Last 2 Weeks)
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Performance ranking based on estimate set count over the past 2 weeks
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left p-2">Rank</th>
+                          <th className="text-left p-2">Ad Set Name</th>
+                          <th className="text-right p-2">Total Leads</th>
+                          <th className="text-right p-2">Estimate Set</th>
+                          <th className="text-right p-2">Estimate Set %</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {topPerformersData.topAdSetsData.map((adSet, index) => (
+                          <tr key={adSet.adSetName} className="border-b hover:bg-muted/50">
+                            <td className="p-2 font-medium">
+                              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-orange-100 text-orange-800 text-xs font-bold">
+                                #{index + 1}
+                              </span>
+                            </td>
+                            <td className="p-2 font-medium">{adSet.adSetName}</td>
+                            <td className="text-right p-2">{adSet.total}</td>
+                            <td className="text-right p-2 text-green-600 font-medium">{adSet.estimateSet}</td>
+                            <td className="text-right p-2">
+                              <span className="px-2 py-1 rounded text-xs bg-green-100 text-green-800">
+                                {adSet.percentage}%
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+          </>
+          )}
         </div>
       </div>
     </div>

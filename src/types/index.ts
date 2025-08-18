@@ -67,7 +67,7 @@ export interface Lead {
   service: string;
   adSetName: string;
   adName: string;
-  estimateSet: boolean;
+  status: 'new' | 'in_progress' | 'estimate_set' | 'unqualified';
   clientId: string;
   unqualifiedLeadReason?: string;
   updatedAt?: string;
