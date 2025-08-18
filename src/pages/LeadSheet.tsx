@@ -9,7 +9,6 @@ import { useLeadStore } from '@/stores/leadStore';
 import { useUserStore } from '@/stores/userStore';
 import { useRoleAccess } from '@/hooks/useRoleAccess';
 import { handleInputDisable } from '@/utils/page-utils/compareUtils';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
@@ -65,7 +64,7 @@ export const LeadSheet = () => {
 
   const handleLeadUpdate = useCallback(async (
     leadId: string, 
-    updateData: { estimateSet: boolean; unqualifiedLeadReason?: string },
+    updateData: { status: 'new' | 'in_progress' | 'estimate_set' | 'unqualified'; unqualifiedLeadReason?: string },
     successMessage: string,
     revertOnError = false
   ) => {
@@ -74,7 +73,7 @@ export const LeadSheet = () => {
     if (result.error) {
       showErrorToast(result.message);
       if (revertOnError) {
-        updateLeadLocal(leadId, { estimateSet: true });
+        updateLeadLocal(leadId, { status: 'estimate_set' });
       }
       return false;
     } else {
@@ -138,28 +137,34 @@ export const LeadSheet = () => {
     // Leads will be fetched automatically via useEffect
   }, []);
 
-  const handleEstimateSetChange = useCallback(async (leadId: string, checked: boolean) => {
+  const handleLeadStatusChange = useCallback(async (leadId: string, value: 'new' | 'in_progress' | 'estimate_set' | 'unqualified') => {
     const lead = findLead(leadId);
     if (!lead) return;
 
-    if (checked) {
-      // Setting estimate to true - update immediately
-      await handleLeadUpdate(
-        leadId,
-        { estimateSet: true, unqualifiedLeadReason: undefined },
-        "Estimate has been set for this lead."
-      );
-    } else {
-      // Unchecking estimate - user must select ULR first
-      updateLeadLocal(leadId, { estimateSet: false });
+    if (value === 'unqualified') {
+      // Set status to unqualified and show ULR dropdown
+      updateLeadLocal(leadId, { status: 'unqualified' });
       setPendingULRLeadId(leadId);
       
       toast({
         title: "ℹ️ Select Unqualified Reason",
         description: "Please select a reason from the dropdown to complete this action.",
       });
+    } else {
+      // Update the lead with the selected status and clear unqualified reason
+      const success = await handleLeadUpdate(
+        leadId,
+        { status: value, unqualifiedLeadReason: '' },
+        `Lead status has been updated to ${value.replace('_', ' ')}.`
+      );
+      
+      if (success) {
+        // Only update local state after successful API response
+        updateLeadLocal(leadId, { status: value, unqualifiedLeadReason: '' });
+        clearULRStates();
+      }
     }
-  }, [findLead, handleLeadUpdate, updateLeadLocal, toast]);
+  }, [findLead, handleLeadUpdate, updateLeadLocal, toast, clearULRStates]);
 
   const handleULRChange = useCallback(async (leadId: string, value: string) => {
     const lead = findLead(leadId);
@@ -177,15 +182,17 @@ export const LeadSheet = () => {
     // Update the lead with the selected ULR
     const success = await handleLeadUpdate(
       leadId,
-      { estimateSet: false, unqualifiedLeadReason: value },
+      { status: 'unqualified', unqualifiedLeadReason: value },
       "Unqualified lead reason has been set.",
       true // revert on error
     );
     
     if (success) {
+      // Only update local state after successful API response
+      updateLeadLocal(leadId, { status: 'unqualified', unqualifiedLeadReason: value });
       clearULRStates();
     }
-  }, [findLead, handleLeadUpdate, clearULRStates]);
+  }, [findLead, handleLeadUpdate, updateLeadLocal, clearULRStates, ULR_OPTIONS]);
 
   const handleCustomULRSubmit = useCallback(async (leadId: string) => {
     if (!customULR.trim()) {
@@ -199,27 +206,32 @@ export const LeadSheet = () => {
     // Update the lead with the custom ULR
     const success = await handleLeadUpdate(
       leadId,
-      { estimateSet: false, unqualifiedLeadReason: customULR.trim() },
+      { status: 'unqualified', unqualifiedLeadReason: customULR.trim() },
       "Custom unqualified lead reason has been set.",
       true // revert on error
     );
     
     if (success) {
+      // Only update local state after successful API response
+      updateLeadLocal(leadId, { status: 'unqualified', unqualifiedLeadReason: customULR.trim() });
       clearULRStates();
     }
-  }, [customULR, findLead, handleLeadUpdate, showErrorToast, clearULRStates]);
+  }, [customULR, findLead, handleLeadUpdate, updateLeadLocal, showErrorToast, clearULRStates]);
 
   const formatDate = useCallback((dateString: string) => {
     return format(new Date(dateString), 'MMM dd, yyyy');
   }, []);
 
   // Generate random lead score (temporary - will be replaced with API call)
-  const generateLeadScore = useCallback((lead: any) => {
+  const generateLeadScore = useCallback((lead: { status: string; service: string; zip: string }) => {
     // Simple algorithm based on lead properties
     let score = 50; // Base score
     
-    // Estimate set adds points
-    if (lead.estimateSet) score += 30;
+    // Lead status affects score
+    if (lead.status === 'estimate_set') score += 30;
+    else if (lead.status === 'in_progress') score += 20;
+    else if (lead.status === 'new') score += 10;
+    else if (lead.status === 'unqualified') score -= 20;
     
     // Service type affects score
     if (lead.service === 'Roofing') score += 15;
@@ -264,17 +276,17 @@ export const LeadSheet = () => {
       score: leadScores[lead.id] ?? 0,
     }));
 
-    const compareScoreDesc = (a: any, b: any) => b.score - a.score;
-    const compareScorePrimary = (a: any, b: any) =>
+    const compareScoreDesc = (a: { score: number }, b: { score: number }) => b.score - a.score;
+    const compareScorePrimary = (a: { score: number }, b: { score: number }) =>
       scoreOrder === 'desc' ? b.score - a.score : a.score - b.score;
 
-    const compareDateDesc = (a: any, b: any) => {
+    const compareDateDesc = (a: { leadDate: string }, b: { leadDate: string }) => {
       const aDate = new Date(a.leadDate).getTime();
       const bDate = new Date(b.leadDate).getTime();
       return bDate - aDate; // Newest first
     };
 
-    const compareDatePrimary = (a: any, b: any) => {
+    const compareDatePrimary = (a: { leadDate: string }, b: { leadDate: string }) => {
       const aDate = new Date(a.leadDate).getTime();
       const bDate = new Date(b.leadDate).getTime();
       return dateOrder === 'desc' ? bDate - aDate : aDate - bDate;
@@ -293,15 +305,28 @@ export const LeadSheet = () => {
     });
   }, [leads, leadScores, sortMode, dateOrder, scoreOrder]);
 
-  // no-op helpers removed; sorting direction is fixed as descending for clarity per spec
-
-
   // Get score color and label
   const getScoreInfo = useCallback((score: number) => {
     if (score >= 80) return { color: 'bg-gradient-to-r from-green-500 to-emerald-600', textColor: 'text-white', label: 'Excellent' };
     if (score >= 60) return { color: 'bg-gradient-to-r from-yellow-500 to-orange-500', textColor: 'text-white', label: 'Good' };
     if (score >= 40) return { color: 'bg-gradient-to-r from-orange-500 to-red-500', textColor: 'text-white', label: 'Fair' };
     return { color: 'bg-gradient-to-r from-red-500 to-pink-600', textColor: 'text-white', label: 'Poor' };
+  }, []);
+
+  // Get status color and label
+  const getStatusInfo = useCallback((status: string) => {
+    switch (status) {
+      case 'new':
+        return { color: 'bg-blue-100 text-blue-800 border-blue-200', label: 'New' };
+      case 'in_progress':
+        return { color: 'bg-yellow-100 text-yellow-800 border-yellow-200', label: 'In Progress' };
+      case 'estimate_set':
+        return { color: 'bg-green-100 text-green-800 border-green-200', label: 'Estimate Set' };
+      case 'unqualified':
+        return { color: 'bg-red-100 text-red-800 border-red-200', label: 'Unqualified' };
+      default:
+        return { color: 'bg-gray-100 text-gray-800 border-gray-200', label: 'Unknown' };
+    }
   }, []);
 
   return (
@@ -319,7 +344,7 @@ export const LeadSheet = () => {
               </h1>
             </div>
             <p className="text-muted-foreground max-w-2xl mx-auto text-base mb-6 mt-2">
-              Track and manage your leads with detailed information and estimate status
+              Track and manage your leads with detailed information and lead status
             </p>
           </div>
         </div>
@@ -357,7 +382,6 @@ export const LeadSheet = () => {
               <button
                 onClick={() => setDateOrder(prev => (prev === 'desc' ? 'asc' : 'desc'))}
                 className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors duration-200 text-sm text-gray-700"
-                title={dateOrder === 'desc' ? 'Newest → Oldest' : 'Oldest → Newest'}
               >
                 <Calendar className="w-4 h-4 text-gray-500" />
                 <span>Date order: {dateOrder === 'desc' ? 'Newest → Oldest' : 'Oldest → Newest'}</span>
@@ -366,7 +390,6 @@ export const LeadSheet = () => {
               <button
                 onClick={() => setScoreOrder(prev => (prev === 'desc' ? 'asc' : 'desc'))}
                 className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors duration-200 text-sm text-gray-700"
-                title={scoreOrder === 'desc' ? 'High → Low' : 'Low → High'}
               >
                 <Star className="w-4 h-4 text-gray-500" />
                 <span>Score order: {scoreOrder === 'desc' ? 'High → Low' : 'Low → High'}</span>
@@ -390,12 +413,15 @@ export const LeadSheet = () => {
           ) : (
             sortedLeads.map((lead) => {
               const scoreInfo = getScoreInfo(lead.score);
+              const statusInfo = getStatusInfo(lead.status);
               return (
                 <Card 
                   key={lead.id} 
                   className={`w-full transition-all duration-300 hover:shadow-xl border-2 ${
-                    lead.estimateSet 
+                    lead.status === 'estimate_set'
                       ? 'border-green-200 bg-gradient-to-r from-green-50/50 to-emerald-50/50' 
+                      : lead.status === 'unqualified'
+                      ? 'border-red-200 bg-gradient-to-r from-red-50/50 to-pink-50/50'
                       : 'border-border hover:border-primary/30'
                   } ${isDisabled ? 'opacity-60' : ''}`}
                 >
@@ -413,8 +439,8 @@ export const LeadSheet = () => {
                           <div className="mt-1">
                             <Star className={`w-4 h-4 mx-auto ${scoreInfo.textColor} opacity-80`} />
                           </div>
-                            </div>
                         </div>
+                      </div>
 
                       {/* Center Section - Lead Details */}
                       <div className="flex-1 min-w-0">
@@ -431,7 +457,7 @@ export const LeadSheet = () => {
                               <Tag className="w-3 h-3 mr-1" />
                               {lead.service}
                             </Badge>
-                        </div>
+                          </div>
 
                           {/* Contact Info */}
                           <div className="space-y-1">
@@ -443,7 +469,7 @@ export const LeadSheet = () => {
                               >
                                 {lead.email}
                               </a>
-                        </div>
+                            </div>
                             <div className="flex items-center gap-2 text-sm">
                               <Phone className="w-4 h-4 text-muted-foreground" />
                               <a 
@@ -464,8 +490,8 @@ export const LeadSheet = () => {
                             <div className="flex items-center gap-2 text-sm">
                               <Calendar className="w-4 h-4 text-muted-foreground" />
                               <span className="text-muted-foreground">{formatDate(lead.leadDate)}</span>
-                        </div>
-                        </div>
+                            </div>
+                          </div>
 
                           {/* Ad Information */}
                           <div className="space-y-1 md:col-span-2 lg:col-span-3">
@@ -474,69 +500,101 @@ export const LeadSheet = () => {
                               <span className="text-muted-foreground">
                                 <span className="font-medium">Ad Set:</span> {lead.adSetName}
                               </span>
-                        </div>
+                            </div>
                             <div className="flex items-center gap-2 text-sm">
                               <Target className="w-4 h-4 text-muted-foreground" />
                               <span className="text-muted-foreground">
                                 <span className="font-medium">Ad:</span> {lead.adName}
                               </span>
+                            </div>
+                          </div>
                         </div>
-                        </div>
-                        </div>
-                        </div>
+                      </div>
 
                       {/* Right Section - Actions */}
                       <div className="flex-shrink-0 space-y-3 min-w-[180px]">
-                        {/* Estimate Set Checkbox */}
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                          <Checkbox
-                            checked={lead.estimateSet}
-                            onCheckedChange={(checked) => 
-                              !isDisabled ? handleEstimateSetChange(lead.id, checked as boolean) : undefined
-                            }
-                              className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 ring-2 ring-primary/20 hover:ring-primary/40 transition-all duration-200"
-                            disabled={isDisabled}
-                            title={isDisabled ? "Only Revenue PRO team members can modify this field" : "Click to change estimate status"}
-                          />
-                            <span>Estimate Set</span>
-                            {isDisabled && (
-                              <Lock className="h-3 w-3 text-amber-600" />
-                            )}
-                          </label>
-                        </div>
-
-                        {/* Unqualified Lead Reason */}
+                        {/* Lead Status */}
                         <div className="space-y-2">
                           <label className="text-sm font-medium text-muted-foreground">
-                            Unqualified Reason
+                            Lead Status
                             {isDisabled && (
                               <Lock className="h-3 w-3 text-amber-600 ml-1 inline" />
                             )}
                           </label>
                           
-                          {lead.estimateSet ? (
-                            <div className="px-3 py-2 bg-green-100 text-green-800 rounded-lg text-sm font-medium border-2 border-green-200 shadow-sm">
-                              Estimate Set ✓
-                            </div>
-                          ) : showCustomInput === lead.id ? (
-                            <div className="space-y-2">
-                              <input
-                                type="text"
-                                value={customULR}
-                                onChange={(e) => setCustomULR(e.target.value)}
-                                placeholder="Enter custom reason..."
-                                className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-blue-50/50 shadow-sm transition-all duration-200"
-                                onKeyPress={(e) => e.key === 'Enter' && handleCustomULRSubmit(lead.id)}
-                                disabled={isDisabled}
-                                title={isDisabled ? "Only Revenue PRO team members can modify this field" : "Enter a custom unqualified lead reason"}
-                              />
-                              <div className="flex gap-2">
+                          <Select
+                            value={lead.status}
+                            onValueChange={(value) => !isDisabled ? handleLeadStatusChange(lead.id, value as 'new' | 'in_progress' | 'estimate_set' | 'unqualified') : undefined}
+                            disabled={isDisabled}
+                          >
+                            <SelectTrigger 
+                              className={`w-full h-9 text-sm border-2 ${
+                                pendingULRLeadId === lead.id 
+                                  ? 'ring-2 ring-warning/40 bg-warning/10 border-warning-300 shadow-lg' 
+                                  : 'border-blue-300 hover:border-blue-400 bg-blue-50/50 hover:bg-blue-100/50'
+                              } transition-all duration-200 shadow-sm`}
+                            >
+                              <SelectValue>
+                                <span className={`px-2 py-1 rounded text-xs border ${statusInfo.color}`}>
+                                  {statusInfo.label}
+                                </span>
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="new" className="text-sm">
+                                <span className="inline-flex items-center gap-2">
+                                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                  New
+                                </span>
+                              </SelectItem>
+                              <SelectItem value="in_progress" className="text-sm">
+                                <span className="inline-flex items-center gap-2">
+                                  <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                                  In Progress
+                                </span>
+                              </SelectItem>
+                              <SelectItem value="estimate_set" className="text-sm">
+                                <span className="inline-flex items-center gap-2">
+                                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                  Estimate Set
+                                </span>
+                              </SelectItem>
+                              <SelectItem value="unqualified" className="text-sm">
+                                <span className="inline-flex items-center gap-2">
+                                  <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                                  Unqualified
+                                </span>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Unqualified Lead Reason - Only show when status is unqualified */}
+                        {lead.status === 'unqualified' && (
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-muted-foreground">
+                              Unqualified Reason
+                              {isDisabled && (
+                                <Lock className="h-3 w-3 text-amber-600 ml-1 inline" />
+                              )}
+                            </label>
+                            
+                            {showCustomInput === lead.id ? (
+                              <div className="space-y-2">
+                                <input
+                                  type="text"
+                                  value={customULR}
+                                  onChange={(e) => setCustomULR(e.target.value)}
+                                  placeholder="Enter custom reason..."
+                                  className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-blue-50/50 shadow-sm transition-all duration-200"
+                                  onKeyPress={(e) => e.key === 'Enter' && handleCustomULRSubmit(lead.id)}
+                                  disabled={isDisabled}
+                                />
+                                <div className="flex gap-2">
                                   <button
                                     onClick={() => handleCustomULRSubmit(lead.id)}
-                                  className="px-3 py-1 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+                                    className="px-3 py-1 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
                                     disabled={isDisabled}
-                                    title={isDisabled ? "Only Revenue PRO team members can modify this field" : "Save custom reason"}
                                   >
                                     Save
                                   </button>
@@ -545,52 +603,51 @@ export const LeadSheet = () => {
                                       setShowCustomInput(null);
                                       setCustomULR('');
                                     }}
-                                  className="px-3 py-1 text-xs bg-muted-foreground text-primary-foreground rounded-md hover:bg-muted-foreground/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
-                                    title={isDisabled ? "Only Revenue PRO team members can modify this field" : "Cancel custom reason input"}
+                                    className="px-3 py-1 text-xs bg-muted-foreground text-primary-foreground rounded-md hover:bg-muted-foreground/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
                                   >
                                     Cancel
                                   </button>
                                 </div>
-                            </div>
-                          ) : (
-                            <Select
-                              value={lead.unqualifiedLeadReason || ''}
-                              onValueChange={(value) => !isDisabled ? handleULRChange(lead.id, value) : undefined}
-                              disabled={isDisabled}
-                            >
-                              <SelectTrigger 
-                                className={`w-full h-9 text-sm border-2 ${
-                                  pendingULRLeadId === lead.id 
-                                    ? 'ring-2 ring-warning/40 bg-warning/10 border-warning-300 shadow-lg' 
-                                    : 'border-blue-300 hover:border-blue-400 bg-blue-50/50 hover:bg-blue-100/50'
-                                } transition-all duration-200 shadow-sm`}
-                                title={isDisabled ? "Only Revenue PRO team members can modify this field" : (lead.unqualifiedLeadReason || "Select unqualified lead reason")}
+                              </div>
+                            ) : (
+                              <Select
+                                value={lead.unqualifiedLeadReason || ''}
+                                onValueChange={(value) => !isDisabled ? handleULRChange(lead.id, value) : undefined}
+                                disabled={isDisabled}
                               >
-                                <SelectValue placeholder={pendingULRLeadId === lead.id ? "Select reason required!" : "Select reason..."}>
-                                  {lead.unqualifiedLeadReason && !ULR_OPTIONS.includes(lead.unqualifiedLeadReason) ? (
-                                    <span className="text-blue-600 font-medium">"{lead.unqualifiedLeadReason}"</span>
-                                  ) : (
-                                    lead.unqualifiedLeadReason
-                                  )}
-                                </SelectValue>
-                              </SelectTrigger>
-                              <SelectContent>
-                                {ULR_OPTIONS.map((option) => (
-                                  <SelectItem key={option} value={option} className="text-sm">
-                                    {option}
+                                <SelectTrigger 
+                                  className={`w-full h-9 text-sm border-2 ${
+                                    pendingULRLeadId === lead.id 
+                                      ? 'ring-2 ring-warning/40 bg-warning/10 border-warning-300 shadow-lg' 
+                                      : 'border-blue-300 hover:border-blue-400 bg-blue-50/50 hover:bg-blue-100/50'
+                                  } transition-all duration-200 shadow-sm`}
+                                >
+                                  <SelectValue placeholder={pendingULRLeadId === lead.id ? "Select reason required!" : "Select reason..."}>
+                                    {lead.unqualifiedLeadReason && !ULR_OPTIONS.includes(lead.unqualifiedLeadReason) ? (
+                                      <span className="text-blue-600 font-medium">"{lead.unqualifiedLeadReason}"</span>
+                                    ) : (
+                                      lead.unqualifiedLeadReason
+                                    )}
+                                  </SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {ULR_OPTIONS.map((option) => (
+                                    <SelectItem key={option} value={option} className="text-sm">
+                                      {option}
+                                    </SelectItem>
+                                  ))}
+                                  <SelectItem value="custom" className="text-sm font-medium text-blue-600">
+                                    + Add Custom Reason
                                   </SelectItem>
-                                ))}
-                                <SelectItem value="custom" className="text-sm font-medium text-blue-600">
-                                  + Add Custom Reason
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-                          )}
-              </div>
-                </div>
-                </div>
-            </CardContent>
-          </Card>
+                                </SelectContent>
+                              </Select>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               );
             })
           )}

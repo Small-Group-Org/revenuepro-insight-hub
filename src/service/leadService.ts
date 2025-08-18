@@ -9,7 +9,7 @@ export interface GetLeadsPayload {
 
 export interface UpdateLeadPayload {
   _id: string;
-  estimateSet: boolean;
+  status: 'new' | 'in_progress' | 'estimate_set' | 'unqualified';
   unqualifiedLeadReason?: string;
 }
 

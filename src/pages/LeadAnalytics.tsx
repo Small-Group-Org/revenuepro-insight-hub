@@ -91,12 +91,13 @@ export const LeadAnalytics = () => {
     if (!filteredLeads.length) return null;
 
     const totalLeads = filteredLeads.length;
-    const estimateSetCount = filteredLeads.filter(lead => lead.estimateSet).length;
-    const unqualifiedCount = totalLeads - estimateSetCount;
-    const conversionRate = ((estimateSetCount / totalLeads) * 100).toFixed(1);
 
     // Filter leads with estimates set for chart analysis
-    const estimateSetLeads = filteredLeads.filter(lead => lead.estimateSet);
+    const estimateSetLeads = filteredLeads.filter(lead => lead.status === 'estimate_set');
+
+    const estimateSetCount = estimateSetLeads.length;
+    const unqualifiedCount = totalLeads - estimateSetCount;
+    const conversionRate = ((estimateSetCount / totalLeads) * 100).toFixed(1);
 
     // Zip Code Analysis (Only Estimate Set Leads)
     const zipAnalysis = estimateSetLeads.reduce((acc, lead) => {
@@ -132,7 +133,7 @@ export const LeadAnalytics = () => {
         acc[lead.adSetName] = { total: 0, estimateSet: 0 };
       }
       acc[lead.adSetName].total += 1;
-      if (lead.estimateSet) {
+      if (lead.status === 'estimate_set') {
         acc[lead.adSetName].estimateSet += 1;
       }
       return acc;
@@ -153,7 +154,7 @@ export const LeadAnalytics = () => {
         acc[lead.adName] = { total: 0, estimateSet: 0 };
       }
       acc[lead.adName].total += 1;
-      if (lead.estimateSet) {
+      if (lead.status === 'estimate_set') {
         acc[lead.adName].estimateSet += 1;
       }
       return acc;
@@ -193,7 +194,7 @@ export const LeadAnalytics = () => {
         acc[dayOfWeek] = { total: 0, estimateSet: 0 };
       }
       acc[dayOfWeek].total += 1;
-      if (lead.estimateSet) {
+      if (lead.status === 'estimate_set') {
         acc[dayOfWeek].estimateSet += 1;
       }
       return acc;
@@ -213,7 +214,7 @@ export const LeadAnalytics = () => {
 
     // Unqualified Reasons Analysis
     const ulrAnalysis = filteredLeads
-      .filter(lead => !lead.estimateSet && lead.unqualifiedLeadReason)
+      .filter(lead => lead.status === 'unqualified' && lead.unqualifiedLeadReason)
       .reduce((acc, lead) => {
         const reason = lead.unqualifiedLeadReason!;
         acc[reason] = (acc[reason] || 0) + 1;
