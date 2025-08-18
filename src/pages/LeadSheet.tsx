@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { Users, Lock, TrendingUp, Calendar, MapPin, Phone, Mail, Tag, Target, Star } from 'lucide-react';
+import { Users, Lock, Calendar, MapPin, Phone, Mail, Tag, Target, Star } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { DatePeriodSelector } from '@/components/DatePeriodSelector';
 import { PeriodType } from '@/types';
@@ -23,7 +23,10 @@ export const LeadSheet = () => {
   const [pendingULRLeadId, setPendingULRLeadId] = useState<string | null>(null);
   const [customULR, setCustomULR] = useState<string>('');
   const [showCustomInput, setShowCustomInput] = useState<string | null>(null);
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [leadScores, setLeadScores] = useState<Record<string, number>>({});
+  const [sortMode, setSortMode] = useState<'date' | 'score'>('date');
+  const [dateOrder, setDateOrder] = useState<'asc' | 'desc'>('desc');
+  const [scoreOrder, setScoreOrder] = useState<'asc' | 'desc'>('desc');
   
   const { leads, loading, error, fetchLeads, updateLeadData, updateLeadLocal } = useLeadStore();
   const { selectedUserId } = useUserStore();
@@ -232,21 +235,66 @@ export const LeadSheet = () => {
     return Math.max(0, Math.min(100, score));
   }, []);
 
-  // Sort leads by score only
+  // Initialize and cache scores per lead id; stays stable until page refresh, jugaad for now
+  useEffect(() => {
+    setLeadScores((prev) => {
+      let changed = false;
+      const next: Record<string, number> = { ...prev };
+      for (const lead of leads) {
+        if (next[lead.id] === undefined) {
+          next[lead.id] = generateLeadScore(lead);
+          changed = true;
+        }
+      }
+      // Optional cleanup of scores for leads no longer present
+      for (const id of Object.keys(next)) {
+        if (!leads.find((l) => l.id === id)) {
+          delete next[id];
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [leads, generateLeadScore]);
+
+  // Sort leads by selected primary; ties broken by the other
   const sortedLeads = useMemo(() => {
     const leadsWithScores = leads.map(lead => ({
       ...lead,
-      score: generateLeadScore(lead)
+      score: leadScores[lead.id] ?? 0,
     }));
 
-    return leadsWithScores.sort((a, b) => {
-      return sortOrder === 'desc' ? b.score - a.score : a.score - b.score;
-    });
-  }, [leads, sortOrder, generateLeadScore]);
+    const compareScoreDesc = (a: any, b: any) => b.score - a.score;
+    const compareScorePrimary = (a: any, b: any) =>
+      scoreOrder === 'desc' ? b.score - a.score : a.score - b.score;
 
-  const handleSortChange = useCallback(() => {
-    setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc');
-  }, [sortOrder]);
+    const compareDateDesc = (a: any, b: any) => {
+      const aDate = new Date(a.leadDate).getTime();
+      const bDate = new Date(b.leadDate).getTime();
+      return bDate - aDate; // Newest first
+    };
+
+    const compareDatePrimary = (a: any, b: any) => {
+      const aDate = new Date(a.leadDate).getTime();
+      const bDate = new Date(b.leadDate).getTime();
+      return dateOrder === 'desc' ? bDate - aDate : aDate - bDate;
+    };
+
+    return leadsWithScores.sort((a, b) => {
+      if (sortMode === 'date') {
+        const byDate = compareDatePrimary(a, b);
+        if (byDate !== 0) return byDate;
+        return compareScoreDesc(a, b);
+      } else {
+        const byScore = compareScorePrimary(a, b);
+        if (byScore !== 0) return byScore;
+        return compareDateDesc(a, b);
+      }
+    });
+  }, [leads, leadScores, sortMode, dateOrder, scoreOrder]);
+
+  // no-op helpers removed; sorting direction is fixed as descending for clarity per spec
+
 
   // Get score color and label
   const getScoreInfo = useCallback((score: number) => {
@@ -287,51 +335,43 @@ export const LeadSheet = () => {
           />
         </div>
 
-        {/* Sort Toggle */}
+        {/* Sort Controls */}
         <div className="max-w-7xl mx-auto mb-4">
-          <button 
-            onClick={handleSortChange}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors duration-200 text-sm text-gray-700"
-          >
-            <TrendingUp className="w-4 h-4 text-gray-500" />
-            <span>Sort by Lead Score: {sortOrder === 'desc' ? 'High → Low' : 'Low → High'}</span>
-          </button>
-        </div>
-
-        {/* Statistics Cards */}
-        <div className="max-w-7xl mx-auto mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Total Leads Card */}
-            <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 shadow-md">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
-                    <Users className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold text-blue-800">{sortedLeads.length}</div>
-                    <div className="text-sm text-blue-600 font-medium">Total Leads</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Total Estimates Set Card */}
-            <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 shadow-md">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
-                    <Target className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold text-green-800">
-                      {sortedLeads.filter(l => l.estimateSet).length}
-                    </div>
-                    <div className="text-sm text-green-600 font-medium">Estimates Set</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-sm text-muted-foreground">Sort by</span>
+            <div className="flex rounded-md overflow-hidden border border-gray-200">
+              <button
+                onClick={() => setSortMode('date')}
+                className={`px-3 py-2 text-sm ${sortMode === 'date' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'} border-r border-gray-200`}
+              >
+                <span className="inline-flex items-center gap-2"><Calendar className="w-4 h-4" /> Date</span>
+              </button>
+              <button
+                onClick={() => setSortMode('score')}
+                className={`px-3 py-2 text-sm ${sortMode === 'score' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
+              >
+                <span className="inline-flex items-center gap-2"><Star className="w-4 h-4" /> Lead Score</span>
+              </button>
+            </div>
+            {sortMode === 'date' ? (
+              <button
+                onClick={() => setDateOrder(prev => (prev === 'desc' ? 'asc' : 'desc'))}
+                className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors duration-200 text-sm text-gray-700"
+                title={dateOrder === 'desc' ? 'Newest → Oldest' : 'Oldest → Newest'}
+              >
+                <Calendar className="w-4 h-4 text-gray-500" />
+                <span>Date order: {dateOrder === 'desc' ? 'Newest → Oldest' : 'Oldest → Newest'}</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => setScoreOrder(prev => (prev === 'desc' ? 'asc' : 'desc'))}
+                className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors duration-200 text-sm text-gray-700"
+                title={scoreOrder === 'desc' ? 'High → Low' : 'Low → High'}
+              >
+                <Star className="w-4 h-4 text-gray-500" />
+                <span>Score order: {scoreOrder === 'desc' ? 'High → Low' : 'Low → High'}</span>
+              </button>
+            )}
           </div>
         </div>
 
