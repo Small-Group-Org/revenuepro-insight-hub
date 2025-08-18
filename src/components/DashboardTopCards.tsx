@@ -19,7 +19,7 @@ interface TopCardProps {
   }>;
 }
 
-const TopCard: React.FC<TopCardProps> = ({ title, icon, description, trend, metrics }) => {
+export const TopCard: React.FC<TopCardProps> = ({ title, icon, description, trend, metrics }) => {
   const formatValue = (val: number, fmt: string) => {
     if (fmt === "currency") {
       return formatCurrencyValue(val);

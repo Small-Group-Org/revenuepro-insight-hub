@@ -3,11 +3,11 @@ import { useLeadStore } from '@/stores/leadStore';
 import { useUserStore } from '@/stores/userStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { BarChart, Bar, XAxis, YAxis, PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, PieChart, Pie, Cell } from 'recharts';
 import { TrendingUp, MapPin, Wrench, Tag, FileText, Users, CheckCircle, XCircle, Calendar, BarChart3 } from 'lucide-react';
-import { Lead } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { format, startOfMonth, endOfMonth, startOfYear, endOfYear, startOfQuarter, endOfQuarter, subMonths, subQuarters, subYears } from 'date-fns';
+import { startOfMonth, endOfMonth, startOfYear, endOfYear, startOfQuarter, endOfQuarter, subMonths, subQuarters, subYears } from 'date-fns';
+import { TopCard } from '@/components/DashboardTopCards';
 
 const COLORS = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#f97316', '#06b6d4', '#8b5cf6', '#10b981', '#f59e0b'];
 
@@ -322,57 +322,67 @@ export const LeadAnalytics = () => {
 
           {/* Overview Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Leads</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{analyticsData.overview.totalLeads}</div>
-                <p className="text-xs text-muted-foreground">
-                  {TIME_FILTER_LABELS[timeFilter] || 'All Time'}
-                </p>
-              </CardContent>
-            </Card>
+            <TopCard
+              title="Total Leads"
+              icon={<Users className="h-5 w-5 opacity-50 text-accent" />}
+              metrics={[
+                {
+                  label: "Total Leads",
+                  value: analyticsData.overview.totalLeads,
+                  format: 'number' as const
+                }
+              ]}
+              description={TIME_FILTER_LABELS[timeFilter] || 'All Time'}
+            />
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Estimates Set</CardTitle>
-                <CheckCircle className="h-4 w-4 text-green-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600">{analyticsData.overview.estimateSetCount}</div>
-                <p className="text-xs text-muted-foreground">
-                  {analyticsData.overview.conversionRate}% conversion rate
-                </p>
-              </CardContent>
-            </Card>
+            <TopCard
+              title="Estimates Set"
+              icon={<CheckCircle className="h-5 w-5 opacity-50 text-green-600" />}
+              metrics={[
+                {
+                  label: "Estimates Set",
+                  value: analyticsData.overview.estimateSetCount,
+                  format: 'number' as const
+                },
+                {
+                  label: "Conversion Rate",
+                  value: parseFloat(analyticsData.overview.conversionRate),
+                  format: 'percent' as const
+                }
+              ]}
+              description="Leads with estimates set"
+            />
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Unqualified</CardTitle>
-                <XCircle className="h-4 w-4 text-red-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-red-600">{analyticsData.overview.unqualifiedCount}</div>
-                <p className="text-xs text-muted-foreground">
-                  {(100 - parseFloat(analyticsData.overview.conversionRate)).toFixed(1)}% unqualified
-                </p>
-              </CardContent>
-            </Card>
+            <TopCard
+              title="Unqualified"
+              icon={<XCircle className="h-5 w-5 opacity-50 text-red-600" />}
+              metrics={[
+                {
+                  label: "Unqualified",
+                  value: analyticsData.overview.unqualifiedCount,
+                  format: 'number' as const
+                },
+                {
+                  label: "Unqualified %",
+                  value: 100 - parseFloat(analyticsData.overview.conversionRate),
+                  format: 'percent' as const
+                }
+              ]}
+              description="Leads marked as unqualified"
+            />
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
-                <TrendingUp className="h-4 w-4 text-blue-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-blue-600">{analyticsData.overview.conversionRate}%</div>
-                <p className="text-xs text-muted-foreground">
-                  Estimate to lead ratio
-                </p>
-              </CardContent>
-            </Card>
+            <TopCard
+              title="Conversion Rate"
+              icon={<TrendingUp className="h-5 w-5 opacity-50 text-blue-600" />}
+              metrics={[
+                {
+                  label: "Conversion Rate",
+                  value: parseFloat(analyticsData.overview.conversionRate),
+                  format: 'percent' as const
+                }
+              ]}
+              description="Estimate to lead ratio"
+            />
           </div>
 
           {/* Charts Grid */}
