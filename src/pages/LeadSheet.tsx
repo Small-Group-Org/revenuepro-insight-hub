@@ -13,12 +13,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 
+// ULR = Unqualified Lead Reason
 export const LeadSheet = () => {
   const { toast } = useToast();
   const { userRole } = useRoleAccess();
   const [selectedDate, setSelectedDate] = useState<Date>(startOfYear(new Date()));
   const [period, setPeriod] = useState<PeriodType>('yearly');
-  const [isLoading, setIsLoading] = useState(false);
   const [pendingULRLeadId, setPendingULRLeadId] = useState<string | null>(null);
   const [customULR, setCustomULR] = useState<string>('');
   const [showCustomInput, setShowCustomInput] = useState<string | null>(null);
@@ -27,6 +27,12 @@ export const LeadSheet = () => {
   const [dateOrder, setDateOrder] = useState<'asc' | 'desc'>('desc');
   const [scoreOrder, setScoreOrder] = useState<'asc' | 'desc'>('desc');
   
+  // Filter states
+  const [adsetFilter, setAdsetFilter] = useState<string>('');
+  const [adFilter, setAdFilter] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [ulrFilter, setUlrFilter] = useState<string>('');
+
   const { leads, loading, error, fetchLeads, updateLeadData, updateLeadLocal } = useLeadStore();
   const { selectedUserId } = useUserStore();
 
@@ -82,7 +88,7 @@ export const LeadSheet = () => {
     }
   }, [updateLeadData, updateLeadLocal, showErrorToast, showSuccessToast]);
 
-  // ULR options - moved outside component to prevent recreation
+  // Unqualified Lead Reason options
   const ULR_OPTIONS = [
     'Bad Phone Number',
     'Out of Area',
@@ -155,7 +161,7 @@ export const LeadSheet = () => {
       const success = await handleLeadUpdate(
         leadId,
         { status: value, unqualifiedLeadReason: '' },
-        `Lead status has been updated to ${value.replace('_', ' ')}.`
+        `Lead status has been updated to "${getStatusInfo(value).label}".`
       );
       
       if (success) {
@@ -269,9 +275,60 @@ export const LeadSheet = () => {
     });
   }, [leads, generateLeadScore]);
 
-  // Sort leads by selected primary; ties broken by the other
+  // Get unique values for filter options
+  const uniqueAdsets = useMemo(() => {
+    const adsets = [...new Set(leads.map(lead => lead.adSetName))].sort();
+    return adsets;
+  }, [leads]);
+
+  const uniqueAds = useMemo(() => {
+    const ads = [...new Set(leads.map(lead => lead.adName))].sort();
+    return ads;
+  }, [leads]);
+
+  const uniqueULRs = useMemo(() => {
+    const ulrs = [...new Set(leads
+      .filter(lead => lead.status === 'unqualified' && lead.unqualifiedLeadReason)
+      .map(lead => lead.unqualifiedLeadReason!)
+    )].sort();
+    return ulrs;
+  }, [leads]);
+
+  // Filter leads based on selected filters
+  const filteredLeads = useMemo(() => {
+    return leads.filter(lead => {
+      // Adset filter
+      if (adsetFilter && !lead.adSetName.toLowerCase().includes(adsetFilter.toLowerCase())) {
+        return false;
+      }
+      
+      // Ad filter
+      if (adFilter && !lead.adName.toLowerCase().includes(adFilter.toLowerCase())) {
+        return false;
+      }
+      
+      // Status filter
+      if (statusFilter && lead.status !== statusFilter) {
+        return false;
+      }
+      
+      // Unqualified reason filter
+      if (ulrFilter) {
+        if (lead.status !== 'unqualified') {
+          return false;
+        }
+        if (!lead.unqualifiedLeadReason || !lead.unqualifiedLeadReason.toLowerCase().includes(ulrFilter.toLowerCase())) {
+          return false;
+        }
+      }
+      
+      return true;
+    });
+  }, [leads, adsetFilter, adFilter, statusFilter, ulrFilter]);
+
+  // Apply sorting to filtered leads
   const sortedLeads = useMemo(() => {
-    const leadsWithScores = leads.map(lead => ({
+    const leadsWithScores = filteredLeads.map(lead => ({
       ...lead,
       score: leadScores[lead.id] ?? 0,
     }));
@@ -303,7 +360,20 @@ export const LeadSheet = () => {
         return compareDateDesc(a, b);
       }
     });
-  }, [leads, leadScores, sortMode, dateOrder, scoreOrder]);
+  }, [filteredLeads, leadScores, sortMode, dateOrder, scoreOrder]);
+
+  // Clear all filters
+  const clearFilters = useCallback(() => {
+    setAdsetFilter('');
+    setAdFilter('');
+    setStatusFilter('');
+    setUlrFilter('');
+  }, []);
+
+  // Check if any filters are active
+  const hasActiveFilters = useMemo(() => {
+    return adsetFilter || adFilter || statusFilter || ulrFilter;
+  }, [adsetFilter, adFilter, statusFilter, ulrFilter]);
 
   // Get score color and label
   const getScoreInfo = useCallback((score: number) => {
@@ -358,9 +428,127 @@ export const LeadSheet = () => {
             allowedPeriods={['weekly', 'monthly', 'yearly']}
             disableLogic={disableLogic}
           />
-        </div>
 
-        {/* Sort Controls */}
+          {/* Filters Section */}
+          <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
+              {hasActiveFilters && (
+                <button
+                  onClick={clearFilters}
+                  className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                >
+                  Clear All Filters
+                </button>
+              )}
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Adset Name Filter */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Ad Set Name</label>
+                <Select value={adsetFilter || 'all'} onValueChange={(v) => setAdsetFilter(v === 'all' ? '' : v)}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="All Ad Sets" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Ad Sets</SelectItem>
+                    {uniqueAdsets.map(adset => (
+                      <SelectItem key={adset} value={adset}>
+                        {adset}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Ad Name Filter */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Ad Name</label>
+                <Select value={adFilter || 'all'} onValueChange={(v) => setAdFilter(v === 'all' ? '' : v)}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="All Ads" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Ads</SelectItem>
+                    {uniqueAds.map(ad => (
+                      <SelectItem key={ad} value={ad}>
+                        {ad}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Lead Status Filter */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Lead Status</label>
+                <Select value={statusFilter || 'all'} onValueChange={(v) => setStatusFilter(v === 'all' ? '' : v)}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="All Statuses" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="new">New</SelectItem>
+                    <SelectItem value="in_progress">In Progress</SelectItem>
+                    <SelectItem value="estimate_set">Estimate Set</SelectItem>
+                    <SelectItem value="unqualified">Unqualified</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Unqualified Reason Filter */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Unqualified Reason</label>
+                <Select value={ulrFilter || 'all'} onValueChange={(v) => setUlrFilter(v === 'all' ? '' : v)}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="All Reasons" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Reasons</SelectItem>
+                    {uniqueULRs.map(ulr => (
+                      <SelectItem key={ulr} value={ulr}>
+                        {ulr}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Active Filters Summary */}
+            {hasActiveFilters && (
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <div className="flex flex-wrap gap-2">
+                  {adsetFilter && (
+                    <Badge variant="secondary" className="text-xs">
+                      Adset: {adsetFilter}
+                    </Badge>
+                  )}
+                  {adFilter && (
+                    <Badge variant="secondary" className="text-xs">
+                      Ad: {adFilter}
+                    </Badge>
+                  )}
+                  {statusFilter && (
+                    <Badge variant="secondary" className="text-xs">
+                      Status: {getStatusInfo(statusFilter as 'new' | 'in_progress' | 'estimate_set' | 'unqualified').label}
+                    </Badge>
+                  )}
+                  {ulrFilter && (
+                    <Badge variant="secondary" className="text-xs">
+                      ULR: {ulrFilter}
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-sm text-gray-600 mt-2">
+                  Showing {sortedLeads.length} of {leads.length} leads
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Sort Controls */}
         <div className="max-w-7xl mx-auto mb-4">
           <div className="flex flex-wrap items-center gap-3">
             <span className="text-sm text-muted-foreground">Sort by</span>
@@ -653,6 +841,7 @@ export const LeadSheet = () => {
           )}
         </div>
       </div>
+    </div>
     </div>
   );
 }; 
