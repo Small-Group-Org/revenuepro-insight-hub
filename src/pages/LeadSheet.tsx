@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { Users, Lock, Calendar, MapPin, Phone, Mail, Tag, Target, Star } from 'lucide-react';
+import { Users, Lock, Calendar, MapPin, Phone, Mail, Tag, Target, Star, Download } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { DatePeriodSelector } from '@/components/DatePeriodSelector';
 import { PeriodType } from '@/types';
@@ -401,6 +401,64 @@ export const LeadSheet = () => {
     }
   }, []);
 
+  // Excel Export Function
+  const exportToExcel = useCallback(() => {
+    try {
+      // Prepare data for export
+      const exportData = sortedLeads.map(lead => ({
+        'Lead Name': lead.name,
+        'Email': lead.email,
+        'Phone': lead.phone,
+        'Service': lead.service,
+        'ZIP Code': lead.zip,
+        'Lead Date': formatDate(lead.leadDate),
+        'Ad Set Name': lead.adSetName,
+        'Ad Name': lead.adName,
+        'Lead Status': getStatusInfo(lead.status).label,
+        'Lead Score': leadScores[lead.id] ?? 0,
+        'Unqualified Reason': lead.status === 'unqualified' ? (lead.unqualifiedLeadReason || 'Not specified') : '',
+      }));
+
+      // Create CSV content
+      const headers = Object.keys(exportData[0]);
+      const csvContent = [
+        headers.join(','),
+        ...exportData.map(row => 
+          headers.map(header => {
+            const value = row[header as keyof typeof row];
+            // Escape commas and quotes in CSV
+            if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+              return `"${value.replace(/"/g, '""')}"`;
+            }
+            return value;
+          }).join(',')
+        )
+      ].join('\n');
+
+      // Create and download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `leads_export_${format(new Date(), 'yyyyMMdd_HHmmss')}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast({
+        title: "✅ Export Successful",
+        description: `Exported ${exportData.length} leads to Excel file.`,
+      });
+    } catch (error) {
+      toast({
+        title: "❌ Export Failed",
+        description: "Failed to export leads. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [sortedLeads, leadScores, formatDate, getStatusInfo, toast]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       <div className="relative z-10 pt-6 pb-16 px-4">
@@ -563,63 +621,75 @@ export const LeadSheet = () => {
 
           {/* Sort Controls */}
           <div className="mt-4 mb-4">
-            <div className="flex flex-wrap items-center gap-4">
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all text-sm font-medium text-gray-700 shadow-sm"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                </svg>
-                Filters {hasActiveFilters && `(${Object.values({adsetFilter, adFilter, statusFilter, ulrFilter}).filter(Boolean).length})`}
-              </button>
-              
-              <span className="text-sm font-medium text-gray-700">Sort by</span>
-              <div className="flex rounded-lg overflow-hidden border border-gray-200 bg-white shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex flex-wrap items-center gap-4">
                 <button
-                  onClick={() => setSortMode('date')}
-                  className={`px-4 py-2 text-sm font-medium transition-all ${
-                    sortMode === 'date' 
-                      ? 'bg-blue-600 text-white shadow-sm' 
-                      : 'bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                  } border-r border-gray-200`}
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all text-sm font-medium text-gray-700 shadow-sm"
                 >
-                  <span className="inline-flex items-center gap-2">
-                    <Calendar className="w-4 h-4" /> 
-                    Date
-                  </span>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                  </svg>
+                  Filters {hasActiveFilters && `(${Object.values({adsetFilter, adFilter, statusFilter, ulrFilter}).filter(Boolean).length})`}
                 </button>
-                <button
-                  onClick={() => setSortMode('score')}
-                  className={`px-4 py-2 text-sm font-medium transition-all ${
-                    sortMode === 'score' 
-                      ? 'bg-blue-600 text-white shadow-sm' 
-                      : 'bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                  }`}
-                >
-                  <span className="inline-flex items-center gap-2">
-                    <Star className="w-4 h-4" /> 
-                    Lead Score
-                  </span>
-                </button>
+                
+                <span className="text-sm font-medium text-gray-700">Sort by</span>
+                <div className="flex rounded-lg overflow-hidden border border-gray-200 bg-white shadow-sm">
+                  <button
+                    onClick={() => setSortMode('date')}
+                    className={`px-4 py-2 text-sm font-medium transition-all ${
+                      sortMode === 'date' 
+                        ? 'bg-blue-600 text-white shadow-sm' 
+                        : 'bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                    } border-r border-gray-200`}
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      <Calendar className="w-4 h-4" /> 
+                      Date
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => setSortMode('score')}
+                    className={`px-4 py-2 text-sm font-medium transition-all ${
+                      sortMode === 'score' 
+                        ? 'bg-blue-600 text-white shadow-sm' 
+                        : 'bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      <Star className="w-4 h-4" /> 
+                      Lead Score
+                    </span>
+                  </button>
+                </div>
+                {sortMode === 'date' ? (
+                  <button
+                    onClick={() => setDateOrder(prev => (prev === 'desc' ? 'asc' : 'desc'))}
+                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all text-sm font-medium text-gray-700 shadow-sm"
+                  >
+                    <Calendar className="w-4 h-4 text-gray-500" />
+                    <span>{dateOrder === 'desc' ? 'Newest → Oldest' : 'Oldest → Newest'}</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setScoreOrder(prev => (prev === 'desc' ? 'asc' : 'desc'))}
+                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all text-sm font-medium text-gray-700 shadow-sm"
+                  >
+                    <Star className="w-4 h-4 text-gray-500" />
+                    <span>{scoreOrder === 'desc' ? 'High → Low' : 'Low → High'}</span>
+                  </button>
+                )}
               </div>
-              {sortMode === 'date' ? (
-                <button
-                  onClick={() => setDateOrder(prev => (prev === 'desc' ? 'asc' : 'desc'))}
-                  className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all text-sm font-medium text-gray-700 shadow-sm"
-                >
-                  <Calendar className="w-4 h-4 text-gray-500" />
-                  <span>{dateOrder === 'desc' ? 'Newest → Oldest' : 'Oldest → Newest'}</span>
-                </button>
-              ) : (
-                <button
-                  onClick={() => setScoreOrder(prev => (prev === 'desc' ? 'asc' : 'desc'))}
-                  className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all text-sm font-medium text-gray-700 shadow-sm"
-                >
-                  <Star className="w-4 h-4 text-gray-500" />
-                  <span>{scoreOrder === 'desc' ? 'High → Low' : 'Low → High'}</span>
-                </button>
-              )}
+              
+              {/* Export Button */}
+              <button
+                onClick={exportToExcel}
+                disabled={sortedLeads.length === 0}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all text-sm font-medium shadow-sm"
+              >
+                <Download className="w-4 h-4" />
+                Export ({sortedLeads.length})
+              </button>
             </div>
           </div>
 
