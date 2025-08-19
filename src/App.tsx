@@ -14,7 +14,6 @@ import { LeadSheet } from "@/pages/LeadSheet";
 import { LeadAnalytics } from "@/pages/LeadAnalytics";
 import NotFound from "@/pages/NotFound";
 import Login from "./pages/Login";
-import NewLogin from "./pages/NewLogin";
 import { UserProvider } from "./utils/UserContext";
 import { CompareResults } from "@/pages/CompareResults";
 import CreateUser from "./pages/CreateUser";
@@ -35,7 +34,6 @@ const App = () => {
             <DataProvider>
               <Routes>
                 <Route path="/login" element={<Login />} />
-                <Route path="/newlogin" element={<NewLogin />} />
                 <Route element={<AppLayout />}>
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/dashboard" element={<Dashboard />} />
