@@ -12,6 +12,7 @@ import { handleInputDisable } from '@/utils/page-utils/compareUtils';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { TopCard } from '@/components/DashboardTopCards';
 
 // ULR = Unqualified Lead Reason
 export const LeadSheet = () => {
@@ -708,31 +709,55 @@ export const LeadSheet = () => {
           ) : (
             <>
               {/* Summary Cards */}
-              <div className="grid grid-cols-4 gap-4 mb-6">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
-                  <div className="text-2xl font-bold text-blue-600">
-                    {leads.filter(lead => lead.status === 'new').length}
-                  </div>
-                  <div className="text-sm text-blue-700 font-medium">New Leads</div>
-                </div>
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
-                  <div className="text-2xl font-bold text-yellow-600">
-                    {leads.filter(lead => lead.status === 'in_progress').length}
-                  </div>
-                  <div className="text-sm text-yellow-700 font-medium">In Progress Leads</div>
-                </div>
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-                  <div className="text-2xl font-bold text-green-600">
-                    {leads.filter(lead => lead.status === 'estimate_set').length}
-                  </div>
-                  <div className="text-sm text-green-700 font-medium">Estimate Set Leads</div>
-                </div>
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
-                  <div className="text-2xl font-bold text-red-600">
-                    {leads.filter(lead => lead.status === 'unqualified').length}
-                  </div>
-                  <div className="text-sm text-red-700 font-medium">Unqualified Leads</div>
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <TopCard
+                  title="New Leads"
+                  icon={<Users className="h-5 w-5 opacity-50 text-blue-500" />}
+                  metrics={[
+                    {
+                      label: "New Leads",
+                      value: leads.filter(lead => lead.status === 'new').length,
+                      format: 'number'
+                    }
+                  ]}
+                  description="Leads that are newly received and not yet processed."
+                />
+                <TopCard
+                  title="In Progress Leads"
+                  icon={<Users className="h-5 w-5 opacity-50 text-yellow-500" />}
+                  metrics={[
+                    {
+                      label: "In Progress Leads",
+                      value: leads.filter(lead => lead.status === 'in_progress').length,
+                      format: 'number'
+                    }
+                  ]}
+                  description="Leads currently being worked on by the team."
+                />
+                <TopCard
+                  title="Estimate Set Leads"
+                  icon={<Users className="h-5 w-5 opacity-50 text-green-500" />}
+                  metrics={[
+                    {
+                      label: "Estimate Set Leads",
+                      value: leads.filter(lead => lead.status === 'estimate_set').length,
+                      format: 'number'
+                    }
+                  ]}
+                  description="Leads where estimates have been provided to customers."
+                />
+                <TopCard
+                  title="Unqualified Leads"
+                  icon={<Users className="h-5 w-5 opacity-50 text-red-500" />}
+                  metrics={[
+                    {
+                      label: "Unqualified Leads",
+                      value: leads.filter(lead => lead.status === 'unqualified').length,
+                      format: 'number'
+                    }
+                  ]}
+                  description="Leads that don't meet qualification criteria."
+                />
               </div>
 
               {/* Lead Tiles */}
@@ -763,8 +788,16 @@ export const LeadSheet = () => {
                         className={`rounded-lg border-2 border-gray-200 p-6 transition-all duration-200 bg-white shadow-sm ${getHoverStyling()} ${isDisabled ? 'opacity-60' : ''}`}
                       >
                       <div className="grid grid-cols-12 gap-4 items-center">
+                        {/* Date */}
+                        <div className="col-span-1 flex items-center w-[200px]">
+                          <div className="flex items-center gap-1 text-xs text-gray-600">
+                            <Calendar className="w-3 h-3 text-gray-400" />
+                            <span>{formatDate(lead.leadDate)}</span>
+                          </div>
+                        </div>
+
                         {/* Lead Score */}
-                        <div className="col-span-1 flex items-center">
+                        <div className="col-span-2 flex items-center pl-12">
                           <div className="relative">
                             <div className="w-14 h-14 relative">
                               {/* Background circle */}
@@ -836,14 +869,6 @@ export const LeadSheet = () => {
                                 {lead.phone}
                               </a>
                             </div>
-                          </div>
-                        </div>
-
-                        {/* Date */}
-                        <div className="col-span-2 flex items-center">
-                          <div className="flex items-center gap-1 text-xs text-gray-600">
-                            <Calendar className="w-3 h-3 text-gray-400" />
-                            <span>{formatDate(lead.leadDate)}</span>
                           </div>
                         </div>
 
