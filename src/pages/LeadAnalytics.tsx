@@ -720,7 +720,7 @@ export const LeadAnalytics = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <FileText className="h-5 w-5 text-green-600" />
-                    Top Ads by Estimate Set Count (Last 2 Weeks)
+                    Top Ads (by estimate set count)
                   </CardTitle>
                   <p className="text-sm text-muted-foreground">
                     Performance ranking based on estimate set count over the past 2 weeks
@@ -769,7 +769,7 @@ export const LeadAnalytics = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Tag className="h-5 w-5 text-orange-600" />
-                    Top Ad Sets by Estimate Set Count (Last 2 Weeks)
+                    Top Ad Sets (by estimate set count)
                   </CardTitle>
                   <p className="text-sm text-muted-foreground">
                     Performance ranking based on estimate set count over the past 2 weeks
