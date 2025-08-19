@@ -7,6 +7,8 @@ import {
 import { 
   isTimeFrameInPast 
   } from "./actualDataUtils";
+import { IReportingData } from '@/service/reportingServices';
+import { IWeeklyTarget } from '@/service/targetService';
 
 // ============================================================================
 // COMPARISON CALCULATION UTILITIES
@@ -326,3 +328,40 @@ export function calculateROIMetrics(
     costPerSale,
   };
 } 
+
+// Function to prepare chart data with comparison
+export const prepareChartDataWithComparison = (
+  chartData: Array<{
+    week: string;
+    actual: number | null;
+    target: number | null;
+    format: string;
+    message?: string;
+  }>,
+  comparisonData: any,
+  configKey: string
+) => {
+  if (!comparisonData || !comparisonData[configKey]) {
+    return chartData;
+  }
+
+  const comparisonDataForConfig = comparisonData[configKey];
+
+  const data =  chartData.map((item, index) => {
+    const comparisonItem = comparisonDataForConfig[index];
+    if (comparisonItem && comparisonItem.actual !== null) {
+      return {
+        ...item,
+        comparison: comparisonItem.actual
+      };
+    }
+    return {
+      ...item,
+      comparison: 0
+    };
+  });
+
+  return data;
+};
+
+

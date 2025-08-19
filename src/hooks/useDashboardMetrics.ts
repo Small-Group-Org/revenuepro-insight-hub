@@ -18,7 +18,7 @@ export const useDashboardMetrics = () => {
   const [period, setPeriod] = useState<"weekly" | "monthly" | "yearly" | "ytd">(
     "monthly"
   );
-  const { reportingData, targetData } = useReportingDataStore();
+  const { reportingData, targetData, comparisonData } = useReportingDataStore();
 
   // Shared function to process data based on period
   const processDataByPeriod = useCallback((
@@ -129,6 +129,14 @@ export const useDashboardMetrics = () => {
     );
   }, [reportingData, period, processDataByPeriod]);
 
+  const preProcessedComparisonData = useMemo(() => {
+    return processDataByPeriod(
+      comparisonData,
+      (item, index) => processDataPoint(item, index),
+      () => processDataPoint(comparisonData[0], 0)
+    );
+  }, [comparisonData, period, processDataByPeriod]);
+
   // Shared function to get value from processed data
   const getValueFromProcessedData = useCallback((
     processedData: any,
@@ -221,6 +229,38 @@ export const useDashboardMetrics = () => {
     }, {} as Record<string, any[]>);
   }, [dualMetricConfigs, createDualMetricData]);
 
+  // Process comparison data similar to comprehensiveChartData
+  const processedComparisonData = useMemo(() => {
+    if (!comparisonData || comparisonData.length === 0) {
+      return {};
+    }
+
+    const xLabels = getXAxisLabels(period, selectedDate, period === "monthly" ? comparisonData.length : undefined);
+    const chartData: any = {};
+
+    metricTypes.forEach((metricType) => {
+      chartData[metricType] = xLabels.map((label, index) => {
+        const actualValue = getValueFromProcessedData(preProcessedComparisonData, index, metricType);
+
+        return {
+          week: label || `Period ${index + 1}`,
+          actual: actualValue,
+          target: null, // No target for comparison data
+          format:
+            metricType.includes("Rate") || metricType === "totalCom"
+              ? "percent"
+              : metricType === "revenue" ||
+                metricType === "avgJobSize" ||
+                metricType.includes("cp")
+              ? "currency"
+              : "number",
+        };
+      });
+    });
+
+    return chartData;
+  }, [comparisonData, period, selectedDate, getValueFromProcessedData]);
+
   return {
     comprehensiveChartData,
     period,
@@ -231,5 +271,8 @@ export const useDashboardMetrics = () => {
     dualMetricConfigs,
     dualMetricChartsData,
     createDualMetricData,
+    getValueFromProcessedData,
+    getXAxisLabels,
+    processedComparisonData,
   };
 };
