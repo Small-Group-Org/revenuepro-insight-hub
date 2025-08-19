@@ -34,7 +34,7 @@ export const LeadSheet = () => {
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [ulrFilter, setUlrFilter] = useState<string>('');
   const [showFilters, setShowFilters] = useState<boolean>(false);
-
+  
   const { leads, loading, error, fetchLeads, updateLeadData, updateLeadLocal } = useLeadStore();
   const { selectedUserId } = useUserStore();
 
@@ -503,8 +503,8 @@ export const LeadSheet = () => {
                     ✕
                   </button>
                 </div>
-              </div>
-              
+        </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Adset Name Filter */}
                 <div className="space-y-1">
@@ -649,7 +649,7 @@ export const LeadSheet = () => {
                       Date
                     </span>
                   </button>
-                  <button
+          <button 
                     onClick={() => setSortMode('score')}
                     className={`px-4 py-2 text-sm font-medium transition-all ${
                       sortMode === 'score' 
@@ -661,7 +661,7 @@ export const LeadSheet = () => {
                       <Star className="w-4 h-4" /> 
                       Lead Score
                     </span>
-                  </button>
+          </button>
                 </div>
                 {sortMode === 'date' ? (
                   <button
@@ -692,7 +692,7 @@ export const LeadSheet = () => {
                 Export ({sortedLeads.length})
               </button>
             </div>
-          </div>
+        </div>
 
         {/* Lead Cards */}
         <div className="max-w-7xl mx-auto space-y-3">
@@ -767,7 +767,7 @@ export const LeadSheet = () => {
               {/* Lead Tiles */}
               <div className="space-y-4">
                 {sortedLeads.map((lead) => {
-                  const scoreInfo = getScoreInfo(lead.score);
+              const scoreInfo = getScoreInfo(lead.score);
                   const statusInfo = getStatusInfo(lead.status);
                   
                   // Determine hover styling based on status
@@ -786,9 +786,9 @@ export const LeadSheet = () => {
                     }
                   };
 
-                    return (
+              return (
                       <div 
-                        key={lead.id} 
+                  key={lead.id} 
                         className={`rounded-lg border-2 border-gray-200 p-6 transition-all duration-200 bg-white shadow-sm ${getHoverStyling()} ${isDisabled ? 'opacity-60' : ''}`}
                       >
                       <div className="grid grid-cols-12 gap-4 items-center">
@@ -825,13 +825,13 @@ export const LeadSheet = () => {
                                   {lead.score}%
                                 </span>
                               </div>
-                            </div>
                           </div>
+                            </div>
                         </div>
 
                         {/* Name */}
                         <div className="col-span-2 flex items-center">
-                          <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2">
                             <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
                               <Users className="w-4 h-4 text-white" />
                             </div>
@@ -855,7 +855,7 @@ export const LeadSheet = () => {
                               >
                                 {lead.email}
                               </a>
-                            </div>
+                        </div>
                             <div className="flex items-center gap-1 text-xs">
                               <Phone className="w-3 h-3 text-gray-400" />
                               <a 
@@ -873,7 +873,7 @@ export const LeadSheet = () => {
                           <div className="flex items-center gap-1 text-xs text-gray-600">
                             <Calendar className="w-3 h-3 text-gray-400" />
                             <span>{formatDate(lead.leadDate)}</span>
-                          </div>
+                        </div>
                         </div>
 
                         {/* Service & Ads */}
@@ -890,14 +890,14 @@ export const LeadSheet = () => {
                               <span className="text-gray-600 truncate" title={lead.adSetName}>
                                 {lead.adSetName}
                               </span>
-                            </div>
+                        </div>
                             <div className="flex items-center gap-1 text-xs">
                               <Target className="w-3 h-3 text-gray-400" />
                               <span className="text-gray-600 truncate" title={lead.adName}>
                                 {lead.adName}
                               </span>
-                            </div>
-                          </div>
+                        </div>
+                        </div>
                         </div>
 
                         {/* Lead Status */}
@@ -906,7 +906,7 @@ export const LeadSheet = () => {
                               <Select
                                 value={lead.status}
                                 onValueChange={(value) => !isDisabled ? handleLeadStatusChange(lead.id, value as 'new' | 'in_progress' | 'estimate_set' | 'unqualified') : undefined}
-                                disabled={isDisabled}
+                            disabled={isDisabled}
                               >
                                 <SelectTrigger 
                                   className={`w-full h-8 text-xs border-2 ${
@@ -954,81 +954,81 @@ export const LeadSheet = () => {
                               <div className="mt-3">
                                 {showCustomInput === lead.id ? (
                                   <div className="space-y-1 mt-2">
-                                    <input
-                                      type="text"
-                                      value={customULR}
-                                      onChange={(e) => setCustomULR(e.target.value)}
+                              <input
+                                type="text"
+                                value={customULR}
+                                onChange={(e) => setCustomULR(e.target.value)}
                                       placeholder="Enter reason..."
                                       className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                                      onKeyPress={(e) => e.key === 'Enter' && handleCustomULRSubmit(lead.id)}
-                                      disabled={isDisabled}
-                                    />
+                                onKeyPress={(e) => e.key === 'Enter' && handleCustomULRSubmit(lead.id)}
+                                disabled={isDisabled}
+                              />
                                     <div className="flex gap-1">
-                                      <button
-                                        onClick={() => handleCustomULRSubmit(lead.id)}
+                                  <button
+                                    onClick={() => handleCustomULRSubmit(lead.id)}
                                         className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                                        disabled={isDisabled}
-                                      >
-                                        Save
-                                      </button>
-                                      <button
-                                        onClick={() => {
-                                          setShowCustomInput(null);
-                                          setCustomULR('');
-                                        }}
-                                        className="px-2 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
-                                      >
-                                        Cancel
-                                      </button>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <Select
-                                    value={lead.unqualifiedLeadReason || ''}
-                                    onValueChange={(value) => !isDisabled ? handleULRChange(lead.id, value) : undefined}
                                     disabled={isDisabled}
                                   >
-                                    <SelectTrigger 
+                                    Save
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setShowCustomInput(null);
+                                      setCustomULR('');
+                                    }}
+                                        className="px-2 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                            </div>
+                          ) : (
+                            <Select
+                              value={lead.unqualifiedLeadReason || ''}
+                              onValueChange={(value) => !isDisabled ? handleULRChange(lead.id, value) : undefined}
+                              disabled={isDisabled}
+                            >
+                              <SelectTrigger 
                                       className={`w-full h-8 text-xs border-2 ${
-                                        pendingULRLeadId === lead.id 
-                                          ? 'ring-2 ring-warning/40 bg-warning/10 border-warning-300 shadow-lg' 
+                                  pendingULRLeadId === lead.id 
+                                    ? 'ring-2 ring-warning/40 bg-warning/10 border-warning-300 shadow-lg' 
                                           : 'border-gray-300 hover:border-gray-400 bg-white hover:bg-gray-50'
                                       } transition-all duration-200`}
-                                    >
+                              >
                                       <SelectValue placeholder={pendingULRLeadId === lead.id ? "Select reason!" : "Reason..."}>
-                                        {lead.unqualifiedLeadReason && !ULR_OPTIONS.includes(lead.unqualifiedLeadReason) ? (
+                                  {lead.unqualifiedLeadReason && !ULR_OPTIONS.includes(lead.unqualifiedLeadReason) ? (
                                           <span className="text-blue-600 font-medium text-xs">"{lead.unqualifiedLeadReason}"</span>
-                                        ) : (
+                                  ) : (
                                           <span className="text-xs">{lead.unqualifiedLeadReason}</span>
-                                        )}
-                                      </SelectValue>
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {ULR_OPTIONS.map((option) => (
-                                        <SelectItem key={option} value={option} className="text-sm">
-                                          {option}
-                                        </SelectItem>
-                                      ))}
-                                      <SelectItem value="custom" className="text-sm font-medium text-blue-600">
-                                        + Add Custom Reason
-                                      </SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                )}
+                                  )}
+                                </SelectValue>
+                              </SelectTrigger>
+                              <SelectContent>
+                                {ULR_OPTIONS.map((option) => (
+                                  <SelectItem key={option} value={option} className="text-sm">
+                                    {option}
+                                  </SelectItem>
+                                ))}
+                                <SelectItem value="custom" className="text-sm font-medium text-blue-600">
+                                  + Add Custom Reason
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          )}
                               </div>
                             )}
                           </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
+              </div>
+                </div>
+                </div>
+              );
                 })}
               </div>
             </>
           )}
         </div>
+        </div>
       </div>
-    </div>
     </div>
   );
 }; 

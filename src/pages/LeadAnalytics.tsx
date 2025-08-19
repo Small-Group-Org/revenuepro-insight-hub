@@ -9,8 +9,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { startOfMonth, endOfMonth, startOfYear, endOfYear, startOfQuarter, endOfQuarter, subMonths, subQuarters, subYears } from 'date-fns';
 import { TopCard } from '@/components/DashboardTopCards';
 
-//9ca3af
+// Chart colors
 const COLORS = ['#1f1c13', '#f7f5f5', '#306BC8', '#2A388F', '#396F9C'];
+
+// Responsive breakpoints and dimensions
+const SCREEN_BREAKPOINTS = {
+  lg: '1024px', // Large screen breakpoint
+  xl: '1280px', // Extra large screen breakpoint
+};
+
+const CHART_DIMENSIONS = {
+  minWidth: '600px', // Minimum width for charts on small screens
+  height: '320px', // Chart height (h-80 = 320px)
+};
 
 // Time filter labels for display
 const TIME_FILTER_LABELS: Record<string, string> = {
@@ -324,9 +335,9 @@ export const LeadAnalytics = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 overflow-x-hidden">
       <div className="relative z-10 pt-4 pb-12 px-4">
-        <div className="max-w-7xl mx-auto space-y-10">
+        <div className="max-w-7xl mx-auto space-y-10 w-full">
           {/* Header */}
           <div className="text-center">
             <div className="flex items-center justify-center gap-4">
@@ -474,10 +485,10 @@ export const LeadAnalytics = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto">
-                  <div className="min-w-[600px]">
-                    <ChartContainer config={chartConfig} className="h-80">
-                  <PieChart>
+                <div className="overflow-x-auto lg:overflow-visible">
+                  <div style={{ minWidth: CHART_DIMENSIONS.minWidth }} className="lg:min-w-0">
+                    <ChartContainer config={chartConfig} style={{ height: CHART_DIMENSIONS.height }}>
+                      <PieChart>
                     <Pie
                       data={analyticsData.serviceData}
                       cx="50%"
@@ -499,7 +510,7 @@ export const LeadAnalytics = () => {
                       ]}
                     />
                   </PieChart>
-                  </ChartContainer>
+                    </ChartContainer>
                   </div>
                 </div>
               </CardContent>
@@ -514,10 +525,10 @@ export const LeadAnalytics = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto">
-                  <div className="min-w-[600px]">
-                    <ChartContainer config={chartConfig} className="h-80">
-                  <BarChart data={analyticsData.zipData}>
+                <div className="overflow-x-auto lg:overflow-visible">
+                  <div style={{ minWidth: CHART_DIMENSIONS.minWidth }} className="lg:min-w-0">
+                    <ChartContainer config={chartConfig} style={{ height: CHART_DIMENSIONS.height }}>
+                      <BarChart data={analyticsData.zipData}>
                     <XAxis dataKey="zip" />
                     <YAxis />
                     <ChartTooltip 
@@ -528,7 +539,7 @@ export const LeadAnalytics = () => {
                     />
                     <Bar dataKey="count" fill="#8b5cf6" name="Estimate Set Leads" />
                   </BarChart>
-                  </ChartContainer>
+                    </ChartContainer>
                   </div>
                 </div>
               </CardContent>
@@ -554,10 +565,10 @@ export const LeadAnalytics = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto">
-                  <div className="min-w-[600px]">
-                    <ChartContainer config={chartConfig} className="h-80">
-                  <BarChart data={analyticsData.dayOfWeekData}>
+                <div className="overflow-x-auto lg:overflow-visible">
+                  <div style={{ minWidth: CHART_DIMENSIONS.minWidth }} className="lg:min-w-0">
+                    <ChartContainer config={chartConfig} style={{ height: CHART_DIMENSIONS.height }}>
+                      <BarChart data={analyticsData.dayOfWeekData}>
                     <XAxis 
                       dataKey="day" 
                       tick={{ fontSize: 11 }}
@@ -589,7 +600,7 @@ export const LeadAnalytics = () => {
                     <Bar dataKey="total" fill="#94a3b8" name="Total Leads" />
                     <Bar dataKey="estimateSet" fill="#10b981" name="Estimate Set Leads" />
                   </BarChart>
-                  </ChartContainer>
+                    </ChartContainer>
                   </div>
                 </div>
               </CardContent>
@@ -606,9 +617,9 @@ export const LeadAnalytics = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="overflow-x-auto">
-                    <div className="min-w-[600px]">
-                      <ChartContainer config={chartConfig} className="h-80">
+                  <div className="overflow-x-auto lg:overflow-visible">
+                    <div style={{ minWidth: CHART_DIMENSIONS.minWidth }} className="lg:min-w-0">
+                      <ChartContainer config={chartConfig} style={{ height: CHART_DIMENSIONS.height }}>
                         <PieChart>
                           <Pie
                             data={analyticsData.ulrData}
@@ -635,7 +646,7 @@ export const LeadAnalytics = () => {
                       </ChartContainer>
                     </div>
                   </div>
-                </CardContent>
+                    </CardContent>
               </Card>
             )}
           </div>
