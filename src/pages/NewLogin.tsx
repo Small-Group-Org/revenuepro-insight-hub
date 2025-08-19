@@ -58,7 +58,7 @@ export default function NewLogin() {
       {/* Left Section - 40% */}
       <div className="lg:w-2/5 w-full p-4 sm:p-6 lg:p-12 flex flex-col justify-center relative min-h-[50vh] lg:min-h-screen">
         {/* Logo */}
-        <div className="mb-8 flex items-center gap-3">
+        <div className="absolute top-6 sm:top-8 lg:top-6 left-4 sm:left-2 lg:left-12 flex items-center gap-3">
           <img 
             src="/favicon.ico" 
             alt="Revenue Pro Logo" 
