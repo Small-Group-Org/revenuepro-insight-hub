@@ -740,7 +740,7 @@ export const LeadSheet = () => {
                       {/* Center Section - Lead Details */}
                       <div className="flex-1 min-w-0">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                          {/* Name and Service */}
+                          {/* Name and Contact Info */}
                           <div className="space-y-1">
                             <div className="flex items-center gap-2">
                               <Users className="w-4 h-4 text-muted-foreground" />
@@ -748,14 +748,6 @@ export const LeadSheet = () => {
                                 {lead.name}
                               </span>
                             </div>
-                            <Badge variant="secondary" className="w-fit text-xs">
-                              <Tag className="w-3 h-3 mr-1" />
-                              {lead.service}
-                            </Badge>
-                          </div>
-
-                          {/* Contact Info */}
-                          <div className="space-y-1">
                             <div className="flex items-center gap-2 text-sm">
                               <Mail className="w-4 h-4 text-muted-foreground" />
                               <a 
@@ -776,20 +768,14 @@ export const LeadSheet = () => {
                             </div>
                           </div>
 
-                          {/* Location and Date */}
+                          {/* Service and Ad Information */}
                           <div className="space-y-1">
-                            <div className="flex items-center gap-2 text-sm">
-                              <MapPin className="w-4 h-4 text-muted-foreground" />
-                              <span className="text-muted-foreground">ZIP: {lead.zip}</span>
+                            <div className="flex items-center gap-2">
+                              <Tag className="w-4 h-4 text-muted-foreground" />
+                              <Badge variant="secondary" className="w-fit text-xs">
+                                {lead.service}
+                              </Badge>
                             </div>
-                            <div className="flex items-center gap-2 text-sm">
-                              <Calendar className="w-4 h-4 text-muted-foreground" />
-                              <span className="text-muted-foreground">{formatDate(lead.leadDate)}</span>
-                            </div>
-                          </div>
-
-                          {/* Ad Information */}
-                          <div className="space-y-1 md:col-span-2 lg:col-span-3">
                             <div className="flex items-center gap-2 text-sm">
                               <Target className="w-4 h-4 text-muted-foreground" />
                               <span className="text-muted-foreground">
@@ -801,6 +787,18 @@ export const LeadSheet = () => {
                               <span className="text-muted-foreground">
                                 <span className="font-medium">Ad:</span> {lead.adName}
                               </span>
+                            </div>
+                          </div>
+
+                          {/* Location and Date */}
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 text-sm">
+                              <MapPin className="w-4 h-4 text-muted-foreground" />
+                              <span className="text-muted-foreground">ZIP: {lead.zip}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm">
+                              <Calendar className="w-4 h-4 text-muted-foreground" />
+                              <span className="text-muted-foreground">{formatDate(lead.leadDate)}</span>
                             </div>
                           </div>
                         </div>
