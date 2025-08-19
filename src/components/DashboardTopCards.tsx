@@ -17,7 +17,7 @@ interface TopCardProps {
     value: number;
     format: 'currency' | 'percent' | 'number';
   }>;
-  // New prop for 2-row design
+  // New prop for 2-row design for Lead Sheet
   twoRowDesign?: boolean;
 }
 
