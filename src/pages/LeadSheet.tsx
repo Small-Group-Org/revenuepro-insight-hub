@@ -460,7 +460,7 @@ export const LeadSheet = () => {
   }, [sortedLeads, leadScores, formatDate, getStatusInfo, toast]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200">
       <div className="relative z-10 pt-6 pb-16 px-4">
         <div className="max-w-7xl mx-auto space-y-8">
           {/* Header */}
@@ -706,59 +706,129 @@ export const LeadSheet = () => {
               <p className="text-lg">No leads found for the selected period.</p>
             </div>
           ) : (
-            sortedLeads.map((lead) => {
-              const scoreInfo = getScoreInfo(lead.score);
-              const statusInfo = getStatusInfo(lead.status);
-              return (
-                <Card 
-                  key={lead.id} 
-                  className={`w-full transition-all duration-300 hover:shadow-xl border-2 ${
-                    lead.status === 'estimate_set'
-                      ? 'border-green-200 bg-gradient-to-r from-green-50/50 to-emerald-50/50' 
-                      : lead.status === 'unqualified'
-                      ? 'border-red-200 bg-gradient-to-r from-red-50/50 to-pink-50/50'
-                      : 'border-border hover:border-primary/30'
-                  } ${isDisabled ? 'opacity-60' : ''}`}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex flex-col lg:flex-row gap-4 items-start">
-                      {/* Left Section - Lead Score (Main Focus) */}
-                      <div className="flex-shrink-0">
-                        <div className={`${scoreInfo.color} rounded-xl p-4 text-center shadow-lg min-w-[120px]`}>
-                          <div className="text-2xl font-bold ${scoreInfo.textColor} mb-1">
-                            {lead.score}
-                          </div>
-                          <div className={`text-xs font-medium ${scoreInfo.textColor} opacity-90`}>
-                            {scoreInfo.label}
-                          </div>
-                          <div className="mt-1">
-                            <Star className={`w-4 h-4 mx-auto ${scoreInfo.textColor} opacity-80`} />
+            <>
+              {/* Summary Cards */}
+              <div className="grid grid-cols-4 gap-4 mb-6">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {leads.filter(lead => lead.status === 'new').length}
+                  </div>
+                  <div className="text-sm text-blue-700 font-medium">New Leads</div>
+                </div>
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
+                  <div className="text-2xl font-bold text-yellow-600">
+                    {leads.filter(lead => lead.status === 'in_progress').length}
+                  </div>
+                  <div className="text-sm text-yellow-700 font-medium">In Progress Leads</div>
+                </div>
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+                  <div className="text-2xl font-bold text-green-600">
+                    {leads.filter(lead => lead.status === 'estimate_set').length}
+                  </div>
+                  <div className="text-sm text-green-700 font-medium">Estimate Set Leads</div>
+                </div>
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+                  <div className="text-2xl font-bold text-red-600">
+                    {leads.filter(lead => lead.status === 'unqualified').length}
+                  </div>
+                  <div className="text-sm text-red-700 font-medium">Unqualified Leads</div>
+                </div>
+              </div>
+
+              {/* Lead Tiles */}
+              <div className="space-y-4">
+                {sortedLeads.map((lead) => {
+                  const scoreInfo = getScoreInfo(lead.score);
+                  const statusInfo = getStatusInfo(lead.status);
+                  
+                  // Determine hover styling based on status
+                  const getHoverStyling = () => {
+                    switch (lead.status) {
+                      case 'estimate_set':
+                        return 'hover:border-green-300 hover:shadow-xl hover:shadow-green-200/50';
+                      case 'unqualified':
+                        return 'hover:border-red-300 hover:shadow-xl hover:shadow-red-200/50';
+                      case 'in_progress':
+                        return 'hover:border-yellow-300 hover:shadow-xl hover:shadow-yellow-200/50';
+                      case 'new':
+                        return 'hover:border-blue-300 hover:shadow-xl hover:shadow-blue-200/50';
+                      default:
+                        return 'hover:border-gray-300 hover:shadow-xl hover:shadow-gray-200/50';
+                    }
+                  };
+
+                    return (
+                      <div 
+                        key={lead.id} 
+                        className={`rounded-lg border-2 border-gray-200 p-6 transition-all duration-200 bg-white shadow-sm ${getHoverStyling()} ${isDisabled ? 'opacity-60' : ''}`}
+                      >
+                      <div className="grid grid-cols-12 gap-4 items-center">
+                        {/* Lead Score */}
+                        <div className="col-span-1 flex items-center">
+                          <div className="relative">
+                            <div className="w-14 h-14 relative">
+                              {/* Background circle */}
+                              <svg className="w-14 h-14 transform -rotate-90" viewBox="0 0 36 36">
+                                <path
+                                  d="M18 2.0845
+                                    a 15.9155 15.9155 0 0 1 0 31.831
+                                    a 15.9155 15.9155 0 0 1 0 -31.831"
+                                  fill="none"
+                                  stroke="#e5e7eb"
+                                  strokeWidth="3"
+                                />
+                                <path
+                                  d="M18 2.0845
+                                    a 15.9155 15.9155 0 0 1 0 31.831
+                                    a 15.9155 15.9155 0 0 1 0 -31.831"
+                                  fill="none"
+                                  stroke={scoreInfo.color.includes('green') ? '#10b981' : 
+                                         scoreInfo.color.includes('yellow') ? '#f59e0b' : 
+                                         scoreInfo.color.includes('red') ? '#ef4444' : '#6366f1'}
+                                  strokeWidth="3"
+                                  strokeDasharray={`${lead.score}, 100`}
+                                  strokeLinecap="round"
+                                />
+                              </svg>
+                              {/* Score text */}
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <span className="text-xs font-bold text-gray-900">
+                                  {lead.score}%
+                                </span>
+                              </div>
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      {/* Center Section - Lead Details */}
-                      <div className="flex-1 min-w-0">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                          {/* Name and Contact Info */}
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <Users className="w-4 h-4 text-muted-foreground" />
-                              <span className="font-semibold text-base text-card-foreground truncate">
-                                {lead.name}
-                              </span>
+                        {/* Name */}
+                        <div className="col-span-2 flex items-center">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
+                              <Users className="w-4 h-4 text-white" />
                             </div>
-                            <div className="flex items-center gap-2 text-sm">
-                              <Mail className="w-4 h-4 text-muted-foreground" />
+                            <div>
+                              <div className="font-semibold text-gray-900 text-sm truncate">
+                                {lead.name}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Contact Details */}
+                        <div className="col-span-2 flex items-center">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-1 text-xs">
+                              <Mail className="w-3 h-3 text-gray-400" />
                               <a 
                                 href={`mailto:${lead.email}`}
                                 className="text-blue-600 hover:text-blue-800 hover:underline truncate"
+                                title={lead.email}
                               >
                                 {lead.email}
                               </a>
                             </div>
-                            <div className="flex items-center gap-2 text-sm">
-                              <Phone className="w-4 h-4 text-muted-foreground" />
+                            <div className="flex items-center gap-1 text-xs">
+                              <Phone className="w-3 h-3 text-gray-400" />
                               <a 
                                 href={`tel:${lead.phone}`}
                                 className="text-blue-600 hover:text-blue-800 hover:underline"
@@ -767,182 +837,165 @@ export const LeadSheet = () => {
                               </a>
                             </div>
                           </div>
+                        </div>
 
-                          {/* Service and Ad Information */}
+                        {/* Date */}
+                        <div className="col-span-2 flex items-center">
+                          <div className="flex items-center gap-1 text-xs text-gray-600">
+                            <Calendar className="w-3 h-3 text-gray-400" />
+                            <span>{formatDate(lead.leadDate)}</span>
+                          </div>
+                        </div>
+
+                        {/* Service & Ads */}
+                        <div className="col-span-3 flex items-center">
                           <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <Tag className="w-4 h-4 text-muted-foreground" />
-                              <Badge variant="secondary" className="w-fit text-xs">
+                            <div className="flex items-center gap-1 text-xs">
+                              <Tag className="w-3 h-3 text-gray-400" />
+                              <span className="text-gray-600 truncate font-medium" title={lead.service}>
                                 {lead.service}
-                              </Badge>
-                            </div>
-                            <div className="flex items-center gap-2 text-sm">
-                              <Target className="w-4 h-4 text-muted-foreground" />
-                              <span className="text-muted-foreground">
-                                <span className="font-medium">Ad Set:</span> {lead.adSetName}
                               </span>
                             </div>
-                            <div className="flex items-center gap-2 text-sm">
-                              <Target className="w-4 h-4 text-muted-foreground" />
-                              <span className="text-muted-foreground">
-                                <span className="font-medium">Ad:</span> {lead.adName}
+                            <div className="flex items-center gap-1 text-xs">
+                              <Target className="w-3 h-3 text-gray-400" />
+                              <span className="text-gray-600 truncate" title={lead.adSetName}>
+                                {lead.adSetName}
                               </span>
                             </div>
-                          </div>
-
-                          {/* Location and Date */}
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2 text-sm">
-                              <MapPin className="w-4 h-4 text-muted-foreground" />
-                              <span className="text-muted-foreground">ZIP: {lead.zip}</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-sm">
-                              <Calendar className="w-4 h-4 text-muted-foreground" />
-                              <span className="text-muted-foreground">{formatDate(lead.leadDate)}</span>
+                            <div className="flex items-center gap-1 text-xs">
+                              <Target className="w-3 h-3 text-gray-400" />
+                              <span className="text-gray-600 truncate" title={lead.adName}>
+                                {lead.adName}
+                              </span>
                             </div>
                           </div>
                         </div>
-                      </div>
 
-                      {/* Right Section - Actions */}
-                      <div className="flex-shrink-0 space-y-3 min-w-[180px]">
                         {/* Lead Status */}
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium text-muted-foreground">
-                            Lead Status
-                            {isDisabled && (
-                              <Lock className="h-3 w-3 text-amber-600 ml-1 inline" />
-                            )}
-                          </label>
-                          
-                          <Select
-                            value={lead.status}
-                            onValueChange={(value) => !isDisabled ? handleLeadStatusChange(lead.id, value as 'new' | 'in_progress' | 'estimate_set' | 'unqualified') : undefined}
-                            disabled={isDisabled}
-                          >
-                            <SelectTrigger 
-                              className={`w-full h-9 text-sm border-2 ${
-                                pendingULRLeadId === lead.id 
-                                  ? 'ring-2 ring-warning/40 bg-warning/10 border-warning-300 shadow-lg' 
-                                  : 'border-blue-300 hover:border-blue-400 bg-blue-50/50 hover:bg-blue-100/50'
-                              } transition-all duration-200 shadow-sm`}
-                            >
-                              <SelectValue>
-                                <span className={`px-2 py-1 rounded text-xs border ${statusInfo.color}`}>
-                                  {statusInfo.label}
-                                </span>
-                              </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="new" className="text-sm">
-                                <span className="inline-flex items-center gap-2">
-                                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                                  New
-                                </span>
-                              </SelectItem>
-                              <SelectItem value="in_progress" className="text-sm">
-                                <span className="inline-flex items-center gap-2">
-                                  <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                                  In Progress
-                                </span>
-                              </SelectItem>
-                              <SelectItem value="estimate_set" className="text-sm">
-                                <span className="inline-flex items-center gap-2">
-                                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                  Estimate Set
-                                </span>
-                              </SelectItem>
-                              <SelectItem value="unqualified" className="text-sm">
-                                <span className="inline-flex items-center gap-2">
-                                  <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                                  Unqualified
-                                </span>
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        {/* Unqualified Lead Reason - Only show when status is unqualified */}
-                        {lead.status === 'unqualified' && (
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium text-muted-foreground">
-                              Unqualified Reason
-                              {isDisabled && (
-                                <Lock className="h-3 w-3 text-amber-600 ml-1 inline" />
-                              )}
-                            </label>
-                            
-                            {showCustomInput === lead.id ? (
-                              <div className="space-y-2">
-                                <input
-                                  type="text"
-                                  value={customULR}
-                                  onChange={(e) => setCustomULR(e.target.value)}
-                                  placeholder="Enter custom reason..."
-                                  className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-blue-50/50 shadow-sm transition-all duration-200"
-                                  onKeyPress={(e) => e.key === 'Enter' && handleCustomULRSubmit(lead.id)}
-                                  disabled={isDisabled}
-                                />
-                                <div className="flex gap-2">
-                                  <button
-                                    onClick={() => handleCustomULRSubmit(lead.id)}
-                                    className="px-3 py-1 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
-                                    disabled={isDisabled}
-                                  >
-                                    Save
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      setShowCustomInput(null);
-                                      setCustomULR('');
-                                    }}
-                                    className="px-3 py-1 text-xs bg-muted-foreground text-primary-foreground rounded-md hover:bg-muted-foreground/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
-                                  >
-                                    Cancel
-                                  </button>
-                                </div>
-                              </div>
-                            ) : (
+                        <div className="col-span-2 flex items-center">
+                          <div className="w-full">
                               <Select
-                                value={lead.unqualifiedLeadReason || ''}
-                                onValueChange={(value) => !isDisabled ? handleULRChange(lead.id, value) : undefined}
+                                value={lead.status}
+                                onValueChange={(value) => !isDisabled ? handleLeadStatusChange(lead.id, value as 'new' | 'in_progress' | 'estimate_set' | 'unqualified') : undefined}
                                 disabled={isDisabled}
                               >
                                 <SelectTrigger 
-                                  className={`w-full h-9 text-sm border-2 ${
+                                  className={`w-full h-8 text-xs border-2 ${
                                     pendingULRLeadId === lead.id 
                                       ? 'ring-2 ring-warning/40 bg-warning/10 border-warning-300 shadow-lg' 
-                                      : 'border-blue-300 hover:border-blue-400 bg-blue-50/50 hover:bg-blue-100/50'
-                                  } transition-all duration-200 shadow-sm`}
+                                      : 'border-gray-300 hover:border-gray-400 bg-white hover:bg-gray-50'
+                                  } transition-all duration-200`}
                                 >
-                                  <SelectValue placeholder={pendingULRLeadId === lead.id ? "Select reason required!" : "Select reason..."}>
-                                    {lead.unqualifiedLeadReason && !ULR_OPTIONS.includes(lead.unqualifiedLeadReason) ? (
-                                      <span className="text-blue-600 font-medium">"{lead.unqualifiedLeadReason}"</span>
-                                    ) : (
-                                      lead.unqualifiedLeadReason
-                                    )}
+                                  <SelectValue>
+                                    <span className={`px-2 py-1 rounded text-xs border ${statusInfo.color}`}>
+                                      {statusInfo.label}
+                                    </span>
                                   </SelectValue>
                                 </SelectTrigger>
-                                <SelectContent>
-                                  {ULR_OPTIONS.map((option) => (
-                                    <SelectItem key={option} value={option} className="text-sm">
-                                      {option}
-                                    </SelectItem>
-                                  ))}
-                                  <SelectItem value="custom" className="text-sm font-medium text-blue-600">
-                                    + Add Custom Reason
-                                  </SelectItem>
-                                </SelectContent>
-                              </Select>
+                              <SelectContent>
+                                <SelectItem value="new" className="text-sm">
+                                  <span className="inline-flex items-center gap-2">
+                                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                    New
+                                  </span>
+                                </SelectItem>
+                                <SelectItem value="in_progress" className="text-sm">
+                                  <span className="inline-flex items-center gap-2">
+                                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                                    In Progress
+                                  </span>
+                                </SelectItem>
+                                <SelectItem value="estimate_set" className="text-sm">
+                                  <span className="inline-flex items-center gap-2">
+                                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                    Estimate Set
+                                  </span>
+                                </SelectItem>
+                                <SelectItem value="unqualified" className="text-sm">
+                                  <span className="inline-flex items-center gap-2">
+                                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                                    Unqualified
+                                  </span>
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+
+                            {/* Unqualified Reason Dropdown - Only show when status is unqualified */}
+                            {lead.status === 'unqualified' && (
+                              <div className="mt-3">
+                                {showCustomInput === lead.id ? (
+                                  <div className="space-y-1 mt-2">
+                                    <input
+                                      type="text"
+                                      value={customULR}
+                                      onChange={(e) => setCustomULR(e.target.value)}
+                                      placeholder="Enter reason..."
+                                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                      onKeyPress={(e) => e.key === 'Enter' && handleCustomULRSubmit(lead.id)}
+                                      disabled={isDisabled}
+                                    />
+                                    <div className="flex gap-1">
+                                      <button
+                                        onClick={() => handleCustomULRSubmit(lead.id)}
+                                        className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        disabled={isDisabled}
+                                      >
+                                        Save
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          setShowCustomInput(null);
+                                          setCustomULR('');
+                                        }}
+                                        className="px-2 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
+                                      >
+                                        Cancel
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <Select
+                                    value={lead.unqualifiedLeadReason || ''}
+                                    onValueChange={(value) => !isDisabled ? handleULRChange(lead.id, value) : undefined}
+                                    disabled={isDisabled}
+                                  >
+                                    <SelectTrigger 
+                                      className={`w-full h-8 text-xs border-2 ${
+                                        pendingULRLeadId === lead.id 
+                                          ? 'ring-2 ring-warning/40 bg-warning/10 border-warning-300 shadow-lg' 
+                                          : 'border-gray-300 hover:border-gray-400 bg-white hover:bg-gray-50'
+                                      } transition-all duration-200`}
+                                    >
+                                      <SelectValue placeholder={pendingULRLeadId === lead.id ? "Select reason!" : "Reason..."}>
+                                        {lead.unqualifiedLeadReason && !ULR_OPTIONS.includes(lead.unqualifiedLeadReason) ? (
+                                          <span className="text-blue-600 font-medium text-xs">"{lead.unqualifiedLeadReason}"</span>
+                                        ) : (
+                                          <span className="text-xs">{lead.unqualifiedLeadReason}</span>
+                                        )}
+                                      </SelectValue>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {ULR_OPTIONS.map((option) => (
+                                        <SelectItem key={option} value={option} className="text-sm">
+                                          {option}
+                                        </SelectItem>
+                                      ))}
+                                      <SelectItem value="custom" className="text-sm font-medium text-blue-600">
+                                        + Add Custom Reason
+                                      </SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                )}
+                              </div>
                             )}
                           </div>
-                        )}
+                        </div>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              );
-            })
+                  );
+                })}
+              </div>
+            </>
           )}
         </div>
       </div>
