@@ -155,13 +155,16 @@ const CustomTooltip = ({
               <div className="flex items-center gap-2">
                 <div
                   className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: "#10B981" }}
+                  style={{ backgroundColor: "#649cf7" }}
                 ></div>
                 <span className="text-sm font-medium text-card-foreground">
-                  {comparisonPeriod}
+                  {comparisonPeriod}{" "}
+                  <span className="text-xs text-muted-foreground">
+                    (Comparison)
+                  </span>
                 </span>
               </div>
-              <span className="text-sm font-bold" style={{ color: "#10B981" }}>
+              <span className="text-sm font-bold" style={{ color: "#649cf7" }}>
                 {formatValue(comparisonValue, format)}
               </span>
             </div>
@@ -302,6 +305,7 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
     Array<{ value: string; label: string }>
   >([]);
   const [selectedComparison, setSelectedComparison] = useState<string>("");
+  const isFunnelMetrics = title === "Funnel Metrics";
   const formattedComparisonPeriod = useMemo(() => {
     const [year, month] = comparisonPeriod?.split("-") || [];
     return `${monthLabels[parseInt(month) - 1]} ${year}`;
@@ -389,7 +393,7 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
         </div>
 
         {/* Comparison dropdown for all chart sections */}
-        {title === "Funnel Metrics" && (
+        {isFunnelMetrics && (
           <div className="flex flex-col gap-1 self-end sm:self-auto">
             <label className="text-[10px] text-muted-foreground whitespace-nowrap">
               Compare with
@@ -595,42 +599,63 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
                 <div className="flex items-center justify-center gap-4 pt-2">
                   <div className="flex items-center gap-2">
                     <div
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: "#3B82F6" }}
+                     className="w-4 h-0.5 border-dashed"
+                      style={{
+                        backgroundColor: config.actualColor,
+                        borderColor: config.actualColor,
+                      }}
                     ></div>
                     <span className="text-xs text-muted-foreground">
-                      {selectedDate
-                        ? `${selectedDate.toLocaleDateString("en-US", {
-                            month: "short",
-                          })} ${selectedDate.getFullYear()}`
-                        : "Current Period"}
+                      {isComparisonEnabled
+                        ? selectedDate
+                          ? `${selectedDate.toLocaleDateString("en-US", {
+                              month: "short",
+                            })} ${selectedDate.getFullYear()}`
+                          : "Current Period"
+                        : "Actual"}
                     </span>
                   </div>
 
-                  {!isComparisonEnabled ? (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center">
                       <div
-                        className="w-4 h-0.5 border-dashed"
+                        className="w-1 h-0.5 border"
                         style={{
-                          backgroundColor: "#3B82F6",
-                          borderColor: "#3B82F6",
+                          backgroundColor: config.targetColor,
+                          borderColor: config.targetColor,
                         }}
                       ></div>
-                      <span className="text-xs text-muted-foreground">
-                        Target
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
                       <div
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: "#10B981" }}
+                        className="w-1 h-0.5 border"
+                        style={{
+                          backgroundColor: isComparisonEnabled ? config.targetColor : "#fff",
+                          borderColor: isComparisonEnabled ? config.targetColor : "#fff",
+                        }}
                       ></div>
-                      <span className="text-xs text-muted-foreground">
-                        {formattedComparisonPeriod}
+                      <div
+                        className="w-1 h-0.5 border"
+                        style={{
+                          backgroundColor: config.targetColor,
+                          borderColor: config.targetColor,
+                        }}
+                      ></div>
+                      <div
+                        className="w-1 h-0.5 border"
+                        style={{
+                          backgroundColor: isComparisonEnabled ? config.targetColor : "#fff",
+                          borderColor: isComparisonEnabled ? config.targetColor : "#fff",
+                        }}
+                      ></div>
+                      <div
+                        className="w-1 h-0.5 border"
+                        style={{
+                          backgroundColor: config.targetColor,
+                          borderColor: config.targetColor,
+                        }}
+                      ></div>
+                      <span className="text-xs text-muted-foreground ml-1">
+                        {isComparisonEnabled ? formattedComparisonPeriod : "Target"}
                       </span>
                     </div>
-                  )}
                 </div>
               )}
             </div>

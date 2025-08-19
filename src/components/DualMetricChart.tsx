@@ -2,6 +2,7 @@ import React from 'react';
 import { Card } from '@/components/ui/card';
 import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Area } from 'recharts';
 import { formatCurrencyValue } from '@/utils/page-utils/commonUtils';
+import { config } from 'process';
 
 interface DualMetricChartProps {
   chartData: Array<{
@@ -123,7 +124,6 @@ export const DualMetricChart: React.FC<DualMetricChartProps> = ({
             iconType="line"
           />
 
-                     {/* Define gradients for both metrics */}
            <defs>
              <linearGradient
                id="metric1-gradient"
@@ -204,7 +204,6 @@ export const DualMetricChart: React.FC<DualMetricChartProps> = ({
             strokeWidth={2}
             dot={{ fill: metric1Config.actualColor, strokeWidth: 2, r: 3 }}
             activeDot={{ r: 4, stroke: metric1Config.actualColor, strokeWidth: 1 }}
-            name={metric1Config.title}
           />
           
           {/* Metric 2 Line */}
@@ -216,10 +215,37 @@ export const DualMetricChart: React.FC<DualMetricChartProps> = ({
             strokeWidth={2}
             dot={{ fill: metric2Config.actualColor, strokeWidth: 2, r: 3 }}
             activeDot={{ r: 4, stroke: metric2Config.actualColor, strokeWidth: 1 }}
-            name={metric2Config.title}
           />
         </ComposedChart>
       </ResponsiveContainer>
+
+      <div className="flex items-center justify-center gap-4 pt-2">
+                  <div className="flex items-center gap-2">
+                    <div
+                     className="w-4 h-0.5 border-dashed"
+                      style={{
+                        backgroundColor: metric1Config.actualColor,
+                        borderColor: metric1Config.actualColor,
+                      }}
+                    ></div>
+                    <span className="text-xs text-muted-foreground">
+                      {metric1Config.title}
+                    </span>
+                  </div>
+
+                    <div className="flex items-center">
+                      <div
+                        className="w-4 h-0.5 border"
+                        style={{
+                          backgroundColor: metric2Config.actualColor,
+                          borderColor: metric2Config.actualColor,
+                        }}
+                      ></div>
+                      <span className="text-xs text-muted-foreground ml-1">
+                        {metric2Config.title}
+                      </span>
+                    </div>
+                </div>
     </div>
   );
 }; 
