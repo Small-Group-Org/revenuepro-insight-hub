@@ -54,16 +54,52 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-secondary">
-      <Card className="w-full max-w-md bg-card border-border shadow-lg">
-        <CardHeader className="text-center">
-          <CardTitle className="text-gradient-primary text-2xl">Welcome Back</CardTitle>
-          <CardDescription className="text-muted-foreground">Sign in to your account</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="min-h-screen flex flex-col lg:flex-row" style={{ backgroundColor: '#1f1c13' }}>
+      {/* Left Section - 45% */}
+      <div className="lg:w-[45%] w-full p-6 sm:p-8 lg:px-12 lg:py-4 flex flex-col gap-4 min-h-[50vh] lg:min-h-screen">
+        {/* Logo */}
+        <div className="flex items-center gap-3 mb-6">
+          <img 
+            src="/logo.png" 
+            alt="Revenue Pro Logo" 
+            className="w-auto h-8"
+          />
+        </div>
+
+        {/* Graph Image */}
+          <img 
+            src="/LoginPageGraph.png" 
+            alt="Revenue Analytics Graph" 
+            className="h-[55vh] w-auto object-contain rounded-lg"
+          />
+
+        {/* Content Section */}
+        <div className="text-center">
+          <h2 className="text-white font-bold text-2xl my-4 leading-tight">
+            See Data Clearly. Change the World.
+          </h2>
+          <p className="text-gray-300 text-[13px] leading-relaxed max-w-md mx-auto">
+            You are on a journey to build an amazing company and make the world a better place. 
+            You need exceptional marketing and data to make this happen. RevenuePro allows you to 
+            see your marketing data the way it needs to be seen so you can make important decisions.
+          </p>
+          <p className="text-gray-400 text-xs mt-6">Copyright © HomeownerMarketers</p>
+        </div>
+      </div>
+
+      {/* Right Section - 55% */}
+      <div className="lg:w-[55%] w-full bg-white flex items-center justify-center p-6 sm:p-8 lg:p-12 min-h-[50vh] lg:min-h-screen">
+        <div className="w-full max-w-md space-y-6">
+          {/* Form Header */}
+          <div className="text-center space-y-3">
+            <h3 className="text-2xl sm:text-3xl font-bold text-gray-900">Welcome back</h3>
+            <p className="text-base text-gray-600">Sign in to your account</p>
+          </div>
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium text-card-foreground">
+              <label htmlFor="email" className="text-sm font-medium text-gray-700">
                 Email
               </label>
               <Input
@@ -74,11 +110,12 @@ export default function Login() {
                 placeholder="Enter your email"
                 required
                 disabled={isLoading}
-                className="border-border focus:ring-primary"
+                className="h-12 rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
               />
             </div>
+            
             <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium text-card-foreground">
+              <label htmlFor="password" className="text-sm font-medium text-gray-700">
                 Password
               </label>
               <Input
@@ -89,15 +126,34 @@ export default function Login() {
                 placeholder="Enter your password"
                 required
                 disabled={isLoading}
-                className="border-border focus:ring-primary"
+                className="h-12 rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
               />
             </div>
-            <Button type="submit" className="w-full bg-gradient-primary hover:bg-gradient-accent text-primary-foreground" disabled={isLoading}>
-              {isLoading ? "Signing in..." : "Sign In"}
+            
+            <Button 
+              type="submit" 
+              className="w-full h-12 text-white rounded-lg font-medium shadow-lg transition-colors"
+              style={{ backgroundColor: '#1f1c13' }}
+              disabled={isLoading}
+            >
+              {isLoading ? "Please wait..." : "Sign In"}
             </Button>
           </form>
-        </CardContent>
-      </Card>
+
+          {/* Footer Links */}
+          <div className="text-center space-y-4 pt-6">
+            <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-gray-500">
+              <a href="#" className="hover:text-gray-700 transition-colors">Privacy Policy</a>
+              <a href="#" className="hover:text-gray-700 transition-colors">CA Privacy Policy</a>
+              <a href="#" className="hover:text-gray-700 transition-colors">Terms & Conditions</a>
+            </div>
+            {/* Mobile Copyright */}
+            <div className="block lg:hidden pt-4">
+              <p className="text-gray-400 text-xs">Copyright © HomeownerMarketers</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 } 
