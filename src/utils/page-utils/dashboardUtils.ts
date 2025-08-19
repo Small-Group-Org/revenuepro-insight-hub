@@ -37,13 +37,13 @@ export const getXAxisLabels = (period: PeriodType, selectedDate: Date, dataLengt
       metric1Config: {
         key: "leads",
         title: "Number of Leads",
-        actualColor: "#06b6d4",
+        actualColor: "#3B82F6",
         format: "number"
       },
       metric2Config: {
         key: "cpl",
         title: "Cost Per Lead",
-        actualColor: "#0891b2",
+        actualColor: "#649cf7",
         format: "currency"
       }
     },
@@ -56,13 +56,13 @@ export const getXAxisLabels = (period: PeriodType, selectedDate: Date, dataLengt
       metric1Config: {
         key: "estimatesSet",
         title: "Appointments Set",
-        actualColor: "#06b6d4",
+        actualColor: "#3B82F6",
         format: "number"
       },
       metric2Config: {
         key: "cpEstimateSet",
         title: "Cost per Appointment",
-        actualColor: "#0891b2",
+        actualColor: "#649cf7",
         format: "currency"
       }
     },
@@ -75,13 +75,13 @@ export const getXAxisLabels = (period: PeriodType, selectedDate: Date, dataLengt
       metric1Config: {
         key: "estimatesRan",
         title: "Appointments",
-        actualColor: "#06b6d4",
+        actualColor: "#3B82F6",
         format: "number"
       },
       metric2Config: {
         key: "cpEstimate",
         title: "Cost per Appointment",
-        actualColor: "#0891b2",
+        actualColor: "#649cf7",
         format: "currency"
       }
     },
@@ -94,13 +94,13 @@ export const getXAxisLabels = (period: PeriodType, selectedDate: Date, dataLengt
       metric1Config: {
         key: "sales",
         title: "Jobs Booked",
-        actualColor: "#06b6d4",
+        actualColor: "#3B82F6",
         format: "number"
       },
       metric2Config: {
         key: "cpJobBooked",
         title: "Cost per Job",
-        actualColor: "#0891b2",
+        actualColor: "#649cf7",
         format: "currency"
       }
     }
