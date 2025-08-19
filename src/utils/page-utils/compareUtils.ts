@@ -125,7 +125,7 @@ export const handleInputDisable = (
   let isDisabled = false;
   let disabledMessage: string | null = null;
   let noteMessage: string | null = null;
-  let shouldDisableNonRevenueFields = false;
+  const shouldDisableNonRevenueFields = false;
   let isButtonDisabled = false;
 
   // Role-based restrictions

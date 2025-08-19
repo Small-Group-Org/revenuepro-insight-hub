@@ -92,7 +92,7 @@ export const YearlyTargetModal: React.FC<YearlyTargetModalProps> = ({
             };
           }, {} as any);
 
-          let monthlyValues: MonthlyData = {
+          const monthlyValues: MonthlyData = {
             budget: 0,
             leads: 0,
             estimatesSet: 0,

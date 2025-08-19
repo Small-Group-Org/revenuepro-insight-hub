@@ -96,7 +96,7 @@ export const useDashboardMetrics = () => {
 
     // Calculate totalCom if we have target data
     if (metrics.revenue > 0 && processedTargetData) {
-      let managementCost = calculateManagementCost(metrics.budget);
+      const managementCost = calculateManagementCost(metrics.budget);
 
       metrics.totalCom =
         ((managementCost + metrics.budget) / metrics.revenue) * 100;
