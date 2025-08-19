@@ -7,11 +7,14 @@ import { useUserStore } from './userStore';
 interface ReportingDataState {
   reportingData: IReportingData[] | null;
   targetData: IWeeklyTarget[] | null;
+  comparisonData: IReportingData[] | null;
   isLoading: boolean;
   error: string | null;
   setReportingData: (data: IReportingData[] | null) => void;
   setTargetData: (data: IWeeklyTarget[] | null) => void;
+  setComparisonData: (data: IReportingData[] | null) => void;
   getReportingData: (startDate: string, endDate: string, queryType: string) => Promise<void>;
+  getComparisonData: (startDate: string, endDate: string, queryType: string) => Promise<void>;
   upsertReportingData: (data: IReportingData) => Promise<void>;
   clearError: () => void;
 }
@@ -19,10 +22,12 @@ interface ReportingDataState {
 export const useReportingDataStore = create<ReportingDataState>((set, get) => ({
   reportingData: null,
   targetData: null,
+  comparisonData: null,
   isLoading: false,
   error: null,
   setReportingData: (data) => set({ reportingData: data }),
   setTargetData: (data) => set({ targetData: data }),
+  setComparisonData: (data) => set({ comparisonData: data }),
 
   getReportingData: async (startDate, endDate, queryType) => {
     set({ isLoading: true, error: null });
@@ -51,6 +56,33 @@ export const useReportingDataStore = create<ReportingDataState>((set, get) => ({
       }
     } catch (error) {
       set({ reportingData: null, targetData: null, error: error instanceof Error ? error.message : 'An error occurred while fetching reporting data', isLoading: false });
+    }
+  },
+
+  getComparisonData: async (startDate, endDate, queryType) => {
+    try {
+      const authState = useAuthStore.getState();
+      const userStore = useUserStore.getState();
+      const user = authState.user;
+      let userId = user?._id;
+      if (user?.role === 'ADMIN') {
+        userId = userStore.selectedUserId || user?._id;
+      }
+      if (!userId) {
+        set({ error: 'No user ID found' });
+        return;
+      }
+      const response = await fetchReportingData(userId, startDate, endDate, queryType);
+      if (!response.error && response.data) {
+        const reportingResponse = response.data.data as IReportingResponse;
+        const actualData = Array.isArray(reportingResponse.actual) ? reportingResponse.actual : [reportingResponse.actual];
+        console.log('Comparison data:', actualData);
+        set({ comparisonData: actualData });
+      } else {
+        set({ comparisonData: null, error: response.message || 'Failed to fetch comparison data' });
+      }
+    } catch (error) {
+      set({ comparisonData: null, error: error instanceof Error ? error.message : 'An error occurred while fetching comparison data' });
     }
   },
 

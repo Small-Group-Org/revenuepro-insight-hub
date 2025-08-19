@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useReportingDataStore } from '@/stores/reportingDataStore';
 import { DatePeriodSelector } from '@/components/DatePeriodSelector';
 import {
@@ -20,8 +20,9 @@ import {
 } from '@/utils/constant';
 import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
 
+
 export const Dashboard = () => {
-  const { reportingData, getReportingData } = useReportingDataStore();
+  const { reportingData, getReportingData, getComparisonData, comparisonData } = useReportingDataStore();
   const { selectedUserId } = useUserStore();
   const { 
     comprehensiveChartData, 
@@ -31,8 +32,13 @@ export const Dashboard = () => {
     setPeriod, 
     processedTargetData, 
     dualMetricConfigs,
-    dualMetricChartsData
+    dualMetricChartsData,
+    processedComparisonData
   } = useDashboardMetrics();
+  
+  // State for comparison data
+  const [comparisonPeriod, setComparisonPeriod] = useState<string>('');
+  const [isComparisonEnabled, setIsComparisonEnabled] = useState<boolean>(false);
 
   useEffect(() => {
     let startDate: string, endDate: string, queryType: string;
@@ -52,12 +58,57 @@ export const Dashboard = () => {
     getReportingData(startDate, endDate, queryType);
   }, [selectedDate, period, selectedUserId, getReportingData]);
 
+  // Reset comparison state when period or selectedDate changes
+  useEffect(() => {
+    setIsComparisonEnabled(false);
+    setComparisonPeriod('');
+  }, [period, selectedDate]);
+
   const handleDatePeriodChange = (
     date: Date,
     newPeriod: "weekly" | "monthly" | "yearly" | "ytd"
   ) => {
     setSelectedDate(date);
     setPeriod(newPeriod);
+  };
+
+  const handleComparisonChange = (selectedPeriod: string) => {
+    if (selectedPeriod && selectedPeriod !== comparisonPeriod) {
+      setComparisonPeriod(selectedPeriod);
+      setIsComparisonEnabled(true);
+      
+      let startDate: string, endDate: string, queryType: string;
+      
+      if (period === "monthly") {
+        const [year, month] = selectedPeriod.split('-');
+        const compareDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+        
+        startDate = format(startOfMonth(compareDate), "yyyy-MM-dd");
+        endDate = format(endOfMonth(compareDate), "yyyy-MM-dd");
+        queryType = "monthly";
+      } else if (period === "yearly" || period === "ytd") {
+        const year = parseInt(selectedPeriod);
+        const compareDate = new Date(year, 0, 1);
+        
+        startDate = format(startOfYear(compareDate), "yyyy-MM-dd");
+        endDate = format(endOfYear(compareDate), "yyyy-MM-dd");
+        queryType = "yearly";
+      }
+      
+      fetchComparisonData(startDate, endDate, queryType);
+    } else if (!selectedPeriod) {
+      setIsComparisonEnabled(false);
+      setComparisonPeriod('');
+    }
+  };
+
+  const fetchComparisonData = async (startDate: string, endDate: string, queryType: string) => {
+    try {
+      console.log('Fetching comparison data for:', { startDate, endDate, queryType });
+      await getComparisonData(startDate, endDate, queryType);
+    } catch (error) {
+      console.error('Error fetching comparison data:', error);
+    }
   };
 
   // Icon mapping for dual metric charts
@@ -117,21 +168,29 @@ export const Dashboard = () => {
             chartConfigs={revenueMetricsChartConfigs}
             title="Revenue Metrics"
             icon={<DollarSign className="h-5 w-5 text-green-600" />}
+            periodType={period === "ytd" ? "yearly" : period === "weekly" ? "monthly" : period}
+            selectedDate={selectedDate}
           />
         </div>
 
-        {/* Funnel Metrics Charts */}
-        <div className="max-w-7xl mx-auto mb-8">
-          <MetricsLineCharts 
-            chartData={comprehensiveChartData} 
-            chartConfigs={funnelMetricsChartConfigs}
-            title="Funnel Metrics"
-            icon={<Filter className="h-5 w-5 text-purple-600" />}
-          />
-        </div>
+                 {/* Funnel Metrics Charts */}
+         <div className="max-w-7xl mx-auto mb-8">
+           <MetricsLineCharts 
+             chartData={comprehensiveChartData} 
+             chartConfigs={funnelMetricsChartConfigs}
+             title="Funnel Metrics"
+             icon={<Filter className="h-5 w-5 text-purple-600" />}
+             periodType={period === "ytd" ? "yearly" : period === "weekly" ? "monthly" : period}
+             selectedDate={selectedDate}
+             onComparisonChange={handleComparisonChange}
+             comparisonData={processedComparisonData}
+             isComparisonEnabled={isComparisonEnabled}
+             comparisonPeriod={comparisonPeriod}
+           />
+         </div>
 
         {/* Dual Metric Charts - Optimized */}
-        <div className=" mb-6 p-6 bg-gradient-to-br rounded-lg from-background via-muted/15 to-primary/3 shadow-lg border border-border hover:shadow-2xl hover:border-primary/10 transition-all duration-300 group backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto mb-6 p-6 bg-gradient-to-br rounded-lg from-background via-muted/15 to-primary/3 shadow-lg border border-border hover:shadow-2xl hover:border-primary/10 transition-all duration-300 group backdrop-blur-sm">
           <div className="flex items-center gap-2 mb-2">
             <DollarSign className="h-5 w-5 text-green-600" />
             <h3 className="text-[20px] font-semibold text-card-foreground">Cost Metrics</h3>
@@ -158,6 +217,8 @@ export const Dashboard = () => {
             title="Performance Metrics"
             icon={<TrendingUp className="h-5 w-5 text-blue-600" />}
             gridCols="grid-cols-1 lg:grid-cols-2 xl:grid-cols-3"
+            periodType={period === "ytd" ? "yearly" : period === "weekly" ? "monthly" : period}
+            selectedDate={selectedDate}
           />
         </div>
       </div>

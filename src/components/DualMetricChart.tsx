@@ -1,7 +1,8 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Area } from 'recharts';
 import { formatCurrencyValue } from '@/utils/page-utils/commonUtils';
+import { config } from 'process';
 
 interface DualMetricChartProps {
   chartData: Array<{
@@ -94,7 +95,7 @@ export const DualMetricChart: React.FC<DualMetricChartProps> = ({
       </div>
       
       <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={chartData}>
+        <ComposedChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
           <XAxis dataKey="week" fontSize={12} />
           
@@ -122,6 +123,77 @@ export const DualMetricChart: React.FC<DualMetricChartProps> = ({
             iconSize={12}
             iconType="line"
           />
+
+           <defs>
+             <linearGradient
+               id="metric1-gradient"
+               x1="0"
+               y1="0"
+               x2="0"
+               y2="1"
+             >
+               <stop
+                 offset="0%"
+                 stopColor={metric1Config.actualColor}
+                 stopOpacity={0.25}
+               />
+               <stop
+                 offset="50%"
+                 stopColor={metric1Config.actualColor}
+                 stopOpacity={0.025}
+               />
+               <stop
+                 offset="100%"
+                 stopColor={metric1Config.actualColor}
+                 stopOpacity={0}
+               />
+             </linearGradient>
+             <linearGradient
+               id="metric2-gradient"
+               x1="0"
+               y1="0"
+               x2="0"
+               y2="1"
+             >
+               <stop
+                 offset="0%"
+                 stopColor={metric2Config.actualColor}
+                 stopOpacity={0.25}
+               />
+               <stop
+                 offset="50%"
+                 stopColor={metric2Config.actualColor}
+                 stopOpacity={0.12}
+               />
+               <stop
+                 offset="100%"
+                 stopColor={metric2Config.actualColor}
+                 stopOpacity={0.03}
+               />
+             </linearGradient>
+           </defs>
+
+          {/* Gradient area under Metric 1 line */}
+          <Area
+            yAxisId="left"
+            type="monotone"
+            dataKey="metric1Actual"
+            stroke="none"
+            fill={`url(#metric1-gradient)`}
+            fillOpacity={1}
+            connectNulls={true}
+          />
+
+          {/* Gradient area under Metric 2 line */}
+          <Area
+            yAxisId="right"
+            type="monotone"
+            dataKey="metric2Actual"
+            stroke="none"
+            fill={`url(#metric2-gradient)`}
+            fillOpacity={1}
+            connectNulls={true}
+          />
           
           {/* Metric 1 Line */}
           <Line 
@@ -129,10 +201,9 @@ export const DualMetricChart: React.FC<DualMetricChartProps> = ({
             type="monotone" 
             dataKey="metric1Actual" 
             stroke={metric1Config.actualColor} 
-            strokeWidth={3}
-            dot={{ fill: metric1Config.actualColor, strokeWidth: 2, r: 4 }}
-            activeDot={{ r: 6, stroke: metric1Config.actualColor, strokeWidth: 2 }}
-            name={metric1Config.title}
+            strokeWidth={2}
+            dot={{ fill: metric1Config.actualColor, strokeWidth: 2, r: 3 }}
+            activeDot={{ r: 4, stroke: metric1Config.actualColor, strokeWidth: 1 }}
           />
           
           {/* Metric 2 Line */}
@@ -141,13 +212,40 @@ export const DualMetricChart: React.FC<DualMetricChartProps> = ({
             type="monotone" 
             dataKey="metric2Actual" 
             stroke={metric2Config.actualColor} 
-            strokeWidth={3}
-            dot={{ fill: metric2Config.actualColor, strokeWidth: 2, r: 4 }}
-            activeDot={{ r: 6, stroke: metric2Config.actualColor, strokeWidth: 2 }}
-            name={metric2Config.title}
+            strokeWidth={2}
+            dot={{ fill: metric2Config.actualColor, strokeWidth: 2, r: 3 }}
+            activeDot={{ r: 4, stroke: metric2Config.actualColor, strokeWidth: 1 }}
           />
-        </LineChart>
+        </ComposedChart>
       </ResponsiveContainer>
+
+      <div className="flex items-center justify-center gap-4 pt-2">
+                  <div className="flex items-center gap-2">
+                    <div
+                     className="w-4 h-0.5 border-dashed"
+                      style={{
+                        backgroundColor: metric1Config.actualColor,
+                        borderColor: metric1Config.actualColor,
+                      }}
+                    ></div>
+                    <span className="text-xs text-muted-foreground">
+                      {metric1Config.title}
+                    </span>
+                  </div>
+
+                    <div className="flex items-center">
+                      <div
+                        className="w-4 h-0.5 border"
+                        style={{
+                          backgroundColor: metric2Config.actualColor,
+                          borderColor: metric2Config.actualColor,
+                        }}
+                      ></div>
+                      <span className="text-xs text-muted-foreground ml-1">
+                        {metric2Config.title}
+                      </span>
+                    </div>
+                </div>
     </div>
   );
 }; 
