@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { startOfMonth, endOfMonth, startOfYear, endOfYear, startOfQuarter, endOfQuarter, subMonths, subQuarters, subYears } from 'date-fns';
 import { TopCard } from '@/components/DashboardTopCards';
 
-const COLORS = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#f97316', '#06b6d4', '#8b5cf6', '#10b981', '#f59e0b'];
+//9ca3af
+const COLORS = ['#1f1c13', '#f7f5f5', '#306BC8', '#2A388F', '#396F9C'];
 
 // Time filter labels for display
 const TIME_FILTER_LABELS: Record<string, string> = {
@@ -319,7 +320,7 @@ export const LeadAnalytics = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200">
       <div className="relative z-10 pt-4 pb-12 px-4">
         <div className="max-w-7xl mx-auto space-y-10">
           {/* Header */}
@@ -720,7 +721,7 @@ export const LeadAnalytics = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <FileText className="h-5 w-5 text-green-600" />
-                    Top Ads by Estimate Set Count (Last 2 Weeks)
+                    Top Ads (by estimate set count)
                   </CardTitle>
                   <p className="text-sm text-muted-foreground">
                     Performance ranking based on estimate set count over the past 2 weeks
@@ -769,7 +770,7 @@ export const LeadAnalytics = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Tag className="h-5 w-5 text-orange-600" />
-                    Top Ad Sets by Estimate Set Count (Last 2 Weeks)
+                    Top Ad Sets (by estimate set count)
                   </CardTitle>
                   <p className="text-sm text-muted-foreground">
                     Performance ranking based on estimate set count over the past 2 weeks
