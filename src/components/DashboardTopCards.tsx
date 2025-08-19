@@ -17,9 +17,11 @@ interface TopCardProps {
     value: number;
     format: 'currency' | 'percent' | 'number';
   }>;
+  // New prop for 2-row design
+  twoRowDesign?: boolean;
 }
 
-export const TopCard: React.FC<TopCardProps> = ({ title, icon, description, trend, metrics }) => {
+export const TopCard: React.FC<TopCardProps> = ({ title, icon, description, trend, metrics, twoRowDesign = false }) => {
   const formatValue = (val: number, fmt: string) => {
     if (fmt === "currency") {
       return formatCurrencyValue(val);
@@ -32,16 +34,36 @@ export const TopCard: React.FC<TopCardProps> = ({ title, icon, description, tren
 
   return (
     <Card className="bg-gradient-to-br from-background via-muted/15 to-primary/3 shadow-lg border border-border hover:shadow-2xl hover:border-primary/10 transition-all duration-300 group hover:scale-105 backdrop-blur-sm">
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <CardTitle className="text-sm font-medium text-card-foreground">{title}</CardTitle>
+      {!twoRowDesign && (
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-sm font-medium text-card-foreground">{title}</CardTitle>
+            </div>
           </div>
-        </div>
-      </CardHeader>
+        </CardHeader>
+      )}
       <CardContent className="pt-0 relative">
         <div className="min-h-[80px] flex flex-col gap-4 mt-1 justify-center">
-          {metrics.length === 1 ? (
+          {twoRowDesign ? (
+            // 2-row design: Title + Count on first row, description on second row
+            <>
+              <div className="flex flex-col justify-center">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-lg font-semibold text-card-foreground">{title}</span>
+                  <span className={`font-bold text-card-foreground transition-all duration-300 text-[30px]`}>
+                    {formatValue(metrics[0].value, metrics[0].format)}
+                  </span>
+                </div>
+              </div>
+              <div className="flex flex-col justify-center">
+                <span className="text-[11px] text-muted-foreground/70 italic">
+                  {description}
+                </span>
+              </div>
+            </>
+          ) : metrics.length === 1 ? (
+            // Original single metric design
             <>
               <div className="flex flex-col justify-center">
                 <span className={`font-bold text-card-foreground transition-all duration-300 text-[30px]`}>
@@ -55,6 +77,7 @@ export const TopCard: React.FC<TopCardProps> = ({ title, icon, description, tren
               </div>
             </>
           ) : (
+            // Original multiple metrics design
             <>
               <div className="flex flex-col justify-center">
                 <span className={`font-bold text-card-foreground transition-all duration-300 text-[30px]`}>

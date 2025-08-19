@@ -721,6 +721,7 @@ export const LeadSheet = () => {
                     }
                   ]}
                   description="Leads that are newly received and not yet processed."
+                  twoRowDesign={true}
                 />
                 <TopCard
                   title="In Progress Leads"
@@ -733,6 +734,7 @@ export const LeadSheet = () => {
                     }
                   ]}
                   description="Leads currently being worked on by the team."
+                  twoRowDesign={true}
                 />
                 <TopCard
                   title="Estimate Set Leads"
@@ -745,6 +747,7 @@ export const LeadSheet = () => {
                     }
                   ]}
                   description="Leads where estimates have been provided to customers."
+                  twoRowDesign={true}
                 />
                 <TopCard
                   title="Unqualified Leads"
@@ -757,6 +760,7 @@ export const LeadSheet = () => {
                     }
                   ]}
                   description="Leads that don't meet qualification criteria."
+                  twoRowDesign={true}
                 />
               </div>
 
@@ -788,16 +792,8 @@ export const LeadSheet = () => {
                         className={`rounded-lg border-2 border-gray-200 p-6 transition-all duration-200 bg-white shadow-sm ${getHoverStyling()} ${isDisabled ? 'opacity-60' : ''}`}
                       >
                       <div className="grid grid-cols-12 gap-4 items-center">
-                        {/* Date */}
-                        <div className="col-span-1 flex items-center w-[200px]">
-                          <div className="flex items-center gap-1 text-xs text-gray-600">
-                            <Calendar className="w-3 h-3 text-gray-400" />
-                            <span>{formatDate(lead.leadDate)}</span>
-                          </div>
-                        </div>
-
                         {/* Lead Score */}
-                        <div className="col-span-2 flex items-center pl-12">
+                        <div className="col-span-1 flex items-center">
                           <div className="relative">
                             <div className="w-14 h-14 relative">
                               {/* Background circle */}
@@ -869,6 +865,14 @@ export const LeadSheet = () => {
                                 {lead.phone}
                               </a>
                             </div>
+                          </div>
+                        </div>
+
+                        {/* Date */}
+                        <div className="col-span-2 flex items-center">
+                          <div className="flex items-center gap-1 text-xs text-gray-600">
+                            <Calendar className="w-3 h-3 text-gray-400" />
+                            <span>{formatDate(lead.leadDate)}</span>
                           </div>
                         </div>
 
