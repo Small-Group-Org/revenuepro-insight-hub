@@ -346,19 +346,30 @@ export const prepareChartDataWithComparison = (
   }
 
   const comparisonDataForConfig = comparisonData[configKey];
-
-  const data =  chartData.map((item, index) => {
+  
+  // Get the maximum length between current and comparison data
+  const maxLength = Math.max(chartData.length, comparisonDataForConfig.length);
+  
+  // Create new array with the maximum length
+  const data = Array.from({ length: maxLength }, (_, index) => {
+    const currentItem = chartData[index];
     const comparisonItem = comparisonDataForConfig[index];
-    if (comparisonItem && comparisonItem.actual !== null) {
+    
+    if (currentItem) {
       return {
-        ...item,
-        comparison: comparisonItem.actual
+        ...currentItem,
+        comparison: comparisonItem?.actual || 0
+      };
+    } else {
+      // Create placeholder for missing current data
+      return {
+        week: `Period ${index + 1}`,
+        actual: 0,
+        target: 0,
+        format: "number",
+        comparison: comparisonItem?.actual || 0
       };
     }
-    return {
-      ...item,
-      comparison: 0
-    };
   });
 
   return data;

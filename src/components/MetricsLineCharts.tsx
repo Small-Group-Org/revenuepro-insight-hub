@@ -75,6 +75,8 @@ const CustomTooltip = ({
   isComparisonEnabled,
   comparisonPeriod,
   selectedDate,
+  periodType,
+  formattedComparisonPeriod,
 }: any) => {
   if (active && payload && payload.length) {
     const actualValue = payload.find((p) => p.dataKey === "actual")?.value || 0;
@@ -92,9 +94,14 @@ const CustomTooltip = ({
     // Format the selected date for display
     const formatSelectedDate = (date: Date) => {
       if (!date) return "";
-      const month = date.toLocaleDateString("en-US", { month: "short" });
-      const year = date.getFullYear();
-      return `${month} ${year}`;
+      if (periodType === "monthly") {
+        const month = date.toLocaleDateString("en-US", { month: "short" });
+        const year = date.getFullYear();
+        return `${month} ${year}`;
+      } else if (periodType === "yearly") {
+        return date.getFullYear().toString();
+      }
+      return "";
     };
 
     // Calculate performance metrics
@@ -158,7 +165,9 @@ const CustomTooltip = ({
                   style={{ backgroundColor: "#649cf7" }}
                 ></div>
                 <span className="text-sm font-medium text-card-foreground">
-                  {comparisonPeriod}{" "}
+                  {periodType === "monthly"
+                    ? formattedComparisonPeriod
+                    : comparisonPeriod}{" "}
                   <span className="text-xs text-muted-foreground">
                     (Comparison)
                   </span>
@@ -307,9 +316,14 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
   const [selectedComparison, setSelectedComparison] = useState<string>("");
   const isFunnelMetrics = title === "Funnel Metrics";
   const formattedComparisonPeriod = useMemo(() => {
-    const [year, month] = comparisonPeriod?.split("-") || [];
-    return `${monthLabels[parseInt(month) - 1]} ${year}`;
-  }, [comparisonPeriod]);
+    if (periodType === "monthly") {
+      const [year, month] = comparisonPeriod?.split("-") || [];
+      return month && year ? `${monthLabels[parseInt(month) - 1]} ${year}` : "";
+    } else if (periodType === "yearly") {
+      return comparisonPeriod || "";
+    }
+    return "";
+  }, [comparisonPeriod, periodType]);
 
   // Handle comparison change
   const handleComparisonChange = (value: string) => {
@@ -318,6 +332,13 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
       onComparisonChange(value);
     }
   };
+
+  // Update selected comparison when comparisonPeriod prop changes
+  useEffect(() => {
+    if (comparisonPeriod && comparisonPeriod !== selectedComparison) {
+      setSelectedComparison(comparisonPeriod);
+    }
+  }, [comparisonPeriod, selectedComparison]);
 
   // Generate comparison options based on period type
   useEffect(() => {
@@ -371,7 +392,7 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
         });
       }
       setComparisonOptions(years);
-      setSelectedComparison(currentYear.toString());
+      setSelectedComparison(selectedYear.toString());
     }
   }, [periodType, selectedDate]);
 
@@ -396,7 +417,7 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
         {isFunnelMetrics && (
           <div className="flex flex-col gap-1 self-end sm:self-auto">
             <label className="text-[10px] text-muted-foreground whitespace-nowrap">
-              Compare with
+              Compare with {periodType === "monthly" ? "Month" : "Year"}
             </label>
             <Select
               value={selectedComparison}
@@ -404,26 +425,26 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
               disabled={comparisonOptions.length === 0}
             >
               <SelectTrigger
-                className={`w-[140px] h-8 text-xs bg-background border-border transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm ${
+                className={`w-[140px] h-8 text-xs bg-[#1f1c13] border-[#2a2518] text-amber-50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm ${
                   selectedComparison
-                    ? "border-primary/40 bg-primary/5 shadow-md"
-                    : "hover:border-primary/20 hover:shadow-md"
+                    ? "border-amber-600/60 bg-[#2a2518] shadow-md ring-1 ring-amber-600/30"
+                    : "hover:border-amber-500/50 hover:bg-[#2a2518] hover:shadow-md"
                 }`}
               >
                 <SelectValue
                   placeholder={
                     comparisonOptions.length === 0
                       ? "No options"
-                      : "Select period"
+                      : `Select ${periodType === "monthly" ? "month" : "year"}`
                   }
                 />
               </SelectTrigger>
-              <SelectContent className="max-h-[200px] shadow-lg border-border">
+              <SelectContent className="max-h-[200px] shadow-xl border-[#2a2518] bg-[#1f1c13]">
                 {comparisonOptions.map((option) => (
                   <SelectItem
                     key={option.value}
                     value={option.value}
-                    className="text-xs cursor-pointer hover:bg-primary/5"
+                    className="text-xs cursor-pointer text-amber-50 hover:bg-[#2a2518] focus:bg-[#2a2518] focus:text-amber-50 data-[state=checked]:bg-amber-600/20 data-[state=checked]:text-amber-100"
                   >
                     {option.label}
                   </SelectItem>
@@ -484,7 +505,30 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
                     )}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                    <XAxis dataKey="week" fontSize={12} />
+                    <XAxis
+                      dataKey="week"
+                      fontSize={12}
+                      tickFormatter={(value) => {
+                        // If it's a period label (like "Period 1"), format it based on period type
+                        if (
+                          typeof value === "string" &&
+                          value.startsWith("Period ")
+                        ) {
+                          const periodNum = parseInt(
+                            value.replace("Period ", "")
+                          );
+                          if (periodType === "monthly") {
+                            return `Week ${periodNum}`;
+                          } else if (periodType === "yearly") {
+                            // For yearly, show month abbreviations
+                            return (
+                              monthLabels[periodNum - 1] || `M${periodNum}`
+                            );
+                          }
+                        }
+                        return value;
+                      }}
+                    />
                     <YAxis
                       fontSize={12}
                       domain={
@@ -507,6 +551,8 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
                           isComparisonEnabled={isComparisonEnabled}
                           comparisonPeriod={formattedComparisonPeriod}
                           selectedDate={selectedDate}
+                          periodType={periodType}
+                          formattedComparisonPeriod={formattedComparisonPeriod}
                         />
                       }
                       cursor={{ strokeDasharray: "3 3", stroke: "#e2e8f0" }}
@@ -599,7 +645,7 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
                 <div className="flex items-center justify-center gap-4 pt-2">
                   <div className="flex items-center gap-2">
                     <div
-                     className="w-4 h-0.5 border-dashed"
+                      className="w-4 h-0.5"
                       style={{
                         backgroundColor: config.actualColor,
                         borderColor: config.actualColor,
@@ -608,54 +654,66 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
                     <span className="text-xs text-muted-foreground">
                       {isComparisonEnabled
                         ? selectedDate
-                          ? `${selectedDate.toLocaleDateString("en-US", {
-                              month: "short",
-                            })} ${selectedDate.getFullYear()}`
+                          ? periodType === "monthly"
+                            ? `${selectedDate.toLocaleDateString("en-US", {
+                                month: "short",
+                              })} ${selectedDate.getFullYear()}`
+                            : selectedDate.getFullYear().toString()
                           : "Current Period"
                         : "Actual"}
                     </span>
                   </div>
 
-                    <div className="flex items-center">
-                      <div
-                        className="w-1 h-0.5 border"
-                        style={{
-                          backgroundColor: config.targetColor,
-                          borderColor: config.targetColor,
-                        }}
-                      ></div>
-                      <div
-                        className="w-1 h-0.5 border"
-                        style={{
-                          backgroundColor: isComparisonEnabled ? config.targetColor : "#fff",
-                          borderColor: isComparisonEnabled ? config.targetColor : "#fff",
-                        }}
-                      ></div>
-                      <div
-                        className="w-1 h-0.5 border"
-                        style={{
-                          backgroundColor: config.targetColor,
-                          borderColor: config.targetColor,
-                        }}
-                      ></div>
-                      <div
-                        className="w-1 h-0.5 border"
-                        style={{
-                          backgroundColor: isComparisonEnabled ? config.targetColor : "#fff",
-                          borderColor: isComparisonEnabled ? config.targetColor : "#fff",
-                        }}
-                      ></div>
-                      <div
-                        className="w-1 h-0.5 border"
-                        style={{
-                          backgroundColor: config.targetColor,
-                          borderColor: config.targetColor,
-                        }}
-                      ></div>
-                      <span className="text-xs text-muted-foreground ml-1">
-                        {isComparisonEnabled ? formattedComparisonPeriod : "Target"}
-                      </span>
-                    </div>
+                  <div className="flex items-center">
+                    <div
+                      className="w-1 h-0.5 border"
+                      style={{
+                        backgroundColor: config.targetColor,
+                        borderColor: config.targetColor,
+                      }}
+                    ></div>
+                    <div
+                      className="w-1 h-0.5 border"
+                      style={{
+                        backgroundColor: isComparisonEnabled
+                          ? config.targetColor
+                          : "#fff",
+                        borderColor: isComparisonEnabled
+                          ? config.targetColor
+                          : "#fff",
+                      }}
+                    ></div>
+                    <div
+                      className="w-1 h-0.5 border"
+                      style={{
+                        backgroundColor: config.targetColor,
+                        borderColor: config.targetColor,
+                      }}
+                    ></div>
+                    <div
+                      className="w-1 h-0.5 border"
+                      style={{
+                        backgroundColor: isComparisonEnabled
+                          ? config.targetColor
+                          : "#fff",
+                        borderColor: isComparisonEnabled
+                          ? config.targetColor
+                          : "#fff",
+                      }}
+                    ></div>
+                    <div
+                      className="w-1 h-0.5 border"
+                      style={{
+                        backgroundColor: config.targetColor,
+                        borderColor: config.targetColor,
+                      }}
+                    ></div>
+                    <span className="text-xs text-muted-foreground ml-1">
+                      {isComparisonEnabled
+                        ? formattedComparisonPeriod
+                        : "Target"}
+                    </span>
+                  </div>
                 </div>
               )}
             </div>

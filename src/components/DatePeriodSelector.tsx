@@ -72,8 +72,9 @@ export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
     } else if (period === "monthly") {
       return format(selectedDate, "MMMM yyyy");
     } else if (period === "ytd") {
-      const yearStart = startOfYear(selectedDate);
       const currentDate = new Date();
+      const currentYear = currentDate.getFullYear();
+      const yearStart = new Date(currentYear, 0, 1); // January 1st of current year
       return `YTD ${format(yearStart, "yyyy")} (${format(yearStart, "MMM dd")} - ${format(currentDate, "MMM dd")})`;
     } else {
       return format(selectedDate, "yyyy");
@@ -134,7 +135,15 @@ export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
     }
     
     setPeriod(value);
-    onChange?.(selectedDate, value);
+    
+    if (value === "ytd") {
+      const currentDate = new Date();
+      const currentYear = currentDate.getFullYear();
+      const yearStart = new Date(currentYear, 0, 1);
+      onChange?.(yearStart, value);
+    } else {
+      onChange?.(selectedDate, value);
+    }
   };
 
   return (
