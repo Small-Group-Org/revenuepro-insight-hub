@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { Users, Lock, Calendar, MapPin, Phone, Mail, Tag, Target, Star, Download } from 'lucide-react';
+import { Users, Calendar, Phone, Mail, Tag, Target, Star, Download } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { DatePeriodSelector } from '@/components/DatePeriodSelector';
 import { PeriodType } from '@/types';
@@ -9,10 +9,10 @@ import { useLeadStore } from '@/stores/leadStore';
 import { useUserStore } from '@/stores/userStore';
 import { useRoleAccess } from '@/hooks/useRoleAccess';
 import { handleInputDisable } from '@/utils/page-utils/compareUtils';
-import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { TopCard } from '@/components/DashboardTopCards';
+import { calculateLeadScore, getScoreInfo, getStatusInfo } from '@/utils/leadProcessing';
 
 // ULR = Unqualified Lead Reason
 export const LeadSheet = () => {
@@ -35,7 +35,7 @@ export const LeadSheet = () => {
   const [ulrFilter, setUlrFilter] = useState<string>('');
   const [showFilters, setShowFilters] = useState<boolean>(false);
   
-  const { leads, loading, error, fetchLeads, updateLeadData, updateLeadLocal } = useLeadStore();
+  const { leads, conversionRates, loading, error, fetchLeads, fetchConversionRates, updateLeadData, updateLeadLocal } = useLeadStore();
   const { selectedUserId } = useUserStore();
 
   // Calculate disable logic for LeadSheet page with role-based restrictions
@@ -121,13 +121,14 @@ export const LeadSheet = () => {
     return { startDate, endDate };
   }, []);
 
-  // Fetch leads when selectedUserId, selectedDate, or period changes
+  // Fetch leads and conversion rates when selectedUserId, selectedDate, or period changes
   useEffect(() => {
     if (selectedUserId) {
       const { startDate, endDate } = getDateRange(selectedDate, period);
       fetchLeads(selectedUserId, startDate, endDate);
+      fetchConversionRates(selectedUserId);
     }
-  }, [selectedUserId, selectedDate, period, fetchLeads, getDateRange]);
+  }, [selectedUserId, selectedDate, period, fetchLeads, fetchConversionRates, getDateRange]);
 
   useEffect(() => {
     if (error) {
@@ -230,52 +231,31 @@ export const LeadSheet = () => {
     return format(new Date(dateString), 'MMM dd, yyyy');
   }, []);
 
-  // Generate random lead score (temporary - will be replaced with API call)
-  const generateLeadScore = useCallback((lead: { status: string; service: string; zip: string }) => {
-    // Simple algorithm based on lead properties
-    let score = 50; // Base score
-    
-    // Lead status affects score
-    if (lead.status === 'estimate_set') score += 30;
-    else if (lead.status === 'in_progress') score += 20;
-    else if (lead.status === 'new') score += 10;
-    else if (lead.status === 'unqualified') score -= 20;
-    
-    // Service type affects score
-    if (lead.service === 'Roofing') score += 15;
-    else if (lead.service === 'Siding') score += 10;
-    else if (lead.service === 'Windows') score += 8;
-    
-    // Zip code analysis (simplified)
-    if (lead.zip && lead.zip.length === 5) score += 5;
-    
-    // Random variation to simulate real scoring
-    score += Math.floor(Math.random() * 20) - 10;
-    
-    return Math.max(0, Math.min(100, score));
-  }, []);
-
-  // Initialize and cache scores per lead id; stays stable until page refresh, jugaad for now
+  // Calculate lead scores based on conversion rates
   useEffect(() => {
     setLeadScores((prev) => {
       let changed = false;
       const next: Record<string, number> = { ...prev };
+      
       for (const lead of leads) {
-        if (next[lead.id] === undefined) {
-          next[lead.id] = generateLeadScore(lead);
+        const newScore = calculateLeadScore(lead, conversionRates);
+        if (next[lead.id] !== newScore) {
+          next[lead.id] = newScore;
           changed = true;
         }
       }
-      // Optional cleanup of scores for leads no longer present
+      
+      // Cleanup scores for leads no longer present
       for (const id of Object.keys(next)) {
         if (!leads.find((l) => l.id === id)) {
           delete next[id];
           changed = true;
         }
       }
+      
       return changed ? next : prev;
     });
-  }, [leads, generateLeadScore]);
+  }, [leads, conversionRates]);
 
   // Get unique values for filter options
   const uniqueAdsets = useMemo(() => {
@@ -378,29 +358,7 @@ export const LeadSheet = () => {
     return adsetFilter || adFilter || statusFilter || ulrFilter;
   }, [adsetFilter, adFilter, statusFilter, ulrFilter]);
 
-  // Get score color and label
-  const getScoreInfo = useCallback((score: number) => {
-    if (score >= 80) return { color: 'bg-gradient-to-r from-green-500 to-emerald-600', textColor: 'text-white', label: 'Excellent' };
-    if (score >= 60) return { color: 'bg-gradient-to-r from-yellow-500 to-orange-500', textColor: 'text-white', label: 'Good' };
-    if (score >= 40) return { color: 'bg-gradient-to-r from-orange-500 to-red-500', textColor: 'text-white', label: 'Fair' };
-    return { color: 'bg-gradient-to-r from-red-500 to-pink-600', textColor: 'text-white', label: 'Poor' };
-  }, []);
 
-  // Get status color and label
-  const getStatusInfo = useCallback((status: string) => {
-    switch (status) {
-      case 'new':
-        return { color: 'bg-blue-100 text-blue-800 border-blue-200', label: 'New' };
-      case 'in_progress':
-        return { color: 'bg-yellow-100 text-yellow-800 border-yellow-200', label: 'In Progress' };
-      case 'estimate_set':
-        return { color: 'bg-green-100 text-green-800 border-green-200', label: 'Estimate Set' };
-      case 'unqualified':
-        return { color: 'bg-red-100 text-red-800 border-red-200', label: 'Unqualified' };
-      default:
-        return { color: 'bg-gray-100 text-gray-800 border-gray-200', label: 'Unknown' };
-    }
-  }, []);
 
   // Excel Export Function
   const exportToExcel = useCallback(() => {
