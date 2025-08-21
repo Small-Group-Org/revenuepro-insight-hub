@@ -490,226 +490,19 @@ export const LeadSheet = () => {
             disableLogic={disableLogic}
           />
 
-          {/* Filters Section */}
-          {showFilters && (
-            <div className="bg-white rounded-lg border border-gray-200 p-4 mt-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setShowFilters(false)}
-                    className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
-                  >
-                    ✕
-                  </button>
-                </div>
-        </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* Adset Name Filter */}
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">Ad Set Name</label>
-                  <Select value={adsetFilter || 'all'} onValueChange={(v) => setAdsetFilter(v === 'all' ? '' : v)}>
-                    <SelectTrigger className="h-9 bg-gray-50 border-0 hover:bg-gray-100 focus:bg-white focus:border focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all rounded-lg">
-                      <SelectValue placeholder="All Ad Sets" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Ad Sets</SelectItem>
-                      {uniqueAdsets.map(adset => (
-                        <SelectItem key={adset} value={adset}>
-                          {adset}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Ad Name Filter */}
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">Ad Name</label>
-                  <Select value={adFilter || 'all'} onValueChange={(v) => setAdFilter(v === 'all' ? '' : v)}>
-                    <SelectTrigger className="h-9 bg-gray-50 border-0 hover:bg-gray-100 focus:bg-white focus:border focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all rounded-lg">
-                      <SelectValue placeholder="All Ads" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Ads</SelectItem>
-                      {uniqueAds.map(ad => (
-                        <SelectItem key={ad} value={ad}>
-                          {ad}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Lead Status Filter */}
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">Lead Status</label>
-                  <Select value={statusFilter || 'all'} onValueChange={(v) => setStatusFilter(v === 'all' ? '' : v)}>
-                    <SelectTrigger className="h-9 bg-gray-50 border-0 hover:bg-gray-100 focus:bg-white focus:border focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all rounded-lg">
-                      <SelectValue placeholder="All Statuses" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Statuses</SelectItem>
-                      <SelectItem value="new">New</SelectItem>
-                      <SelectItem value="in_progress">In Progress</SelectItem>
-                      <SelectItem value="estimate_set">Estimate Set</SelectItem>
-                      <SelectItem value="unqualified">Unqualified</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Unqualified Reason Filter */}
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">Unqualified Reason</label>
-                  <Select value={ulrFilter || 'all'} onValueChange={(v) => setUlrFilter(v === 'all' ? '' : v)}>
-                    <SelectTrigger className="h-9 bg-gray-50 border-0 hover:bg-gray-100 focus:bg-white focus:border focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all rounded-lg">
-                      <SelectValue placeholder="All Reasons" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Reasons</SelectItem>
-                      {uniqueULRs.map(ulr => (
-                        <SelectItem key={ulr} value={ulr}>
-                          {ulr}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Active Filters Summary */}
-              {hasActiveFilters && (
-                <div className="mt-4 pt-3 border-t border-gray-100">
-                  <div className="flex flex-wrap gap-2">
-                    {adsetFilter && (
-                      <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                        Ad Set: {adsetFilter}
-                      </Badge>
-                    )}
-                    {adFilter && (
-                      <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                        Ad: {adFilter}
-                      </Badge>
-                    )}
-                    {statusFilter && (
-                      <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                        Status: {getStatusInfo(statusFilter as 'new' | 'in_progress' | 'estimate_set' | 'unqualified').label}
-                      </Badge>
-                    )}
-                    {ulrFilter && (
-                      <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                        ULR: {ulrFilter}
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 mt-2">
-                    <p className="text-sm text-gray-600">
-                      Showing {sortedLeads.length} of {leads.length} leads
-                    </p>
-                    <span className="text-gray-400">•</span>
-                    <button
-                      onClick={clearFilters}
-                      className="text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors"
-                    >
-                      Clear All
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Sort Controls */}
-          <div className="mt-4 mb-4">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div className="flex flex-wrap items-center gap-4">
-                <button
-                  onClick={() => setShowFilters(!showFilters)}
-                  className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all text-sm font-medium text-gray-700 shadow-sm"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                  </svg>
-                  Filters {hasActiveFilters && `(${Object.values({adsetFilter, adFilter, statusFilter, ulrFilter}).filter(Boolean).length})`}
-                </button>
-                
-                <span className="text-sm font-medium text-gray-700">Sort by</span>
-                <div className="flex rounded-lg overflow-hidden border border-gray-200 bg-white shadow-sm">
-                  <button
-                    onClick={() => setSortMode('date')}
-                    className={`px-4 py-2 text-sm font-medium transition-all ${
-                      sortMode === 'date' 
-                        ? 'bg-blue-600 text-white shadow-sm' 
-                        : 'bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                    } border-r border-gray-200`}
-                  >
-                    <span className="inline-flex items-center gap-2">
-                      <Calendar className="w-4 h-4" /> 
-                      Date
-                    </span>
-                  </button>
-          <button 
-                    onClick={() => setSortMode('score')}
-                    className={`px-4 py-2 text-sm font-medium transition-all ${
-                      sortMode === 'score' 
-                        ? 'bg-blue-600 text-white shadow-sm' 
-                        : 'bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
-                  >
-                    <span className="inline-flex items-center gap-2">
-                      <Star className="w-4 h-4" /> 
-                      Lead Score
-                    </span>
-          </button>
-                </div>
-                {sortMode === 'date' ? (
-                  <button
-                    onClick={() => setDateOrder(prev => (prev === 'desc' ? 'asc' : 'desc'))}
-                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all text-sm font-medium text-gray-700 shadow-sm"
-                  >
-                    <Calendar className="w-4 h-4 text-gray-500" />
-                    <span>{dateOrder === 'desc' ? 'Newest → Oldest' : 'Oldest → Newest'}</span>
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => setScoreOrder(prev => (prev === 'desc' ? 'asc' : 'desc'))}
-                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all text-sm font-medium text-gray-700 shadow-sm"
-                  >
-                    <Star className="w-4 h-4 text-gray-500" />
-                    <span>{scoreOrder === 'desc' ? 'High → Low' : 'Low → High'}</span>
-                  </button>
-                )}
-              </div>
-              
-              {/* Export Button */}
-              <button
-                onClick={exportToExcel}
-                disabled={sortedLeads.length === 0}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all text-sm font-medium shadow-sm"
-              >
-                <Download className="w-4 h-4" />
-                Export ({sortedLeads.length})
-              </button>
-            </div>
-        </div>
 
         {/* Lead Cards */}
-        <div className="max-w-7xl mx-auto space-y-3">
+        <div className="max-w-7xl mx-auto space-y-6">
           {loading ? (
             <div className="text-center py-12 text-muted-foreground">
               <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground animate-pulse" />
               <p className="text-lg">Loading leads...</p>
             </div>
-          ) : sortedLeads.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-lg">No leads found for the selected period.</p>
-            </div>
           ) : (
             <>
               {/* Summary Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
                 <TopCard
                   title="New Leads"
                   icon={<Users className="h-5 w-5 opacity-50 text-blue-500" />}
@@ -764,9 +557,237 @@ export const LeadSheet = () => {
                 />
               </div>
 
+              {/* Filters and Sorting Controls */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 shadow-lg p-4">
+                {/* Filters Section - Appears Above When Toggled */}
+                {showFilters && (
+                  <div className="mb-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                      {/* Adset Name Filter */}
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-gray-700">Ad Set Name</label>
+                        <Select value={adsetFilter || 'all'} onValueChange={(v) => setAdsetFilter(v === 'all' ? '' : v)}>
+                          <SelectTrigger className="h-8 bg-gray-50 border-0 hover:bg-gray-100 focus:bg-white focus:border focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all rounded-lg text-xs">
+                            <SelectValue placeholder="All Ad Sets" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Ad Sets</SelectItem>
+                            {uniqueAdsets.map(adset => (
+                              <SelectItem key={adset} value={adset}>
+                                {adset}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Ad Name Filter */}
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-gray-700">Ad Name</label>
+                        <Select value={adFilter || 'all'} onValueChange={(v) => setAdFilter(v === 'all' ? '' : v)}>
+                          <SelectTrigger className="h-8 bg-gray-50 border-0 hover:bg-gray-100 focus:bg-white focus:border focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all rounded-lg text-xs">
+                            <SelectValue placeholder="All Ads" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Ads</SelectItem>
+                            {uniqueAds.map(ad => (
+                              <SelectItem key={ad} value={ad}>
+                                {ad}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Lead Status Filter */}
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-gray-700">Lead Status</label>
+                        <Select value={statusFilter || 'all'} onValueChange={(v) => setStatusFilter(v === 'all' ? '' : v)}>
+                          <SelectTrigger className="h-8 bg-gray-50 border-0 hover:bg-gray-100 focus:bg-white focus:border focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all rounded-lg text-xs">
+                            <SelectValue placeholder="All Statuses" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Statuses</SelectItem>
+                            <SelectItem value="new">New</SelectItem>
+                            <SelectItem value="in_progress">In Progress</SelectItem>
+                            <SelectItem value="estimate_set">Estimate Set</SelectItem>
+                            <SelectItem value="unqualified">Unqualified</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Unqualified Reason Filter */}
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-gray-700">Unqualified Reason</label>
+                        <Select value={ulrFilter || 'all'} onValueChange={(v) => setUlrFilter(v === 'all' ? '' : v)}>
+                          <SelectTrigger className="h-8 bg-gray-50 border-0 hover:bg-gray-100 focus:bg-white focus:border focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all rounded-lg text-xs">
+                            <SelectValue placeholder="All Reasons" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Reasons</SelectItem>
+                            {uniqueULRs.map(ulr => (
+                              <SelectItem key={ulr} value={ulr}>
+                                {ulr}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {/* Active Filters Summary */}
+                    {hasActiveFilters && (
+                      <div className="mt-3 pt-2 border-t border-gray-100">
+                        <div className="flex flex-wrap gap-1.5">
+                          {adsetFilter && (
+                            <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                              Ad Set: {adsetFilter}
+                            </Badge>
+                          )}
+                          {adFilter && (
+                            <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                              Ad: {adFilter}
+                            </Badge>
+                          )}
+                          {statusFilter && (
+                            <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                              Status: {getStatusInfo(statusFilter as 'new' | 'in_progress' | 'estimate_set' | 'unqualified').label}
+                            </Badge>
+                          )}
+                          {ulrFilter && (
+                            <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                              ULR: {ulrFilter}
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <p className="text-xs text-gray-600">
+                            Showing {sortedLeads.length} of {leads.length} leads
+                          </p>
+                          <span className="text-gray-400">•</span>
+                          <button
+                            onClick={clearFilters}
+                            className="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors"
+                          >
+                            Clear All
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Main Controls Row */}
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    {/* Filter Button */}
+                    <button
+                      onClick={() => setShowFilters(!showFilters)}
+                      className={`flex items-center gap-1 px-3 py-1.5 rounded-lg transition-all text-xs font-medium shadow-sm ${
+                        showFilters 
+                          ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                          : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
+                      }`}
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                      </svg>
+                      Filters
+                      {hasActiveFilters && (
+                        <span className="ml-1 bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-full text-xs font-medium">
+                          {Object.values({adsetFilter, adFilter, statusFilter, ulrFilter}).filter(Boolean).length}
+                        </span>
+                      )}
+                    </button>
+
+                    {/* Sort Controls */}
+                    <span className="text-xs font-medium text-gray-700 flex items-center gap-1">
+                      <svg className="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                      </svg>
+                      Sort by
+                    </span>
+                    <div className="flex rounded-lg overflow-hidden border border-gray-200 bg-white shadow-sm">
+                      <button
+                        onClick={() => setSortMode('date')}
+                        className={`px-3 py-1.5 text-xs font-medium transition-all ${
+                          sortMode === 'date' 
+                            ? 'bg-blue-600 text-white shadow-sm' 
+                            : 'bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                        } border-r border-gray-200`}
+                      >
+                        <span className="inline-flex items-center gap-1">
+                          <Calendar className="w-3 h-3" /> 
+                          Date
+                        </span>
+                      </button>
+                      <button 
+                        onClick={() => setSortMode('score')}
+                        className={`px-3 py-1.5 text-xs font-medium transition-all ${
+                          sortMode === 'score' 
+                            ? 'bg-blue-600 text-white shadow-sm' 
+                            : 'bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                        }`}
+                      >
+                        <span className="inline-flex items-center gap-1">
+                          <Star className="w-3 h-3" /> 
+                          Lead Score
+                        </span>
+                      </button>
+                    </div>
+                    {sortMode === 'date' ? (
+                      <button
+                        onClick={() => setDateOrder(prev => (prev === 'desc' ? 'asc' : 'desc'))}
+                        className="flex items-center gap-1 px-3 py-1.5 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all text-xs font-medium text-gray-700 shadow-sm"
+                      >
+                        <Calendar className="w-3 h-3 text-gray-500" />
+                        <span>{dateOrder === 'desc' ? 'Newest → Oldest' : 'Oldest → Newest'}</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => setScoreOrder(prev => (prev === 'desc' ? 'asc' : 'desc'))}
+                        className="flex items-center gap-1 px-3 py-1.5 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all text-xs font-medium text-gray-700 shadow-sm"
+                      >
+                        <Star className="w-3 h-3 text-gray-500" />
+                        <span>{scoreOrder === 'desc' ? 'High → Low' : 'Low → High'}</span>
+                      </button>
+                    )}
+                  </div>
+                  
+                  {/* Export Button */}
+                  <button
+                    onClick={exportToExcel}
+                    disabled={sortedLeads.length === 0}
+                    className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all text-xs font-medium shadow-sm"
+                  >
+                    <Download className="w-3 h-3" />
+                    Export ({sortedLeads.length})
+                  </button>
+                </div>
+              </div>
+
+              {/* No Results Message */}
+              {sortedLeads.length === 0 && (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                  <p className="text-lg mb-2">
+                    {hasActiveFilters 
+                      ? `No leads found matching your filters.` 
+                      : `No leads found for the selected period.`
+                    }
+                  </p>
+                  {hasActiveFilters && (
+                    <p className="text-sm text-gray-500">
+                      Try adjusting your filters or click "Clear All" to see all leads.
+                    </p>
+                  )}
+                </div>
+              )}
+
               {/* Lead Tiles */}
-              <div className="space-y-4">
-                {sortedLeads.map((lead) => {
+              {sortedLeads.length > 0 && (
+                <div className="space-y-4">
+                  {sortedLeads.map((lead) => {
               const scoreInfo = getScoreInfo(lead.score);
                   const statusInfo = getStatusInfo(lead.status);
                   
@@ -824,7 +845,7 @@ export const LeadSheet = () => {
                                 <span className="text-xs font-bold text-gray-900">
                                   {lead.score}%
                                 </span>
-                              </div>
+                          </div>
                           </div>
                             </div>
                         </div>
@@ -866,7 +887,7 @@ export const LeadSheet = () => {
                               </a>
                             </div>
                           </div>
-                        </div>
+                            </div>
 
                         {/* Date */}
                         <div className="col-span-2 flex items-center">
@@ -1024,6 +1045,7 @@ export const LeadSheet = () => {
               );
                 })}
               </div>
+              )}
             </>
           )}
         </div>
