@@ -4,13 +4,23 @@ import { useUserStore } from '@/stores/userStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, PieChart, Pie, Cell } from 'recharts';
-import { TrendingUp, MapPin, Wrench, Tag, FileText, Users, CheckCircle, XCircle, Calendar, BarChart3 } from 'lucide-react';
+import { TrendingUp, MapPin, Wrench, Tag, FileText, Users, CheckCircle, XCircle, Calendar, BarChart3, ChevronLeft, ChevronRight, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 import { startOfMonth, endOfMonth, startOfYear, endOfYear, startOfQuarter, endOfQuarter, subMonths, subQuarters, subYears } from 'date-fns';
 import { TopCard } from '@/components/DashboardTopCards';
 
 // Chart colors
-const COLORS = ['#1f1c13', '#f7f5f5', '#306BC8', '#2A388F', '#396F9C'];
+const COLORS = ['#1f1c13', '#9ca3af', '#306BC8', '#2A388F', '#396F9C'];
+
+// Modern gradient colors for bar charts
+const GRADIENT_COLORS = [
+  ['#667eea', '#764ba2'],
+  ['#f093fb', '#f5576c'],
+  ['#4facfe', '#00f2fe'],
+  ['#43e97b', '#38f9d7'],
+  ['#fa709a', '#fee140']
+];
 
 // Responsive breakpoints and dimensions
 const SCREEN_BREAKPOINTS = {
@@ -39,6 +49,25 @@ export const LeadAnalytics = () => {
   const { selectedUserId } = useUserStore();
   const [selectedMetric, setSelectedMetric] = useState<string>('overview');
   const [timeFilter, setTimeFilter] = useState<'all' | 'this_month' | 'last_month' | 'this_quarter' | 'last_quarter' | 'this_year' | 'last_year'>('all');
+  
+  // Pagination states for each table
+  const [adSetPage, setAdSetPage] = useState(1);
+  const [adNamePage, setAdNamePage] = useState(1);
+  const [topAdSetPage, setTopAdSetPage] = useState(1);
+  const [topAdPage, setTopAdPage] = useState(1);
+  const adSetItemsPerPage = 15;
+  const adNameItemsPerPage = 10;
+  const topTablesItemsPerPage = 10;
+  
+  // Sorting states for each table
+  const [adSetSortField, setAdSetSortField] = useState<'adSetName' | 'total' | 'estimateSet' | 'percentage'>('estimateSet');
+  const [adSetSortOrder, setAdSetSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [adNameSortField, setAdNameSortField] = useState<'adName' | 'total' | 'estimateSet' | 'percentage'>('estimateSet');
+  const [adNameSortOrder, setAdNameSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [topAdSetSortField, setTopAdSetSortField] = useState<'adSetName' | 'total' | 'estimateSet' | 'percentage'>('estimateSet');
+  const [topAdSetSortOrder, setTopAdSetSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [topAdSortField, setTopAdSortField] = useState<'adName' | 'total' | 'estimateSet' | 'percentage'>('estimateSet');
+  const [topAdSortOrder, setTopAdSortOrder] = useState<'asc' | 'desc'>('desc');
 
   useEffect(() => {
     if (selectedUserId) {
@@ -49,11 +78,11 @@ export const LeadAnalytics = () => {
   // Filter leads based on time period
   const filteredLeads = useMemo(() => {
     if (timeFilter === 'all') return leads;
-
+    
     const now = new Date();
     let startDate: Date | null = null;
     let endDate: Date | null = null;
-
+    
     switch (timeFilter) {
       case 'this_month': {
         startDate = startOfMonth(now);
@@ -91,7 +120,7 @@ export const LeadAnalytics = () => {
       default:
         return leads;
     }
-
+    
     return leads.filter(lead => {
       const leadDate = new Date(lead.leadDate);
       return (!startDate || leadDate >= startDate) && (!endDate || leadDate <= endDate);
@@ -324,6 +353,159 @@ export const LeadAnalytics = () => {
     };
   }, [leads]);
 
+  // Sorting functions
+  const sortData = (
+    data: any[], 
+    sortField: string, 
+    sortOrder: 'asc' | 'desc'
+  ): any[] => {
+    return [...data].sort((a, b) => {
+      let aValue = a[sortField];
+      let bValue = b[sortField];
+      
+      // Special handling for percentage field - convert string percentage to number
+      if (sortField === 'percentage') {
+        aValue = parseFloat(aValue);
+        bValue = parseFloat(bValue);
+      }
+      
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortOrder === 'asc' 
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue);
+      }
+      
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        return sortOrder === 'asc' ? aValue - bValue : bValue - aValue;
+      }
+      
+      return 0;
+    });
+  };
+
+  // Pagination functions
+  const paginateData = (data: any[], page: number, itemsPerPage: number): any[] => {
+    const startIndex = (page - 1) * itemsPerPage;
+    return data.slice(startIndex, startIndex + itemsPerPage);
+  };
+
+  const getTotalPages = (totalItems: number, itemsPerPage: number): number => {
+    return Math.ceil(totalItems / itemsPerPage);
+  };
+
+  // Sort and paginate data for each table
+  const sortedAdSetData = useMemo(() => 
+    sortData(analyticsData?.adSetData || [], adSetSortField, adSetSortOrder), 
+    [analyticsData?.adSetData, adSetSortField, adSetSortOrder]
+  );
+  
+  const paginatedAdSetData = useMemo(() => 
+    paginateData(sortedAdSetData, adSetPage, adSetItemsPerPage), 
+    [sortedAdSetData, adSetPage]
+  );
+
+  const sortedAdNameData = useMemo(() => 
+    sortData(analyticsData?.adNameData || [], adNameSortField, adNameSortOrder), 
+    [analyticsData?.adNameData, adNameSortField, adNameSortOrder]
+  );
+  
+  const paginatedAdNameData = useMemo(() => 
+    paginateData(sortedAdNameData, adNamePage, adNameItemsPerPage), 
+    [sortedAdNameData, adNamePage]
+  );
+
+  const sortedTopAdSetData = useMemo(() => 
+    sortData(topPerformersData.topAdSetsData, topAdSetSortField, topAdSetSortOrder), 
+    [topPerformersData.topAdSetsData, topAdSetSortField, topAdSetSortOrder]
+  );
+  
+  const paginatedTopAdSetData = useMemo(() => 
+    paginateData(sortedTopAdSetData, topAdSetPage, topTablesItemsPerPage), 
+    [sortedTopAdSetData, topAdSetPage]
+  );
+
+  const sortedTopAdData = useMemo(() => 
+    sortData(topPerformersData.topAdsData, topAdSortField, topAdSortOrder), 
+    [topPerformersData.topAdsData, topAdSortField, topAdSortOrder]
+  );
+  
+  const paginatedTopAdData = useMemo(() => 
+    paginateData(sortedTopAdData, topAdPage, topTablesItemsPerPage), 
+    [sortedTopAdData, topAdPage]
+  );
+
+  // Reset pagination when data changes
+  useEffect(() => {
+    setAdSetPage(1);
+    setAdNamePage(1);
+    setTopAdSetPage(1);
+    setTopAdPage(1);
+  }, [timeFilter]);
+
+    // Helper function to render sortable table header
+  const renderSortableHeader = (
+    field: string,
+    label: string,
+    currentSortField: string,
+    currentSortOrder: 'asc' | 'desc',
+    onSort: (field: string) => void
+  ) => (
+    <th 
+      className="text-left p-2 cursor-pointer hover:bg-gray-50 transition-colors"
+      onClick={() => onSort(field)}
+    >
+      <div className="flex items-center gap-1">
+        <span>{label}</span>
+        {currentSortField === field ? (
+          currentSortOrder === 'desc' ? (
+            <ChevronDown className="w-4 h-4 text-blue-600" />
+          ) : (
+            <ChevronUp className="w-4 h-4 text-blue-600" />
+          )
+        ) : (
+          <ArrowUpDown className="w-3 h-3 text-gray-400" />
+        )}
+        </div>
+    </th>
+  );
+
+  // Helper function to render pagination controls
+  const renderPagination = (
+    currentPage: number,
+    totalItems: number,
+    onPageChange: (page: number) => void,
+    itemsPerPage: number
+  ) => {
+    const totalPages = getTotalPages(totalItems, itemsPerPage);
+    if (totalPages <= 1) return null;
+
+    return (
+      <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+        <p className="text-sm text-gray-600">
+          Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} results
+        </p>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => onPageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="p-2 hover:bg-gray-100 rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5 font-bold stroke-2 text-gray-700" />
+          </button>
+          <span className="text-sm text-gray-600 px-2">
+            {currentPage} / {totalPages}
+          </span>
+          <button
+            onClick={() => onPageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className="p-2 hover:bg-gray-100 rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <ChevronRight className="w-5 h-5 font-bold stroke-2 text-gray-700" />
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   const chartConfig = {
     count: {
@@ -488,14 +670,15 @@ export const LeadAnalytics = () => {
                 <div className="overflow-x-auto lg:overflow-visible">
                   <div style={{ minWidth: CHART_DIMENSIONS.minWidth }} className="lg:min-w-0">
                     <ChartContainer config={chartConfig} style={{ height: CHART_DIMENSIONS.height }}>
-                      <PieChart>
+                  <PieChart>
                     <Pie
                       data={analyticsData.serviceData}
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={({ service, percentage }) => `${service}: ${percentage}%`}
-                      outerRadius={100}
+                      outerRadius={120}
+                      innerRadius={0}
+                      paddingAngle={2}
                       fill="#8884d8"
                       dataKey="count"
                     >
@@ -504,13 +687,26 @@ export const LeadAnalytics = () => {
                       ))}
                     </Pie>
                     <ChartTooltip 
-                      content={<ChartTooltipContent />}
-                      formatter={(value, name, props) => [
-                        `${value} leads (${props.payload.percentage}%)`
-                      ]}
+                      content={({ active, payload, label }) => {
+                        if (active && payload && payload.length) {
+                          const data = payload[0].payload;
+                          return (
+                            <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
+                              <p className="font-semibold text-gray-900 mb-1">{data.service}</p>
+                              <p className="text-sm text-gray-700">
+                                <span className="font-medium">Count:</span> {data.count} leads
+                              </p>
+                              <p className="text-sm text-gray-700">
+                                <span className="font-medium">Percentage:</span> {data.percentage}%
+                              </p>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
                     />
                   </PieChart>
-                    </ChartContainer>
+                  </ChartContainer>
                   </div>
                 </div>
               </CardContent>
@@ -528,7 +724,13 @@ export const LeadAnalytics = () => {
                 <div className="overflow-x-auto lg:overflow-visible">
                   <div style={{ minWidth: CHART_DIMENSIONS.minWidth }} className="lg:min-w-0">
                     <ChartContainer config={chartConfig} style={{ height: CHART_DIMENSIONS.height }}>
-                      <BarChart data={analyticsData.zipData}>
+                  <BarChart data={analyticsData.zipData}>
+                    <defs>
+                      <linearGradient id="zipGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.9}/>
+                        <stop offset="100%" stopColor="#a78bfa" stopOpacity={0.6}/>
+                      </linearGradient>
+                    </defs>
                     <XAxis dataKey="zip" />
                     <YAxis />
                     <ChartTooltip 
@@ -537,9 +739,9 @@ export const LeadAnalytics = () => {
                         `${value} leads (${props.payload.percentage}%)`
                       ]}
                     />
-                    <Bar dataKey="count" fill="#8b5cf6" name="Estimate Set Leads" />
+                    <Bar dataKey="count" fill="url(#zipGradient)" name="Estimate Set Leads" radius={[4, 4, 0, 0]} />
                   </BarChart>
-                    </ChartContainer>
+                  </ChartContainer>
                   </div>
                 </div>
               </CardContent>
@@ -568,7 +770,17 @@ export const LeadAnalytics = () => {
                 <div className="overflow-x-auto lg:overflow-visible">
                   <div style={{ minWidth: CHART_DIMENSIONS.minWidth }} className="lg:min-w-0">
                     <ChartContainer config={chartConfig} style={{ height: CHART_DIMENSIONS.height }}>
-                      <BarChart data={analyticsData.dayOfWeekData}>
+                  <BarChart data={analyticsData.dayOfWeekData}>
+                    <defs>
+                      <linearGradient id="totalGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#94a3b8" stopOpacity={0.9}/>
+                        <stop offset="100%" stopColor="#cbd5e1" stopOpacity={0.6}/>
+                      </linearGradient>
+                      <linearGradient id="estimateGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#10b981" stopOpacity={0.9}/>
+                        <stop offset="100%" stopColor="#34d399" stopOpacity={0.6}/>
+                      </linearGradient>
+                    </defs>
                     <XAxis 
                       dataKey="day" 
                       tick={{ fontSize: 11 }}
@@ -597,10 +809,10 @@ export const LeadAnalytics = () => {
                         return null;
                       }}
                     />
-                    <Bar dataKey="total" fill="#94a3b8" name="Total Leads" />
-                    <Bar dataKey="estimateSet" fill="#10b981" name="Estimate Set Leads" />
+                    <Bar dataKey="total" fill="url(#totalGradient)" name="Total Leads" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="estimateSet" fill="url(#estimateGradient)" name="Estimate Set Leads" radius={[4, 4, 0, 0]} />
                   </BarChart>
-                    </ChartContainer>
+                  </ChartContainer>
                   </div>
                 </div>
               </CardContent>
@@ -626,8 +838,9 @@ export const LeadAnalytics = () => {
                             cx="50%"
                             cy="50%"
                             labelLine={false}
-                            label={({ reason, percentage }) => `${reason}: ${percentage}%`}
-                            outerRadius={80}
+                            outerRadius={110}
+                            innerRadius={0}
+                            paddingAngle={2}
                             fill="#8884d8"
                             dataKey="count"
                           >
@@ -636,17 +849,29 @@ export const LeadAnalytics = () => {
                             ))}
                           </Pie>
                           <ChartTooltip 
-                            content={<ChartTooltipContent />}
-                            formatter={(value, name, props) => [
-                              `${value} leads (${props.payload.percentage}%)`,
-                              'Count'
-                            ]}
+                            content={({ active, payload, label }) => {
+                              if (active && payload && payload.length) {
+                                const data = payload[0].payload;
+                                return (
+                                  <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
+                                    <p className="font-semibold text-gray-900 mb-1">{data.reason}</p>
+                                    <p className="text-sm text-gray-700">
+                                      <span className="font-medium">Count:</span> {data.count} leads
+                                    </p>
+                                    <p className="text-sm text-gray-700">
+                                      <span className="font-medium">Percentage:</span> {data.percentage}%
+                                    </p>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            }}
                           />
                         </PieChart>
                       </ChartContainer>
                     </div>
                   </div>
-                    </CardContent>
+                </CardContent>
               </Card>
             )}
           </div>
@@ -654,83 +879,154 @@ export const LeadAnalytics = () => {
 
           {/* Performance Tables Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Ad Set Performance Table */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Tag className="h-5 w-5 text-orange-600" />
-                  Ad Set Performance
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left p-2">Ad Set Name</th>
-                        <th className="text-right p-2">Total Leads</th>
-                        <th className="text-right p-2">Estimate Set</th>
-                        <th className="text-right p-2">Estimate Set %</th>
+          {/* Ad Set Performance Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Tag className="h-5 w-5 text-orange-600" />
+                Top Ad Set Performance
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                        <th className="text-left p-2 w-16">S.No.</th>
+                        {renderSortableHeader('adSetName', 'Ad Set Name', adSetSortField, adSetSortOrder, (field) => {
+                          if (adSetSortField === field) {
+                            setAdSetSortOrder(adSetSortOrder === 'asc' ? 'desc' : 'asc');
+                          } else {
+                            setAdSetSortField(field as any);
+                            setAdSetSortOrder('desc');
+                          }
+                        })}
+                        {renderSortableHeader('total', 'Total Leads', adSetSortField, adSetSortOrder, (field) => {
+                          if (adSetSortField === field) {
+                            setAdSetSortOrder(adSetSortOrder === 'asc' ? 'desc' : 'asc');
+                          } else {
+                            setAdSetSortField(field as any);
+                            setAdSetSortOrder('desc');
+                          }
+                        })}
+                        {renderSortableHeader('estimateSet', 'Estimate Set', adSetSortField, adSetSortOrder, (field) => {
+                          if (adSetSortField === field) {
+                            setAdSetSortOrder(adSetSortOrder === 'asc' ? 'desc' : 'asc');
+                          } else {
+                            setAdSetSortField(field as any);
+                            setAdSetSortOrder('desc');
+                          }
+                        })}
+                        {renderSortableHeader('percentage', 'Appointment %', adSetSortField, adSetSortOrder, (field) => {
+                          if (adSetSortField === field) {
+                            setAdSetSortOrder(adSetSortOrder === 'asc' ? 'desc' : 'asc');
+                          } else {
+                            setAdSetSortField(field as any);
+                            setAdSetSortOrder('desc');
+                          }
+                        })}
+                    </tr>
+                  </thead>
+                  <tbody>
+                      {paginatedAdSetData.map((adSet, index) => (
+                      <tr key={adSet.adSetName} className="border-b hover:bg-muted/50">
+                        <td className="p-2 text-gray-600 font-medium">
+                          {((adSetPage - 1) * adSetItemsPerPage) + index + 1}
+                        </td>
+                        <td className="p-2 font-medium">{adSet.adSetName}</td>
+                        <td className="text-right p-2">{adSet.total}</td>
+                        <td className="text-right p-2 text-green-600 font-medium">{adSet.estimateSet}</td>
+                        <td className="text-right p-2">
+                          <span className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">
+                            {adSet.percentage}%
+                          </span>
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {analyticsData.adSetData.map((adSet, index) => (
-                        <tr key={adSet.adSetName} className="border-b hover:bg-muted/50">
-                          <td className="p-2 font-medium">{adSet.adSetName}</td>
-                          <td className="text-right p-2">{adSet.total}</td>
-                          <td className="text-right p-2 text-green-600 font-medium">{adSet.estimateSet}</td>
-                          <td className="text-right p-2">
-                            <span className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">
-                              {adSet.percentage}%
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+                {renderPagination(adSetPage, sortedAdSetData.length, setAdSetPage, adSetItemsPerPage)}
+            </CardContent>
+          </Card>
 
-            {/* Ad Name Performance Table */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-green-600" />
-                  Ad Name Performance
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left p-2">Ad Name</th>
-                        <th className="text-right p-2">Total Leads</th>
-                        <th className="text-right p-2">Estimate Set</th>
-                        <th className="text-right p-2">Estimate Set %</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {analyticsData.adNameData.map((ad, index) => (
+          {/* Ad Name Performance Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-green-600" />
+                Top Ad Name Performance
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                        <th className="text-left p-2 w-16">S.No.</th>
+                        {renderSortableHeader('adName', 'Ad Name', adNameSortField, adNameSortOrder, (field) => {
+                          if (adNameSortField === field) {
+                            setAdNameSortOrder(adNameSortOrder === 'asc' ? 'desc' : 'asc');
+                          } else {
+                            setAdNameSortField(field as any);
+                            setAdNameSortOrder('desc');
+                          }
+                        })}
+                        {renderSortableHeader('total', 'Total Leads', adNameSortField, adNameSortOrder, (field) => {
+                          if (adNameSortField === field) {
+                            setAdNameSortOrder(adNameSortOrder === 'asc' ? 'desc' : 'asc');
+                          } else {
+                            setAdNameSortField(field as any);
+                            setAdNameSortOrder('desc');
+                          }
+                        })}
+                        {renderSortableHeader('estimateSet', 'Estimate Set', adNameSortField, adNameSortOrder, (field) => {
+                          if (adNameSortField === field) {
+                            setAdNameSortOrder(adNameSortOrder === 'asc' ? 'desc' : 'asc');
+                          } else {
+                            setAdNameSortField(field as any);
+                            setAdNameSortOrder('desc');
+                          }
+                        })}
+                        {renderSortableHeader('percentage', 'Appointment %', adNameSortField, adNameSortOrder, (field) => {
+                          if (adNameSortField === field) {
+                            setAdNameSortOrder(adNameSortOrder === 'asc' ? 'desc' : 'asc');
+                          } else {
+                            setAdNameSortField(field as any);
+                            setAdNameSortOrder('desc');
+                          }
+                        })}
+                    </tr>
+                  </thead>
+                  <tbody>
+                      {paginatedAdNameData.map((ad, index) => (
                         <tr key={`${ad.adName}-${ad.adSetName}`} className="border-b hover:bg-muted/50">
-                          <td className="p-2 font-medium">
-                            {ad.adName} <span className="text-gray-500 font-normal">({ad.adSetName})</span>
+                          <td className="p-2 text-gray-600 font-medium">
+                            {((adNamePage - 1) * adNameItemsPerPage) + index + 1}
                           </td>
-                          <td className="text-right p-2">{ad.total}</td>
-                          <td className="text-right p-2 text-green-600 font-medium">{ad.estimateSet}</td>
-                          <td className="text-right p-2">
-                            <span className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">
-                              {ad.percentage}%
-                            </span>
+                          <td className="p-2">
+                            <div className="flex flex-col">
+                              <span className="font-medium text-gray-900">{ad.adName}</span>
+                              <span className="text-xs text-gray-500 font-italic">
+                                ({ad.adSetName})
+                              </span>
+                            </div>
                           </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
+                        <td className="text-right p-2">{ad.total}</td>
+                        <td className="text-right p-2 text-green-600 font-medium">{ad.estimateSet}</td>
+                        <td className="text-right p-2">
+                          <span className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">
+                            {ad.percentage}%
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+                {renderPagination(adNamePage, sortedAdNameData.length, setAdNamePage, adNameItemsPerPage)}
+            </CardContent>
+          </Card>
 
                         {/* Top Ad Sets by Estimate Set Count (Last 2 Weeks) */}
                         {topPerformersData.topAdSetsData.length > 0 && (
@@ -738,7 +1034,7 @@ export const LeadAnalytics = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Tag className="h-5 w-5 text-orange-600" />
-                    Top Ad Sets (by estimate set count)
+                    Top Ad Sets (Last 2 Weeks)
                   </CardTitle>
                   <p className="text-sm text-muted-foreground">
                     Performance ranking based on estimate set count over the past 2 weeks
@@ -750,18 +1046,46 @@ export const LeadAnalytics = () => {
                       <thead>
                         <tr className="border-b">
                           <th className="text-left p-2">Rank</th>
-                          <th className="text-left p-2">Ad Set Name</th>
-                          <th className="text-right p-2">Total Leads</th>
-                          <th className="text-right p-2">Estimate Set</th>
-                          <th className="text-right p-2">Estimate Set %</th>
+                          {renderSortableHeader('adSetName', 'Ad Set Name', topAdSetSortField, topAdSetSortOrder, (field) => {
+                            if (topAdSetSortField === field) {
+                              setTopAdSetSortOrder(topAdSetSortOrder === 'asc' ? 'desc' : 'asc');
+                            } else {
+                              setTopAdSetSortField(field as any);
+                              setTopAdSetSortOrder('desc');
+                            }
+                          })}
+                          {renderSortableHeader('total', 'Total Leads', topAdSetSortField, topAdSetSortOrder, (field) => {
+                            if (topAdSetSortField === field) {
+                              setTopAdSetSortOrder(topAdSetSortOrder === 'asc' ? 'desc' : 'asc');
+                            } else {
+                              setTopAdSetSortField(field as any);
+                              setTopAdSetSortOrder('desc');
+                            }
+                          })}
+                          {renderSortableHeader('estimateSet', 'Estimate Set', topAdSetSortField, topAdSetSortOrder, (field) => {
+                            if (topAdSetSortField === field) {
+                              setTopAdSetSortOrder(topAdSetSortOrder === 'asc' ? 'desc' : 'asc');
+                            } else {
+                              setTopAdSetSortField(field as any);
+                              setTopAdSetSortOrder('desc');
+                            }
+                          })}
+                          {renderSortableHeader('percentage', 'Appointment %', topAdSetSortField, topAdSetSortOrder, (field) => {
+                            if (topAdSetSortField === field) {
+                              setTopAdSetSortOrder(topAdSetSortOrder === 'asc' ? 'desc' : 'asc');
+                            } else {
+                              setTopAdSetSortField(field as any);
+                              setTopAdSetSortOrder('desc');
+                            }
+                          })}
                         </tr>
                       </thead>
                       <tbody>
-                        {topPerformersData.topAdSetsData.map((adSet, index) => (
+                        {paginatedTopAdSetData.map((adSet, index) => (
                           <tr key={adSet.adSetName} className="border-b hover:bg-muted/50">
                             <td className="p-2 font-medium">
                               <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-orange-100 text-orange-800 text-xs font-bold">
-                                #{index + 1}
+                                #{((topAdSetPage - 1) * topTablesItemsPerPage) + index + 1}
                               </span>
                             </td>
                             <td className="p-2 font-medium">{adSet.adSetName}</td>
@@ -776,7 +1100,8 @@ export const LeadAnalytics = () => {
                         ))}
                       </tbody>
                     </table>
-                  </div>
+        </div>
+                  {renderPagination(topAdSetPage, sortedTopAdSetData.length, setTopAdSetPage, topTablesItemsPerPage)}
                 </CardContent>
               </Card>
             )}
@@ -787,7 +1112,7 @@ export const LeadAnalytics = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <FileText className="h-5 w-5 text-green-600" />
-                    Top Ads (by estimate set count)
+                    Top Ads (Last 2 Weeks)
                   </CardTitle>
                   <p className="text-sm text-muted-foreground">
                     Performance ranking based on estimate set count over the past 2 weeks
@@ -799,22 +1124,55 @@ export const LeadAnalytics = () => {
                       <thead>
                         <tr className="border-b">
                           <th className="text-left p-2">Rank</th>
-                          <th className="text-left p-2">Ad Name</th>
-                          <th className="text-right p-2">Total Leads</th>
-                          <th className="text-right p-2">Estimate Set</th>
-                          <th className="text-right p-2">Estimate Set %</th>
+                          {renderSortableHeader('adName', 'Ad Name', topAdSortField, topAdSortOrder, (field) => {
+                            if (topAdSortField === field) {
+                              setTopAdSortOrder(topAdSortOrder === 'asc' ? 'desc' : 'asc');
+                            } else {
+                              setTopAdSortField(field as any);
+                              setTopAdSortOrder('desc');
+                            }
+                          })}
+                          {renderSortableHeader('total', 'Total Leads', topAdSortField, topAdSortOrder, (field) => {
+                            if (topAdSortField === field) {
+                              setTopAdSortOrder(topAdSortOrder === 'asc' ? 'desc' : 'asc');
+                            } else {
+                              setTopAdSortField(field as any);
+                              setTopAdSortOrder('desc');
+                            }
+                          })}
+                          {renderSortableHeader('estimateSet', 'Estimate Set', topAdSortField, topAdSortOrder, (field) => {
+                            if (topAdSortField === field) {
+                              setTopAdSortOrder(topAdSortOrder === 'asc' ? 'desc' : 'asc');
+                            } else {
+                              setTopAdSortField(field as any);
+                              setTopAdSortOrder('desc');
+                            }
+                          })}
+                          {renderSortableHeader('percentage', 'Appointment %', topAdSortField, topAdSortOrder, (field) => {
+                            if (topAdSortField === field) {
+                              setTopAdSortOrder(topAdSortOrder === 'asc' ? 'desc' : 'asc');
+                            } else {
+                              setTopAdSortField(field as any);
+                              setTopAdSortOrder('desc');
+                            }
+                          })}
                         </tr>
                       </thead>
                       <tbody>
-                        {topPerformersData.topAdsData.map((ad, index) => (
+                        {paginatedTopAdData.map((ad, index) => (
                           <tr key={`${ad.adName}-${ad.adSetName}`} className="border-b hover:bg-muted/50">
                             <td className="p-2 font-medium">
                               <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-800 text-xs font-bold">
-                                #{index + 1}
+                                #{((topAdPage - 1) * topTablesItemsPerPage) + index + 1}
                               </span>
                             </td>
-                            <td className="p-2 font-medium">
-                              {ad.adName} <span className="text-gray-500 font-normal">({ad.adSetName})</span>
+                            <td className="p-2">
+                              <div className="flex flex-col">
+                                <span className="font-medium text-gray-900">{ad.adName}</span>
+                                <span className="text-xs text-gray-500 font-italic">
+                                  ({ad.adSetName})
+                                </span>
+                              </div>
                             </td>
                             <td className="text-right p-2">{ad.total}</td>
                             <td className="text-right p-2 text-green-600 font-medium">{ad.estimateSet}</td>
@@ -828,6 +1186,7 @@ export const LeadAnalytics = () => {
                       </tbody>
                     </table>
                   </div>
+                  {renderPagination(topAdPage, sortedTopAdData.length, setTopAdPage, topTablesItemsPerPage)}
                 </CardContent>
               </Card>
             )}
