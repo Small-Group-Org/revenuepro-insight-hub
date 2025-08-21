@@ -23,7 +23,6 @@ export const LeadSheet = () => {
   const [pendingULRLeadId, setPendingULRLeadId] = useState<string | null>(null);
   const [customULR, setCustomULR] = useState<string>('');
   const [showCustomInput, setShowCustomInput] = useState<string | null>(null);
-  const [leadScores, setLeadScores] = useState<Record<string, number>>({});
   const [sortMode, setSortMode] = useState<'date' | 'score'>('date');
   const [dateOrder, setDateOrder] = useState<'asc' | 'desc'>('desc');
   const [scoreOrder, setScoreOrder] = useState<'asc' | 'desc'>('desc');
@@ -231,54 +230,38 @@ export const LeadSheet = () => {
     return format(new Date(dateString), 'MMM dd, yyyy');
   }, []);
 
-  // Calculate lead scores based on conversion rates
-  useEffect(() => {
-    setLeadScores((prev) => {
-      let changed = false;
-      const next: Record<string, number> = { ...prev };
-      
-      for (const lead of leads) {
-        const newScore = calculateLeadScore(lead, conversionRates);
-        if (next[lead.id] !== newScore) {
-          next[lead.id] = newScore;
-          changed = true;
-        }
-      }
-      
-      // Cleanup scores for leads no longer present
-      for (const id of Object.keys(next)) {
-        if (!leads.find((l) => l.id === id)) {
-          delete next[id];
-          changed = true;
-        }
-      }
-      
-      return changed ? next : prev;
-    });
+  // Pre-process leads with scores when leads or conversion rates change
+  const processedLeads = useMemo(() => {
+    return leads.map(lead => ({
+      ...lead,
+      score: calculateLeadScore(lead, conversionRates)
+    }));
   }, [leads, conversionRates]);
 
-  // Get unique values for filter options
+
+
+  // Pre-compute unique values for filter options
   const uniqueAdsets = useMemo(() => {
-    const adsets = [...new Set(leads.map(lead => lead.adSetName))].sort();
+    const adsets = [...new Set(processedLeads.map(lead => lead.adSetName))].sort();
     return adsets;
-  }, [leads]);
+  }, [processedLeads]);
 
   const uniqueAds = useMemo(() => {
-    const ads = [...new Set(leads.map(lead => lead.adName))].sort();
+    const ads = [...new Set(processedLeads.map(lead => lead.adName))].sort();
     return ads;
-  }, [leads]);
+  }, [processedLeads]);
 
   const uniqueULRs = useMemo(() => {
-    const ulrs = [...new Set(leads
+    const ulrs = [...new Set(processedLeads
       .filter(lead => lead.status === 'unqualified' && lead.unqualifiedLeadReason)
       .map(lead => lead.unqualifiedLeadReason!)
     )].sort();
     return ulrs;
-  }, [leads]);
+  }, [processedLeads]);
 
-  // Filter leads based on selected filters
+  // Filter leads based on selected filters (using pre-processed data)
   const filteredLeads = useMemo(() => {
-    return leads.filter(lead => {
+    return processedLeads.filter(lead => {
       // Adset filter
       if (adsetFilter && !lead.adSetName.toLowerCase().includes(adsetFilter.toLowerCase())) {
         return false;
@@ -306,15 +289,10 @@ export const LeadSheet = () => {
       
       return true;
     });
-  }, [leads, adsetFilter, adFilter, statusFilter, ulrFilter]);
+  }, [processedLeads, adsetFilter, adFilter, statusFilter, ulrFilter]);
 
-  // Apply sorting to filtered leads
+  // Apply sorting to filtered leads (scores already pre-calculated)
   const sortedLeads = useMemo(() => {
-    const leadsWithScores = filteredLeads.map(lead => ({
-      ...lead,
-      score: leadScores[lead.id] ?? 0,
-    }));
-
     const compareScoreDesc = (a: { score: number }, b: { score: number }) => b.score - a.score;
     const compareScorePrimary = (a: { score: number }, b: { score: number }) =>
       scoreOrder === 'desc' ? b.score - a.score : a.score - b.score;
@@ -331,7 +309,7 @@ export const LeadSheet = () => {
       return dateOrder === 'desc' ? bDate - aDate : aDate - bDate;
     };
 
-    return leadsWithScores.sort((a, b) => {
+    return filteredLeads.sort((a, b) => {
       if (sortMode === 'date') {
         const byDate = compareDatePrimary(a, b);
         if (byDate !== 0) return byDate;
@@ -342,7 +320,7 @@ export const LeadSheet = () => {
         return compareDateDesc(a, b);
       }
     });
-  }, [filteredLeads, leadScores, sortMode, dateOrder, scoreOrder]);
+  }, [filteredLeads, sortMode, dateOrder, scoreOrder]);
 
   // Clear all filters
   const clearFilters = useCallback(() => {
@@ -374,7 +352,7 @@ export const LeadSheet = () => {
         'Ad Set Name': lead.adSetName,
         'Ad Name': lead.adName,
         'Lead Status': getStatusInfo(lead.status).label,
-        'Lead Score': leadScores[lead.id] ?? 0,
+        'Lead Score': lead.score,
         'Unqualified Reason': lead.status === 'unqualified' ? (lead.unqualifiedLeadReason || 'Not specified') : '',
       }));
 
@@ -416,7 +394,7 @@ export const LeadSheet = () => {
         variant: "destructive",
       });
     }
-  }, [sortedLeads, leadScores, formatDate, getStatusInfo, toast]);
+  }, [sortedLeads, formatDate, getStatusInfo, toast]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200">
@@ -467,7 +445,7 @@ export const LeadSheet = () => {
                   metrics={[
                     {
                       label: "New Leads",
-                      value: leads.filter(lead => lead.status === 'new').length,
+                      value: processedLeads.filter(lead => lead.status === 'new').length,
                       format: 'number'
                     }
                   ]}
@@ -480,7 +458,7 @@ export const LeadSheet = () => {
                   metrics={[
                     {
                       label: "In Progress Leads",
-                      value: leads.filter(lead => lead.status === 'in_progress').length,
+                      value: processedLeads.filter(lead => lead.status === 'in_progress').length,
                       format: 'number'
                     }
                   ]}
@@ -493,7 +471,7 @@ export const LeadSheet = () => {
                   metrics={[
                     {
                       label: "Estimate Set Leads",
-                      value: leads.filter(lead => lead.status === 'estimate_set').length,
+                      value: processedLeads.filter(lead => lead.status === 'estimate_set').length,
                       format: 'number'
                     }
                   ]}
@@ -506,7 +484,7 @@ export const LeadSheet = () => {
                   metrics={[
                     {
                       label: "Unqualified Leads",
-                      value: leads.filter(lead => lead.status === 'unqualified').length,
+                      value: processedLeads.filter(lead => lead.status === 'unqualified').length,
                       format: 'number'
                     }
                   ]}
@@ -620,7 +598,7 @@ export const LeadSheet = () => {
                         </div>
                         <div className="flex items-center gap-2 mt-1.5">
                           <p className="text-xs text-gray-600">
-                            Showing {sortedLeads.length} of {leads.length} leads
+                            Showing {sortedLeads.length} of {processedLeads.length} leads
                           </p>
                           <span className="text-gray-400">•</span>
                           <button

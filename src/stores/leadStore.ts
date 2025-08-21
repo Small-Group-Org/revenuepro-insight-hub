@@ -4,11 +4,9 @@ import {
   getLeads, 
   updateLead,
   GetLeadsPayload, 
-  UpdateLeadPayload,
-  GetLeadsResponse,
-  UpdateLeadResponse
+  UpdateLeadPayload
 } from "@/service/leadService";
-import { getConversionRates, ConversionRateResponse } from "@/service/conversionRateService";
+import { getConversionRates } from "@/service/conversionRateService";
 import { ConversionRate } from "@/utils/leadProcessing";
 
 
