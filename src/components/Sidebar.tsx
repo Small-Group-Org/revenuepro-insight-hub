@@ -5,6 +5,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useUserContext } from "../utils/UserContext";
 import UserSelect from './UserSelect';
 import { menuItems } from '@/utils/constant';
+import { useUserStore } from '@/stores/userStore';
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -25,7 +26,8 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }: SidebarProp
   const location = useLocation();
   const { user } = useUserContext();
   const userWithRole = user as UserWithRole | null;
-  const isAdmin = userWithRole && (userWithRole.role === 'ADMIN'); // Placeholder admin check
+  const isAdmin = userWithRole && (userWithRole.role === 'ADMIN');
+  
   return (
     <div className={cn(
       "bg-sidebar text-sidebar-foreground transition-all duration-300 flex flex-col",
