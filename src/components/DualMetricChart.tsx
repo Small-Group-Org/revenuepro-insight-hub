@@ -117,6 +117,7 @@ export const DualMetricChart: React.FC<DualMetricChartProps> = ({
           <Tooltip 
             content={<DualMetricTooltip metric1Config={metric1Config} metric2Config={metric2Config} />}
             cursor={{ strokeDasharray: '3 3', stroke: '#e2e8f0' }}
+            offset={30}
           />
           <Legend 
             wrapperStyle={{ fontSize: '12px' }}
