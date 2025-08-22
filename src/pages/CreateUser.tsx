@@ -19,13 +19,32 @@ const CreateUser = () => {
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // Fetch users when role filter changes
   useEffect(() => {
     if (loggedInUser?.role === "ADMIN") {
       fetchUsers(roleFilter);
+      setCurrentPage(1); // Reset to first page when filter changes
     }
   }, [roleFilter, loggedInUser?.role, fetchUsers]);
+
+  // Pagination logic
+  const totalUsers = users.length;
+  const totalPages = Math.ceil(totalUsers / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const currentUsers = users.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handlePageSizeChange = (newPageSize: string) => {
+    setPageSize(Number(newPageSize));
+    setCurrentPage(1); // Reset to first page when page size changes
+  };
 
   const handleEditClick = (userId: string) => {
     setEditingUserId(userId);
@@ -140,11 +159,11 @@ const CreateUser = () => {
                   ) : users.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                        {roleFilter === "all" ? "No users found." : `No ${roleFilter === "admin" ? "admin" : "client"} users found.`}
+                        {roleFilter === "all" ? "No users found." : `No ${roleFilter === "ADMIN" ? "admin" : "client"} users found.`}
                       </TableCell>
                     </TableRow>
                   ) : (
-                    users.map((user, idx) => (
+                    currentUsers.map((user, idx) => (
                       <TableRow
                         key={user.id}
                         className={`transition-all duration-200 ${
@@ -192,6 +211,58 @@ const CreateUser = () => {
                 </TableBody>
               </Table>
             </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between p-4 border-t border-border">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>Showing {startIndex + 1}-{Math.min(endIndex, totalUsers)} of {totalUsers} users</span>
+                  <span className="mx-2">•</span>
+                  <span>Page {currentPage} of {totalPages}</span>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <label htmlFor="page-size" className="text-sm text-muted-foreground">
+                      Show:
+                    </label>
+                    <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
+                      <SelectTrigger className="w-20 h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="5">5</SelectItem>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="20">20</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                   <div className="flex items-center gap-1">
+                     <Button
+                       variant="outline"
+                       size="sm"
+                       onClick={() => handlePageChange(currentPage - 1)}
+                       disabled={currentPage === 1}
+                       className="h-8 w-8 p-0"
+                     >
+                       <span className="text-[32px] mb-[6px]">‹</span>
+                     </Button>
+                     
+                     <Button
+                       variant="outline"
+                       size="sm"
+                       onClick={() => handlePageChange(currentPage + 1)}
+                       disabled={currentPage === totalPages}
+                       className="h-8 w-8 p-0"
+                     >
+                       <span className="text-[32px] mb-[6px]">›</span>
+                     </Button>
+                   </div>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
