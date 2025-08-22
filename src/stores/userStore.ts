@@ -6,7 +6,7 @@ interface UserStoreState {
   loading: boolean;
   error?: string;
   selectedUserId?: string;
-  fetchUsers: () => Promise<void>;
+  fetchUsers: (role?: string) => Promise<void>;
   setSelectedUserId: (id: string) => void;
   createUser: (payload: CreateUserPayload) => Promise<{ error: boolean; message?: string }>;
   updateUser: (payload: UpdateUserPayload) => Promise<{ error: boolean; message?: string }>;
@@ -18,11 +18,12 @@ export const useUserStore = create<UserStoreState>((set, get) => ({
   loading: false,
   error: undefined,
   selectedUserId: undefined,
-  fetchUsers: async () => {
+  fetchUsers: async (role?: string) => {
     set({ loading: true, error: undefined });
-    const res = await getAllUsers();
+    const res = await getAllUsers(role);
     if (!res.error && Array.isArray(res.data.data)) {
-      const users = res.data.data;
+      const users = res.data.data.sort((a, b) => a.name.localeCompare(b.name));
+      
       set({ users, loading: false, selectedUserId: users.length > 0 ? users[0].id : undefined });
     } else {
       set({ error: res.message || "Failed to fetch users", loading: false });

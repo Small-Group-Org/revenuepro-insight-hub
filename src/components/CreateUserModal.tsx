@@ -9,6 +9,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { User as ServiceUser, getUserById } from "@/service/userService";
 
@@ -17,7 +24,7 @@ interface CreateUserModalProps {
   onOpenChange: (open: boolean) => void;
   isCreating: boolean;
   editingUserId: string | null;
-  onSave: (userId: string | null, userData: { email: string; name: string; password?: string }) => Promise<void>;
+  onSave: (userId: string | null, userData: { email: string; name: string; password?: string; role: string }) => Promise<void>;
   loading: boolean;
 }
 
@@ -33,13 +40,14 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
     email: "",
     name: "",
     password: "",
+    role: "USER",
   });
   const { toast } = useToast();
 
   useEffect(() => {
     if (isOpen) {
       if (isCreating) {
-        setCurrentUserData({ email: "", name: "", password: "" });
+        setCurrentUserData({ email: "", name: "", password: "", role: "USER" });
       } else if (editingUserId) {
         const fetchUser = async () => {
           try {
@@ -49,6 +57,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
                 email: res.data.data.email,
                 name: res.data.data.name || "",
                 password: "", // Password should not be pre-filled for security
+                role: res.data.data.role || "USER",
               });
             } else {
               toast({ title: "Error", description: res.message || "Failed to fetch user details", variant: "destructive" });
@@ -66,6 +75,10 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     setCurrentUserData(prev => ({ ...prev, [id]: value }));
+  };
+
+  const handleRoleChange = (value: string) => {
+    setCurrentUserData(prev => ({ ...prev, role: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -90,6 +103,18 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
           <div>
             <label htmlFor="email" className="block text-sm font-medium mb-1 text-card-foreground">Email</label>
             <Input id="email" type="email" value={currentUserData.email} onChange={handleChange} required disabled={loading} placeholder="Enter user email" className="border-border focus:ring-primary" />
+          </div>
+          <div>
+            <label htmlFor="role" className="block text-sm font-medium mb-1 text-card-foreground">Role</label>
+            <Select value={currentUserData.role} onValueChange={handleRoleChange} disabled={loading}>
+              <SelectTrigger className="border-border focus:ring-primary">
+                <SelectValue placeholder="Select role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="USER">Client</SelectItem>
+                <SelectItem value="ADMIN">Admin</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           {isCreating && (
             <div>

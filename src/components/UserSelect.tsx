@@ -13,11 +13,19 @@ interface UserSelectProps {
 
 const UserSelect: React.FC<UserSelectProps> = ({ value, onChange, placeholder, isCollapsed = false }) => {
   const { users, loading, fetchUsers, selectedUserId, setSelectedUserId } = useUserStore();
+  const allClients = users.filter(user => user.role !== "ADMIN");
   useEffect(() => {
     if (users?.length === 0) {
       fetchUsers();
     }
   }, []);
+
+  useEffect(() => {
+    const firstClientUser = users.find(user => user.role !== "ADMIN");
+    if (firstClientUser) {
+      setSelectedUserId(firstClientUser.id);
+    }
+  }, [users])
 
   // Handle value and onChange
   const handleChange = (userId: string) => {
@@ -49,10 +57,10 @@ const UserSelect: React.FC<UserSelectProps> = ({ value, onChange, placeholder, i
   return (
     <Select value={value ?? selectedUserId} onValueChange={handleChange} disabled={loading}>
       <SelectTrigger className="w-full rounded-full bg-sidebar border-sidebar-border text-sidebar-foreground hover:bg-sidebar-accent">
-        <SelectValue placeholder={placeholder || (loading ? "Loading users..." : "Select a user")}/>
+        <SelectValue placeholder={placeholder || (loading ? "Loading Clients..." : "Select a Client")}/>
       </SelectTrigger>
       <SelectContent className="bg-sidebar border-sidebar-border rounded-md">
-        {users.map(user => (
+        {allClients.map(user => (
           <SelectItem 
             key={user.id} 
             value={user.id}

@@ -11,7 +11,7 @@ export interface CreateUserPayload {
   email: string;
   password: string;
   name?: string;
-  role?: string;
+  role: string;
 }
 
 export interface UpdateUserPayload {
@@ -22,12 +22,16 @@ export interface UpdateUserPayload {
 
 export const createUser = async (payload: CreateUserPayload) => {
   // Always set role to USER for this admin action
-  const response = await doPOST("/admin/users/upsert", { ...payload, role: "USER" });
+  const response = await doPOST("/admin/users/upsert", payload);
   return response;
 };
 
-export const getAllUsers = async () => {
-  const response = await doGET("/admin/users/list/all?role=USER");
+export const getAllUsers = async (role?: string) => {
+  let url = "/admin/users/list/all";
+  if (role && role !== "all") {
+    url += `?role=${role.toUpperCase()}`;
+  }
+  const response = await doGET(url);
   return response;
 };
 
