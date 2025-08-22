@@ -53,21 +53,17 @@ export const LeadAnalytics = () => {
   // Pagination states for each table
   const [adSetPage, setAdSetPage] = useState(1);
   const [adNamePage, setAdNamePage] = useState(1);
-  const [topAdSetPage, setTopAdSetPage] = useState(1);
-  const [topAdPage, setTopAdPage] = useState(1);
   const adSetItemsPerPage = 15;
   const adNameItemsPerPage = 10;
-  const topTablesItemsPerPage = 10;
   
   // Sorting states for each table
   const [adSetSortField, setAdSetSortField] = useState<'adSetName' | 'total' | 'estimateSet' | 'percentage'>('estimateSet');
   const [adSetSortOrder, setAdSetSortOrder] = useState<'asc' | 'desc'>('desc');
   const [adNameSortField, setAdNameSortField] = useState<'adName' | 'total' | 'estimateSet' | 'percentage'>('estimateSet');
   const [adNameSortOrder, setAdNameSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [topAdSetSortField, setTopAdSetSortField] = useState<'adSetName' | 'total' | 'estimateSet' | 'percentage'>('estimateSet');
-  const [topAdSetSortOrder, setTopAdSetSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [topAdSortField, setTopAdSortField] = useState<'adName' | 'total' | 'estimateSet' | 'percentage'>('estimateSet');
-  const [topAdSortOrder, setTopAdSortOrder] = useState<'asc' | 'desc'>('desc');
+  
+  // Common time filter for both tables
+  const [commonTimeFilter, setCommonTimeFilter] = useState<'all' | '7' | '14' | '30' | '60'>('all');
 
   useEffect(() => {
     if (selectedUserId) {
@@ -289,20 +285,44 @@ export const LeadAnalytics = () => {
     };
   }, [filteredLeads]);
 
-  // Top Ads and Ad Sets Analysis (Last 2 Weeks - Independent of time filter)
-  const topPerformersData = useMemo(() => {
-    // Calculate last 2 weeks date range
-    const now = new Date();
-    const twoWeeksAgo = new Date(now.getTime() - (14 * 24 * 60 * 60 * 1000));
+  // Enhanced data processing with common time filtering
+  const enhancedData = useMemo(() => {
+    // Filter leads based on commonTimeFilter
+    let timeFilteredLeads = leads;
     
-    // Filter leads from last 2 weeks for top performers analysis
-    const lastTwoWeeksLeads = leads.filter(lead => {
-      const leadDate = new Date(lead.leadDate);
-      return leadDate >= twoWeeksAgo && leadDate <= now;
-    });
+    if (commonTimeFilter !== 'all') {
+      const now = new Date();
+      const daysAgo = new Date(now.getTime() - (parseInt(commonTimeFilter) * 24 * 60 * 60 * 1000));
+      
+      timeFilteredLeads = leads.filter(lead => {
+        const leadDate = new Date(lead.leadDate);
+        return leadDate >= daysAgo && leadDate <= now;
+      });
+    }
 
-    // Top Ads by Estimate Set Count (Last 2 Weeks)
-    const topAdsAnalysis = lastTwoWeeksLeads.reduce((acc, lead) => {
+    // Ad Set Analysis with time filtering
+    const adSetAnalysis = timeFilteredLeads.reduce((acc, lead) => {
+      if (!acc[lead.adSetName]) {
+        acc[lead.adSetName] = { total: 0, estimateSet: 0 };
+      }
+      acc[lead.adSetName].total += 1;
+      if (lead.status === 'estimate_set') {
+        acc[lead.adSetName].estimateSet += 1;
+      }
+      return acc;
+    }, {} as Record<string, { total: number; estimateSet: number }>);
+
+    const adSetData = Object.entries(adSetAnalysis)
+      .map(([adSetName, data]) => ({ 
+        adSetName, 
+        total: data.total,
+        estimateSet: data.estimateSet,
+        percentage: data.total > 0 ? ((data.estimateSet / data.total) * 100).toFixed(1) : '0.0'
+      }))
+      .sort((a, b) => b.estimateSet - a.estimateSet);
+
+    // Ad Name Analysis with time filtering
+    const adNameAnalysis = timeFilteredLeads.reduce((acc, lead) => {
       const key = `${lead.adName}|${lead.adSetName}`; // Use combination of ad name and ad set name
       if (!acc[key]) {
         acc[key] = { adName: lead.adName, adSetName: lead.adSetName, total: 0, estimateSet: 0 };
@@ -314,44 +334,21 @@ export const LeadAnalytics = () => {
       return acc;
     }, {} as Record<string, { adName: string; adSetName: string; total: number; estimateSet: number }>);
 
-    const topAdsData = Object.entries(topAdsAnalysis)
+    const adNameData = Object.entries(adNameAnalysis)
       .map(([key, data]) => ({ 
-        adName: data.adName,
+        adName: data.adName, 
         adSetName: data.adSetName,
         total: data.total,
         estimateSet: data.estimateSet,
         percentage: data.total > 0 ? ((data.estimateSet / data.total) * 100).toFixed(1) : '0.0'
       }))
-      .sort((a, b) => b.estimateSet - a.estimateSet)
-      .slice(0, 10); // Top 10 ads
-
-    // Top Ad Sets by Estimate Set Count (Last 2 Weeks)
-    const topAdSetsAnalysis = lastTwoWeeksLeads.reduce((acc, lead) => {
-      if (!acc[lead.adSetName]) {
-        acc[lead.adSetName] = { total: 0, estimateSet: 0 };
-      }
-      acc[lead.adSetName].total += 1;
-      if (lead.status === 'estimate_set') {
-        acc[lead.adSetName].estimateSet += 1;
-      }
-      return acc;
-    }, {} as Record<string, { total: number; estimateSet: number }>);
-
-    const topAdSetsData = Object.entries(topAdSetsAnalysis)
-      .map(([adSetName, data]) => ({ 
-        adSetName, 
-        total: data.total,
-        estimateSet: data.estimateSet,
-        percentage: data.total > 0 ? ((data.estimateSet / data.total) * 100).toFixed(1) : '0.0'
-      }))
-      .sort((a, b) => b.estimateSet - a.estimateSet)
-      .slice(0, 10); // Top 10 ad sets
+      .sort((a, b) => b.estimateSet - a.estimateSet);
 
     return {
-      topAdsData,
-      topAdSetsData
+      adSetData,
+      adNameData
     };
-  }, [leads]);
+  }, [leads, commonTimeFilter]);
 
   // Sorting functions
   const sortData = (
@@ -395,8 +392,8 @@ export const LeadAnalytics = () => {
 
   // Sort and paginate data for each table
   const sortedAdSetData = useMemo(() => 
-    sortData(analyticsData?.adSetData || [], adSetSortField, adSetSortOrder), 
-    [analyticsData?.adSetData, adSetSortField, adSetSortOrder]
+    sortData(enhancedData.adSetData, adSetSortField, adSetSortOrder), 
+    [enhancedData.adSetData, adSetSortField, adSetSortOrder]
   );
   
   const paginatedAdSetData = useMemo(() => 
@@ -405,8 +402,8 @@ export const LeadAnalytics = () => {
   );
 
   const sortedAdNameData = useMemo(() => 
-    sortData(analyticsData?.adNameData || [], adNameSortField, adNameSortOrder), 
-    [analyticsData?.adNameData, adNameSortField, adNameSortOrder]
+    sortData(enhancedData.adNameData, adNameSortField, adNameSortOrder), 
+    [enhancedData.adNameData, adNameSortField, adNameSortOrder]
   );
   
   const paginatedAdNameData = useMemo(() => 
@@ -414,33 +411,11 @@ export const LeadAnalytics = () => {
     [sortedAdNameData, adNamePage]
   );
 
-  const sortedTopAdSetData = useMemo(() => 
-    sortData(topPerformersData.topAdSetsData, topAdSetSortField, topAdSetSortOrder), 
-    [topPerformersData.topAdSetsData, topAdSetSortField, topAdSetSortOrder]
-  );
-  
-  const paginatedTopAdSetData = useMemo(() => 
-    paginateData(sortedTopAdSetData, topAdSetPage, topTablesItemsPerPage), 
-    [sortedTopAdSetData, topAdSetPage]
-  );
-
-  const sortedTopAdData = useMemo(() => 
-    sortData(topPerformersData.topAdsData, topAdSortField, topAdSortOrder), 
-    [topPerformersData.topAdsData, topAdSortField, topAdSortOrder]
-  );
-  
-  const paginatedTopAdData = useMemo(() => 
-    paginateData(sortedTopAdData, topAdPage, topTablesItemsPerPage), 
-    [sortedTopAdData, topAdPage]
-  );
-
   // Reset pagination when data changes
   useEffect(() => {
     setAdSetPage(1);
     setAdNamePage(1);
-    setTopAdSetPage(1);
-    setTopAdPage(1);
-  }, [timeFilter]);
+  }, [timeFilter, commonTimeFilter]);
 
     // Helper function to render sortable table header
   const renderSortableHeader = (
@@ -877,21 +852,43 @@ export const LeadAnalytics = () => {
           </div>
           )}
 
-          {/* Performance Tables Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Ad Set Performance Table */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Tag className="h-5 w-5 text-orange-600" />
-                Top Ad Set Performance
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b">
+          {/* Performance Tables Section */}
+          <div className="space-y-4">
+            {/* Table Time Filter */}
+            <div className="flex items-center justify-between bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-gray-600" />
+                <span className="text-sm font-medium text-gray-700">Table Time Filter:</span>
+              </div>
+              <Select value={commonTimeFilter} onValueChange={(value: string) => setCommonTimeFilter(value as 'all' | '7' | '14' | '30' | '60')}>
+                <SelectTrigger className="w-40 h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Time</SelectItem>
+                  <SelectItem value="7">Last 7 Days</SelectItem>
+                  <SelectItem value="14">Last 14 Days</SelectItem>
+                  <SelectItem value="30">Last 30 Days</SelectItem>
+                  <SelectItem value="60">Last 60 Days</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Performance Tables Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Ad Set Performance Table */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Tag className="h-5 w-5 text-orange-600" />
+                  Top Ad Set Performance
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b">
                         <th className="text-left p-2 w-16">S.No.</th>
                         {renderSortableHeader('adSetName', 'Ad Set Name', adSetSortField, adSetSortOrder, (field) => {
                           if (adSetSortField === field) {
@@ -925,44 +922,54 @@ export const LeadAnalytics = () => {
                             setAdSetSortOrder('desc');
                           }
                         })}
-                    </tr>
-                  </thead>
-                  <tbody>
-                      {paginatedAdSetData.map((adSet, index) => (
-                      <tr key={adSet.adSetName} className="border-b hover:bg-muted/50">
-                        <td className="p-2 text-gray-600 font-medium">
-                          {((adSetPage - 1) * adSetItemsPerPage) + index + 1}
-                        </td>
-                        <td className="p-2 font-medium">{adSet.adSetName}</td>
-                        <td className="text-right p-2">{adSet.total}</td>
-                        <td className="text-right p-2 text-green-600 font-medium">{adSet.estimateSet}</td>
-                        <td className="text-right p-2">
-                          <span className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">
-                            {adSet.percentage}%
-                          </span>
-                        </td>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {paginatedAdSetData.length > 0 ? (
+                        paginatedAdSetData.map((adSet, index) => (
+                          <tr key={adSet.adSetName} className="border-b hover:bg-muted/50">
+                            <td className="p-2 text-gray-600 font-medium">
+                              {((adSetPage - 1) * adSetItemsPerPage) + index + 1}
+                            </td>
+                            <td className="p-2 font-medium">{adSet.adSetName}</td>
+                            <td className="text-right p-2">{adSet.total}</td>
+                            <td className="text-right p-2 text-green-600 font-medium">{adSet.estimateSet}</td>
+                            <td className="text-right p-2">
+                              <span className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">
+                                {adSet.percentage}%
+                              </span>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={5} className="text-center py-8 text-gray-500">
+                            <Calendar className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                            <p className="text-sm">No data found for selected time filter.</p>
+                            <p className="text-xs text-gray-400 mt-1">Try selecting a different time period.</p>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
                 {renderPagination(adSetPage, sortedAdSetData.length, setAdSetPage, adSetItemsPerPage)}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          {/* Ad Name Performance Table */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5 text-green-600" />
-                Top Ad Name Performance
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b">
+            {/* Ad Name Performance Table */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-green-600" />
+                  Top Ad Name Performance
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b">
                         <th className="text-left p-2 w-16">S.No.</th>
                         {renderSortableHeader('adName', 'Ad Name', adNameSortField, adNameSortOrder, (field) => {
                           if (adNameSortField === field) {
@@ -996,175 +1003,14 @@ export const LeadAnalytics = () => {
                             setAdNameSortOrder('desc');
                           }
                         })}
-                    </tr>
-                  </thead>
-                  <tbody>
-                      {paginatedAdNameData.map((ad, index) => (
-                        <tr key={`${ad.adName}-${ad.adSetName}`} className="border-b hover:bg-muted/50">
-                          <td className="p-2 text-gray-600 font-medium">
-                            {((adNamePage - 1) * adNameItemsPerPage) + index + 1}
-                          </td>
-                          <td className="p-2">
-                            <div className="flex flex-col">
-                              <span className="font-medium text-gray-900">{ad.adName}</span>
-                              <span className="text-xs text-gray-500 font-italic">
-                                ({ad.adSetName})
-                              </span>
-                            </div>
-                          </td>
-                        <td className="text-right p-2">{ad.total}</td>
-                        <td className="text-right p-2 text-green-600 font-medium">{ad.estimateSet}</td>
-                        <td className="text-right p-2">
-                          <span className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">
-                            {ad.percentage}%
-                          </span>
-                        </td>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-                {renderPagination(adNamePage, sortedAdNameData.length, setAdNamePage, adNameItemsPerPage)}
-            </CardContent>
-          </Card>
-
-                        {/* Top Ad Sets by Estimate Set Count (Last 2 Weeks) */}
-                        {topPerformersData.topAdSetsData.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Tag className="h-5 w-5 text-orange-600" />
-                    Top Ad Sets (Last 2 Weeks)
-                  </CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    Performance ranking based on estimate set count over the past 2 weeks
-                  </p>
-                </CardHeader>
-                <CardContent>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b">
-                          <th className="text-left p-2">Rank</th>
-                          {renderSortableHeader('adSetName', 'Ad Set Name', topAdSetSortField, topAdSetSortOrder, (field) => {
-                            if (topAdSetSortField === field) {
-                              setTopAdSetSortOrder(topAdSetSortOrder === 'asc' ? 'desc' : 'asc');
-                            } else {
-                              setTopAdSetSortField(field as any);
-                              setTopAdSetSortOrder('desc');
-                            }
-                          })}
-                          {renderSortableHeader('total', 'Total Leads', topAdSetSortField, topAdSetSortOrder, (field) => {
-                            if (topAdSetSortField === field) {
-                              setTopAdSetSortOrder(topAdSetSortOrder === 'asc' ? 'desc' : 'asc');
-                            } else {
-                              setTopAdSetSortField(field as any);
-                              setTopAdSetSortOrder('desc');
-                            }
-                          })}
-                          {renderSortableHeader('estimateSet', 'Estimate Set', topAdSetSortField, topAdSetSortOrder, (field) => {
-                            if (topAdSetSortField === field) {
-                              setTopAdSetSortOrder(topAdSetSortOrder === 'asc' ? 'desc' : 'asc');
-                            } else {
-                              setTopAdSetSortField(field as any);
-                              setTopAdSetSortOrder('desc');
-                            }
-                          })}
-                          {renderSortableHeader('percentage', 'Appointment %', topAdSetSortField, topAdSetSortOrder, (field) => {
-                            if (topAdSetSortField === field) {
-                              setTopAdSetSortOrder(topAdSetSortOrder === 'asc' ? 'desc' : 'asc');
-                            } else {
-                              setTopAdSetSortField(field as any);
-                              setTopAdSetSortOrder('desc');
-                            }
-                          })}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {paginatedTopAdSetData.map((adSet, index) => (
-                          <tr key={adSet.adSetName} className="border-b hover:bg-muted/50">
-                            <td className="p-2 font-medium">
-                              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-orange-100 text-orange-800 text-xs font-bold">
-                                #{((topAdSetPage - 1) * topTablesItemsPerPage) + index + 1}
-                              </span>
-                            </td>
-                            <td className="p-2 font-medium">{adSet.adSetName}</td>
-                            <td className="text-right p-2">{adSet.total}</td>
-                            <td className="text-right p-2 text-green-600 font-medium">{adSet.estimateSet}</td>
-                            <td className="text-right p-2">
-                              <span className="px-2 py-1 rounded text-xs bg-green-100 text-green-800">
-                                {adSet.percentage}%
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-        </div>
-                  {renderPagination(topAdSetPage, sortedTopAdSetData.length, setTopAdSetPage, topTablesItemsPerPage)}
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Top Ads by Estimate Set Count (Last 2 Weeks) */}
-            {topPerformersData.topAdsData.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-green-600" />
-                    Top Ads (Last 2 Weeks)
-                  </CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    Performance ranking based on estimate set count over the past 2 weeks
-                  </p>
-                </CardHeader>
-                <CardContent>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b">
-                          <th className="text-left p-2">Rank</th>
-                          {renderSortableHeader('adName', 'Ad Name', topAdSortField, topAdSortOrder, (field) => {
-                            if (topAdSortField === field) {
-                              setTopAdSortOrder(topAdSortOrder === 'asc' ? 'desc' : 'asc');
-                            } else {
-                              setTopAdSortField(field as any);
-                              setTopAdSortOrder('desc');
-                            }
-                          })}
-                          {renderSortableHeader('total', 'Total Leads', topAdSortField, topAdSortOrder, (field) => {
-                            if (topAdSortField === field) {
-                              setTopAdSortOrder(topAdSortOrder === 'asc' ? 'desc' : 'asc');
-                            } else {
-                              setTopAdSortField(field as any);
-                              setTopAdSortOrder('desc');
-                            }
-                          })}
-                          {renderSortableHeader('estimateSet', 'Estimate Set', topAdSortField, topAdSortOrder, (field) => {
-                            if (topAdSortField === field) {
-                              setTopAdSortOrder(topAdSortOrder === 'asc' ? 'desc' : 'asc');
-                            } else {
-                              setTopAdSortField(field as any);
-                              setTopAdSortOrder('desc');
-                            }
-                          })}
-                          {renderSortableHeader('percentage', 'Appointment %', topAdSortField, topAdSortOrder, (field) => {
-                            if (topAdSortField === field) {
-                              setTopAdSortOrder(topAdSortOrder === 'asc' ? 'desc' : 'asc');
-                            } else {
-                              setTopAdSortField(field as any);
-                              setTopAdSortOrder('desc');
-                            }
-                          })}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {paginatedTopAdData.map((ad, index) => (
+                    </thead>
+                    <tbody>
+                      {paginatedAdNameData.length > 0 ? (
+                        paginatedAdNameData.map((ad, index) => (
                           <tr key={`${ad.adName}-${ad.adSetName}`} className="border-b hover:bg-muted/50">
-                            <td className="p-2 font-medium">
-                              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-800 text-xs font-bold">
-                                #{((topAdPage - 1) * topTablesItemsPerPage) + index + 1}
-                              </span>
+                            <td className="p-2 text-gray-600 font-medium">
+                              {((adNamePage - 1) * adNameItemsPerPage) + index + 1}
                             </td>
                             <td className="p-2">
                               <div className="flex flex-col">
@@ -1177,20 +1023,28 @@ export const LeadAnalytics = () => {
                             <td className="text-right p-2">{ad.total}</td>
                             <td className="text-right p-2 text-green-600 font-medium">{ad.estimateSet}</td>
                             <td className="text-right p-2">
-                              <span className="px-2 py-1 rounded text-xs bg-green-100 text-green-800">
+                              <span className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">
                                 {ad.percentage}%
                               </span>
                             </td>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  {renderPagination(topAdPage, sortedTopAdData.length, setTopAdPage, topTablesItemsPerPage)}
-                </CardContent>
-              </Card>
-            )}
-
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={5} className="text-center py-8 text-gray-500">
+                            <Calendar className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                            <p className="text-sm">No data found for selected time filter.</p>
+                            <p className="text-xs text-gray-400 mt-1">Try selecting a different time period.</p>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                {renderPagination(adNamePage, sortedAdNameData.length, setAdNamePage, adNameItemsPerPage)}
+              </CardContent>
+            </Card>
+                      </div>
           </div>
           </>
           )}
