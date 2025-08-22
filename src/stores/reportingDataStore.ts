@@ -18,6 +18,7 @@ interface ReportingDataState {
   getComparisonData: (startDate: string, endDate: string, queryType: string) => Promise<void>;
   upsertReportingData: (data: IReportingData) => Promise<void>;
   clearError: () => void;
+  clearComparisonData: () => void;
 }
 
 export const useReportingDataStore = create<ReportingDataState>((set, get) => ({
@@ -128,4 +129,5 @@ export const useReportingDataStore = create<ReportingDataState>((set, get) => ({
   },
 
   clearError: () => set({ error: null }),
+  clearComparisonData: () => set({ comparisonData: null }),
 }));
