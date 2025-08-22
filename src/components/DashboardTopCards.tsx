@@ -130,15 +130,13 @@ export const DashboardTopCards: React.FC<DashboardTopCardsProps> = ({
         appointmentRate: 0
       };
     }
-
-    // Sum up all the data points
     const totals = reportingData.reduce((acc, dataPoint) => {
       acc.revenue += dataPoint.revenue || 0;
       acc.sales += dataPoint.sales || 0;
       acc.leads += dataPoint.leads || 0;
       acc.estimatesSet += dataPoint.estimatesSet || 0;
       acc.estimatesRan += dataPoint.estimatesRan || 0;
-      acc.budgetSpent += dataPoint.budgetSpent || 0;
+      acc.budgetSpent += dataPoint.testingBudgetSpent + dataPoint.leadGenerationBudgetSpent + dataPoint.awarenessBrandingBudgetSpent || 0;
       return acc;
     }, {
       revenue: 0,
@@ -172,7 +170,7 @@ export const DashboardTopCards: React.FC<DashboardTopCardsProps> = ({
           const monthsElapsed = currentMonth + 1;
           managementCost = calculateManagementCost((targetBudget / 12) * monthsElapsed);
         }
-        
+
         totalCom = ((managementCost + totals.budgetSpent) / totals.revenue) * 100;
       } else {
         // If no target data, just calculate based on budget spent

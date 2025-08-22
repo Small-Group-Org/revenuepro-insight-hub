@@ -335,6 +335,7 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
 
   // Update selected comparison when comparisonPeriod prop changes
   useEffect(() => {
+    // Only update if comparisonPeriod is explicitly set (not empty) and different from current
     if (comparisonPeriod && comparisonPeriod !== selectedComparison) {
       setSelectedComparison(comparisonPeriod);
     }
@@ -362,9 +363,7 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
             label: `${monthName} ${currentYear}`,
           });
         }
-        if (months.length > 0) {
-          setSelectedComparison(months[months.length - 1].value);
-        }
+        // Don't automatically set selectedComparison - let it default to empty
       } else {
         for (let month = 0; month <= 11; month++) {
           const monthName = new Date(selectedYear, month).toLocaleDateString(
@@ -376,9 +375,7 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
             label: `${monthName} ${selectedYear}`,
           });
         }
-        setSelectedComparison(
-          `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}`
-        );
+        // Don't automatically set selectedComparison - let it default to empty
       }
 
       setComparisonOptions(months);
@@ -392,7 +389,7 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
         });
       }
       setComparisonOptions(years);
-      setSelectedComparison(selectedYear.toString());
+      // Don't automatically set selectedComparison - let it default to empty
     }
   }, [periodType, selectedDate]);
 
@@ -435,6 +432,8 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
                   placeholder={
                     comparisonOptions.length === 0
                       ? "No options"
+                      : selectedComparison
+                      ? `Selected ${periodType === "monthly" ? "month" : "year"}`
                       : `Select ${periodType === "monthly" ? "month" : "year"}`
                   }
                 />
