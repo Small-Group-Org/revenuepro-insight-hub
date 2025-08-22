@@ -55,7 +55,7 @@ export const Dashboard = () => {
       endDate = format(endOfYear(selectedDate), "yyyy-MM-dd");
       queryType = "yearly";
     }
-    getReportingData(startDate, endDate, queryType);
+    getReportingData(startDate, endDate, queryType, period);
   }, [selectedDate, period, selectedUserId, getReportingData]);
 
   // Reset comparison state when period or selectedDate changes
@@ -112,7 +112,6 @@ export const Dashboard = () => {
 
   const fetchComparisonData = async (startDate: string, endDate: string, queryType: string) => {
     try {
-      console.log('Fetching comparison data for:', { startDate, endDate, queryType });
       await getComparisonData(startDate, endDate, queryType);
     } catch (error) {
       console.error('Error fetching comparison data:', error);

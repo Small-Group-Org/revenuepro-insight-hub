@@ -556,6 +556,7 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
                         />
                       }
                       cursor={{ strokeDasharray: "3 3", stroke: "#e2e8f0" }}
+                      offset={30}
                     />
 
                     {/* Define gradient for each chart */}
@@ -569,17 +570,17 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
                       >
                         <stop
                           offset="0%"
-                          stopColor="#3B82F6"
+                          stopColor="#396bbd"
                           stopOpacity={0.25}
                         />
                         <stop
                           offset="50%"
-                          stopColor="#3B82F6"
+                          stopColor="#396bbd"
                           stopOpacity={0.025}
                         />
                         <stop
                           offset="100%"
-                          stopColor="#3B82F6"
+                          stopColor="#396bbd"
                           stopOpacity={0}
                         />
                       </linearGradient>
@@ -606,10 +607,10 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
                     <Line
                       type="monotone"
                       dataKey="actual"
-                      stroke="#3B82F6"
+                      stroke="#396bbd"
                       strokeWidth={2}
-                      dot={{ fill: "#3B82F6", strokeWidth: 2, r: 3 }}
-                      activeDot={{ r: 4, stroke: "#3B82F6", strokeWidth: 2 }}
+                      dot={{ fill: "#396bbd", strokeWidth: 2, r: 3 }}
+                      activeDot={{ r: 4, stroke: "#396bbd", strokeWidth: 2 }}
                     />
 
                     {/* Show target line only when comparison is not enabled */}

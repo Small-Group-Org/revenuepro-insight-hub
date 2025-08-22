@@ -51,7 +51,7 @@ export const CompareResults = () => {
       endDate = format(endOfYear(selectedDate), "yyyy-MM-dd");
       queryType = "yearly";
     }
-    getReportingData(startDate, endDate, queryType);
+    getReportingData(startDate, endDate, queryType, period);
   }, [selectedDate, period, selectedUserId, getReportingData]);
 
   // Process target data with all calculated fields

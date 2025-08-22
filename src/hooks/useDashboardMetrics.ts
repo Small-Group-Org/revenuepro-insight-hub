@@ -37,9 +37,8 @@ export const useDashboardMetrics = () => {
     }
 
     if (period === "yearly" || period === "ytd") {
-      const monthCount = period === "yearly" ? 12 : new Date().getMonth() + 1;
-      return Array.from({ length: monthCount }, (_, i) => {
-        return data[i] ? processFunction(data[i], i) : fallbackFunction();
+      return data.map((item, index) => {
+        return processFunction(item, index);
       });
     }
 
