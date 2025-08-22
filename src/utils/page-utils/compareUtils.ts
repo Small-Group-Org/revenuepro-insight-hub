@@ -348,7 +348,7 @@ export const prepareChartDataWithComparison = (
   const comparisonDataForConfig = comparisonData[configKey];
   
   // Get the maximum length between current and comparison data
-  const maxLength = Math.max(chartData.length, comparisonDataForConfig.length);
+  const maxLength = Math.max(chartData?.length || 0, comparisonDataForConfig?.length || 0);
   
   // Create new array with the maximum length
   const data = Array.from({ length: maxLength }, (_, index) => {
