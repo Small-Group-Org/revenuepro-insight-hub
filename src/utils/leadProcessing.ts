@@ -46,32 +46,25 @@ export const calculateLeadScore = (
   conversionRates: ConversionRate[]
 ): number => {
   if (!conversionRates || conversionRates.length === 0) {
-    return 50; // Default score if no conversion rates available
+    return 50;
   }
 
-  let totalScore = 0;
-  let totalWeight = 0;
-
   const serviceRate = getConversionRate(conversionRates, 'service', lead.service);
-  totalScore += serviceRate * FIELD_WEIGHTS.service;
-  totalWeight += FIELD_WEIGHTS.service;
-
   const adSetRate = getConversionRate(conversionRates, 'adSet', lead.adSetName);
-  totalScore += adSetRate * FIELD_WEIGHTS.adSet;
-  totalWeight += FIELD_WEIGHTS.adSet;
-
   const adNameRate = getConversionRate(conversionRates, 'adName', lead.adName);
-  totalScore += adNameRate * FIELD_WEIGHTS.adName;
-  totalWeight += FIELD_WEIGHTS.adName;
-
   const dateRate = getDateConversionRate(conversionRates, lead.leadDate);
-  totalScore += dateRate * FIELD_WEIGHTS.date;
-  totalWeight += FIELD_WEIGHTS.date;
 
-  const finalScore = totalWeight > 0 ? totalScore / totalWeight : 50;
-  
+  const weightedScore = 
+    (serviceRate * FIELD_WEIGHTS.service) +
+    (adSetRate * FIELD_WEIGHTS.adSet) +
+    (adNameRate * FIELD_WEIGHTS.adName) +
+    (dateRate * FIELD_WEIGHTS.date);
+
+  let finalScore = weightedScore / 100;
   // Ensure score is between 0 and 100 and round to nearest integer
-  return Math.round(Math.max(0, Math.min(100, finalScore * 100)));
+  finalScore = Math.round(Math.max(0, Math.min(100, finalScore)));
+  console.log("Final Score:", finalScore);
+  return finalScore;
 };
 
 export const getScoreInfo = (score: number) => {
