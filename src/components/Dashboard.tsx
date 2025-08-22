@@ -143,7 +143,7 @@ export const Dashboard = () => {
         fetchComparisonData(startDate, endDate, queryType);
       }
     }
-  }, [comparisonPeriod, period, isComparisonEnabled]);
+  }, [comparisonPeriod, isComparisonEnabled]);
 
   // Icon mapping for dual metric charts
   const getDualMetricIcon = (key: string) => {
