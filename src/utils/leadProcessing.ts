@@ -46,7 +46,7 @@ export const calculateLeadScore = (
   conversionRates: ConversionRate[]
 ): number => {
   if (!conversionRates || conversionRates.length === 0) {
-    return 50;
+    return 0;
   }
 
   const serviceRate = getConversionRate(conversionRates, 'service', lead.service);
