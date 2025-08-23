@@ -12,7 +12,8 @@ import { handleInputDisable } from '@/utils/page-utils/compareUtils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { TopCard } from '@/components/DashboardTopCards';
-import { calculateLeadScore, getScoreInfo, getStatusInfo } from '@/utils/leadProcessing';
+import { calculateLeadScore, getScoreInfo, getStatusInfo, FIELD_WEIGHTS, getConversionRate, getDateConversionRate } from '@/utils/leadProcessing';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 // ULR = Unqualified Lead Reason
 export const LeadSheet = () => {
@@ -230,12 +231,30 @@ export const LeadSheet = () => {
     return format(new Date(dateString), 'MMM dd, yyyy');
   }, []);
 
-  // Pre-process leads with scores when leads or conversion rates change
+  // Pre-process leads with scores and tooltip data when leads or conversion rates change
   const processedLeads = useMemo(() => {
-    return leads.map(lead => ({
-      ...lead,
-      score: calculateLeadScore(lead, conversionRates)
-    }));
+    return leads.map(lead => {
+      const score = calculateLeadScore(lead, conversionRates);
+      
+      // Pre-calculate tooltip data to avoid recalculations on hover
+      const serviceRate = getConversionRate(conversionRates, 'service', lead.service);
+      const adSetRate = getConversionRate(conversionRates, 'adSet', lead.adSetName);
+      const adNameRate = getConversionRate(conversionRates, 'adName', lead.adName);
+      const dateRate = getDateConversionRate(conversionRates, lead.leadDate);
+      
+      const tooltipData = {
+        serviceRate: serviceRate.toFixed(1),
+        adSetRate: adSetRate.toFixed(1),
+        adNameRate: adNameRate.toFixed(1),
+        dateRate: dateRate.toFixed(1)
+      };
+      
+      return {
+        ...lead,
+        score,
+        tooltipData
+      };
+    });
   }, [leads, conversionRates]);
 
 
@@ -704,8 +723,8 @@ export const LeadSheet = () => {
 
               {/* No Results Message */}
               {sortedLeads.length === 0 && (
-                <div className="text-center py-12 text-muted-foreground">
-                  <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+            <div className="text-center py-12 text-muted-foreground">
+              <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                   <p className="text-lg mb-2">
                     {hasActiveFilters 
                       ? `No leads found matching your filters.` 
@@ -717,7 +736,7 @@ export const LeadSheet = () => {
                       Try adjusting your filters or click "Clear All" to see all leads.
                     </p>
                   )}
-                </div>
+            </div>
               )}
 
               {/* Lead Tiles */}
@@ -751,39 +770,93 @@ export const LeadSheet = () => {
                       <div className="grid grid-cols-12 gap-4 items-center">
                         {/* Lead Score */}
                         <div className="col-span-1 flex items-center">
-                          <div className="relative">
-                            <div className="w-14 h-14 relative">
-                              {/* Background circle */}
-                              <svg className="w-14 h-14 transform -rotate-90" viewBox="0 0 36 36">
-                                <path
-                                  d="M18 2.0845
-                                    a 15.9155 15.9155 0 0 1 0 31.831
-                                    a 15.9155 15.9155 0 0 1 0 -31.831"
-                                  fill="none"
-                                  stroke="#e5e7eb"
-                                  strokeWidth="3"
-                                />
-                                <path
-                                  d="M18 2.0845
-                                    a 15.9155 15.9155 0 0 1 0 31.831
-                                    a 15.9155 15.9155 0 0 1 0 -31.831"
-                                  fill="none"
-                                  stroke={scoreInfo.color.includes('green') ? '#10b981' : 
-                                         scoreInfo.color.includes('yellow') ? '#f59e0b' : 
-                                         scoreInfo.color.includes('red') ? '#ef4444' : '#6366f1'}
-                                  strokeWidth="3"
-                                  strokeDasharray={`${lead.score}, 100`}
-                                  strokeLinecap="round"
-                                />
-                              </svg>
-                              {/* Score text */}
-                              <div className="absolute inset-0 flex items-center justify-center">
-                                <span className="text-xs font-bold text-gray-900">
-                                  {lead.score}%
-                                </span>
-                          </div>
-                          </div>
-                            </div>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="relative cursor-wait hover:cursor-help group">
+                                  <div className="w-14 h-14 relative">
+                                    {/* Loading overlay - appears on hover before tooltip */}
+                                    <div className="absolute inset-0 bg-white/90 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                                      <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                                    </div>
+                                    {/* Background circle */}
+                                    <svg className="w-14 h-14 transform -rotate-90" viewBox="0 0 36 36">
+                                      <path
+                                        d="M18 2.0845
+                                          a 15.9155 15.9155 0 0 1 0 31.831
+                                          a 15.9155 15.9155 0 0 1 0 -31.831"
+                                        fill="none"
+                                        stroke="#e5e7eb"
+                                        strokeWidth="3"
+                                      />
+                                      <path
+                                        d="M18 2.0845
+                                          a 15.9155 15.9155 0 0 1 0 31.831
+                                          a 15.9155 15.9155 0 0 1 0 -31.831"
+                                        fill="none"
+                                        stroke={scoreInfo.color.includes('green') ? '#10b981' : 
+                                               scoreInfo.color.includes('yellow') ? '#f59e0b' : 
+                                               scoreInfo.color.includes('red') ? '#ef4444' : '#6366f1'}
+                                        strokeWidth="3"
+                                        strokeDasharray={`${lead.score}, 100`}
+                                        strokeLinecap="round"
+                                      />
+                                    </svg>
+                                    {/* Score text */}
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                      <span className="text-xs font-bold text-gray-900">
+                                        {lead.score}%
+                                      </span>
+                                    </div>
+
+                                  </div>
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="max-w-xs p-4 bg-white border border-gray-200 shadow-lg rounded-lg">
+                                <div className="space-y-4">
+                                  {/* Header with score */}
+                                  <div className="bg-blue-50 px-3 py-2 rounded-lg">
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className="text-sm font-semibold text-blue-800">Lead Score:</span>
+                                      <span className="text-xl font-bold text-blue-600">{lead.score}%</span>
+                                    </div>
+                                    <p className="text-xs text-blue-700">
+                                      Calculated as weighted average of conversion rates
+                                    </p>
+                                  </div>
+
+                                  {/* Conversion rates */}
+                                  <div className="space-y-2 bg-gray-50 px-3 py-2 rounded-lg">
+                                    <div className="text-xs font-semibold text-gray-700 mb-1">Conversion Rates:</div>
+                                    <div className="flex justify-between text-xs">
+                                      <span className="text-gray-600">Service ({lead.service}):</span>
+                                      <span className="font-semibold text-gray-800">{lead.tooltipData.serviceRate}%</span>
+                                    </div>
+                                    <div className="flex justify-between text-xs">
+                                      <span className="text-gray-600">Ad Set ({lead.adSetName}):</span>
+                                      <span className="font-semibold text-gray-800">{lead.tooltipData.adSetRate}%</span>
+                                    </div>
+                                    <div className="flex justify-between text-xs">
+                                      <span className="text-gray-600">Ad Name ({lead.adName}):</span>
+                                      <span className="font-semibold text-gray-800">{lead.tooltipData.adNameRate}%</span>
+                                    </div>
+                                    <div className="flex justify-between text-xs">
+                                      <span className="text-gray-600">Date ({formatDate(lead.leadDate)}):</span>
+                                      <span className="font-semibold text-gray-800">{lead.tooltipData.dateRate}%</span>
+                                    </div>
+                                  </div>
+
+                                  {/* Weights at bottom */}
+                                  <div className="bg-gray-100 px-3 py-2 rounded-lg">
+                                  <div className="text-xs font-semibold text-gray-700 mb-1">Weights:</div>
+                                    <p className="text-xs text-gray-500">
+                                      (Service - {FIELD_WEIGHTS.service}% • Ad Set - {FIELD_WEIGHTS.adSet}% • Ad Name - {FIELD_WEIGHTS.adName}% • Date - {FIELD_WEIGHTS.date}%)
+                                    </p>
+                                  </div>
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         </div>
 
                         {/* Name */}
