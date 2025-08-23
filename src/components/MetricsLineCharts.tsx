@@ -335,6 +335,7 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
 
   // Update selected comparison when comparisonPeriod prop changes
   useEffect(() => {
+    // Only update if comparisonPeriod is explicitly set (not empty) and different from current
     if (comparisonPeriod && comparisonPeriod !== selectedComparison) {
       setSelectedComparison(comparisonPeriod);
     }
@@ -362,9 +363,7 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
             label: `${monthName} ${currentYear}`,
           });
         }
-        if (months.length > 0) {
-          setSelectedComparison(months[months.length - 1].value);
-        }
+        // Don't automatically set selectedComparison - let it default to empty
       } else {
         for (let month = 0; month <= 11; month++) {
           const monthName = new Date(selectedYear, month).toLocaleDateString(
@@ -376,9 +375,7 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
             label: `${monthName} ${selectedYear}`,
           });
         }
-        setSelectedComparison(
-          `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}`
-        );
+        // Don't automatically set selectedComparison - let it default to empty
       }
 
       setComparisonOptions(months);
@@ -392,7 +389,7 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
         });
       }
       setComparisonOptions(years);
-      setSelectedComparison(selectedYear.toString());
+      // Don't automatically set selectedComparison - let it default to empty
     }
   }, [periodType, selectedDate]);
 
@@ -435,6 +432,8 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
                   placeholder={
                     comparisonOptions.length === 0
                       ? "No options"
+                      : selectedComparison
+                      ? `Selected ${periodType === "monthly" ? "month" : "year"}`
                       : `Select ${periodType === "monthly" ? "month" : "year"}`
                   }
                 />
@@ -556,6 +555,7 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
                         />
                       }
                       cursor={{ strokeDasharray: "3 3", stroke: "#e2e8f0" }}
+                      offset={30}
                     />
 
                     {/* Define gradient for each chart */}
@@ -569,17 +569,17 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
                       >
                         <stop
                           offset="0%"
-                          stopColor="#3B82F6"
+                          stopColor="#396bbd"
                           stopOpacity={0.25}
                         />
                         <stop
                           offset="50%"
-                          stopColor="#3B82F6"
+                          stopColor="#396bbd"
                           stopOpacity={0.025}
                         />
                         <stop
                           offset="100%"
-                          stopColor="#3B82F6"
+                          stopColor="#396bbd"
                           stopOpacity={0}
                         />
                       </linearGradient>
@@ -606,10 +606,10 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
                     <Line
                       type="monotone"
                       dataKey="actual"
-                      stroke="#3B82F6"
+                      stroke="#396bbd"
                       strokeWidth={2}
-                      dot={{ fill: "#3B82F6", strokeWidth: 2, r: 3 }}
-                      activeDot={{ r: 4, stroke: "#3B82F6", strokeWidth: 2 }}
+                      dot={{ fill: "#396bbd", strokeWidth: 2, r: 3 }}
+                      activeDot={{ r: 4, stroke: "#396bbd", strokeWidth: 2 }}
                     />
 
                     {/* Show target line only when comparison is not enabled */}

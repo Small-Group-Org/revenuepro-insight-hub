@@ -183,11 +183,11 @@ const CreateUser = () => {
                             {user.role === "ADMIN" ? "ADMIN" : "CLIENT"}
                           </span>
                         </TableCell>
-                        <TableCell className="text-right flex flex-wrap gap-4 justify-end">
+                        <TableCell className="text-right flex flex-wrap justify-end">
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="flex items-center px-0 gap-1 text-primary font-medium rounded-md transition-colors hover:bg-primary/10 hover:text-primary"
+                            className="flex items-center px-2 gap-1 text-primary font-medium rounded-md transition-colors hover:bg-primary/10 hover:text-primary"
                             onClick={() => handleEditClick(user.id)}
                             aria-label="Edit"
                             title="Edit"
@@ -197,7 +197,7 @@ const CreateUser = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="flex items-center gap-1 px-0 text-destructive font-medium rounded-md transition-colors hover:bg-destructive/10 hover:text-destructive"
+                            className="flex items-center gap-1 px-2 text-destructive font-medium rounded-md transition-colors hover:bg-destructive/10 hover:text-destructive"
                             onClick={() => handleDeleteClick(user.id)}
                             aria-label="Delete"
                             title="Delete"

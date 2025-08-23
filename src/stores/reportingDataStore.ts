@@ -3,6 +3,7 @@ import { IReportingData, IReportingResponse, getReportingData as fetchReportingD
 import { IWeeklyTarget } from '../service/targetService';
 import useAuthStore from './authStore';
 import { useUserStore } from './userStore';
+import { processYTDData } from '../utils/page-utils/dashboardUtils';
 
 interface ReportingDataState {
   reportingData: IReportingData[] | null;
@@ -13,10 +14,11 @@ interface ReportingDataState {
   setReportingData: (data: IReportingData[] | null) => void;
   setTargetData: (data: IWeeklyTarget[] | null) => void;
   setComparisonData: (data: IReportingData[] | null) => void;
-  getReportingData: (startDate: string, endDate: string, queryType: string) => Promise<void>;
+  getReportingData: (startDate: string, endDate: string, queryType: string, period: string) => Promise<void>;
   getComparisonData: (startDate: string, endDate: string, queryType: string) => Promise<void>;
   upsertReportingData: (data: IReportingData) => Promise<void>;
   clearError: () => void;
+  clearComparisonData: () => void;
 }
 
 export const useReportingDataStore = create<ReportingDataState>((set, get) => ({
@@ -29,7 +31,7 @@ export const useReportingDataStore = create<ReportingDataState>((set, get) => ({
   setTargetData: (data) => set({ targetData: data }),
   setComparisonData: (data) => set({ comparisonData: data }),
 
-  getReportingData: async (startDate, endDate, queryType) => {
+  getReportingData: async (startDate, endDate, queryType, period) => {
     set({ isLoading: true, error: null });
     try {
       const authState = useAuthStore.getState();
@@ -50,6 +52,20 @@ export const useReportingDataStore = create<ReportingDataState>((set, get) => ({
         const actualData = Array.isArray(reportingResponse.actual) ? reportingResponse.actual : [reportingResponse.actual];
         const targetRaw = Array.isArray(reportingResponse.target) ? reportingResponse.target : [reportingResponse.target];
         const targetData = Array.isArray(targetRaw) ? targetRaw : (targetRaw ? [targetRaw] : []);
+
+        if(period === "ytd"){
+          const ytdResult = processYTDData(actualData, targetData);
+          if (ytdResult.success && ytdResult.data) {
+            set({ reportingData: ytdResult.data, targetData, isLoading: false });
+            return;
+          } else {
+            // Fall back to original data if YTD processing fails
+            console.warn(`[YTD] ${ytdResult.message}, falling back to original actualData`);
+            set({ reportingData: actualData, targetData, isLoading: false });
+            return;
+          }
+        }
+
         set({ reportingData: actualData, targetData, isLoading: false });
       } else {
         set({ reportingData: null, targetData: null, error: response.message || 'Failed to fetch reporting data', isLoading: false });
@@ -76,7 +92,6 @@ export const useReportingDataStore = create<ReportingDataState>((set, get) => ({
       if (!response.error && response.data) {
         const reportingResponse = response.data.data as IReportingResponse;
         const actualData = Array.isArray(reportingResponse.actual) ? reportingResponse.actual : [reportingResponse.actual];
-        console.log('Comparison data:', actualData);
         set({ comparisonData: actualData });
       } else {
         set({ comparisonData: null, error: response.message || 'Failed to fetch comparison data' });
@@ -114,4 +129,5 @@ export const useReportingDataStore = create<ReportingDataState>((set, get) => ({
   },
 
   clearError: () => set({ error: null }),
+  clearComparisonData: () => set({ comparisonData: null }),
 }));

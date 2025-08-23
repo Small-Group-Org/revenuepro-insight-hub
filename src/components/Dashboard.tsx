@@ -22,7 +22,7 @@ import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
 
 
 export const Dashboard = () => {
-  const { reportingData, getReportingData, getComparisonData, comparisonData } = useReportingDataStore();
+  const { reportingData, getReportingData, getComparisonData, clearComparisonData } = useReportingDataStore();
   const { selectedUserId } = useUserStore();
   const { 
     comprehensiveChartData, 
@@ -40,6 +40,7 @@ export const Dashboard = () => {
   const [comparisonPeriod, setComparisonPeriod] = useState<string>('');
   const [isComparisonEnabled, setIsComparisonEnabled] = useState<boolean>(false);
 
+  // Main data fetching effect - only fetch main data
   useEffect(() => {
     let startDate: string, endDate: string, queryType: string;
     if (period === "monthly") {
@@ -55,21 +56,14 @@ export const Dashboard = () => {
       endDate = format(endOfYear(selectedDate), "yyyy-MM-dd");
       queryType = "yearly";
     }
-    getReportingData(startDate, endDate, queryType);
+    getReportingData(startDate, endDate, queryType, period);
   }, [selectedDate, period, selectedUserId, getReportingData]);
 
   // Reset comparison state when period or selectedDate changes
   useEffect(() => {
     setIsComparisonEnabled(false);
-    
-    // Set comparison period to match the selected date
-    if (period === "monthly") {
-      const year = selectedDate.getFullYear();
-      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
-      setComparisonPeriod(`${year}-${month}`);
-    } else if (period === "yearly" || period === "ytd") {
-      setComparisonPeriod(selectedDate.getFullYear().toString());
-    }
+    setComparisonPeriod('');
+    clearComparisonData();
   }, [period, selectedDate]);
 
   const handleDatePeriodChange = (
@@ -112,39 +106,11 @@ export const Dashboard = () => {
 
   const fetchComparisonData = async (startDate: string, endDate: string, queryType: string) => {
     try {
-      console.log('Fetching comparison data for:', { startDate, endDate, queryType });
       await getComparisonData(startDate, endDate, queryType);
     } catch (error) {
       console.error('Error fetching comparison data:', error);
     }
   };
-
-  // Automatically fetch comparison data when comparison period is set
-  useEffect(() => {
-    if (comparisonPeriod && !isComparisonEnabled) {
-      let startDate: string, endDate: string, queryType: string;
-      
-      if (period === "monthly") {
-        const [year, month] = comparisonPeriod.split('-');
-        const compareDate = new Date(parseInt(year), parseInt(month) - 1, 1);
-        
-        startDate = format(startOfMonth(compareDate), "yyyy-MM-dd");
-        endDate = format(endOfMonth(compareDate), "yyyy-MM-dd");
-        queryType = "monthly";
-      } else if (period === "yearly" || period === "ytd") {
-        const year = parseInt(comparisonPeriod);
-        const compareDate = new Date(year, 0, 1);
-        
-        startDate = format(startOfYear(compareDate), "yyyy-MM-dd");
-        endDate = format(endOfYear(compareDate), "yyyy-MM-dd");
-        queryType = "yearly";
-      }
-      
-      if (startDate && endDate && queryType) {
-        fetchComparisonData(startDate, endDate, queryType);
-      }
-    }
-  }, [comparisonPeriod, period, isComparisonEnabled]);
 
   // Icon mapping for dual metric charts
   const getDualMetricIcon = (key: string) => {
