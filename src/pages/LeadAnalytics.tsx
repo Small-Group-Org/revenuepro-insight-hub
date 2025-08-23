@@ -890,19 +890,35 @@ export const LeadAnalytics = () => {
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-gray-600" />
                 <span className="text-sm font-medium text-gray-700">Table Time Filter:</span>
+                <Select value={commonTimeFilter} onValueChange={(value: string) => setCommonTimeFilter(value as 'all' | '7' | '14' | '30' | '60')}>
+                  <SelectTrigger className="w-40 h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Time</SelectItem>
+                    <SelectItem value="7">Last 7 Days</SelectItem>
+                    <SelectItem value="14">Last 14 Days</SelectItem>
+                    <SelectItem value="30">Last 30 Days</SelectItem>
+                    <SelectItem value="60">Last 60 Days</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <Select value={commonTimeFilter} onValueChange={(value: string) => setCommonTimeFilter(value as 'all' | '7' | '14' | '30' | '60')}>
-                <SelectTrigger className="w-40 h-9">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Time</SelectItem>
-                  <SelectItem value="7">Last 7 Days</SelectItem>
-                  <SelectItem value="14">Last 14 Days</SelectItem>
-                  <SelectItem value="30">Last 30 Days</SelectItem>
-                  <SelectItem value="60">Last 60 Days</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex items-center gap-2">
+                <Trophy className="h-4 w-4 text-orange-500" />
+                <span className="text-sm font-medium text-gray-700">Sort Mode:</span>
+                <Button
+                  variant={showTopRankedAdSets || showTopRankedAdNames ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => {
+                    setShowTopRankedAdSets(!showTopRankedAdSets);
+                    setShowTopRankedAdNames(!showTopRankedAdNames);
+                  }}
+                  className="flex items-center gap-1.5 text-xs"
+                >
+                  <Trophy className="h-3.5 w-3.5" />
+                  {showTopRankedAdSets || showTopRankedAdNames ? 'Show Custom Sort' : 'Top Ranked'}
+                </Button>
+              </div>
             </div>
 
             {/* Performance Tables Grid */}
@@ -910,33 +926,17 @@ export const LeadAnalytics = () => {
                       {/* Ad Set Performance Table */}
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <Tag className="h-5 w-5 text-orange-600" />
-                    Top Ad Set Performance
-                  </CardTitle>
-                  <Button
-                    variant={showTopRankedAdSets ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setShowTopRankedAdSets(!showTopRankedAdSets)}
-                    className="flex items-center gap-1.5 text-xs"
-                  >
-                    <Trophy className="h-3.5 w-3.5" />
-                    {showTopRankedAdSets ? 'Show Custom Sort' : 'Top Ranked'}
-                  </Button>
-                </div>
-                {showTopRankedAdSets && (
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Sorted by Appointment % (highest first), then by Estimate Count
-                  </p>
-                )}
+                <CardTitle className="flex items-center gap-2">
+                  <Tag className="h-5 w-5 text-orange-600" />
+                  Top Ad Set Performance
+                </CardTitle>
               </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b">
-                        <th className="text-left p-2 w-16">S.No.</th>
+                        <th className="text-left p-2 w-20 text-amber-900 font-semibold">Ranking</th>
                         {renderSortableHeader('adSetName', 'Ad Set Name', adSetSortField, adSetSortOrder, (field) => {
                           if (adSetSortField === field) {
                             setAdSetSortOrder(adSetSortOrder === 'asc' ? 'desc' : 'asc');
@@ -975,8 +975,8 @@ export const LeadAnalytics = () => {
                       {paginatedAdSetData.length > 0 ? (
                         paginatedAdSetData.map((adSet, index) => (
                       <tr key={adSet.adSetName} className="border-b hover:bg-muted/50">
-                            <td className="p-2 text-gray-600 font-medium">
-                              {((adSetPage - 1) * adSetItemsPerPage) + index + 1}
+                            <td className="p-2 text-amber-900 font-semibold">
+                              #{((adSetPage - 1) * adSetItemsPerPage) + index + 1}
                             </td>
                         <td className="p-2 font-medium">{adSet.adSetName}</td>
                         <td className="text-right p-2">{adSet.total}</td>
@@ -1007,33 +1007,17 @@ export const LeadAnalytics = () => {
                       {/* Ad Name Performance Table */}
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-green-600" />
-                    Top Ad Name Performance
-                  </CardTitle>
-                  <Button
-                    variant={showTopRankedAdNames ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setShowTopRankedAdNames(!showTopRankedAdNames)}
-                    className="flex items-center gap-1.5 text-xs"
-                  >
-                    <Trophy className="h-3.5 w-3.5" />
-                    {showTopRankedAdNames ? 'Show Custom Sort' : 'Top Ranked'}
-                  </Button>
-                </div>
-                {showTopRankedAdNames && (
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Sorted by Appointment % (highest first), then by Estimate Count
-                  </p>
-                )}
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-green-600" />
+                  Top Ad Name Performance
+                </CardTitle>
               </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b">
-                        <th className="text-left p-2 w-16">S.No.</th>
+                        <th className="text-left p-2 w-20 text-amber-900 font-semibold">Ranking</th>
                         {renderSortableHeader('adName', 'Ad Name', adNameSortField, adNameSortOrder, (field) => {
                           if (adNameSortField === field) {
                             setAdNameSortOrder(adNameSortOrder === 'asc' ? 'desc' : 'asc');
@@ -1072,8 +1056,8 @@ export const LeadAnalytics = () => {
                       {paginatedAdNameData.length > 0 ? (
                         paginatedAdNameData.map((ad, index) => (
                           <tr key={`${ad.adName}-${ad.adSetName}`} className="border-b hover:bg-muted/50">
-                            <td className="p-2 text-gray-600 font-medium">
-                              {((adNamePage - 1) * adNameItemsPerPage) + index + 1}
+                            <td className="p-2 text-amber-900 font-semibold">
+                              #{((adNamePage - 1) * adNameItemsPerPage) + index + 1}
                             </td>
                             <td className="p-2">
                               <div className="flex flex-col">
