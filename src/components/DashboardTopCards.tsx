@@ -27,7 +27,7 @@ export const TopCard: React.FC<TopCardProps> = ({ title, icon, description, tren
       return formatCurrencyValue(val);
     }
     if (fmt === "percent") {
-      return `${val.toFixed(1)}%`;
+      return `${val.toFixed(2)}%`;
     }
     return Math.round(val).toLocaleString();
   };
@@ -152,14 +152,15 @@ export const DashboardTopCards: React.FC<DashboardTopCardsProps> = ({
     const costPerLead = totals.leads > 0 ? totals.budgetSpent / totals.leads : 0;
     const costPerAppointmentSet = totals.estimatesSet > 0 ? totals.budgetSpent / totals.estimatesSet : 0;
     const appointmentRate = totals.leads > 0 ? (totals.estimatesSet / totals.leads) * 100 : 0;
+    const targetBudget = processedTargetData.reduce((acc, dataPoint) => {
+      acc += dataPoint.weeklyBudget || 0;
+      return acc;
+    }, 0);
 
     // Calculate totalCoM if we have target data
     let totalCom = 0;
     if (totals.revenue > 0) {
       if (processedTargetData) {
-        const targetCom = processedTargetData.com || 0;
-        const targetBudget = processedTargetData.weeklyBudget || 0;
-        
         let managementCost = 0;
         if (period === "monthly") {
           managementCost = calculateManagementCost(targetBudget);
