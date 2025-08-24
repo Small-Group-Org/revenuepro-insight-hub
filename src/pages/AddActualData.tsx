@@ -110,9 +110,9 @@ React.useEffect(() => {
 
   // Calculate disable logic for AddActualData page with role-based restrictions
   const disableLogic = useMemo(() => 
-    handleInputDisable(period, selectedDate, null, 'addActualData', userRole), 
-    [period, selectedDate, userRole]
-  );
+    handleInputDisable(period, selectedDate, null, 'addActualData'), 
+    [period, selectedDate]
+  );  
 
   const { isDisabled, disabledMessage } = disableLogic;
 
