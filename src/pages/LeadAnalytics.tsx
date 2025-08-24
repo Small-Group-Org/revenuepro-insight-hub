@@ -4,7 +4,7 @@ import { useUserStore } from '@/stores/userStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, PieChart, Pie, Cell } from 'recharts';
-import { TrendingUp, MapPin, Wrench, Tag, FileText, Users, CheckCircle, XCircle, Calendar, BarChart3, ChevronLeft, ChevronRight, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react';
+import { TrendingUp, MapPin, Wrench, Tag, FileText, Users, CheckCircle, XCircle, Calendar, BarChart3, ChevronLeft, ChevronRight, ArrowUpDown, ChevronUp, ChevronDown, Trophy } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { startOfMonth, endOfMonth, startOfYear, endOfYear, startOfQuarter, endOfQuarter, subMonths, subQuarters, subYears } from 'date-fns';
@@ -64,6 +64,10 @@ export const LeadAnalytics = () => {
   
   // Common time filter for both tables
   const [commonTimeFilter, setCommonTimeFilter] = useState<'all' | '7' | '14' | '30' | '60'>('all');
+  
+  // Top ranking toggle states
+  const [showTopRankedAdSets, setShowTopRankedAdSets] = useState(false);
+  const [showTopRankedAdNames, setShowTopRankedAdNames] = useState(false);
 
   useEffect(() => {
     if (selectedUserId) {
@@ -390,21 +394,41 @@ export const LeadAnalytics = () => {
     return Math.ceil(totalItems / itemsPerPage);
   };
 
+  // Top ranking sort function (by percentage desc, then estimateSet desc)
+  const topRankingSort = (data: any[]): any[] => {
+    return [...data].sort((a, b) => {
+      const aPercentage = parseFloat(a.percentage);
+      const bPercentage = parseFloat(b.percentage);
+      
+      // First sort by percentage (descending)
+      if (aPercentage !== bPercentage) {
+        return bPercentage - aPercentage;
+      }
+      
+      // If percentages are equal, sort by estimate count (descending)
+      return b.estimateSet - a.estimateSet;
+    });
+  };
+
   // Sort and paginate data for each table
-  const sortedAdSetData = useMemo(() => 
-    sortData(enhancedData.adSetData, adSetSortField, adSetSortOrder), 
-    [enhancedData.adSetData, adSetSortField, adSetSortOrder]
-  );
+  const sortedAdSetData = useMemo(() => {
+    if (showTopRankedAdSets) {
+      return topRankingSort(enhancedData.adSetData);
+    }
+    return sortData(enhancedData.adSetData, adSetSortField, adSetSortOrder);
+  }, [enhancedData.adSetData, adSetSortField, adSetSortOrder, showTopRankedAdSets]);
   
   const paginatedAdSetData = useMemo(() => 
     paginateData(sortedAdSetData, adSetPage, adSetItemsPerPage), 
     [sortedAdSetData, adSetPage]
   );
 
-  const sortedAdNameData = useMemo(() => 
-    sortData(enhancedData.adNameData, adNameSortField, adNameSortOrder), 
-    [enhancedData.adNameData, adNameSortField, adNameSortOrder]
-  );
+  const sortedAdNameData = useMemo(() => {
+    if (showTopRankedAdNames) {
+      return topRankingSort(enhancedData.adNameData);
+    }
+    return sortData(enhancedData.adNameData, adNameSortField, adNameSortOrder);
+  }, [enhancedData.adNameData, adNameSortField, adNameSortOrder, showTopRankedAdNames]);
   
   const paginatedAdNameData = useMemo(() => 
     paginateData(sortedAdNameData, adNamePage, adNameItemsPerPage), 
@@ -415,7 +439,7 @@ export const LeadAnalytics = () => {
   useEffect(() => {
     setAdSetPage(1);
     setAdNamePage(1);
-  }, [timeFilter, commonTimeFilter]);
+  }, [timeFilter, commonTimeFilter, showTopRankedAdSets, showTopRankedAdNames]);
 
     // Helper function to render sortable table header
   const renderSortableHeader = (
@@ -423,15 +447,22 @@ export const LeadAnalytics = () => {
     label: string,
     currentSortField: string,
     currentSortOrder: 'asc' | 'desc',
-    onSort: (field: string) => void
+    onSort: (field: string) => void,
+    isDisabled: boolean = false
   ) => (
     <th 
-      className="text-left p-2 cursor-pointer hover:bg-gray-50 transition-colors"
-      onClick={() => onSort(field)}
+      className={`text-left p-2 transition-colors ${
+        isDisabled 
+          ? 'cursor-not-allowed opacity-60' 
+          : 'cursor-pointer hover:bg-gray-50'
+      }`}
+      onClick={isDisabled ? undefined : () => onSort(field)}
     >
       <div className="flex items-center gap-1">
         <span>{label}</span>
-        {currentSortField === field ? (
+        {isDisabled ? (
+          <Trophy className="w-3 h-3 text-orange-500" />
+        ) : currentSortField === field ? (
           currentSortOrder === 'desc' ? (
             <ChevronDown className="w-4 h-4 text-blue-600" />
           ) : (
@@ -859,24 +890,40 @@ export const LeadAnalytics = () => {
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-gray-600" />
                 <span className="text-sm font-medium text-gray-700">Table Time Filter:</span>
+                <Select value={commonTimeFilter} onValueChange={(value: string) => setCommonTimeFilter(value as 'all' | '7' | '14' | '30' | '60')}>
+                  <SelectTrigger className="w-40 h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Time</SelectItem>
+                    <SelectItem value="7">Last 7 Days</SelectItem>
+                    <SelectItem value="14">Last 14 Days</SelectItem>
+                    <SelectItem value="30">Last 30 Days</SelectItem>
+                    <SelectItem value="60">Last 60 Days</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <Select value={commonTimeFilter} onValueChange={(value: string) => setCommonTimeFilter(value as 'all' | '7' | '14' | '30' | '60')}>
-                <SelectTrigger className="w-40 h-9">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Time</SelectItem>
-                  <SelectItem value="7">Last 7 Days</SelectItem>
-                  <SelectItem value="14">Last 14 Days</SelectItem>
-                  <SelectItem value="30">Last 30 Days</SelectItem>
-                  <SelectItem value="60">Last 60 Days</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex items-center gap-2">
+                <Trophy className="h-4 w-4 text-orange-500" />
+                <span className="text-sm font-medium text-gray-700">Sort Mode:</span>
+                <Button
+                  variant={showTopRankedAdSets || showTopRankedAdNames ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => {
+                    setShowTopRankedAdSets(!showTopRankedAdSets);
+                    setShowTopRankedAdNames(!showTopRankedAdNames);
+                  }}
+                  className="flex items-center gap-1.5 text-xs"
+                >
+                  <Trophy className="h-3.5 w-3.5" />
+                  {showTopRankedAdSets || showTopRankedAdNames ? 'Show Custom Sort' : 'Top Ranked'}
+                </Button>
+              </div>
             </div>
 
             {/* Performance Tables Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Ad Set Performance Table */}
+                      {/* Ad Set Performance Table */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -884,12 +931,12 @@ export const LeadAnalytics = () => {
                   Top Ad Set Performance
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left p-2 w-16">S.No.</th>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                        <th className="text-left p-2 w-20 text-amber-900 font-semibold">Ranking</th>
                         {renderSortableHeader('adSetName', 'Ad Set Name', adSetSortField, adSetSortOrder, (field) => {
                           if (adSetSortField === field) {
                             setAdSetSortOrder(adSetSortOrder === 'asc' ? 'desc' : 'asc');
@@ -897,7 +944,7 @@ export const LeadAnalytics = () => {
                             setAdSetSortField(field as any);
                             setAdSetSortOrder('desc');
                           }
-                        })}
+                        }, showTopRankedAdSets)}
                         {renderSortableHeader('total', 'Total Leads', adSetSortField, adSetSortOrder, (field) => {
                           if (adSetSortField === field) {
                             setAdSetSortOrder(adSetSortOrder === 'asc' ? 'desc' : 'asc');
@@ -905,7 +952,7 @@ export const LeadAnalytics = () => {
                             setAdSetSortField(field as any);
                             setAdSetSortOrder('desc');
                           }
-                        })}
+                        }, showTopRankedAdSets)}
                         {renderSortableHeader('estimateSet', 'Estimate Set', adSetSortField, adSetSortOrder, (field) => {
                           if (adSetSortField === field) {
                             setAdSetSortOrder(adSetSortOrder === 'asc' ? 'desc' : 'asc');
@@ -913,7 +960,7 @@ export const LeadAnalytics = () => {
                             setAdSetSortField(field as any);
                             setAdSetSortOrder('desc');
                           }
-                        })}
+                        }, showTopRankedAdSets)}
                         {renderSortableHeader('percentage', 'Appointment %', adSetSortField, adSetSortOrder, (field) => {
                           if (adSetSortField === field) {
                             setAdSetSortOrder(adSetSortOrder === 'asc' ? 'desc' : 'asc');
@@ -921,25 +968,25 @@ export const LeadAnalytics = () => {
                             setAdSetSortField(field as any);
                             setAdSetSortOrder('desc');
                           }
-                        })}
-                      </tr>
-                    </thead>
-                    <tbody>
+                        }, showTopRankedAdSets)}
+                    </tr>
+                  </thead>
+                  <tbody>
                       {paginatedAdSetData.length > 0 ? (
                         paginatedAdSetData.map((adSet, index) => (
-                          <tr key={adSet.adSetName} className="border-b hover:bg-muted/50">
-                            <td className="p-2 text-gray-600 font-medium">
-                              {((adSetPage - 1) * adSetItemsPerPage) + index + 1}
+                      <tr key={adSet.adSetName} className="border-b hover:bg-muted/50">
+                            <td className="p-2 text-amber-900 font-semibold">
+                              #{((adSetPage - 1) * adSetItemsPerPage) + index + 1}
                             </td>
-                            <td className="p-2 font-medium">{adSet.adSetName}</td>
-                            <td className="text-right p-2">{adSet.total}</td>
-                            <td className="text-right p-2 text-green-600 font-medium">{adSet.estimateSet}</td>
-                            <td className="text-right p-2">
-                              <span className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">
-                                {adSet.percentage}%
-                              </span>
-                            </td>
-                          </tr>
+                        <td className="p-2 font-medium">{adSet.adSetName}</td>
+                        <td className="text-right p-2">{adSet.total}</td>
+                        <td className="text-right p-2 text-green-600 font-medium">{adSet.estimateSet}</td>
+                        <td className="text-right p-2">
+                          <span className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">
+                            {adSet.percentage}%
+                          </span>
+                        </td>
+                      </tr>
                         ))
                       ) : (
                         <tr>
@@ -950,14 +997,14 @@ export const LeadAnalytics = () => {
                           </td>
                         </tr>
                       )}
-                    </tbody>
-                  </table>
-                </div>
+                  </tbody>
+                </table>
+              </div>
                 {renderPagination(adSetPage, sortedAdSetData.length, setAdSetPage, adSetItemsPerPage)}
-              </CardContent>
-            </Card>
+            </CardContent>
+          </Card>
 
-            {/* Ad Name Performance Table */}
+                      {/* Ad Name Performance Table */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -965,12 +1012,12 @@ export const LeadAnalytics = () => {
                   Top Ad Name Performance
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left p-2 w-16">S.No.</th>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                        <th className="text-left p-2 w-20 text-amber-900 font-semibold">Ranking</th>
                         {renderSortableHeader('adName', 'Ad Name', adNameSortField, adNameSortOrder, (field) => {
                           if (adNameSortField === field) {
                             setAdNameSortOrder(adNameSortOrder === 'asc' ? 'desc' : 'asc');
@@ -978,7 +1025,7 @@ export const LeadAnalytics = () => {
                             setAdNameSortField(field as any);
                             setAdNameSortOrder('desc');
                           }
-                        })}
+                        }, showTopRankedAdNames)}
                         {renderSortableHeader('total', 'Total Leads', adNameSortField, adNameSortOrder, (field) => {
                           if (adNameSortField === field) {
                             setAdNameSortOrder(adNameSortOrder === 'asc' ? 'desc' : 'asc');
@@ -986,7 +1033,7 @@ export const LeadAnalytics = () => {
                             setAdNameSortField(field as any);
                             setAdNameSortOrder('desc');
                           }
-                        })}
+                        }, showTopRankedAdNames)}
                         {renderSortableHeader('estimateSet', 'Estimate Set', adNameSortField, adNameSortOrder, (field) => {
                           if (adNameSortField === field) {
                             setAdNameSortOrder(adNameSortOrder === 'asc' ? 'desc' : 'asc');
@@ -994,7 +1041,7 @@ export const LeadAnalytics = () => {
                             setAdNameSortField(field as any);
                             setAdNameSortOrder('desc');
                           }
-                        })}
+                        }, showTopRankedAdNames)}
                         {renderSortableHeader('percentage', 'Appointment %', adNameSortField, adNameSortOrder, (field) => {
                           if (adNameSortField === field) {
                             setAdNameSortOrder(adNameSortOrder === 'asc' ? 'desc' : 'asc');
@@ -1002,15 +1049,15 @@ export const LeadAnalytics = () => {
                             setAdNameSortField(field as any);
                             setAdNameSortOrder('desc');
                           }
-                        })}
-                      </tr>
-                    </thead>
-                    <tbody>
+                        }, showTopRankedAdNames)}
+                    </tr>
+                  </thead>
+                  <tbody>
                       {paginatedAdNameData.length > 0 ? (
                         paginatedAdNameData.map((ad, index) => (
                           <tr key={`${ad.adName}-${ad.adSetName}`} className="border-b hover:bg-muted/50">
-                            <td className="p-2 text-gray-600 font-medium">
-                              {((adNamePage - 1) * adNameItemsPerPage) + index + 1}
+                            <td className="p-2 text-amber-900 font-semibold">
+                              #{((adNamePage - 1) * adNameItemsPerPage) + index + 1}
                             </td>
                             <td className="p-2">
                               <div className="flex flex-col">
@@ -1020,14 +1067,14 @@ export const LeadAnalytics = () => {
                                 </span>
                               </div>
                             </td>
-                            <td className="text-right p-2">{ad.total}</td>
-                            <td className="text-right p-2 text-green-600 font-medium">{ad.estimateSet}</td>
-                            <td className="text-right p-2">
-                              <span className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">
-                                {ad.percentage}%
-                              </span>
-                            </td>
-                          </tr>
+                        <td className="text-right p-2">{ad.total}</td>
+                        <td className="text-right p-2 text-green-600 font-medium">{ad.estimateSet}</td>
+                        <td className="text-right p-2">
+                          <span className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">
+                            {ad.percentage}%
+                          </span>
+                        </td>
+                      </tr>
                         ))
                       ) : (
                         <tr>
@@ -1038,12 +1085,12 @@ export const LeadAnalytics = () => {
                           </td>
                         </tr>
                       )}
-                    </tbody>
-                  </table>
-                </div>
+                  </tbody>
+                </table>
+              </div>
                 {renderPagination(adNamePage, sortedAdNameData.length, setAdNamePage, adNameItemsPerPage)}
-              </CardContent>
-            </Card>
+            </CardContent>
+          </Card>
                       </div>
           </div>
           </>
