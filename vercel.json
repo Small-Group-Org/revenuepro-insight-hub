@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/((?!api|_next|_vercel|.*\\..*).*)",
+      "destination": "/index.html"
+    }
+  ]
+}
