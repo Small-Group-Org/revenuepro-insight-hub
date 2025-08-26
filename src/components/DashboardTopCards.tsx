@@ -146,7 +146,7 @@ export const DashboardTopCards: React.FC<DashboardTopCardsProps> = ({
       estimatesRan: 0,
       budgetSpent: 0
     });
-
+    
     // Calculate derived metrics
     const avgJobSize = totals.sales > 0 ? totals.revenue / totals.sales : 0;
     const costPerLead = totals.leads > 0 ? totals.budgetSpent / totals.leads : 0;

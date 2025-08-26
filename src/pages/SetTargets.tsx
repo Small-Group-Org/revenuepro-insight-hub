@@ -27,6 +27,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { FullScreenLoader } from "@/components/ui/full-screen-loader";
+import { useCombinedLoading } from "@/hooks/useCombinedLoading";
 
 export const SetTargets = () => {
   const { toast } = useToast();
@@ -48,7 +50,8 @@ export const SetTargets = () => {
   const [showPriorityModal, setShowPriorityModal] = useState(false);
   const [pendingSaveData, setPendingSaveData] = useState<any>(null);
 
-  const { upsertWeeklyTarget, isLoading, error, getTargetsForUser, currentTarget } = useTargetStore();
+  const { upsertWeeklyTarget, error, getTargetsForUser, currentTarget } = useTargetStore();
+  const { isLoading } = useCombinedLoading();
   const selectedYear = selectedDate.getFullYear();
   const { selectedUserId } = useUserStore();
   const { user } = useAuthStore();
@@ -519,6 +522,9 @@ export const SetTargets = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+      {/* Full Screen Loader */}
+      <FullScreenLoader isLoading={isLoading} message="Loading targets..." />
     </div>
   );
 };

@@ -25,6 +25,8 @@ import { targetFields, reportingFields } from "@/utils/constant";
 import { FieldValue } from "@/types";
 import { exportToExcel, ExportData } from "@/utils/excelExport";
 import { useUserStore } from "@/stores/userStore";
+import { FullScreenLoader } from "@/components/ui/full-screen-loader";
+import { useCombinedLoading } from "@/hooks/useCombinedLoading";
 
 export const CompareResults = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -33,6 +35,7 @@ export const CompareResults = () => {
   );
 
   const { reportingData, targetData, getReportingData } = useReportingDataStore();
+  const { isLoading } = useCombinedLoading();
   const { selectedUserId } = useUserStore();
   // Fetch actual+target data from single API
   useEffect(() => {
@@ -94,6 +97,8 @@ export const CompareResults = () => {
     if (!processedActualData) return {};
     
     const actual = processedActualData;
+    console.log("[]", {actual});
+    
     const metrics: FieldValue = {};
 
     // Map reporting fields to comparison metrics
@@ -159,7 +164,7 @@ export const CompareResults = () => {
     metrics.budget = actual.budgetSpent || 0;
     
     // COM% from target data
-    metrics.com = processedTargetData?.com || 0;
+    metrics.com = actual.revenue > 0 ? (actual.budgetSpent / actual.revenue) * 100 : 0;
     
     if (metrics.revenue > 0 && period !== "weekly") {
       let managementCost = 0;
@@ -491,6 +496,9 @@ export const CompareResults = () => {
           ))}
         </div>
       </div>
+      
+      {/* Full Screen Loader */}
+      <FullScreenLoader isLoading={isLoading} message="Loading comparison data..." />
     </div>
   );
 };
