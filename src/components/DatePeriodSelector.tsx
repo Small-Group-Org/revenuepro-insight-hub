@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { ChevronLeft, ChevronRight, Loader2, Info } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -13,6 +13,44 @@ import { getWeekInfo, formatWeekRange } from "@/utils/weekLogic";
 import { PeriodType } from "@/types";
 import { DisableMetadata } from "@/types";
 
+// Custom debounce hook
+const useDebounce = <T extends (...args: any[]) => void>(
+  callback: T,
+  delay: number
+): [T, boolean] => {
+  const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null);
+  const [isPending, setIsPending] = useState(false);
+
+  const debouncedCallback = useCallback(
+    (...args: Parameters<T>) => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      
+      setIsPending(true);
+      
+      const newTimeoutId = setTimeout(() => {
+        callback(...args);
+        setIsPending(false);
+      }, delay);
+      
+      setTimeoutId(newTimeoutId);
+    },
+    [callback, delay, timeoutId]
+  ) as T;
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [timeoutId]);
+
+  return [debouncedCallback, isPending];
+};
+
 interface DatePeriodSelectorProps {
   initialDate?: Date;
   initialPeriod?: PeriodType;
@@ -23,6 +61,12 @@ interface DatePeriodSelectorProps {
   disableLogic?: DisableMetadata;
   onDisableStatusChange?: (status: DisableMetadata) => void;
   onNavigationAttempt?: (newDate: Date, newPeriod: PeriodType) => boolean; // Returns true if navigation should proceed
+  /** 
+   * Debounce delay in milliseconds for onChange calls. 
+   * Prevents excessive API calls when users quickly change dates/periods.
+   * Default: 300ms
+   */
+  debounceDelay?: number;
 }
 
 export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
@@ -35,10 +79,19 @@ export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
   disableLogic,
   onDisableStatusChange,
   onNavigationAttempt,
+  debounceDelay = 700, // Default 300ms debounce delay
 }) => {
   const [selectedDate, setSelectedDate] = useState<Date>(initialDate);
   const [period, setPeriod] = useState<PeriodType>(
     allowedPeriods.includes(initialPeriod) ? initialPeriod : allowedPeriods[0]
+  );
+
+  // Debounced onChange callback with pending state
+  const [debouncedOnChange, isChangePending] = useDebounce(
+    useCallback((date: Date, newPeriod: PeriodType) => {
+      onChange?.(date, newPeriod);
+    }, [onChange]),
+    debounceDelay
   );
 
   const getButtonText = () => {
@@ -102,7 +155,8 @@ export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
     }
     
     setSelectedDate(newDate);
-    onChange?.(newDate, period);
+    // Use debounced onChange to prevent rapid API calls
+    debouncedOnChange(newDate, period);
   };
 
   const handleNext = () => {
@@ -125,7 +179,8 @@ export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
     }
     
     setSelectedDate(newDate);
-    onChange?.(newDate, period);
+    // Use debounced onChange to prevent rapid API calls
+    debouncedOnChange(newDate, period);
   };
 
   const handlePeriodChange = (value: PeriodType) => {
@@ -140,9 +195,11 @@ export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
       const currentDate = new Date();
       const currentYear = currentDate.getFullYear();
       const yearStart = new Date(currentYear, 0, 1);
-      onChange?.(yearStart, value);
+      // Use debounced onChange to prevent rapid API calls
+      debouncedOnChange(yearStart, value);
     } else {
-      onChange?.(selectedDate, value);
+      // Use debounced onChange to prevent rapid API calls
+      debouncedOnChange(selectedDate, value);
     }
   };
 
