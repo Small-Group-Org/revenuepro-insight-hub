@@ -239,7 +239,7 @@ export const DashboardTopCards: React.FC<DashboardTopCardsProps> = ({
       description: "Total number of leads generated."
     },
     {
-      title: "Appointment Metrics",
+      title: "Appointment Set Metrics",
       icon: <Calendar className="h-5 w-5 opacity-50 text-primary-light" />,
       metrics: [
         {
@@ -248,7 +248,7 @@ export const DashboardTopCards: React.FC<DashboardTopCardsProps> = ({
           format: 'number' as const
         },
         {
-          label: "Cost per Appointment",
+          label: "Cost per Appointment Set",
           value: aggregatedMetrics.costPerAppointmentSet,
           format: 'currency' as const
         }
