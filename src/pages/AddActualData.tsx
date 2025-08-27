@@ -14,9 +14,12 @@ import { processTargetData } from '@/utils/page-utils/targetUtils';
 import { getWeekInfo } from '@/utils/weekLogic';
 import { useUserStore } from '@/stores/userStore';
 import { useRoleAccess } from '@/hooks/useRoleAccess';
+import { FullScreenLoader } from '@/components/ui/full-screen-loader';
+import { useCombinedLoading } from '@/hooks/useCombinedLoading';
 
 export const AddActualData = () => {
-  const { reportingData, targetData, getReportingData, upsertReportingData, isLoading, error } = useReportingDataStore();
+  const { reportingData, targetData, getReportingData, upsertReportingData, error } = useReportingDataStore();
+  const { isLoading } = useCombinedLoading();
   const { toast } = useToast();
   const { selectedUserId } = useUserStore();
   const { userRole } = useRoleAccess();
@@ -110,9 +113,9 @@ React.useEffect(() => {
 
   // Calculate disable logic for AddActualData page with role-based restrictions
   const disableLogic = useMemo(() => 
-    handleInputDisable(period, selectedDate, null, 'addActualData', userRole), 
-    [period, selectedDate, userRole]
-  );
+    handleInputDisable(period, selectedDate, null, 'addActualData'), 
+    [period, selectedDate]
+  );  
 
   const { isDisabled, disabledMessage } = disableLogic;
 
@@ -284,6 +287,9 @@ React.useEffect(() => {
           />
         </div>
       </div>
+      
+      {/* Full Screen Loader */}
+      <FullScreenLoader isLoading={isLoading} message="Loading reporting data..." />
     </div>
   );
 };

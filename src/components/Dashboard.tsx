@@ -19,6 +19,8 @@ import {
   performanceMetricsChartConfigs 
 } from '@/utils/constant';
 import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
+import { FullScreenLoader } from '@/components/ui/full-screen-loader';
+import { useCombinedLoading } from '@/hooks/useCombinedLoading';
 
 
 export const Dashboard = () => {
@@ -36,6 +38,8 @@ export const Dashboard = () => {
     processedComparisonData
   } = useDashboardMetrics();
   
+  const { isLoading } = useCombinedLoading();
+
   // State for comparison data
   const [comparisonPeriod, setComparisonPeriod] = useState<string>('');
   const [isComparisonEnabled, setIsComparisonEnabled] = useState<boolean>(false);
@@ -223,6 +227,9 @@ export const Dashboard = () => {
           />
         </div>
       </div>
+      
+      {/* Full Screen Loader */}
+      <FullScreenLoader isLoading={isLoading} message="Loading dashboard data..." />
     </div>
   );
 };

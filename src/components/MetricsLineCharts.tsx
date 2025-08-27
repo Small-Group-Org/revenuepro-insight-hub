@@ -535,7 +535,7 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
                       }
                       tickFormatter={
                         config.format === "percent"
-                          ? (value) => `${value}%`
+                          ? (value) => `${Math.round(value)}%`
                           : config.format === "currency"
                           ? (value) => `$${value.toLocaleString()}`
                           : undefined

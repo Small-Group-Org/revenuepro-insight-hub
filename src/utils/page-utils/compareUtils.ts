@@ -128,21 +128,6 @@ export const handleInputDisable = (
   const shouldDisableNonRevenueFields = false;
   let isButtonDisabled = false;
 
-  // Role-based restrictions
-  if (pageType === "addActualData" && userRole !== 'ADMIN') {
-    isDisabled = true;
-    isButtonDisabled = true;
-    disabledMessage = "Only Revenue PRO team members can modify actual data";
-    noteMessage = "Access restricted to Revenue PRO team members";
-    return {
-      isDisabled,
-      disabledMessage,
-      noteMessage,
-      shouldDisableNonRevenueFields,
-      isButtonDisabled,
-    };
-  }
-
   if (pageType === "leadSheet" && userRole !== 'ADMIN') {
     isDisabled = true;
     isButtonDisabled = true;
