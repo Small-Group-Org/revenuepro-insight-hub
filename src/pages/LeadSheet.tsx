@@ -837,7 +837,7 @@ export const LeadSheet = () => {
                                       <span className="font-semibold text-gray-800">{lead.tooltipData.adNameRate}%</span>
                                     </div>
                                     <div className="flex justify-between text-xs">
-                                      <span className="text-gray-600">Month ({new Date(lead.leadDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}):</span>
+                                      <span className="text-gray-600">Month ({new Date(lead.leadDate).toLocaleDateString('en-US', { month: 'long' })}):</span>
                                       <span className="font-semibold text-gray-800">{lead.tooltipData.dateRate}%</span>
                                     </div>
                                     <div className="flex justify-between text-xs">
