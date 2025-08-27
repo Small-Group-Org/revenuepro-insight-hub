@@ -71,4 +71,12 @@ export interface Lead {
   clientId: string;
   unqualifiedLeadReason?: string;
   updatedAt?: string;
+  leadScore?: number;
+  conversionRates?: {
+    service: number;
+    adSetName: number;
+    adName: number;
+    leadDate: number;
+    zip: number;
+  };
 }
