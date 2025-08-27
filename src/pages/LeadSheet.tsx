@@ -12,7 +12,7 @@ import { handleInputDisable } from '@/utils/page-utils/compareUtils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { TopCard } from '@/components/DashboardTopCards';
-import { calculateLeadScore, getScoreInfo, getStatusInfo, FIELD_WEIGHTS, getConversionRate, getDateConversionRate } from '@/utils/leadProcessing';
+import { getScoreInfo, getStatusInfo, FIELD_WEIGHTS } from '@/utils/leadProcessing';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 // ULR = Unqualified Lead Reason
@@ -35,7 +35,7 @@ export const LeadSheet = () => {
   const [ulrFilter, setUlrFilter] = useState<string>('');
   const [showFilters, setShowFilters] = useState<boolean>(false);
   
-  const { leads, conversionRates, loading, error, fetchLeads, fetchConversionRates, updateLeadData, updateLeadLocal } = useLeadStore();
+  const { leads, loading, error, fetchLeads, updateLeadData, updateLeadLocal } = useLeadStore();
   const { selectedUserId } = useUserStore();
 
   // Calculate disable logic for LeadSheet page with role-based restrictions
@@ -121,14 +121,13 @@ export const LeadSheet = () => {
     return { startDate, endDate };
   }, []);
 
-  // Fetch leads and conversion rates when selectedUserId, selectedDate, or period changes
+  // Fetch leads when selectedUserId, selectedDate, or period changes
   useEffect(() => {
     if (selectedUserId) {
       const { startDate, endDate } = getDateRange(selectedDate, period);
       fetchLeads(selectedUserId, startDate, endDate);
-      fetchConversionRates(selectedUserId);
     }
-  }, [selectedUserId, selectedDate, period, fetchLeads, fetchConversionRates, getDateRange]);
+  }, [selectedUserId, selectedDate, period, fetchLeads, getDateRange]);
 
   useEffect(() => {
     if (error) {
@@ -231,22 +230,19 @@ export const LeadSheet = () => {
     return format(new Date(dateString), 'MMM dd, yyyy');
   }, []);
 
-  // Pre-process leads with scores and tooltip data when leads or conversion rates change
+  // Pre-process leads with backend-provided scores and conversion rates
   const processedLeads = useMemo(() => {
     return leads.map(lead => {
-      const score = calculateLeadScore(lead, conversionRates);
+      // Use backend-provided lead score
+      const score = lead.leadScore || 0;
       
-      // Pre-calculate tooltip data to avoid recalculations on hover
-      const serviceRate = getConversionRate(conversionRates, 'service', lead.service);
-      const adSetRate = getConversionRate(conversionRates, 'adSet', lead.adSetName);
-      const adNameRate = getConversionRate(conversionRates, 'adName', lead.adName);
-      const dateRate = getDateConversionRate(conversionRates, lead.leadDate);
-      
+      // Use backend-provided conversion rates for tooltip
       const tooltipData = {
-        serviceRate: serviceRate.toFixed(1),
-        adSetRate: adSetRate.toFixed(1),
-        adNameRate: adNameRate.toFixed(1),
-        dateRate: dateRate.toFixed(1)
+        serviceRate: lead.conversionRates?.service ? (lead.conversionRates.service * 100).toFixed(1) : '0.0',
+        adSetRate: lead.conversionRates?.adSetName ? (lead.conversionRates.adSetName * 100).toFixed(1) : '0.0',
+        adNameRate: lead.conversionRates?.adName ? (lead.conversionRates.adName * 100).toFixed(1) : '0.0',
+        dateRate: lead.conversionRates?.leadDate ? (lead.conversionRates.leadDate * 100).toFixed(1) : '0.0',
+        zipRate: lead.conversionRates?.zip ? (lead.conversionRates.zip * 100).toFixed(1) : '0.0'
       };
       
       return {
@@ -255,7 +251,7 @@ export const LeadSheet = () => {
         tooltipData
       };
     });
-  }, [leads, conversionRates]);
+  }, [leads]);
 
 
 
@@ -841,8 +837,12 @@ export const LeadSheet = () => {
                                       <span className="font-semibold text-gray-800">{lead.tooltipData.adNameRate}%</span>
                                     </div>
                                     <div className="flex justify-between text-xs">
-                                      <span className="text-gray-600">Date ({formatDate(lead.leadDate)}):</span>
+                                      <span className="text-gray-600">Month ({new Date(lead.leadDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}):</span>
                                       <span className="font-semibold text-gray-800">{lead.tooltipData.dateRate}%</span>
+                                    </div>
+                                    <div className="flex justify-between text-xs">
+                                      <span className="text-gray-600">Zip ({lead.zip}):</span>
+                                      <span className="font-semibold text-gray-800">{lead.tooltipData.zipRate}%</span>
                                     </div>
                                   </div>
 
@@ -850,7 +850,7 @@ export const LeadSheet = () => {
                                   <div className="bg-gray-100 px-3 py-2 rounded-lg">
                                   <div className="text-xs font-semibold text-gray-700 mb-1">Weights:</div>
                                     <p className="text-xs text-gray-500">
-                                      (Service - {FIELD_WEIGHTS.service}% • Ad Set - {FIELD_WEIGHTS.adSet}% • Ad Name - {FIELD_WEIGHTS.adName}% • Date - {FIELD_WEIGHTS.date}%)
+                                      (Service - {FIELD_WEIGHTS.service}% • Ad Set - {FIELD_WEIGHTS.adSetName}% • Ad Name - {FIELD_WEIGHTS.adName}% • Month - {FIELD_WEIGHTS.leadDate}% • Zip - {FIELD_WEIGHTS.zip}%)
                                     </p>
                                   </div>
                                 </div>
@@ -894,6 +894,15 @@ export const LeadSheet = () => {
                               >
                                 {lead.phone}
                               </a>
+                            </div>
+                            <div className="flex items-center gap-1 text-xs">
+                              <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                              </svg>
+                              <span className="text-blue-600">
+                                {lead.zip}
+                              </span>
                             </div>
                           </div>
                             </div>

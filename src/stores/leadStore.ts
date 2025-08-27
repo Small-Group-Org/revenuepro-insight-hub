@@ -6,18 +6,14 @@ import {
   GetLeadsPayload, 
   UpdateLeadPayload
 } from "@/service/leadService";
-import { getConversionRates } from "@/service/conversionRateService";
-import { ConversionRate } from "@/utils/leadProcessing";
 
 
 interface LeadStoreState {
   leads: Lead[];
-  conversionRates: ConversionRate[];
   loading: boolean;
   error?: string;
   selectedClientId?: string;
   fetchLeads: (clientId?: string, startDate?: string, endDate?: string) => Promise<void>;
-  fetchConversionRates: (clientId?: string) => Promise<void>;
   updateLeadData: (payload: UpdateLeadPayload) => Promise<{ error: boolean; message?: string }>;
   updateLeadLocal: (leadId: string, updates: Partial<Lead>) => void;
   clearLeads: () => void;
@@ -25,7 +21,6 @@ interface LeadStoreState {
 
 export const useLeadStore = create<LeadStoreState>((set, get) => ({
   leads: [],
-  conversionRates: [],
   loading: false,
   error: undefined,
   selectedClientId: undefined,
@@ -59,22 +54,7 @@ export const useLeadStore = create<LeadStoreState>((set, get) => ({
     }
   },
 
-  fetchConversionRates: async (clientId?: string) => {
-    try {
-      const payload = clientId ? { clientId } : undefined;
-      const res = await getConversionRates(payload);
-      
-      if (!res.error && res.data && res.data.success && res.data.data) {
-        set({ conversionRates: res.data.data });
-      } else {
-        console.warn('Failed to fetch conversion rates:', res.message || res.data?.message);
-        set({ conversionRates: [] });
-      }
-    } catch (error) {
-      console.error('Error fetching conversion rates:', error);
-      set({ conversionRates: [] });
-    }
-  },
+
 
   updateLeadData: async (payload: UpdateLeadPayload) => {
     try {
@@ -116,6 +96,6 @@ export const useLeadStore = create<LeadStoreState>((set, get) => ({
   },
 
   clearLeads: () => {
-    set({ leads: [], conversionRates: [], error: undefined, selectedClientId: undefined });
+    set({ leads: [], error: undefined, selectedClientId: undefined });
   },
 }));

@@ -1,71 +1,16 @@
 import { Lead } from '@/types';
 
-export interface ConversionRate {
-  clientId: string;
-  keyName: string;
-  keyField: string;
-  conversionRate: number;
-  pastTotalCount: number;
-  pastTotalEst: number;
-}
-
 export const FIELD_WEIGHTS = {
   service: 30,
-  adSet: 30,
-  adName: 20,
-  date: 20,
+  adSetName: 20, 
+  adName: 10,
+  leadDate: 15,
+  zip: 25
 } as const;
 
-export const getConversionRate = (
-  conversionRates: ConversionRate[],
-  field: string,
-  value: string
-): number => {
-  const rate = conversionRates.find(
-    cr => cr.keyField === field && cr.keyName === value
-  );
-  return rate?.conversionRate || 0;
-};
 
-// Helper function to get date-based conversion rate (monthly)
-export const getDateConversionRate = (
-  conversionRates: ConversionRate[],
-  leadDate: string
-): number => {
-  const date = new Date(leadDate);
-  const monthYear = date.toLocaleDateString('en-US', { 
-    month: 'long', 
-    year: 'numeric' 
-  });
-  
-  return getConversionRate(conversionRates, 'date', monthYear);
-};
 
-export const calculateLeadScore = (
-  lead: Lead,
-  conversionRates: ConversionRate[]
-): number => {
-  if (!conversionRates || conversionRates.length === 0) {
-    return 0;
-  }
 
-  const serviceRate = getConversionRate(conversionRates, 'service', lead.service);
-  const adSetRate = getConversionRate(conversionRates, 'adSet', lead.adSetName);
-  const adNameRate = getConversionRate(conversionRates, 'adName', lead.adName);
-  const dateRate = getDateConversionRate(conversionRates, lead.leadDate);
-
-  const weightedScore = 
-    (serviceRate * FIELD_WEIGHTS.service) +
-    (adSetRate * FIELD_WEIGHTS.adSet) +
-    (adNameRate * FIELD_WEIGHTS.adName) +
-    (dateRate * FIELD_WEIGHTS.date);
-
-  let finalScore = weightedScore / 100;
-  // Ensure score is between 0 and 100 and round to nearest integer
-  finalScore = Math.round(Math.max(0, Math.min(100, finalScore)));
-  console.log("Final Score:", finalScore);
-  return finalScore;
-};
 
 export const getScoreInfo = (score: number) => {
   if (score >= 80) return { 
