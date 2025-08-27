@@ -54,7 +54,7 @@ export const getXAxisLabels = (period: PeriodType, selectedDate: Date, dataLengt
       metric1Key: 'estimatesSet',
       metric2Key: 'cpEstimateSet',
       title: 'Appointments Set & Cost',
-      description: 'Number of appointments set vs cost per appointment',
+      description: 'Number of appointments set vs cost per appointment set',
       metric1Config: {
         key: "estimatesSet",
         title: "Appointments Set",
@@ -63,7 +63,7 @@ export const getXAxisLabels = (period: PeriodType, selectedDate: Date, dataLengt
       },
       metric2Config: {
         key: "cpEstimateSet",
-        title: "Cost per Appointment",
+        title: "Cost per Appointment Set",
         actualColor: "#649cf7",
         format: "currency"
       }
@@ -73,7 +73,7 @@ export const getXAxisLabels = (period: PeriodType, selectedDate: Date, dataLengt
       metric1Key: 'estimatesRan',
       metric2Key: 'cpEstimate',
       title: 'Appointments & Cost',
-      description: 'Number of appointments completed vs cost per appointment',
+      description: 'Number of appointments completed vs cost per appointment set',
       metric1Config: {
         key: "estimatesRan",
         title: "Appointments",
@@ -82,7 +82,7 @@ export const getXAxisLabels = (period: PeriodType, selectedDate: Date, dataLengt
       },
       metric2Config: {
         key: "cpEstimate",
-        title: "Cost per Appointment",
+        title: "Cost per Appointment Set",
         actualColor: "#649cf7",
         format: "currency"
       }
