@@ -14,6 +14,75 @@ import { Badge } from '@/components/ui/badge';
 import { TopCard } from '@/components/DashboardTopCards';
 import { getScoreInfo, getStatusInfo, FIELD_WEIGHTS } from '@/utils/leadProcessing';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
+
+// Memoized component for summary cards to prevent unnecessary re-renders
+const LeadSummaryCards = React.memo(({ statusCounts }: { statusCounts: { new: number; inProgress: number; estimateSet: number; unqualified: number } | null }) => (
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
+    <TopCard
+      title="New Leads"
+      icon={<Users className="h-5 w-5 opacity-50 text-blue-500" />}
+      metrics={[
+        {
+          label: "New Leads",
+          value: statusCounts?.new || 0,
+          format: 'number'
+        }
+      ]}
+      description="Leads that are newly received and not yet processed."
+      twoRowDesign={true}
+    />
+    <TopCard
+      title="In Progress Leads"
+      icon={<Users className="h-5 w-5 opacity-50 text-yellow-500" />}
+      metrics={[
+        {
+          label: "In Progress Leads",
+          value: statusCounts?.inProgress || 0,
+          format: 'number'
+        }
+      ]}
+      description="Leads currently being worked on by the team."
+      twoRowDesign={true}
+    />
+    <TopCard
+      title="Estimate Set Leads"
+      icon={<Users className="h-5 w-5 opacity-50 text-green-500" />}
+      metrics={[
+        {
+          label: "Estimate Set Leads",
+          value: statusCounts?.estimateSet || 0,
+          format: 'number'
+        }
+      ]}
+      description="Leads where estimates have been provided to customers."
+      twoRowDesign={true}
+    />
+    <TopCard
+      title="Unqualified Leads"
+      icon={<Users className="h-5 w-5 opacity-50 text-red-500" />}
+      metrics={[
+        {
+          label: "Unqualified Leads",
+          value: statusCounts?.unqualified || 0,
+          format: 'number'
+        }
+      ]}
+      description="Leads that don't meet qualification criteria."
+      twoRowDesign={true}
+    />
+  </div>
+));
+
+LeadSummaryCards.displayName = 'LeadSummaryCards';
 
 // ULR = Unqualified Lead Reason
 export const LeadSheet = () => {
@@ -24,18 +93,29 @@ export const LeadSheet = () => {
   const [pendingULRLeadId, setPendingULRLeadId] = useState<string | null>(null);
   const [customULR, setCustomULR] = useState<string>('');
   const [showCustomInput, setShowCustomInput] = useState<string | null>(null);
-  const [sortMode, setSortMode] = useState<'date' | 'score'>('date');
-  const [dateOrder, setDateOrder] = useState<'asc' | 'desc'>('desc');
-  const [scoreOrder, setScoreOrder] = useState<'asc' | 'desc'>('desc');
-  
-  // Filter states
-  const [adsetFilter, setAdsetFilter] = useState<string>('');
-  const [adFilter, setAdFilter] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<string>('');
-  const [ulrFilter, setUlrFilter] = useState<string>('');
   const [showFilters, setShowFilters] = useState<boolean>(false);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(25);
   
-  const { leads, loading, error, fetchLeads, updateLeadData, updateLeadLocal } = useLeadStore();
+  const { 
+    leads, 
+    loading, 
+    error, 
+    pagination,
+    filterOptions,
+    statusCounts,
+    filterOptionsLoading,
+    currentFilters,
+    currentSorting,
+    fetchPaginatedLeads, 
+    fetchFilterOptions,
+    exportAllFilteredLeads,
+    updateLeadData, 
+    updateLeadLocal,
+    setFilters,
+    setSorting,
+    clearFilters
+  } = useLeadStore();
   const { selectedUserId } = useUserStore();
 
   // Calculate disable logic for LeadSheet page with role-based restrictions
@@ -121,13 +201,38 @@ export const LeadSheet = () => {
     return { startDate, endDate };
   }, []);
 
-  // Fetch leads when selectedUserId, selectedDate, or period changes
+  // Fetch filter options once when component loads or date/period changes
   useEffect(() => {
     if (selectedUserId) {
       const { startDate, endDate } = getDateRange(selectedDate, period);
-      fetchLeads(selectedUserId, startDate, endDate);
+      
+      // Fetch filter options and status counts
+      fetchFilterOptions({
+        clientId: selectedUserId,
+        startDate,
+        endDate
+      });
     }
-  }, [selectedUserId, selectedDate, period, fetchLeads, getDateRange]);
+  }, [selectedUserId, selectedDate, period, fetchFilterOptions, getDateRange]);
+
+  // Fetch paginated leads when filters, sorting, or pagination changes
+  useEffect(() => {
+    if (selectedUserId) {
+      const { startDate, endDate } = getDateRange(selectedDate, period);
+      
+      // Fetch paginated leads
+      fetchPaginatedLeads({
+        clientId: selectedUserId,
+        startDate,
+        endDate,
+        page: currentPage,
+        limit: pageSize,
+        sortBy: currentSorting.sortBy,
+        sortOrder: currentSorting.sortOrder,
+        ...currentFilters
+      });
+    }
+  }, [selectedUserId, selectedDate, period, currentPage, pageSize, currentSorting, currentFilters, fetchPaginatedLeads, getDateRange]);
 
   useEffect(() => {
     if (error) {
@@ -230,7 +335,21 @@ export const LeadSheet = () => {
     return format(new Date(dateString), 'MMM dd, yyyy');
   }, []);
 
-  // Pre-process leads with backend-provided scores and conversion rates
+  // Pre-compute unique values for filter options (now from backend)
+  const uniqueAdsets = useMemo(() => {
+    return filterOptions?.adSetNames || [];
+  }, [filterOptions?.adSetNames]);
+
+  const uniqueAds = useMemo(() => {
+    return filterOptions?.adNames || [];
+  }, [filterOptions?.adNames]);
+
+  const uniqueULRs = useMemo(() => {
+    return filterOptions?.unqualifiedLeadReasons || [];
+  }, [filterOptions?.unqualifiedLeadReasons]);
+
+  // With backend pagination, we don't need to filter or sort on frontend
+  // The backend handles all filtering and sorting
   const processedLeads = useMemo(() => {
     return leads.map(lead => {
       // Use backend-provided lead score
@@ -253,123 +372,91 @@ export const LeadSheet = () => {
     });
   }, [leads]);
 
-
-
-  // Pre-compute unique values for filter options
-  const uniqueAdsets = useMemo(() => {
-    const adsets = [...new Set(processedLeads.map(lead => lead.adSetName))].sort();
-    return adsets;
-  }, [processedLeads]);
-
-  const uniqueAds = useMemo(() => {
-    const ads = [...new Set(processedLeads.map(lead => lead.adName))].sort();
-    return ads;
-  }, [processedLeads]);
-
-  const uniqueULRs = useMemo(() => {
-    const ulrs = [...new Set(processedLeads
-      .filter(lead => lead.status === 'unqualified' && lead.unqualifiedLeadReason)
-      .map(lead => lead.unqualifiedLeadReason!)
-    )].sort();
-    return ulrs;
-  }, [processedLeads]);
-
-  // Filter leads based on selected filters (using pre-processed data)
-  const filteredLeads = useMemo(() => {
-    return processedLeads.filter(lead => {
-      // Adset filter
-      if (adsetFilter && !lead.adSetName.toLowerCase().includes(adsetFilter.toLowerCase())) {
-        return false;
-      }
-      
-      // Ad filter
-      if (adFilter && !lead.adName.toLowerCase().includes(adFilter.toLowerCase())) {
-        return false;
-      }
-      
-      // Status filter
-      if (statusFilter && lead.status !== statusFilter) {
-        return false;
-      }
-      
-      // Unqualified reason filter
-      if (ulrFilter) {
-        if (lead.status !== 'unqualified') {
-          return false;
-        }
-        if (!lead.unqualifiedLeadReason || !lead.unqualifiedLeadReason.toLowerCase().includes(ulrFilter.toLowerCase())) {
-          return false;
-        }
-      }
-      
-      return true;
-    });
-  }, [processedLeads, adsetFilter, adFilter, statusFilter, ulrFilter]);
-
-  // Apply sorting to filtered leads (scores already pre-calculated)
-  const sortedLeads = useMemo(() => {
-    const compareScoreDesc = (a: { score: number }, b: { score: number }) => b.score - a.score;
-    const compareScorePrimary = (a: { score: number }, b: { score: number }) =>
-      scoreOrder === 'desc' ? b.score - a.score : a.score - b.score;
-
-    const compareDateDesc = (a: { leadDate: string }, b: { leadDate: string }) => {
-      const aDate = new Date(a.leadDate).getTime();
-      const bDate = new Date(b.leadDate).getTime();
-      return bDate - aDate; // Newest first
-    };
-
-    const compareDatePrimary = (a: { leadDate: string }, b: { leadDate: string }) => {
-      const aDate = new Date(a.leadDate).getTime();
-      const bDate = new Date(b.leadDate).getTime();
-      return dateOrder === 'desc' ? bDate - aDate : aDate - bDate;
-    };
-
-    return filteredLeads.sort((a, b) => {
-      if (sortMode === 'date') {
-        const byDate = compareDatePrimary(a, b);
-        if (byDate !== 0) return byDate;
-        return compareScoreDesc(a, b);
-      } else {
-        const byScore = compareScorePrimary(a, b);
-        if (byScore !== 0) return byScore;
-        return compareDateDesc(a, b);
-      }
-    });
-  }, [filteredLeads, sortMode, dateOrder, scoreOrder]);
-
   // Clear all filters
-  const clearFilters = useCallback(() => {
-    setAdsetFilter('');
-    setAdFilter('');
-    setStatusFilter('');
-    setUlrFilter('');
+  const handleClearFilters = useCallback(() => {
+    clearFilters();
     setShowFilters(false);
-  }, []);
+    setCurrentPage(1); // Reset to first page when clearing filters
+  }, [clearFilters]);
 
   // Check if any filters are active
   const hasActiveFilters = useMemo(() => {
-    return adsetFilter || adFilter || statusFilter || ulrFilter;
-  }, [adsetFilter, adFilter, statusFilter, ulrFilter]);
+    return currentFilters.adSet || currentFilters.adName || currentFilters.status || currentFilters.ulr;
+  }, [currentFilters]);
 
 
 
   // Excel Export Function
-  const exportToExcel = useCallback(() => {
+  const exportToExcel = useCallback(async (exportType: 'current' | 'all') => {
     try {
-      // Prepare data for export
-      const exportData = sortedLeads.map(lead => ({
-        'Lead Name': lead.name,
-        'Email': lead.email,
-        'Phone': lead.phone,
-        'Service': lead.service,
-        'ZIP Code': lead.zip,
-        'Lead Date': formatDate(lead.leadDate),
-        'Ad Set Name': lead.adSetName,
-        'Ad Name': lead.adName,
-        'Lead Status': getStatusInfo(lead.status).label,
-        'Lead Score': lead.score,
-        'Unqualified Reason': lead.status === 'unqualified' ? (lead.unqualifiedLeadReason || 'Not specified') : '',
-      }));
+      let exportData: any[] = [];
+      let fileName = '';
+      let description = '';
+
+      if (exportType === 'current') {
+        // Export current page data
+        exportData = processedLeads.map(lead => ({
+          'Lead Name': lead.name,
+          'Email': lead.email,
+          'Phone': lead.phone,
+          'Service': lead.service,
+          'ZIP Code': lead.zip,
+          'Lead Date': formatDate(lead.leadDate),
+          'Ad Set Name': lead.adSetName,
+          'Ad Name': lead.adName,
+          'Lead Status': getStatusInfo(lead.status).label,
+          'Lead Score': lead.score,
+          'Unqualified Reason': lead.status === 'unqualified' ? (lead.unqualifiedLeadReason || 'Not specified') : '',
+        }));
+        fileName = `leads_current_page_${format(new Date(), 'yyyyMMdd_HHmmss')}.csv`;
+        description = `Exported ${exportData.length} leads from current page.`;
+      } else {
+        // Export all filtered data
+        if (!selectedUserId) {
+          toast({
+            title: "❌ Export Failed",
+            description: "No user selected for export.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        const { startDate, endDate } = getDateRange(selectedDate, period);
+        
+        const result = await exportAllFilteredLeads({
+          clientId: selectedUserId,
+          startDate,
+          endDate,
+          sortBy: currentSorting.sortBy,
+          sortOrder: currentSorting.sortOrder,
+          ...currentFilters
+        });
+
+        if (result.error) {
+          toast({
+            title: "❌ Export Failed",
+            description: result.message || "Failed to export all leads.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        exportData = (result.data || []).map(lead => ({
+          'Lead Name': lead.name,
+          'Email': lead.email,
+          'Phone': lead.phone,
+          'Service': lead.service,
+          'ZIP Code': lead.zip,
+          'Lead Date': formatDate(lead.leadDate),
+          'Ad Set Name': lead.adSetName,
+          'Ad Name': lead.adName,
+          'Lead Status': getStatusInfo(lead.status).label,
+          'Lead Score': lead.leadScore || 0,
+          'Unqualified Reason': lead.status === 'unqualified' ? (lead.unqualifiedLeadReason || 'Not specified') : '',
+        }));
+        fileName = `leads_all_filtered_${format(new Date(), 'yyyyMMdd_HHmmss')}.csv`;
+        description = `Exported ${exportData.length} leads from all filtered data.`;
+      }
 
       // Create CSV content
       const headers = Object.keys(exportData[0]);
@@ -392,7 +479,7 @@ export const LeadSheet = () => {
       const link = document.createElement('a');
       const url = URL.createObjectURL(blob);
       link.setAttribute('href', url);
-      link.setAttribute('download', `leads_export_${format(new Date(), 'yyyyMMdd_HHmmss')}.csv`);
+      link.setAttribute('download', fileName);
       link.style.visibility = 'hidden';
       document.body.appendChild(link);
       link.click();
@@ -400,7 +487,7 @@ export const LeadSheet = () => {
 
       toast({
         title: "✅ Export Successful",
-        description: `Exported ${exportData.length} leads to Excel file.`,
+        description: description,
       });
     } catch (error) {
       toast({
@@ -409,7 +496,7 @@ export const LeadSheet = () => {
         variant: "destructive",
       });
     }
-  }, [sortedLeads, formatDate, getStatusInfo, toast]);
+  }, [processedLeads, formatDate, getStatusInfo, toast, selectedUserId, selectedDate, period, currentSorting, currentFilters, exportAllFilteredLeads, getDateRange]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200">
@@ -452,61 +539,8 @@ export const LeadSheet = () => {
             </div>
           ) : (
             <>
-              {/* Summary Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
-                <TopCard
-                  title="New Leads"
-                  icon={<Users className="h-5 w-5 opacity-50 text-blue-500" />}
-                  metrics={[
-                    {
-                      label: "New Leads",
-                      value: processedLeads.filter(lead => lead.status === 'new').length,
-                      format: 'number'
-                    }
-                  ]}
-                  description="Leads that are newly received and not yet processed."
-                  twoRowDesign={true}
-                />
-                <TopCard
-                  title="In Progress Leads"
-                  icon={<Users className="h-5 w-5 opacity-50 text-yellow-500" />}
-                  metrics={[
-                    {
-                      label: "In Progress Leads",
-                      value: processedLeads.filter(lead => lead.status === 'in_progress').length,
-                      format: 'number'
-                    }
-                  ]}
-                  description="Leads currently being worked on by the team."
-                  twoRowDesign={true}
-                />
-                <TopCard
-                  title="Estimate Set Leads"
-                  icon={<Users className="h-5 w-5 opacity-50 text-green-500" />}
-                  metrics={[
-                    {
-                      label: "Estimate Set Leads",
-                      value: processedLeads.filter(lead => lead.status === 'estimate_set').length,
-                      format: 'number'
-                    }
-                  ]}
-                  description="Leads where estimates have been provided to customers."
-                  twoRowDesign={true}
-                />
-                <TopCard
-                  title="Unqualified Leads"
-                  icon={<Users className="h-5 w-5 opacity-50 text-red-500" />}
-                  metrics={[
-                    {
-                      label: "Unqualified Leads",
-                      value: processedLeads.filter(lead => lead.status === 'unqualified').length,
-                      format: 'number'
-                    }
-                  ]}
-                  description="Leads that don't meet qualification criteria."
-                  twoRowDesign={true}
-                />
-              </div>
+              {/* Summary Cards - Memoized to prevent unnecessary re-renders */}
+              <LeadSummaryCards statusCounts={statusCounts} />
 
               {/* Filters and Sorting Controls */}
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 shadow-lg p-4">
@@ -517,7 +551,13 @@ export const LeadSheet = () => {
                       {/* Adset Name Filter */}
                       <div className="space-y-1">
                         <label className="text-xs font-medium text-gray-700">Ad Set Name</label>
-                        <Select value={adsetFilter || 'all'} onValueChange={(v) => setAdsetFilter(v === 'all' ? '' : v)}>
+                        <Select 
+                          value={currentFilters.adSet || 'all'} 
+                          onValueChange={(v) => {
+                            setFilters({ adSet: v === 'all' ? undefined : v });
+                            setCurrentPage(1); // Reset to first page when filter changes
+                          }}
+                        >
                           <SelectTrigger className="h-8 bg-gray-50 border-0 hover:bg-gray-100 focus:bg-white focus:border focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all rounded-lg text-xs">
                             <SelectValue placeholder="All Ad Sets" />
                           </SelectTrigger>
@@ -535,7 +575,13 @@ export const LeadSheet = () => {
                       {/* Ad Name Filter */}
                       <div className="space-y-1">
                         <label className="text-xs font-medium text-gray-700">Ad Name</label>
-                        <Select value={adFilter || 'all'} onValueChange={(v) => setAdFilter(v === 'all' ? '' : v)}>
+                        <Select 
+                          value={currentFilters.adName || 'all'} 
+                          onValueChange={(v) => {
+                            setFilters({ adName: v === 'all' ? undefined : v });
+                            setCurrentPage(1); // Reset to first page when filter changes
+                          }}
+                        >
                           <SelectTrigger className="h-8 bg-gray-50 border-0 hover:bg-gray-100 focus:bg-white focus:border focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all rounded-lg text-xs">
                             <SelectValue placeholder="All Ads" />
                           </SelectTrigger>
@@ -553,16 +599,23 @@ export const LeadSheet = () => {
                       {/* Lead Status Filter */}
                       <div className="space-y-1">
                         <label className="text-xs font-medium text-gray-700">Lead Status</label>
-                        <Select value={statusFilter || 'all'} onValueChange={(v) => setStatusFilter(v === 'all' ? '' : v)}>
+                        <Select 
+                          value={currentFilters.status || 'all'} 
+                          onValueChange={(v) => {
+                            setFilters({ status: v === 'all' ? undefined : v });
+                            setCurrentPage(1); // Reset to first page when filter changes
+                          }}
+                        >
                           <SelectTrigger className="h-8 bg-gray-50 border-0 hover:bg-gray-100 focus:bg-white focus:border focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all rounded-lg text-xs">
                             <SelectValue placeholder="All Statuses" />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">All Statuses</SelectItem>
-                            <SelectItem value="new">New</SelectItem>
-                            <SelectItem value="in_progress">In Progress</SelectItem>
-                            <SelectItem value="estimate_set">Estimate Set</SelectItem>
-                            <SelectItem value="unqualified">Unqualified</SelectItem>
+                            {filterOptions?.statuses.map(status => (
+                              <SelectItem key={status} value={status}>
+                                {getStatusInfo(status as 'new' | 'in_progress' | 'estimate_set' | 'unqualified').label}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
@@ -570,7 +623,13 @@ export const LeadSheet = () => {
                       {/* Unqualified Reason Filter */}
                       <div className="space-y-1">
                         <label className="text-xs font-medium text-gray-700">Unqualified Reason</label>
-                        <Select value={ulrFilter || 'all'} onValueChange={(v) => setUlrFilter(v === 'all' ? '' : v)}>
+                        <Select 
+                          value={currentFilters.ulr || 'all'} 
+                          onValueChange={(v) => {
+                            setFilters({ ulr: v === 'all' ? undefined : v });
+                            setCurrentPage(1); // Reset to first page when filter changes
+                          }}
+                        >
                           <SelectTrigger className="h-8 bg-gray-50 border-0 hover:bg-gray-100 focus:bg-white focus:border focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all rounded-lg text-xs">
                             <SelectValue placeholder="All Reasons" />
                           </SelectTrigger>
@@ -590,34 +649,35 @@ export const LeadSheet = () => {
                     {hasActiveFilters && (
                       <div className="mt-3 pt-2 border-t border-gray-100">
                         <div className="flex flex-wrap gap-1.5">
-                          {adsetFilter && (
+                          {currentFilters.adSet && (
                             <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                              Ad Set: {adsetFilter}
+                              Ad Set: {currentFilters.adSet}
                             </Badge>
                           )}
-                          {adFilter && (
+                          {currentFilters.adName && (
                             <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                              Ad: {adFilter}
+                              Ad: {currentFilters.adName}
                             </Badge>
                           )}
-                          {statusFilter && (
+                          {currentFilters.status && (
                             <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                              Status: {getStatusInfo(statusFilter as 'new' | 'in_progress' | 'estimate_set' | 'unqualified').label}
+                              Status: {getStatusInfo(currentFilters.status as 'new' | 'in_progress' | 'estimate_set' | 'unqualified').label}
                             </Badge>
                           )}
-                          {ulrFilter && (
+                          {currentFilters.ulr && (
                             <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                              ULR: {ulrFilter}
+                              ULR: {currentFilters.ulr}
                             </Badge>
                           )}
                         </div>
                         <div className="flex items-center gap-2 mt-1.5">
                           <p className="text-xs text-gray-600">
-                            Showing {sortedLeads.length} of {processedLeads.length} leads
+                            Showing {processedLeads.length} of {pagination?.totalCount || 0} leads
+                            {pagination && ` (Page ${pagination.currentPage} of ${pagination.totalPages})`}
                           </p>
                           <span className="text-gray-400">•</span>
                           <button
-                            onClick={clearFilters}
+                            onClick={handleClearFilters}
                             className="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors"
                           >
                             Clear All
@@ -646,7 +706,7 @@ export const LeadSheet = () => {
                       Filters
                       {hasActiveFilters && (
                         <span className="ml-1 bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-full text-xs font-medium">
-                          {Object.values({adsetFilter, adFilter, statusFilter, ulrFilter}).filter(Boolean).length}
+                          {Object.values(currentFilters).filter(Boolean).length}
                         </span>
                       )}
                     </button>
@@ -660,9 +720,12 @@ export const LeadSheet = () => {
                     </span>
                     <div className="flex rounded-lg overflow-hidden border border-gray-200 bg-white shadow-sm">
                       <button
-                        onClick={() => setSortMode('date')}
+                        onClick={() => {
+                          setSorting('date', currentSorting.sortOrder);
+                          setCurrentPage(1); // Reset to first page when sorting changes
+                        }}
                         className={`px-3 py-1.5 text-xs font-medium transition-all ${
-                          sortMode === 'date' 
+                          currentSorting.sortBy === 'date' 
                             ? 'bg-blue-600 text-white shadow-sm' 
                             : 'bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                         } border-r border-gray-200`}
@@ -673,9 +736,12 @@ export const LeadSheet = () => {
                         </span>
                       </button>
                       <button 
-                        onClick={() => setSortMode('score')}
+                        onClick={() => {
+                          setSorting('score', currentSorting.sortOrder);
+                          setCurrentPage(1); // Reset to first page when sorting changes
+                        }}
                         className={`px-3 py-1.5 text-xs font-medium transition-all ${
-                          sortMode === 'score' 
+                          currentSorting.sortBy === 'score' 
                             ? 'bg-blue-600 text-white shadow-sm' 
                             : 'bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                         }`}
@@ -686,39 +752,54 @@ export const LeadSheet = () => {
                         </span>
                       </button>
                     </div>
-                    {sortMode === 'date' ? (
+                    {currentSorting.sortBy === 'date' ? (
                       <button
-                        onClick={() => setDateOrder(prev => (prev === 'desc' ? 'asc' : 'desc'))}
+                        onClick={() => {
+                          setSorting('date', currentSorting.sortOrder === 'desc' ? 'asc' : 'desc');
+                          setCurrentPage(1); // Reset to first page when sorting changes
+                        }}
                         className="flex items-center gap-1 px-3 py-1.5 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all text-xs font-medium text-gray-700 shadow-sm"
                       >
                         <Calendar className="w-3 h-3 text-gray-500" />
-                        <span>{dateOrder === 'desc' ? 'Newest → Oldest' : 'Oldest → Newest'}</span>
+                        <span>{currentSorting.sortOrder === 'desc' ? 'Newest → Oldest' : 'Oldest → Newest'}</span>
                       </button>
                     ) : (
                       <button
-                        onClick={() => setScoreOrder(prev => (prev === 'desc' ? 'asc' : 'desc'))}
+                        onClick={() => {
+                          setSorting('score', currentSorting.sortOrder === 'desc' ? 'asc' : 'desc');
+                          setCurrentPage(1); // Reset to first page when sorting changes
+                        }}
                         className="flex items-center gap-1 px-3 py-1.5 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all text-xs font-medium text-gray-700 shadow-sm"
                       >
                         <Star className="w-3 h-3 text-gray-500" />
-                        <span>{scoreOrder === 'desc' ? 'High → Low' : 'Low → High'}</span>
+                        <span>{currentSorting.sortOrder === 'desc' ? 'High → Low' : 'Low → High'}</span>
                       </button>
                     )}
                   </div>
                   
-                  {/* Export Button */}
-                  <button
-                    onClick={exportToExcel}
-                    disabled={sortedLeads.length === 0}
-                    className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all text-xs font-medium shadow-sm"
-                  >
-                    <Download className="w-3 h-3" />
-                    Export ({sortedLeads.length})
-                  </button>
+                  {/* Export Dropdown */}
+                  <Select onValueChange={(value) => exportToExcel(value as 'current' | 'all')}>
+                    <SelectTrigger 
+                      disabled={processedLeads.length === 0}
+                      className="flex items-center gap-1 px-2 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all text-xs font-medium shadow-sm border-0 w-auto min-w-0"
+                    >
+                      <Download className="w-3 h-3" />
+                      Export
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="current">
+                        Current Page ({processedLeads.length} leads)
+                      </SelectItem>
+                      <SelectItem value="all">
+                        All Filtered Data ({pagination?.totalCount || 0} leads)
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
               {/* No Results Message */}
-              {sortedLeads.length === 0 && (
+              {processedLeads.length === 0 && (
             <div className="text-center py-12 text-muted-foreground">
               <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                   <p className="text-lg mb-2">
@@ -736,9 +817,9 @@ export const LeadSheet = () => {
               )}
 
               {/* Lead Tiles */}
-              {sortedLeads.length > 0 && (
+              {processedLeads.length > 0 && (
                 <div className="space-y-4">
-                  {sortedLeads.map((lead) => {
+                  {processedLeads.map((lead) => {
               const scoreInfo = getScoreInfo(lead.score);
                   const statusInfo = getStatusInfo(lead.status);
                   
@@ -1063,6 +1144,119 @@ export const LeadSheet = () => {
               );
                 })}
               </div>
+              )}
+
+              {/* Pagination and Page Size Selector */}
+              {pagination && (
+                <div className="mt-8 flex justify-between items-center">
+                  {/* Page Size Selector */}
+                  <div className="flex items-center gap-2 text-sm text-gray-600 whitespace-nowrap">
+                    <span>Show</span>
+                    <Select value={pageSize.toString()} onValueChange={(value) => setPageSize(Number(value))}>
+                      <SelectTrigger className="w-16 h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="25">25</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                        <SelectItem value="100">100</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <span>leads per page</span>
+                  </div>
+
+                  {/* Pagination - Right aligned */}
+                  {pagination.totalPages > 1 && (
+                    <div className="flex flex-col items-end gap-0">
+                      <Pagination>
+                        <PaginationContent>
+                          {/* Previous Page */}
+                          <PaginationItem>
+                            <PaginationPrevious 
+                              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                              className={!pagination.hasPrev ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                            />
+                          </PaginationItem>
+
+                          {/* First Page (if not in first 3 pages) */}
+                          {pagination.totalPages > 5 && pagination.currentPage > 3 && (
+                            <>
+                              <PaginationItem>
+                                <PaginationLink
+                                  onClick={() => setCurrentPage(1)}
+                                  className="cursor-pointer"
+                                >
+                                  1
+                                </PaginationLink>
+                              </PaginationItem>
+                              <PaginationItem>
+                                <PaginationEllipsis />
+                              </PaginationItem>
+                            </>
+                          )}
+
+                          {/* Page Numbers */}
+                          {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                            let pageNum;
+                            if (pagination.totalPages <= 5) {
+                              pageNum = i + 1;
+                            } else if (pagination.currentPage <= 3) {
+                              pageNum = i + 1;
+                            } else if (pagination.currentPage >= pagination.totalPages - 2) {
+                              pageNum = pagination.totalPages - 4 + i;
+                            } else {
+                              pageNum = pagination.currentPage - 2 + i;
+                            }
+
+                            return (
+                              <PaginationItem key={pageNum}>
+                                <PaginationLink
+                                  isActive={pageNum === pagination.currentPage}
+                                  onClick={() => setCurrentPage(pageNum)}
+                                  className="cursor-pointer"
+                                >
+                                  {pageNum}
+                                </PaginationLink>
+                              </PaginationItem>
+                            );
+                          })}
+
+                          {/* Last Page (if not in last 3 pages) */}
+                          {pagination.totalPages > 5 && pagination.currentPage < pagination.totalPages - 2 && (
+                            <>
+                              <PaginationItem>
+                                <PaginationEllipsis />
+                              </PaginationItem>
+                              <PaginationItem>
+                                <PaginationLink
+                                  onClick={() => setCurrentPage(pagination.totalPages)}
+                                  className="cursor-pointer"
+                                >
+                                  {pagination.totalPages}
+                                </PaginationLink>
+                              </PaginationItem>
+                            </>
+                          )}
+
+                          {/* Next Page */}
+                          <PaginationItem>
+                            <PaginationNext 
+                              onClick={() => setCurrentPage(Math.min(pagination.totalPages, currentPage + 1))}
+                              className={!pagination.hasNext ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                            />
+                          </PaginationItem>
+                        </PaginationContent>
+                      </Pagination>
+
+                      {/* Total Count Display - Below pagination */}
+                      <div className="text-xs mr-4 text-gray-500 whitespace-nowrap">
+                        ({pagination.totalCount.toLocaleString()} total leads)
+                      </div>
+                    </div>
+                    
+                  )}
+                </div>
               )}
             </>
           )}
