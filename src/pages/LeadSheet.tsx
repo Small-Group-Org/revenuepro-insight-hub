@@ -84,6 +84,365 @@ const LeadSummaryCards = React.memo(({ statusCounts }: { statusCounts: { new: nu
 
 LeadSummaryCards.displayName = 'LeadSummaryCards';
 
+// Memoized component for lead tiles to optimize re-renders
+const LeadTiles = React.memo(({ 
+  leads, 
+  isDisabled, 
+  pendingULRLeadId, 
+  showCustomInput, 
+  customULR, 
+  ULR_OPTIONS,
+  handleLeadStatusChange,
+  handleULRChange,
+  handleCustomULRSubmit,
+  setCustomULR,
+  setShowCustomInput,
+  formatDate,
+  getScoreInfo,
+  getStatusInfo,
+  FIELD_WEIGHTS
+}: {
+  leads: any[];
+  isDisabled: boolean;
+  pendingULRLeadId: string | null;
+  showCustomInput: string | null;
+  customULR: string;
+  ULR_OPTIONS: string[];
+  handleLeadStatusChange: (leadId: string, value: 'new' | 'in_progress' | 'estimate_set' | 'unqualified') => Promise<void>;
+  handleULRChange: (leadId: string, value: string) => Promise<void>;
+  handleCustomULRSubmit: (leadId: string) => Promise<void>;
+  setCustomULR: (value: string) => void;
+  setShowCustomInput: (value: string | null) => void;
+  formatDate: (dateString: string) => string;
+  getScoreInfo: (score: number) => any;
+  getStatusInfo: (status: string) => any;
+  FIELD_WEIGHTS: any;
+}) => (
+  <div className="space-y-4">
+    {leads.map((lead) => {
+      const scoreInfo = getScoreInfo(lead.score);
+      const statusInfo = getStatusInfo(lead.status);
+      
+      // Determine hover styling based on status
+      const getHoverStyling = () => {
+        switch (lead.status) {
+          case 'estimate_set':
+            return 'hover:border-green-300 hover:shadow-xl hover:shadow-green-200/50';
+          case 'unqualified':
+            return 'hover:border-red-300 hover:shadow-xl hover:shadow-red-200/50';
+          case 'in_progress':
+            return 'hover:border-yellow-300 hover:shadow-xl hover:shadow-yellow-200/50';
+          case 'new':
+            return 'hover:border-blue-300 hover:shadow-xl hover:shadow-blue-200/50';
+          default:
+            return 'hover:border-gray-300 hover:shadow-xl hover:shadow-gray-200/50';
+        }
+      };
+
+      return (
+        <div 
+          key={lead.id} 
+          className={`rounded-lg border-2 border-gray-200 p-6 transition-all duration-200 bg-white shadow-sm ${getHoverStyling()} ${isDisabled ? 'opacity-60' : ''}`}
+        >
+          <div className="grid grid-cols-12 gap-4 items-center">
+            {/* Lead Score */}
+            <div className="col-span-1 flex items-center">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="relative cursor-wait hover:cursor-help group">
+                      <div className="w-14 h-14 relative">
+                        {/* Loading overlay - appears on hover before tooltip */}
+                        <div className="absolute inset-0 bg-white/90 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                          <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                        {/* Background circle */}
+                        <svg className="w-14 h-14 transform -rotate-90" viewBox="0 0 36 36">
+                          <path
+                            d="M18 2.0845
+                              a 15.9155 15.9155 0 0 1 0 31.831
+                              a 15.9155 15.9155 0 0 1 0 -31.831"
+                            fill="none"
+                            stroke="#e5e7eb"
+                            strokeWidth="3"
+                          />
+                          <path
+                            d="M18 2.0845
+                              a 15.9155 15.9155 0 0 1 0 31.831
+                              a 15.9155 15.9155 0 0 1 0 -31.831"
+                            fill="none"
+                            stroke={scoreInfo.color.includes('green') ? '#10b981' : 
+                                   scoreInfo.color.includes('yellow') ? '#f59e0b' : 
+                                   scoreInfo.color.includes('red') ? '#ef4444' : '#6366f1'}
+                            strokeWidth="3"
+                            strokeDasharray={`${lead.score}, 100`}
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                        {/* Score text */}
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className="text-xs font-bold text-gray-900">
+                            {lead.score}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-xs p-4 bg-white border border-gray-200 shadow-lg rounded-lg">
+                    <div className="space-y-4">
+                      {/* Header with score */}
+                      <div className="bg-blue-50 px-3 py-2 rounded-lg">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-sm font-semibold text-blue-800">Lead Score:</span>
+                          <span className="text-xl font-bold text-blue-600">{lead.score}%</span>
+                        </div>
+                        <p className="text-xs text-blue-700">
+                          Calculated as weighted average of conversion rates
+                        </p>
+                      </div>
+
+                      {/* Conversion rates */}
+                      <div className="space-y-2 bg-gray-50 px-3 py-2 rounded-lg">
+                        <div className="text-xs font-semibold text-gray-700 mb-1">Conversion Rates:</div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-gray-600">Zip ({lead.zip}):</span>
+                          <span className="font-semibold text-gray-800">{lead.tooltipData.zipRate}%</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-gray-600">Service ({lead.service}):</span>
+                          <span className="font-semibold text-gray-800">{lead.tooltipData.serviceRate}%</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-gray-600">Ad Set ({lead.adSetName}):</span>
+                          <span className="font-semibold text-gray-800">{lead.tooltipData.adSetRate}%</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-gray-600">Ad Name ({lead.adName}):</span>
+                          <span className="font-semibold text-gray-800">{lead.tooltipData.adNameRate}%</span>
+                        </div>
+                      </div>
+
+                      {/* Weights at bottom */}
+                      <div className="bg-gray-100 px-3 py-2 rounded-lg">
+                        <div className="text-xs font-semibold text-gray-700 mb-1">Weights:</div>
+                        <p className="text-xs text-gray-500">
+                          (Zip - {FIELD_WEIGHTS.zip}% • Service - {FIELD_WEIGHTS.service}% • Ad Set - {FIELD_WEIGHTS.adSetName}% • Ad Name - {FIELD_WEIGHTS.adName}%)
+                        </p>
+                      </div>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+
+            {/* Name */}
+            <div className="col-span-2 flex items-center">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
+                  <Users className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <div className="font-semibold text-gray-900 text-sm truncate">
+                    {lead.name}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Contact Details */}
+            <div className="col-span-2 flex items-center">
+              <div className="space-y-1">
+                <div className="flex items-center gap-1 text-xs">
+                  <Mail className="w-3 h-3 text-gray-400" />
+                  <a 
+                    href={`mailto:${lead.email}`}
+                    className="text-blue-600 hover:text-blue-800 hover:underline truncate"
+                    title={lead.email}
+                  >
+                    {lead.email}
+                  </a>
+                </div>
+                <div className="flex items-center gap-1 text-xs">
+                  <Phone className="w-3 h-3 text-gray-400" />
+                  <a 
+                    href={`tel:${lead.phone}`}
+                    className="text-blue-600 hover:text-blue-800 hover:underline"
+                  >
+                    {lead.phone}
+                  </a>
+                </div>
+                <div className="flex items-center gap-1 text-xs">
+                  <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <span className="text-blue-600">
+                    {lead.zip}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Date */}
+            <div className="col-span-2 flex items-center">
+              <div className="flex items-center gap-1 text-xs text-gray-600">
+                <Calendar className="w-3 h-3 text-gray-400" />
+                <span>{formatDate(lead.leadDate)}</span>
+              </div>
+            </div>
+
+            {/* Service & Ads */}
+            <div className="col-span-3 flex items-center">
+              <div className="space-y-1">
+                <div className="flex items-center gap-1 text-xs">
+                  <Tag className="w-3 h-3 text-gray-400" />
+                  <span className="text-gray-600 truncate font-medium" title={lead.service}>
+                    {lead.service}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1 text-xs">
+                  <Target className="w-3 h-3 text-gray-400" />
+                  <span className="text-gray-600 truncate" title={lead.adSetName}>
+                    {lead.adSetName}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1 text-xs">
+                  <Target className="w-3 h-3 text-gray-400" />
+                  <span className="text-gray-600 truncate" title={lead.adName}>
+                    {lead.adName}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Lead Status */}
+            <div className="col-span-2 flex items-center">
+              <div className="w-full">
+                <Select
+                  value={lead.status}
+                  onValueChange={(value) => !isDisabled ? handleLeadStatusChange(lead.id, value as 'new' | 'in_progress' | 'estimate_set' | 'unqualified') : undefined}
+                  disabled={isDisabled}
+                >
+                  <SelectTrigger 
+                    className={`w-full h-8 text-xs border-2 ${
+                      pendingULRLeadId === lead.id 
+                        ? 'ring-2 ring-warning/40 bg-warning/10 border-warning-300 shadow-lg' 
+                        : 'border-gray-300 hover:border-gray-400 bg-white hover:bg-gray-50'
+                    } transition-all duration-200`}
+                  >
+                    <SelectValue>
+                      <span className={`px-2 py-1 rounded text-xs border ${statusInfo.color}`}>
+                        {statusInfo.label}
+                      </span>
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="new" className="text-sm">
+                      <span className="inline-flex items-center gap-2">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        New
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="in_progress" className="text-sm">
+                      <span className="inline-flex items-center gap-2">
+                        <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                        In Progress
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="estimate_set" className="text-sm">
+                      <span className="inline-flex items-center gap-2">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        Estimate Set
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="unqualified" className="text-sm">
+                      <span className="inline-flex items-center gap-2">
+                        <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                        Unqualified
+                      </span>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {/* Unqualified Reason Dropdown - Only show when status is unqualified */}
+                {lead.status === 'unqualified' && (
+                  <div className="mt-3">
+                    {showCustomInput === lead.id ? (
+                      <div className="space-y-1 mt-2">
+                        <input
+                          type="text"
+                          value={customULR}
+                          onChange={(e) => setCustomULR(e.target.value)}
+                          placeholder="Enter reason..."
+                          className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                          onKeyPress={(e) => e.key === 'Enter' && handleCustomULRSubmit(lead.id)}
+                          disabled={isDisabled}
+                        />
+                        <div className="flex gap-1">
+                          <button
+                            onClick={() => handleCustomULRSubmit(lead.id)}
+                            className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={isDisabled}
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={() => {
+                              setShowCustomInput(null);
+                              setCustomULR('');
+                            }}
+                            className="px-2 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <Select
+                        value={lead.unqualifiedLeadReason || ''}
+                        onValueChange={(value) => !isDisabled ? handleULRChange(lead.id, value) : undefined}
+                        disabled={isDisabled}
+                      >
+                        <SelectTrigger 
+                          className={`w-full h-8 text-xs border-2 ${
+                            pendingULRLeadId === lead.id 
+                              ? 'ring-2 ring-warning/40 bg-warning/10 border-warning-300 shadow-lg' 
+                              : 'border-gray-300 hover:border-gray-400 bg-white hover:bg-gray-50'
+                          } transition-all duration-200`}
+                        >
+                          <SelectValue placeholder={pendingULRLeadId === lead.id ? "Select reason!" : "Reason..."}>
+                            {lead.unqualifiedLeadReason && !ULR_OPTIONS.includes(lead.unqualifiedLeadReason) ? (
+                              <span className="text-blue-600 font-medium text-xs">"{lead.unqualifiedLeadReason}"</span>
+                            ) : (
+                              <span className="text-xs">{lead.unqualifiedLeadReason}</span>
+                            )}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ULR_OPTIONS.map((option) => (
+                            <SelectItem key={option} value={option} className="text-sm">
+                              {option}
+                            </SelectItem>
+                          ))}
+                          <SelectItem value="custom" className="text-sm font-medium text-blue-600">
+                            + Add Custom Reason
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    })}
+  </div>
+));
+
+LeadTiles.displayName = 'LeadTiles';
+
 // ULR = Unqualified Lead Reason
 export const LeadSheet = () => {
   const { toast } = useToast();
@@ -532,7 +891,7 @@ export const LeadSheet = () => {
 
         {/* Lead Cards */}
         <div className="max-w-7xl mx-auto space-y-6">
-          {loading ? (
+          {filterOptionsLoading ? (
             <div className="text-center py-12 text-muted-foreground">
               <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground animate-pulse" />
               <p className="text-lg">Loading leads...</p>
@@ -816,338 +1175,39 @@ export const LeadSheet = () => {
             </div>
               )}
 
-              {/* Lead Tiles */}
-              {processedLeads.length > 0 && (
-                <div className="space-y-4">
-                  {processedLeads.map((lead) => {
-              const scoreInfo = getScoreInfo(lead.score);
-                  const statusInfo = getStatusInfo(lead.status);
-                  
-                  // Determine hover styling based on status
-                  const getHoverStyling = () => {
-                    switch (lead.status) {
-                      case 'estimate_set':
-                        return 'hover:border-green-300 hover:shadow-xl hover:shadow-green-200/50';
-                      case 'unqualified':
-                        return 'hover:border-red-300 hover:shadow-xl hover:shadow-red-200/50';
-                      case 'in_progress':
-                        return 'hover:border-yellow-300 hover:shadow-xl hover:shadow-yellow-200/50';
-                      case 'new':
-                        return 'hover:border-blue-300 hover:shadow-xl hover:shadow-blue-200/50';
-                      default:
-                        return 'hover:border-gray-300 hover:shadow-xl hover:shadow-gray-200/50';
-                    }
-                  };
-
-              return (
-                      <div 
-                  key={lead.id} 
-                        className={`rounded-lg border-2 border-gray-200 p-6 transition-all duration-200 bg-white shadow-sm ${getHoverStyling()} ${isDisabled ? 'opacity-60' : ''}`}
-                      >
-                      <div className="grid grid-cols-12 gap-4 items-center">
-                        {/* Lead Score */}
-                        <div className="col-span-1 flex items-center">
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <div className="relative cursor-wait hover:cursor-help group">
-                                  <div className="w-14 h-14 relative">
-                                    {/* Loading overlay - appears on hover before tooltip */}
-                                    <div className="absolute inset-0 bg-white/90 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-                                      <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                                    </div>
-                                    {/* Background circle */}
-                                    <svg className="w-14 h-14 transform -rotate-90" viewBox="0 0 36 36">
-                                      <path
-                                        d="M18 2.0845
-                                          a 15.9155 15.9155 0 0 1 0 31.831
-                                          a 15.9155 15.9155 0 0 1 0 -31.831"
-                                        fill="none"
-                                        stroke="#e5e7eb"
-                                        strokeWidth="3"
-                                      />
-                                      <path
-                                        d="M18 2.0845
-                                          a 15.9155 15.9155 0 0 1 0 31.831
-                                          a 15.9155 15.9155 0 0 1 0 -31.831"
-                                        fill="none"
-                                        stroke={scoreInfo.color.includes('green') ? '#10b981' : 
-                                               scoreInfo.color.includes('yellow') ? '#f59e0b' : 
-                                               scoreInfo.color.includes('red') ? '#ef4444' : '#6366f1'}
-                                        strokeWidth="3"
-                                        strokeDasharray={`${lead.score}, 100`}
-                                        strokeLinecap="round"
-                                      />
-                                    </svg>
-                                    {/* Score text */}
-                                    <div className="absolute inset-0 flex items-center justify-center">
-                                      <span className="text-xs font-bold text-gray-900">
-                                        {lead.score}%
-                                      </span>
-                                    </div>
-
-                                  </div>
-                                </div>
-                              </TooltipTrigger>
-                              <TooltipContent side="top" className="max-w-xs p-4 bg-white border border-gray-200 shadow-lg rounded-lg">
-                                <div className="space-y-4">
-                                  {/* Header with score */}
-                                  <div className="bg-blue-50 px-3 py-2 rounded-lg">
-                                    <div className="flex items-center justify-between mb-1">
-                                      <span className="text-sm font-semibold text-blue-800">Lead Score:</span>
-                                      <span className="text-xl font-bold text-blue-600">{lead.score}%</span>
-                                    </div>
-                                    <p className="text-xs text-blue-700">
-                                      Calculated as weighted average of conversion rates
-                                    </p>
-                                  </div>
-
-                                  {/* Conversion rates */}
-                                  <div className="space-y-2 bg-gray-50 px-3 py-2 rounded-lg">
-                                    <div className="text-xs font-semibold text-gray-700 mb-1">Conversion Rates:</div>
-                                    <div className="flex justify-between text-xs">
-                                      <span className="text-gray-600">Zip ({lead.zip}):</span>
-                                      <span className="font-semibold text-gray-800">{lead.tooltipData.zipRate}%</span>
-                                    </div>
-                                    <div className="flex justify-between text-xs">
-                                      <span className="text-gray-600">Service ({lead.service}):</span>
-                                      <span className="font-semibold text-gray-800">{lead.tooltipData.serviceRate}%</span>
-                                    </div>
-                                    <div className="flex justify-between text-xs">
-                                      <span className="text-gray-600">Ad Set ({lead.adSetName}):</span>
-                                      <span className="font-semibold text-gray-800">{lead.tooltipData.adSetRate}%</span>
-                                    </div>
-                                    <div className="flex justify-between text-xs">
-                                      <span className="text-gray-600">Ad Name ({lead.adName}):</span>
-                                      <span className="font-semibold text-gray-800">{lead.tooltipData.adNameRate}%</span>
-                                    </div>
-                                    {/* <div className="flex justify-between text-xs">
-                                      <span className="text-gray-600">Month ({new Date(lead.leadDate).toLocaleDateString('en-US', { month: 'long' })}):</span>
-                                      <span className="font-semibold text-gray-800">{lead.tooltipData.dateRate}%</span>
-                                    </div> */}
-                                  </div>
-
-                                  {/* Weights at bottom */}
-                                  <div className="bg-gray-100 px-3 py-2 rounded-lg">
-                                  <div className="text-xs font-semibold text-gray-700 mb-1">Weights:</div>
-                                    <p className="text-xs text-gray-500">
-                                      (Zip - {FIELD_WEIGHTS.zip}% • Service - {FIELD_WEIGHTS.service}% • Ad Set - {FIELD_WEIGHTS.adSetName}% • Ad Name - {FIELD_WEIGHTS.adName}%)
-                                    </p>
-                                  </div>
-                                </div>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </div>
-
-                        {/* Name */}
-                        <div className="col-span-2 flex items-center">
-                            <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
-                              <Users className="w-4 h-4 text-white" />
-                            </div>
-                            <div>
-                              <div className="font-semibold text-gray-900 text-sm truncate">
-                                {lead.name}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Contact Details */}
-                        <div className="col-span-2 flex items-center">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-1 text-xs">
-                              <Mail className="w-3 h-3 text-gray-400" />
-                              <a 
-                                href={`mailto:${lead.email}`}
-                                className="text-blue-600 hover:text-blue-800 hover:underline truncate"
-                                title={lead.email}
-                              >
-                                {lead.email}
-                              </a>
-                        </div>
-                            <div className="flex items-center gap-1 text-xs">
-                              <Phone className="w-3 h-3 text-gray-400" />
-                              <a 
-                                href={`tel:${lead.phone}`}
-                                className="text-blue-600 hover:text-blue-800 hover:underline"
-                              >
-                                {lead.phone}
-                              </a>
-                            </div>
-                            <div className="flex items-center gap-1 text-xs">
-                              <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                              </svg>
-                              <span className="text-blue-600">
-                                {lead.zip}
-                              </span>
-                            </div>
-                          </div>
-                            </div>
-
-                        {/* Date */}
-                        <div className="col-span-2 flex items-center">
-                          <div className="flex items-center gap-1 text-xs text-gray-600">
-                            <Calendar className="w-3 h-3 text-gray-400" />
-                            <span>{formatDate(lead.leadDate)}</span>
-                        </div>
-                        </div>
-
-                        {/* Service & Ads */}
-                        <div className="col-span-3 flex items-center">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-1 text-xs">
-                              <Tag className="w-3 h-3 text-gray-400" />
-                              <span className="text-gray-600 truncate font-medium" title={lead.service}>
-                                {lead.service}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-1 text-xs">
-                              <Target className="w-3 h-3 text-gray-400" />
-                              <span className="text-gray-600 truncate" title={lead.adSetName}>
-                                {lead.adSetName}
-                              </span>
-                        </div>
-                            <div className="flex items-center gap-1 text-xs">
-                              <Target className="w-3 h-3 text-gray-400" />
-                              <span className="text-gray-600 truncate" title={lead.adName}>
-                                {lead.adName}
-                              </span>
-                        </div>
-                        </div>
-                        </div>
-
-                        {/* Lead Status */}
-                        <div className="col-span-2 flex items-center">
-                          <div className="w-full">
-                              <Select
-                                value={lead.status}
-                                onValueChange={(value) => !isDisabled ? handleLeadStatusChange(lead.id, value as 'new' | 'in_progress' | 'estimate_set' | 'unqualified') : undefined}
-                            disabled={isDisabled}
-                              >
-                                <SelectTrigger 
-                                  className={`w-full h-8 text-xs border-2 ${
-                                    pendingULRLeadId === lead.id 
-                                      ? 'ring-2 ring-warning/40 bg-warning/10 border-warning-300 shadow-lg' 
-                                      : 'border-gray-300 hover:border-gray-400 bg-white hover:bg-gray-50'
-                                  } transition-all duration-200`}
-                                >
-                                  <SelectValue>
-                                    <span className={`px-2 py-1 rounded text-xs border ${statusInfo.color}`}>
-                                      {statusInfo.label}
-                                    </span>
-                                  </SelectValue>
-                                </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="new" className="text-sm">
-                                  <span className="inline-flex items-center gap-2">
-                                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                                    New
-                                  </span>
-                                </SelectItem>
-                                <SelectItem value="in_progress" className="text-sm">
-                                  <span className="inline-flex items-center gap-2">
-                                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                                    In Progress
-                                  </span>
-                                </SelectItem>
-                                <SelectItem value="estimate_set" className="text-sm">
-                                  <span className="inline-flex items-center gap-2">
-                                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                    Estimate Set
-                                  </span>
-                                </SelectItem>
-                                <SelectItem value="unqualified" className="text-sm">
-                                  <span className="inline-flex items-center gap-2">
-                                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                                    Unqualified
-                                  </span>
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-
-                            {/* Unqualified Reason Dropdown - Only show when status is unqualified */}
-                            {lead.status === 'unqualified' && (
-                              <div className="mt-3">
-                                {showCustomInput === lead.id ? (
-                                  <div className="space-y-1 mt-2">
-                              <input
-                                type="text"
-                                value={customULR}
-                                onChange={(e) => setCustomULR(e.target.value)}
-                                      placeholder="Enter reason..."
-                                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                                onKeyPress={(e) => e.key === 'Enter' && handleCustomULRSubmit(lead.id)}
-                                disabled={isDisabled}
-                              />
-                                    <div className="flex gap-1">
-                                  <button
-                                    onClick={() => handleCustomULRSubmit(lead.id)}
-                                        className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    disabled={isDisabled}
-                                  >
-                                    Save
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      setShowCustomInput(null);
-                                      setCustomULR('');
-                                    }}
-                                        className="px-2 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
-                                  >
-                                    Cancel
-                                  </button>
-                                </div>
-                            </div>
-                          ) : (
-                            <Select
-                              value={lead.unqualifiedLeadReason || ''}
-                              onValueChange={(value) => !isDisabled ? handleULRChange(lead.id, value) : undefined}
-                              disabled={isDisabled}
-                            >
-                              <SelectTrigger 
-                                      className={`w-full h-8 text-xs border-2 ${
-                                  pendingULRLeadId === lead.id 
-                                    ? 'ring-2 ring-warning/40 bg-warning/10 border-warning-300 shadow-lg' 
-                                          : 'border-gray-300 hover:border-gray-400 bg-white hover:bg-gray-50'
-                                      } transition-all duration-200`}
-                              >
-                                      <SelectValue placeholder={pendingULRLeadId === lead.id ? "Select reason!" : "Reason..."}>
-                                  {lead.unqualifiedLeadReason && !ULR_OPTIONS.includes(lead.unqualifiedLeadReason) ? (
-                                          <span className="text-blue-600 font-medium text-xs">"{lead.unqualifiedLeadReason}"</span>
-                                  ) : (
-                                          <span className="text-xs">{lead.unqualifiedLeadReason}</span>
-                                  )}
-                                </SelectValue>
-                              </SelectTrigger>
-                              <SelectContent>
-                                {ULR_OPTIONS.map((option) => (
-                                  <SelectItem key={option} value={option} className="text-sm">
-                                    {option}
-                                  </SelectItem>
-                                ))}
-                                <SelectItem value="custom" className="text-sm font-medium text-blue-600">
-                                  + Add Custom Reason
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-                          )}
-                              </div>
-                            )}
-                          </div>
-              </div>
+              {/* Loading indicator for leads fetching (filtering/sorting) */}
+              {loading && processedLeads.length > 0 && (
+                <div className="flex items-center justify-center py-4">
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                    <span>Updating leads...</span>
+                  </div>
                 </div>
-                </div>
-              );
-                })}
-              </div>
+              )}
+
+              {/* Lead Tiles - Memoized to optimize re-renders */}
+              {processedLeads.length > 0 && !loading && (
+                <LeadTiles
+                  leads={processedLeads}
+                  isDisabled={isDisabled}
+                  pendingULRLeadId={pendingULRLeadId}
+                  showCustomInput={showCustomInput}
+                  customULR={customULR}
+                  ULR_OPTIONS={ULR_OPTIONS}
+                  handleLeadStatusChange={handleLeadStatusChange}
+                  handleULRChange={handleULRChange}
+                  handleCustomULRSubmit={handleCustomULRSubmit}
+                  setCustomULR={setCustomULR}
+                  setShowCustomInput={setShowCustomInput}
+                  formatDate={formatDate}
+                  getScoreInfo={getScoreInfo}
+                  getStatusInfo={getStatusInfo}
+                  FIELD_WEIGHTS={FIELD_WEIGHTS}
+                />
               )}
 
               {/* Pagination and Page Size Selector */}
-              {pagination && (
+              {pagination && processedLeads.length > 0 && !loading && (
                 <div className="mt-8 flex justify-between items-center">
                   {/* Page Size Selector */}
                   <div className="flex items-center gap-2 text-sm text-gray-600 whitespace-nowrap">
