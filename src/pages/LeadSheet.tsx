@@ -825,6 +825,10 @@ export const LeadSheet = () => {
                                   <div className="space-y-2 bg-gray-50 px-3 py-2 rounded-lg">
                                     <div className="text-xs font-semibold text-gray-700 mb-1">Conversion Rates:</div>
                                     <div className="flex justify-between text-xs">
+                                      <span className="text-gray-600">Zip ({lead.zip}):</span>
+                                      <span className="font-semibold text-gray-800">{lead.tooltipData.zipRate}%</span>
+                                    </div>
+                                    <div className="flex justify-between text-xs">
                                       <span className="text-gray-600">Service ({lead.service}):</span>
                                       <span className="font-semibold text-gray-800">{lead.tooltipData.serviceRate}%</span>
                                     </div>
@@ -836,21 +840,17 @@ export const LeadSheet = () => {
                                       <span className="text-gray-600">Ad Name ({lead.adName}):</span>
                                       <span className="font-semibold text-gray-800">{lead.tooltipData.adNameRate}%</span>
                                     </div>
-                                    <div className="flex justify-between text-xs">
+                                    {/* <div className="flex justify-between text-xs">
                                       <span className="text-gray-600">Month ({new Date(lead.leadDate).toLocaleDateString('en-US', { month: 'long' })}):</span>
                                       <span className="font-semibold text-gray-800">{lead.tooltipData.dateRate}%</span>
-                                    </div>
-                                    <div className="flex justify-between text-xs">
-                                      <span className="text-gray-600">Zip ({lead.zip}):</span>
-                                      <span className="font-semibold text-gray-800">{lead.tooltipData.zipRate}%</span>
-                                    </div>
+                                    </div> */}
                                   </div>
 
                                   {/* Weights at bottom */}
                                   <div className="bg-gray-100 px-3 py-2 rounded-lg">
                                   <div className="text-xs font-semibold text-gray-700 mb-1">Weights:</div>
                                     <p className="text-xs text-gray-500">
-                                      (Service - {FIELD_WEIGHTS.service}% • Ad Set - {FIELD_WEIGHTS.adSetName}% • Ad Name - {FIELD_WEIGHTS.adName}% • Month - {FIELD_WEIGHTS.leadDate}% • Zip - {FIELD_WEIGHTS.zip}%)
+                                      (Zip - {FIELD_WEIGHTS.zip}% • Service - {FIELD_WEIGHTS.service}% • Ad Set - {FIELD_WEIGHTS.adSetName}% • Ad Name - {FIELD_WEIGHTS.adName}%)
                                     </p>
                                   </div>
                                 </div>
