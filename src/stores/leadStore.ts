@@ -69,7 +69,12 @@ export const useLeadStore = create<LeadStoreState>((set, get) => ({
   filterOptionsLoading: false,
   
   // Current filters and sorting
-  currentFilters: {},
+  currentFilters: {
+    adSetName: undefined,
+    adName: undefined,
+    status: undefined,
+    unqualifiedLeadReason: undefined
+  },
   currentSorting: {
     sortBy: 'date',
     sortOrder: 'desc'
@@ -239,7 +244,12 @@ export const useLeadStore = create<LeadStoreState>((set, get) => ({
 
   clearFilters: () => {
     set({ 
-      currentFilters: {},
+      currentFilters: {
+        adSetName: undefined,
+        adName: undefined,
+        status: undefined,
+        unqualifiedLeadReason: undefined
+      },
       currentSorting: {
         sortBy: 'date',
         sortOrder: 'desc'
@@ -255,7 +265,12 @@ export const useLeadStore = create<LeadStoreState>((set, get) => ({
       pagination: null,
       filterOptions: null,
       statusCounts: null,
-      currentFilters: {},
+      currentFilters: {
+        adSetName: undefined,
+        adName: undefined,
+        status: undefined,
+        unqualifiedLeadReason: undefined
+      },
       currentSorting: {
         sortBy: 'date',
         sortOrder: 'desc'
