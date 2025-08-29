@@ -11,6 +11,7 @@ export interface IWeeklyTarget {
   showRate?: number;
   closeRate?: number;
   com?: number;
+  managementCost?: number;
   revenue?: number;
   avgJobSize?: number;
   queryType: string;
