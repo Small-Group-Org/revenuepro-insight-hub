@@ -64,6 +64,10 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
   targetValues = {}
 }) => {
   const { currentTarget } = useTargetStore();
+  
+  // Move hooks to component level
+  const [focusedField, setFocusedField] = React.useState<string | null>(null);
+  const [displayValues, setDisplayValues] = React.useState<Record<string, string>>({});
 
   const filterFieldsByPeriod = (fields: FieldConfig[]): FieldConfig[] => {
     return fields.filter((field) => {
@@ -77,20 +81,23 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
 
   const filteredFields = filterFieldsByPeriod(fields);
 
+  // Update display values when fieldValues changes
+  React.useEffect(() => {
+    const newDisplayValues: Record<string, string> = {};
+    Object.keys(fieldValues).forEach(key => {
+      if (!focusedField || focusedField !== key) {
+        newDisplayValues[key] = fieldValues[key]?.toString() || '0';
+      }
+    });
+    setDisplayValues(prev => ({ ...prev, ...newDisplayValues }));
+  }, [fieldValues, focusedField]);
+
   const renderInputField = (field: InputField) => {
     const value = fieldValues[field.value] || 0;
-    const [isFocused, setIsFocused] = React.useState(false);
-    const [displayValue, setDisplayValue] = React.useState(value.toString());
+    const displayValue = displayValues[field.value] || value.toString();
 
     // Determine if this field should be disabled
     const isFieldDisabled = isDisabled || (shouldDisableNonRevenueFields && field.value !== 'revenue');
-
-    // Update display value when fieldValues changes
-    React.useEffect(() => {
-      if (!isFocused) {
-        setDisplayValue(value.toString());
-      }
-    }, [value, isFocused]);
 
     return (
       <div key={field.value} className="space-y-2">
@@ -113,10 +120,10 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
             min={field.min}
             max={field.max}
             step={field.step || 1}
-            value={isFocused ? displayValue : value}
+            value={focusedField === field.value ? displayValue : value}
             onChange={(e) => {
               const inputValue = e.target.value;
-              setDisplayValue(inputValue);
+              setDisplayValues(prev => ({ ...prev, [field.value]: inputValue }));
               
               if (inputValue === "") {
                 return;
@@ -128,17 +135,17 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
               }
             }}
             onFocus={(e) => {
-              setIsFocused(true);
+              setFocusedField(field.value);
               e.target.select();
             }}
             onBlur={(e) => {
-              setIsFocused(false);
+              setFocusedField(null);
               const inputValue = e.target.value;
               
               if (inputValue === "") {
                 // Set to 0 if empty when blurred
                 onInputChange(field.value, 0);
-                setDisplayValue("0");
+                setDisplayValues(prev => ({ ...prev, [field.value]: "0" }));
               } else {
                 const numValue = Number(inputValue);
                 if (!isNaN(numValue)) {
