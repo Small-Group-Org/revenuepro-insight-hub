@@ -16,7 +16,7 @@ import { getWeeksInMonth } from "date-fns";
 export const useDashboardMetrics = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [period, setPeriod] = useState<"weekly" | "monthly" | "yearly" | "ytd">(
-    "monthly"
+    "ytd"
   );
   const { reportingData, targetData, comparisonData } = useReportingDataStore();
 

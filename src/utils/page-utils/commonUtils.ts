@@ -54,12 +54,12 @@ export const formatCurrencyValue = (
       currency: 'USD',
       minimumFractionDigits: 0,
       maximumFractionDigits: 2
-    }).format(Math.ceil(value));
+    }).format(Math.round(value));
   } else {
     return new Intl.NumberFormat('en-US', {
       minimumFractionDigits: 0,
       maximumFractionDigits: 2
-    }).format(Math.ceil(value));
+    }).format(Math.round(value));
   }
 };
 
