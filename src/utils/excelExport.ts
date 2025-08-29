@@ -16,7 +16,7 @@ export interface MetricSection {
 
 export interface ExportData {
   metrics: MetricSection[];
-  period: 'weekly' | 'monthly' | 'yearly';
+  period: 'weekly' | 'monthly' | 'yearly' | 'ytd';
   selectedDate: Date;
   actualMetrics: Record<string, number>;
   targetData: Record<string, number>;
