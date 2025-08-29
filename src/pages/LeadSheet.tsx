@@ -740,7 +740,7 @@ export const LeadSheet = () => {
 
   // Check if any filters are active
   const hasActiveFilters = useMemo(() => {
-    return currentFilters.adSet || currentFilters.adName || currentFilters.status || currentFilters.ulr;
+    return currentFilters.adSetName || currentFilters.adName || currentFilters.status || currentFilters.unqualifiedLeadReason;
   }, [currentFilters]);
 
 
@@ -911,9 +911,9 @@ export const LeadSheet = () => {
                       <div className="space-y-1">
                         <label className="text-xs font-medium text-gray-700">Ad Set Name</label>
                         <Select 
-                          value={currentFilters.adSet || 'all'} 
+                          value={currentFilters.adSetName || 'all'} 
                           onValueChange={(v) => {
-                            setFilters({ adSet: v === 'all' ? undefined : v });
+                            setFilters({ adSetName: v === 'all' ? undefined : v });
                             setCurrentPage(1); // Reset to first page when filter changes
                           }}
                         >
@@ -983,9 +983,9 @@ export const LeadSheet = () => {
                       <div className="space-y-1">
                         <label className="text-xs font-medium text-gray-700">Unqualified Reason</label>
                         <Select 
-                          value={currentFilters.ulr || 'all'} 
+                          value={currentFilters.unqualifiedLeadReason || 'all'} 
                           onValueChange={(v) => {
-                            setFilters({ ulr: v === 'all' ? undefined : v });
+                            setFilters({ unqualifiedLeadReason: v === 'all' ? undefined : v });
                             setCurrentPage(1); // Reset to first page when filter changes
                           }}
                         >
@@ -1008,9 +1008,9 @@ export const LeadSheet = () => {
                     {hasActiveFilters && (
                       <div className="mt-3 pt-2 border-t border-gray-100">
                         <div className="flex flex-wrap gap-1.5">
-                          {currentFilters.adSet && (
+                          {currentFilters.adSetName && (
                             <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                              Ad Set: {currentFilters.adSet}
+                              Ad Set: {currentFilters.adSetName}
                             </Badge>
                           )}
                           {currentFilters.adName && (
@@ -1023,9 +1023,9 @@ export const LeadSheet = () => {
                               Status: {getStatusInfo(currentFilters.status as 'new' | 'in_progress' | 'estimate_set' | 'unqualified').label}
                             </Badge>
                           )}
-                          {currentFilters.ulr && (
+                          {currentFilters.unqualifiedLeadReason && (
                             <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                              ULR: {currentFilters.ulr}
+                              Unqualified Reason: {currentFilters.unqualifiedLeadReason}
                             </Badge>
                           )}
                         </div>

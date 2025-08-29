@@ -22,10 +22,10 @@ export interface GetPaginatedLeadsPayload {
   limit?: number;
   sortBy?: 'date' | 'score';
   sortOrder?: 'asc' | 'desc';
-  adSet?: string;
+  adSetName?: string;
   adName?: string;
   status?: string;
-  ulr?: string;
+  unqualifiedLeadReason?: string;
 }
 
 export interface PaginationInfo {
@@ -39,7 +39,7 @@ export interface PaginationInfo {
 
 export interface ConversionRates {
   service: Array<{ name: string; conversionRate: number }>;
-  adSet: Array<{ name: string; conversionRate: number }>;
+  adSetName: Array<{ name: string; conversionRate: number }>;
   adName: Array<{ name: string; conversionRate: number }>;
   dates: Array<{ date: string; conversionRate: number }>;
 }
@@ -127,10 +127,10 @@ export const getPaginatedLeads = async (payload: GetPaginatedLeadsPayload) => {
   if (payload.limit) params.append('limit', payload.limit.toString());
   if (payload.sortBy) params.append('sortBy', payload.sortBy);
   if (payload.sortOrder) params.append('sortOrder', payload.sortOrder);
-  if (payload.adSet) params.append('adSet', payload.adSet);
+  if (payload.adSetName) params.append('adSetName', payload.adSetName);
   if (payload.adName) params.append('adName', payload.adName);
   if (payload.status) params.append('status', payload.status);
-  if (payload.ulr) params.append('ulr', payload.ulr);
+  if (payload.unqualifiedLeadReason) params.append('unqualifiedLeadReason', payload.unqualifiedLeadReason);
   
   const url = `/leads/paginated?${params.toString()}`;
   const response = await doGET(url);
@@ -174,10 +174,10 @@ export const exportAllFilteredLeads = async (payload: GetPaginatedLeadsPayload) 
   if (exportPayload.limit) params.append('limit', exportPayload.limit.toString());
   if (exportPayload.sortBy) params.append('sortBy', exportPayload.sortBy);
   if (exportPayload.sortOrder) params.append('sortOrder', exportPayload.sortOrder);
-  if (exportPayload.adSet) params.append('adSet', exportPayload.adSet);
+  if (exportPayload.adSetName) params.append('adSetName', exportPayload.adSetName);
   if (exportPayload.adName) params.append('adName', exportPayload.adName);
   if (exportPayload.status) params.append('status', exportPayload.status);
-  if (exportPayload.ulr) params.append('ulr', exportPayload.ulr);
+  if (exportPayload.unqualifiedLeadReason) params.append('unqualifiedLeadReason', exportPayload.unqualifiedLeadReason);
   
   const url = `/leads/paginated?${params.toString()}`;
   const response = await doGET(url);

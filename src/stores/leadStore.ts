@@ -31,10 +31,10 @@ interface LeadStoreState {
   
   // Current filters and sorting
   currentFilters: {
-    adSet?: string;
+    adSetName?: string;
     adName?: string;
     status?: string;
-    ulr?: string;
+    unqualifiedLeadReason?: string;
   };
   currentSorting: {
     sortBy: 'date' | 'score';
@@ -48,7 +48,7 @@ interface LeadStoreState {
   updateLeadData: (payload: UpdateLeadPayload) => Promise<{ error: boolean; message?: string }>;
   updateLeadLocal: (leadId: string, updates: Partial<Lead>) => void;
   clearLeads: () => void;
-  setFilters: (filters: Partial<{ adSet?: string; adName?: string; status?: string; ulr?: string }>) => void;
+  setFilters: (filters: Partial<{ adSetName?: string; adName?: string; status?: string; unqualifiedLeadReason?: string }>) => void;
   setSorting: (sortBy: 'date' | 'score', sortOrder: 'asc' | 'desc') => void;
   clearFilters: () => void;
   exportAllFilteredLeads: (payload: GetPaginatedLeadsPayload) => Promise<{ error: boolean; data?: Lead[]; message?: string }>;
