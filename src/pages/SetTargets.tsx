@@ -201,7 +201,7 @@ export const SetTargets = () => {
         finalValue = Math.max(finalValue, inputField.min);
       }
 
-      if(fieldName === 'com' && fieldValues.revenue && fieldValues.revenue > 0) {
+      if(fieldName === 'com' && !fieldValues.managementCost && fieldValues.revenue && fieldValues.revenue > 0) {
         const adBudget = (finalValue * fieldValues.revenue) / 100;
         const managementCost = calculateManagementCost(adBudget);
         
