@@ -394,7 +394,7 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
   }, [periodType, selectedDate]);
 
   const showTotal = (config: ChartConfig) => {
-    if (config.key === "avgJobSize") {
+    if (config.key === "avgJobSize" || config.key === "cpEstimateSet" || config.key === "cpl") {
       return false;
     }
     return config.format === "currency" || config.format === "number";
