@@ -54,12 +54,12 @@ export const formatCurrencyValue = (
       currency: 'USD',
       minimumFractionDigits: 0,
       maximumFractionDigits: 2
-    }).format(Math.ceil(value));
+    }).format(Math.round(value));
   } else {
     return new Intl.NumberFormat('en-US', {
       minimumFractionDigits: 0,
       maximumFractionDigits: 2
-    }).format(Math.ceil(value));
+    }).format(Math.round(value));
   }
 };
 
@@ -96,7 +96,7 @@ export const safeDivide = (numerator: number, denominator: number): number => {
  */
 export const calculateManagementCost = (adSpend: number): number => {
   const tiers = [
-    { min: 2500, max: 5000, cost: 2000 },
+    { min: 0, max: 5000, cost: 2000 },
     { min: 5001, max: 10000, cost: 2500 },
     { min: 10001, max: 15000, cost: 3000 },
     { min: 15001, max: 20000, cost: 3500 },

@@ -31,7 +31,7 @@ import { useCombinedLoading } from "@/hooks/useCombinedLoading";
 export const CompareResults = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [period, setPeriod] = useState<"weekly" | "monthly" | "yearly">(
-    "weekly"
+    "monthly"
   );
 
   const { reportingData, targetData, getReportingData } = useReportingDataStore();
@@ -97,7 +97,6 @@ export const CompareResults = () => {
     if (!processedActualData) return {};
     
     const actual = processedActualData;
-    console.log("[]", {actual});
     
     const metrics: FieldValue = {};
 

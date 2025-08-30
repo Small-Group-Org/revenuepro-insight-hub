@@ -9,7 +9,7 @@ import { useUserStore } from "../stores/userStore";
 import useAuthStore from "../stores/authStore";
 import { endOfWeek, startOfWeek, format, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
 import { calculateFields, targetValidation } from "@/utils/page-utils/targetUtils";
-import { getDaysInMonth } from "@/utils/page-utils/commonUtils";
+import { calculateManagementCost, getDaysInMonth } from "@/utils/page-utils/commonUtils";
 import { handleInputDisable } from "@/utils/page-utils/compareUtils";
 import { months, targetFields } from "@/utils/constant";
 import { DisableMetadata } from "@/types";
@@ -73,12 +73,16 @@ export const SetTargets = () => {
     Object.values(targetFields).forEach(section => {
       section.forEach(field => {
         if (field.fieldType === 'input') {
+          // Exclude managementCost for weekly periods
+          if (period === 'weekly' && field.value === 'managementCost') {
+            return;
+          }
           inputNames.push(field.value);
         }
       });
     });
     return inputNames;
-  }, []);
+  }, [period]);
 
   const getPriorityConflict = useCallback((newPeriod: PeriodType) => {
     if (!currentTarget) return null;
@@ -197,10 +201,21 @@ export const SetTargets = () => {
         finalValue = Math.max(finalValue, inputField.min);
       }
 
-      setFieldValues(prev => ({
-        ...prev,
-        [fieldName]: finalValue
-      }));
+      if(fieldName === 'com' && !fieldValues.managementCost && fieldValues.revenue && fieldValues.revenue > 0) {
+        const adBudget = (finalValue * fieldValues.revenue) / 100;
+        const managementCost = calculateManagementCost(adBudget);
+        
+        setFieldValues(prev => ({
+          ...prev,
+          [fieldName]: finalValue,
+          managementCost: managementCost
+        }));
+      } else {
+        setFieldValues(prev => ({
+          ...prev,
+          [fieldName]: finalValue
+        }));
+      }
     }
   }, [calculatedValues]);
 
