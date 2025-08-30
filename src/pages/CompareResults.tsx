@@ -198,12 +198,14 @@ export const CompareResults = () => {
             actual: calculateActualMetrics.totalCom ?? 0,
             target: processedTargetData?.totalCom ?? 0,
             format: "percent" as const,
+            optimised: "decrease",
           }] : []),
           {
             name: "Ad CoM%",
             actual: calculateActualMetrics.com ?? 0,
             target: processedTargetData?.com ?? 0,
             format: "percent" as const,
+            optimised: "decrease",
           },
         ],
       },
@@ -279,30 +281,35 @@ export const CompareResults = () => {
             actual: calculateActualMetrics.budget ?? 0,
             target: processedTargetData?.budget ?? 0,
             format: "currency" as const,
+            optimised: "decrease",
           },
           {
             name: "Cost Per Lead",
             actual: calculateActualMetrics.cpl ?? 0,
             target: processedTargetData?.cpl ?? 0,
             format: "currency" as const,
+            optimised: "decrease",
           },
           {
             name: "Cost Per Estimate Set",
             actual: calculateActualMetrics.cpEstimateSet ?? 0,
             target: processedTargetData?.cpEstimateSet ?? 0,
             format: "currency" as const,
+            optimised: "decrease",
           },
           {
             name: "Cost Per Estimate",
             actual: calculateActualMetrics.cpEstimate ?? 0,
             target: processedTargetData?.cpEstimate ?? 0,
             format: "currency" as const,
+            optimised: "decrease",
           },
           {
             name: "Cost Per Job Booked",
             actual: calculateActualMetrics.cpJobBooked ?? 0,
             target: processedTargetData?.cpJobBooked ?? 0,
             format: "currency" as const,
+            optimised: "decrease",
           },
         ],
       },
@@ -456,11 +463,15 @@ export const CompareResults = () => {
                                 <div className="w-20 h-2 bg-muted rounded-full overflow-hidden group-hover:shadow-inner transition-all duration-200">
                                   <div 
                                     className={`h-full rounded-full transition-all duration-300 ${
-                                      progressPercent >= 100 
+                                      (item.optimised === "decrease" 
+                                        ? progressPercent <= 100 
+                                        : progressPercent >= 100)
                                         ? 'bg-success' 
-                                        : progressPercent >= 80 
-                                        ? 'bg-warning' 
-                                        : 'bg-destructive'
+                                        : (item.optimised === "decrease" 
+                                            ? progressPercent <= 80 
+                                            : progressPercent >= 80)
+                                            ? 'bg-warning' 
+                                            : 'bg-destructive'
                                     }`}
                                     style={{ width: `${Math.min(progressPercent, 100)}%` }}
                                   ></div>
@@ -471,12 +482,16 @@ export const CompareResults = () => {
                           <td className="p-3 text-right font-semibold">
                             <span
                               className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-bold ${
-                                isPositive
+                                (item.optimised === "decrease" 
+                                  ? percent <= 0 
+                                  : percent >= 0)
                                   ? "bg-success/20 text-success border border-success/30 hover:bg-success/30 hover:shadow-lg"
                                   : "bg-destructive/20 text-destructive border border-destructive/30 hover:bg-destructive/30 hover:shadow-lg"
                               }`}
                             >
-                              {isPositive ? (
+                              {(item.optimised === "decrease" 
+                                ? percent <= 0 
+                                : percent >= 0) ? (
                                 <TrendingUp className="h-4 w-4 mr-2" />
                               ) : (
                                 <TrendingDown className="h-4 w-4 mr-2" />
