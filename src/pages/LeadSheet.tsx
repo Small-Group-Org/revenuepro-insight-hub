@@ -198,46 +198,63 @@ const LeadTiles = React.memo(({
 
             {/* Name */}
             <div className="col-span-2 flex items-center">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
+              <div className="flex items-center gap-2 w-full">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
                   <Users className="w-4 h-4 text-white" />
                 </div>
-                <div>
-                  <div className="font-semibold text-gray-900 text-sm truncate">
-                    {lead.name}
-                  </div>
+                <div className="min-w-0 flex-1">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="font-semibold text-gray-900 text-sm truncate cursor-help">
+                          {lead.name}
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs">
+                        <p className="text-sm">{lead.name}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
               </div>
             </div>
 
             {/* Contact Details */}
             <div className="col-span-2 flex items-center">
-              <div className="space-y-1">
+              <div className="space-y-1 w-full">
                 <div className="flex items-center gap-1 text-xs">
-                  <Mail className="w-3 h-3 text-gray-400" />
-                  <a 
-                    href={`mailto:${lead.email}`}
-                    className="text-blue-600 hover:text-blue-800 hover:underline truncate"
-                    title={lead.email}
-                  >
-                    {lead.email}
-                  </a>
+                  <Mail className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <a 
+                          href={`mailto:${lead.email}`}
+                          className="text-blue-600 hover:text-blue-800 hover:underline truncate block min-w-0 flex-1 cursor-help"
+                        >
+                          {lead.email}
+                        </a>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs">
+                        <p className="text-sm">{lead.email}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
                 <div className="flex items-center gap-1 text-xs">
-                  <Phone className="w-3 h-3 text-gray-400" />
+                  <Phone className="w-3 h-3 text-gray-400 flex-shrink-0" />
                   <a 
                     href={`tel:${lead.phone}`}
-                    className="text-blue-600 hover:text-blue-800 hover:underline"
+                    className="text-blue-600 hover:text-blue-800 hover:underline truncate block min-w-0 flex-1"
                   >
                     {lead.phone}
                   </a>
                 </div>
                 <div className="flex items-center gap-1 text-xs">
-                  <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
-                  <span className="text-blue-600">
+                  <span className="text-blue-600 truncate block min-w-0 flex-1">
                     {lead.zip}
                   </span>
                 </div>
@@ -254,24 +271,51 @@ const LeadTiles = React.memo(({
 
             {/* Service & Ads */}
             <div className="col-span-3 flex items-center">
-              <div className="space-y-1">
+              <div className="space-y-1 w-full">
                 <div className="flex items-center gap-1 text-xs">
-                  <Tag className="w-3 h-3 text-gray-400" />
-                  <span className="text-gray-600 truncate font-medium" title={lead.service}>
-                    {lead.service}
-                  </span>
+                  <Tag className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="text-gray-600 truncate font-medium block min-w-0 flex-1 cursor-help">
+                          {lead.service}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs">
+                        <p className="text-sm">{lead.service}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
                 <div className="flex items-center gap-1 text-xs">
-                  <Target className="w-3 h-3 text-gray-400" />
-                  <span className="text-gray-600 truncate" title={lead.adSetName}>
-                    {lead.adSetName}
-                  </span>
+                  <Target className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="text-gray-600 truncate block min-w-0 flex-1 cursor-help">
+                          {lead.adSetName}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs">
+                        <p className="text-sm">{lead.adSetName}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
                 <div className="flex items-center gap-1 text-xs">
-                  <Target className="w-3 h-3 text-gray-400" />
-                  <span className="text-gray-600 truncate" title={lead.adName}>
-                    {lead.adName}
-                  </span>
+                  <Target className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="text-gray-600 truncate block min-w-0 flex-1 cursor-help">
+                          {lead.adName}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs">
+                        <p className="text-sm">{lead.adName}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
               </div>
             </div>

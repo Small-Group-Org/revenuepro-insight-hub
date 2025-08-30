@@ -91,6 +91,74 @@ export interface UpdateLeadResponse {
   data: Lead;
 }
 
+export interface AnalyticsOverview {
+  totalLeads: number;
+  estimateSetCount: number;
+  unqualifiedCount: number;
+  conversionRate: string;
+}
+
+export interface AnalyticsDataPoint {
+  zip?: string;
+  service?: string;
+  adSetName?: string;
+  adName?: string;
+  date?: string;
+  day?: string;
+  reason?: string;
+  count: number;
+  percentage: string;
+  total?: number;
+  estimateSet?: number;
+}
+
+export interface AnalyticsSummaryResponse {
+  success: boolean;
+  data: {
+    overview: AnalyticsOverview;
+    zipData: AnalyticsDataPoint[];
+    serviceData: AnalyticsDataPoint[];
+    adSetData: AnalyticsDataPoint[];
+    adNameData: AnalyticsDataPoint[];
+    leadDateData: AnalyticsDataPoint[];
+    dayOfWeekData: AnalyticsDataPoint[];
+    ulrData: AnalyticsDataPoint[];
+  };
+}
+
+export interface AnalyticsTableResponse {
+  success: boolean;
+  data: {
+    adSetData: {
+      data: AnalyticsDataPoint[];
+      pagination: PaginationInfo;
+    };
+    adNameData: {
+      data: AnalyticsDataPoint[];
+      pagination: PaginationInfo;
+    };
+  };
+}
+
+export interface GetAnalyticsSummaryPayload {
+  clientId: string;
+  timeFilter?: 'all' | 'this_month' | 'last_month' | 'this_quarter' | 'last_quarter' | 'this_year' | 'last_year';
+}
+
+export interface GetAnalyticsTablePayload {
+  clientId: string;
+  commonTimeFilter?: 'all' | '7' | '14' | '30' | '60';
+  adSetPage?: number;
+  adNamePage?: number;
+  adSetItemsPerPage?: number;
+  adNameItemsPerPage?: number;
+  adSetSortField?: 'adSetName' | 'total' | 'estimateSet' | 'percentage';
+  adSetSortOrder?: 'asc' | 'desc';
+  adNameSortField?: 'adName' | 'total' | 'estimateSet' | 'percentage';
+  adNameSortOrder?: 'asc' | 'desc';
+  showTopRanked?: boolean;
+}
+
 export const getLeads = async (payload?: GetLeadsPayload) => {
   let url = '/leads';
   const params = new URLSearchParams();
@@ -186,5 +254,43 @@ export const exportAllFilteredLeads = async (payload: GetPaginatedLeadsPayload) 
 
 export const updateLead = async (payload: UpdateLeadPayload) => {
   const response = await doPATCH("/leads", payload);
+  return response;
+};
+
+// Analytics API functions
+export const getAnalyticsSummary = async (payload: GetAnalyticsSummaryPayload) => {
+  const params = new URLSearchParams();
+  
+  // Required parameters
+  params.append('clientId', payload.clientId);
+  
+  // Optional parameters
+  if (payload.timeFilter) params.append('timeFilter', payload.timeFilter);
+  
+  const url = `/leads/analytics/summary?${params.toString()}`;
+  const response = await doGET(url);
+  return response;
+};
+
+export const getAnalyticsTable = async (payload: GetAnalyticsTablePayload) => {
+  const params = new URLSearchParams();
+  
+  // Required parameters
+  params.append('clientId', payload.clientId);
+  
+  // Optional parameters
+  if (payload.commonTimeFilter) params.append('commonTimeFilter', payload.commonTimeFilter);
+  if (payload.adSetPage) params.append('adSetPage', payload.adSetPage.toString());
+  if (payload.adNamePage) params.append('adNamePage', payload.adNamePage.toString());
+  if (payload.adSetItemsPerPage) params.append('adSetItemsPerPage', payload.adSetItemsPerPage.toString());
+  if (payload.adNameItemsPerPage) params.append('adNameItemsPerPage', payload.adNameItemsPerPage.toString());
+  if (payload.adSetSortField) params.append('adSetSortField', payload.adSetSortField);
+  if (payload.adSetSortOrder) params.append('adSetSortOrder', payload.adSetSortOrder);
+  if (payload.adNameSortField) params.append('adNameSortField', payload.adNameSortField);
+  if (payload.adNameSortOrder) params.append('adNameSortOrder', payload.adNameSortOrder);
+  if (payload.showTopRanked !== undefined) params.append('showTopRanked', payload.showTopRanked.toString());
+  
+  const url = `/leads/analytics/ad-table?${params.toString()}`;
+  const response = await doGET(url);
   return response;
 };

@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useLeadStore } from '@/stores/leadStore';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useUserStore } from '@/stores/userStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
@@ -7,8 +6,16 @@ import { BarChart, Bar, XAxis, YAxis, PieChart, Pie, Cell } from 'recharts';
 import { TrendingUp, MapPin, Wrench, Tag, FileText, Users, CheckCircle, XCircle, Calendar, BarChart3, ChevronLeft, ChevronRight, ArrowUpDown, ChevronUp, ChevronDown, Trophy } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { startOfMonth, endOfMonth, startOfYear, endOfYear, startOfQuarter, endOfQuarter, subMonths, subQuarters, subYears } from 'date-fns';
 import { TopCard } from '@/components/DashboardTopCards';
+import { 
+  getAnalyticsSummary, 
+  getAnalyticsTable,
+  GetAnalyticsSummaryPayload,
+  GetAnalyticsTablePayload,
+  AnalyticsSummaryResponse,
+  AnalyticsTableResponse,
+  AnalyticsDataPoint
+} from '@/service/leadService';
 
 // Chart colors
 const COLORS = ['#1f1c13', '#9ca3af', '#306BC8', '#2A388F', '#396F9C'];
@@ -45,10 +52,15 @@ const TIME_FILTER_LABELS: Record<string, string> = {
 };
 
 export const LeadAnalytics = () => {
-  const { leads, loading, error, fetchLeads } = useLeadStore();
   const { selectedUserId } = useUserStore();
   const [selectedMetric, setSelectedMetric] = useState<string>('overview');
   const [timeFilter, setTimeFilter] = useState<'all' | 'this_month' | 'last_month' | 'this_quarter' | 'last_quarter' | 'this_year' | 'last_year'>('all');
+  
+  // Analytics data states
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsSummaryResponse['data'] | null>(null);
+  const [tableData, setTableData] = useState<AnalyticsTableResponse['data'] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   // Pagination states for each table
   const [adSetPage, setAdSetPage] = useState(1);
@@ -66,382 +78,107 @@ export const LeadAnalytics = () => {
   const [commonTimeFilter, setCommonTimeFilter] = useState<'all' | '7' | '14' | '30' | '60'>('all');
   
   // Top ranking toggle states
-  const [showTopRankedAdSets, setShowTopRankedAdSets] = useState(false);
-  const [showTopRankedAdNames, setShowTopRankedAdNames] = useState(false);
+  const [showTopRankedAdSets, setShowTopRankedAdSets] = useState(true);
+  const [showTopRankedAdNames, setShowTopRankedAdNames] = useState(true);
 
+  // Fetch analytics summary data
+  const fetchAnalyticsSummary = useCallback(async () => {
+    if (!selectedUserId) return;
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const payload: GetAnalyticsSummaryPayload = {
+        clientId: selectedUserId,
+        timeFilter
+      };
+      
+      const response = await getAnalyticsSummary(payload);
+      
+      if (!response.error && response.data && response.data.success) {
+        setAnalyticsData(response.data.data);
+      } else {
+        setError(response.message || 'Failed to fetch analytics data');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch analytics data');
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedUserId, timeFilter]);
+
+  // Fetch analytics table data
+  const fetchAnalyticsTable = useCallback(async () => {
+    if (!selectedUserId) return;
+    
+    try {
+      const payload: GetAnalyticsTablePayload = {
+        clientId: selectedUserId,
+        commonTimeFilter,
+        adSetPage,
+        adNamePage,
+        adSetItemsPerPage,
+        adNameItemsPerPage,
+        adSetSortField,
+        adSetSortOrder,
+        adNameSortField,
+        adNameSortOrder,
+        showTopRanked: showTopRankedAdSets || showTopRankedAdNames
+      };
+      
+      const response = await getAnalyticsTable(payload);
+      
+      if (!response.error && response.data && response.data.success) {
+        setTableData(response.data.data);
+      } else {
+        setError(response.message || 'Failed to fetch table data');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch table data');
+    }
+  }, [
+    selectedUserId, 
+    commonTimeFilter, 
+    adSetPage, 
+    adNamePage, 
+    adSetSortField, 
+    adSetSortOrder, 
+    adNameSortField, 
+    adNameSortOrder, 
+    showTopRankedAdSets, 
+    showTopRankedAdNames
+  ]);
+
+  // Fetch analytics summary when time filter or user changes
   useEffect(() => {
-    if (selectedUserId) {
-      fetchLeads(selectedUserId); // Pass selectedUserId as clientId
-    }
-  }, [selectedUserId, fetchLeads]);
+    fetchAnalyticsSummary();
+  }, [selectedUserId, timeFilter, fetchAnalyticsSummary]);
 
-  // Filter leads based on time period
-  const filteredLeads = useMemo(() => {
-    if (timeFilter === 'all') return leads;
-    
-    const now = new Date();
-    let startDate: Date | null = null;
-    let endDate: Date | null = null;
-    
-    switch (timeFilter) {
-      case 'this_month': {
-        startDate = startOfMonth(now);
-        endDate = endOfMonth(now);
-        break;
-      }
-      case 'last_month': {
-        const lastMonth = subMonths(now, 1);
-        startDate = startOfMonth(lastMonth);
-        endDate = endOfMonth(lastMonth);
-        break;
-      }
-      case 'this_quarter': {
-        startDate = startOfQuarter(now);
-        endDate = endOfQuarter(now);
-        break;
-      }
-      case 'last_quarter': {
-        const lastQuarter = subQuarters(now, 1);
-        startDate = startOfQuarter(lastQuarter);
-        endDate = endOfQuarter(lastQuarter);
-        break;
-      }
-      case 'this_year': {
-        startDate = startOfYear(now);
-        endDate = endOfYear(now);
-        break;
-      }
-      case 'last_year': {
-        const lastYear = subYears(now, 1);
-        startDate = startOfYear(lastYear);
-        endDate = endOfYear(lastYear);
-        break;
-      }
-      default:
-        return leads;
-    }
-    
-    return leads.filter(lead => {
-      const leadDate = new Date(lead.leadDate);
-      return (!startDate || leadDate >= startDate) && (!endDate || leadDate <= endDate);
-    });
-  }, [leads, timeFilter]);
+  // Fetch table data when table-related states change
+  useEffect(() => {
+    fetchAnalyticsTable();
+  }, [
+    selectedUserId, 
+    commonTimeFilter, 
+    adSetPage, 
+    adNamePage, 
+    adSetSortField, 
+    adSetSortOrder, 
+    adNameSortField, 
+    adNameSortOrder, 
+    showTopRankedAdSets, 
+    showTopRankedAdNames,
+    fetchAnalyticsTable
+  ]);
 
-  // Analytics Data Processing
-  const analyticsData = useMemo(() => {
-    if (!filteredLeads.length) return null;
-
-    const totalLeads = filteredLeads.length;
-
-    // Filter leads with estimates set for chart analysis
-    const estimateSetLeads = filteredLeads.filter(lead => lead.status === 'estimate_set');
-
-    const estimateSetCount = estimateSetLeads.length;
-    const unqualifiedCount = totalLeads - estimateSetCount;
-    const conversionRate = ((estimateSetCount / totalLeads) * 100).toFixed(1);
-
-    // Zip Code Analysis (Only Estimate Set Leads)
-    const zipAnalysis = estimateSetLeads.reduce((acc, lead) => {
-      acc[lead.zip] = (acc[lead.zip] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-    const zipData = estimateSetCount > 0 ? Object.entries(zipAnalysis)
-      .map(([zip, count]) => ({ 
-        zip, 
-        count, 
-        percentage: ((count / estimateSetCount) * 100).toFixed(1)
-      }))
-      .sort((a, b) => b.count - a.count) : [];
-
-    // Service Analysis (Only Estimate Set Leads)
-    const serviceAnalysis = estimateSetLeads.reduce((acc, lead) => {
-      acc[lead.service] = (acc[lead.service] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-    const serviceData = estimateSetCount > 0 ? Object.entries(serviceAnalysis)
-      .map(([service, count]) => ({ 
-        service, 
-        count, 
-        percentage: ((count / estimateSetCount) * 100).toFixed(1)
-      }))
-      .sort((a, b) => b.count - a.count) : [];
-
-    // Ad Set Analysis (All Leads + Estimate Set Leads)
-    const adSetAnalysis = filteredLeads.reduce((acc, lead) => {
-      if (!acc[lead.adSetName]) {
-        acc[lead.adSetName] = { total: 0, estimateSet: 0 };
-      }
-      acc[lead.adSetName].total += 1;
-      if (lead.status === 'estimate_set') {
-        acc[lead.adSetName].estimateSet += 1;
-      }
-      return acc;
-    }, {} as Record<string, { total: number; estimateSet: number }>);
-
-    const adSetData = Object.entries(adSetAnalysis)
-      .map(([adSetName, data]) => ({ 
-        adSetName, 
-        total: data.total,
-        estimateSet: data.estimateSet,
-        percentage: data.total > 0 ? ((data.estimateSet / data.total) * 100).toFixed(1) : '0.0'
-      }))
-      .sort((a, b) => b.estimateSet - a.estimateSet);
-
-    // Ad Name Analysis (All Leads + Estimate Set Leads)
-    const adNameAnalysis = filteredLeads.reduce((acc, lead) => {
-      const key = `${lead.adName}|${lead.adSetName}`; // Use combination of ad name and ad set name
-      if (!acc[key]) {
-        acc[key] = { adName: lead.adName, adSetName: lead.adSetName, total: 0, estimateSet: 0 };
-      }
-      acc[key].total += 1;
-      if (lead.status === 'estimate_set') {
-        acc[key].estimateSet += 1;
-      }
-      return acc;
-    }, {} as Record<string, { adName: string; adSetName: string; total: number; estimateSet: number }>);
-
-    const adNameData = Object.entries(adNameAnalysis)
-      .map(([key, data]) => ({ 
-        adName: data.adName, 
-        adSetName: data.adSetName,
-        total: data.total,
-        estimateSet: data.estimateSet,
-        percentage: data.total > 0 ? ((data.estimateSet / data.total) * 100).toFixed(1) : '0.0'
-      }))
-      .sort((a, b) => b.estimateSet - a.estimateSet);
-
-    // Lead Date Analysis (Only Estimate Set Leads)
-    const leadDateAnalysis = estimateSetLeads.reduce((acc, lead) => {
-      const date = new Date(lead.leadDate).toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric' 
-      });
-      acc[date] = (acc[date] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-    const leadDateData = estimateSetCount > 0 ? Object.entries(leadDateAnalysis)
-      .map(([date, count]) => ({ 
-        date, 
-        count, 
-        percentage: ((count / estimateSetCount) * 100).toFixed(1)
-      }))
-      .sort((a, b) => new Date(a.date + ', 2024').getTime() - new Date(b.date + ', 2024').getTime()) : [];
-
-    // Day of Week Analysis (Both Total Leads and Estimate Set Leads)
-    const dayOfWeekAnalysis = filteredLeads.reduce((acc, lead) => {
-      const dayOfWeek = new Date(lead.leadDate).toLocaleDateString('en-US', { weekday: 'long' });
-      if (!acc[dayOfWeek]) {
-        acc[dayOfWeek] = { total: 0, estimateSet: 0 };
-      }
-      acc[dayOfWeek].total += 1;
-      if (lead.status === 'estimate_set') {
-        acc[dayOfWeek].estimateSet += 1;
-      }
-      return acc;
-    }, {} as Record<string, { total: number; estimateSet: number }>);
-
-    const dayOfWeekData = Object.entries(dayOfWeekAnalysis)
-      .map(([day, data]) => ({ 
-        day, 
-        total: data.total,
-        estimateSet: data.estimateSet,
-        percentage: data.total > 0 ? ((data.estimateSet / data.total) * 100).toFixed(1) : '0.0'
-      }))
-      .sort((a, b) => {
-        const dayOrder = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        return dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day);
-      });
-
-    // Unqualified Reasons Analysis
-    const ulrAnalysis = filteredLeads
-      .filter(lead => lead.status === 'unqualified' && lead.unqualifiedLeadReason)
-      .reduce((acc, lead) => {
-        const reason = lead.unqualifiedLeadReason!;
-        acc[reason] = (acc[reason] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-
-    const ulrData = Object.entries(ulrAnalysis)
-      .map(([reason, count]) => ({ 
-        reason, 
-        count, 
-        percentage: ((count / unqualifiedCount) * 100).toFixed(1)
-      }))
-      .sort((a, b) => b.count - a.count);
-
-    return {
-      overview: {
-        totalLeads,
-        estimateSetCount,
-        unqualifiedCount,
-        conversionRate
-      },
-      zipData,
-      serviceData,
-      adSetData,
-      adNameData,
-      leadDateData,
-      dayOfWeekData,
-      ulrData
-    };
-  }, [filteredLeads]);
-
-  // Enhanced data processing with common time filtering
-  const enhancedData = useMemo(() => {
-    // Filter leads based on commonTimeFilter
-    let timeFilteredLeads = leads;
-    
-    if (commonTimeFilter !== 'all') {
-      const now = new Date();
-      const daysAgo = new Date(now.getTime() - (parseInt(commonTimeFilter) * 24 * 60 * 60 * 1000));
-      
-      timeFilteredLeads = leads.filter(lead => {
-        const leadDate = new Date(lead.leadDate);
-        return leadDate >= daysAgo && leadDate <= now;
-      });
-    }
-
-    // Ad Set Analysis with time filtering
-    const adSetAnalysis = timeFilteredLeads.reduce((acc, lead) => {
-      if (!acc[lead.adSetName]) {
-        acc[lead.adSetName] = { total: 0, estimateSet: 0 };
-      }
-      acc[lead.adSetName].total += 1;
-      if (lead.status === 'estimate_set') {
-        acc[lead.adSetName].estimateSet += 1;
-      }
-      return acc;
-    }, {} as Record<string, { total: number; estimateSet: number }>);
-
-    const adSetData = Object.entries(adSetAnalysis)
-      .map(([adSetName, data]) => ({ 
-        adSetName, 
-        total: data.total,
-        estimateSet: data.estimateSet,
-        percentage: data.total > 0 ? ((data.estimateSet / data.total) * 100).toFixed(1) : '0.0'
-      }))
-      .sort((a, b) => b.estimateSet - a.estimateSet);
-
-    // Ad Name Analysis with time filtering
-    const adNameAnalysis = timeFilteredLeads.reduce((acc, lead) => {
-      const key = `${lead.adName}|${lead.adSetName}`; // Use combination of ad name and ad set name
-      if (!acc[key]) {
-        acc[key] = { adName: lead.adName, adSetName: lead.adSetName, total: 0, estimateSet: 0 };
-      }
-      acc[key].total += 1;
-      if (lead.status === 'estimate_set') {
-        acc[key].estimateSet += 1;
-      }
-      return acc;
-    }, {} as Record<string, { adName: string; adSetName: string; total: number; estimateSet: number }>);
-
-    const adNameData = Object.entries(adNameAnalysis)
-      .map(([key, data]) => ({ 
-        adName: data.adName, 
-        adSetName: data.adSetName,
-        total: data.total,
-        estimateSet: data.estimateSet,
-        percentage: data.total > 0 ? ((data.estimateSet / data.total) * 100).toFixed(1) : '0.0'
-      }))
-      .sort((a, b) => b.estimateSet - a.estimateSet);
-
-    return {
-      adSetData,
-      adNameData
-    };
-  }, [leads, commonTimeFilter]);
-
-  // Sorting functions
-  const sortData = (
-    data: any[], 
-    sortField: string, 
-    sortOrder: 'asc' | 'desc'
-  ): any[] => {
-    return [...data].sort((a, b) => {
-      let aValue = a[sortField];
-      let bValue = b[sortField];
-      
-      // Special handling for percentage field - convert string percentage to number
-      if (sortField === 'percentage') {
-        aValue = parseFloat(aValue);
-        bValue = parseFloat(bValue);
-      }
-      
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortOrder === 'asc' 
-          ? aValue.localeCompare(bValue)
-          : bValue.localeCompare(aValue);
-      }
-      
-      if (typeof aValue === 'number' && typeof bValue === 'number') {
-        return sortOrder === 'asc' ? aValue - bValue : bValue - aValue;
-      }
-      
-      return 0;
-    });
-  };
-
-  // Pagination functions
-  const paginateData = (data: any[], page: number, itemsPerPage: number): any[] => {
-    const startIndex = (page - 1) * itemsPerPage;
-    return data.slice(startIndex, startIndex + itemsPerPage);
-  };
-
-  const getTotalPages = (totalItems: number, itemsPerPage: number): number => {
-    return Math.ceil(totalItems / itemsPerPage);
-  };
-
-  // Top ranking sort function (by percentage desc, then estimateSet desc)
-  const topRankingSort = (data: any[]): any[] => {
-    return [...data].sort((a, b) => {
-      const aPercentage = parseFloat(a.percentage);
-      const bPercentage = parseFloat(b.percentage);
-      
-      // First sort by percentage (descending)
-      if (aPercentage !== bPercentage) {
-        return bPercentage - aPercentage;
-      }
-      
-      // If percentages are equal, sort by estimate count (descending)
-      return b.estimateSet - a.estimateSet;
-    });
-  };
-
-  // Sort and paginate data for each table
-  const sortedAdSetData = useMemo(() => {
-    if (showTopRankedAdSets) {
-      return topRankingSort(enhancedData.adSetData);
-    }
-    return sortData(enhancedData.adSetData, adSetSortField, adSetSortOrder);
-  }, [enhancedData.adSetData, adSetSortField, adSetSortOrder, showTopRankedAdSets]);
-  
-  const paginatedAdSetData = useMemo(() => 
-    paginateData(sortedAdSetData, adSetPage, adSetItemsPerPage), 
-    [sortedAdSetData, adSetPage]
-  );
-
-  const sortedAdNameData = useMemo(() => {
-    if (showTopRankedAdNames) {
-      return topRankingSort(enhancedData.adNameData);
-    }
-    return sortData(enhancedData.adNameData, adNameSortField, adNameSortOrder);
-  }, [enhancedData.adNameData, adNameSortField, adNameSortOrder, showTopRankedAdNames]);
-  
-  const paginatedAdNameData = useMemo(() => 
-    paginateData(sortedAdNameData, adNamePage, adNameItemsPerPage), 
-    [sortedAdNameData, adNamePage]
-  );
-
-  // Reset pagination when data changes
+  // Reset pagination when filters change
   useEffect(() => {
     setAdSetPage(1);
     setAdNamePage(1);
   }, [timeFilter, commonTimeFilter, showTopRankedAdSets, showTopRankedAdNames]);
 
-    // Helper function to render sortable table header
+  // Helper function to render sortable table header
   const renderSortableHeader = (
     field: string,
     label: string,
@@ -482,7 +219,7 @@ export const LeadAnalytics = () => {
     onPageChange: (page: number) => void,
     itemsPerPage: number
   ) => {
-    const totalPages = getTotalPages(totalItems, itemsPerPage);
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
     if (totalPages <= 1) return null;
 
     return (
@@ -936,12 +673,14 @@ export const LeadAnalytics = () => {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b">
-                        <th className="text-left p-2 w-20 text-amber-900 font-semibold">Ranking</th>
+                        <th className="text-left p-2 w-20 text-amber-900 font-semibold">
+                          {showTopRankedAdSets ? 'Ranking' : 'S. No.'}
+                        </th>
                         {renderSortableHeader('adSetName', 'Ad Set Name', adSetSortField, adSetSortOrder, (field) => {
                           if (adSetSortField === field) {
                             setAdSetSortOrder(adSetSortOrder === 'asc' ? 'desc' : 'asc');
                           } else {
-                            setAdSetSortField(field as any);
+                            setAdSetSortField(field as 'adSetName' | 'total' | 'estimateSet' | 'percentage');
                             setAdSetSortOrder('desc');
                           }
                         }, showTopRankedAdSets)}
@@ -949,7 +688,7 @@ export const LeadAnalytics = () => {
                           if (adSetSortField === field) {
                             setAdSetSortOrder(adSetSortOrder === 'asc' ? 'desc' : 'asc');
                           } else {
-                            setAdSetSortField(field as any);
+                            setAdSetSortField(field as 'adSetName' | 'total' | 'estimateSet' | 'percentage');
                             setAdSetSortOrder('desc');
                           }
                         }, showTopRankedAdSets)}
@@ -957,7 +696,7 @@ export const LeadAnalytics = () => {
                           if (adSetSortField === field) {
                             setAdSetSortOrder(adSetSortOrder === 'asc' ? 'desc' : 'asc');
                           } else {
-                            setAdSetSortField(field as any);
+                            setAdSetSortField(field as 'adSetName' | 'total' | 'estimateSet' | 'percentage');
                             setAdSetSortOrder('desc');
                           }
                         }, showTopRankedAdSets)}
@@ -965,18 +704,18 @@ export const LeadAnalytics = () => {
                           if (adSetSortField === field) {
                             setAdSetSortOrder(adSetSortOrder === 'asc' ? 'desc' : 'asc');
                           } else {
-                            setAdSetSortField(field as any);
+                            setAdSetSortField(field as 'adSetName' | 'total' | 'estimateSet' | 'percentage');
                             setAdSetSortOrder('desc');
                           }
                         }, showTopRankedAdSets)}
                     </tr>
                   </thead>
                   <tbody>
-                      {paginatedAdSetData.length > 0 ? (
-                        paginatedAdSetData.map((adSet, index) => (
+                      {tableData?.adSetData.data && tableData.adSetData.data.length > 0 ? (
+                        tableData.adSetData.data.map((adSet, index) => (
                       <tr key={adSet.adSetName} className="border-b hover:bg-muted/50">
                             <td className="p-2 text-amber-900 font-semibold">
-                              #{((adSetPage - 1) * adSetItemsPerPage) + index + 1}
+                              {showTopRankedAdSets ? `#${((adSetPage - 1) * adSetItemsPerPage) + index + 1}` : `${((adSetPage - 1) * adSetItemsPerPage) + index + 1}`}
                             </td>
                         <td className="p-2 font-medium">{adSet.adSetName}</td>
                         <td className="text-right p-2">{adSet.total}</td>
@@ -1000,7 +739,12 @@ export const LeadAnalytics = () => {
                   </tbody>
                 </table>
               </div>
-                {renderPagination(adSetPage, sortedAdSetData.length, setAdSetPage, adSetItemsPerPage)}
+                {tableData?.adSetData.pagination && renderPagination(
+                  tableData.adSetData.pagination.currentPage, 
+                  tableData.adSetData.pagination.totalCount, 
+                  setAdSetPage, 
+                  adSetItemsPerPage
+                )}
             </CardContent>
           </Card>
 
@@ -1017,12 +761,14 @@ export const LeadAnalytics = () => {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b">
-                        <th className="text-left p-2 w-20 text-amber-900 font-semibold">Ranking</th>
+                        <th className="text-left p-2 w-20 text-amber-900 font-semibold">
+                          {showTopRankedAdNames ? 'Ranking' : 'S. No.'}
+                        </th>
                         {renderSortableHeader('adName', 'Ad Name', adNameSortField, adNameSortOrder, (field) => {
                           if (adNameSortField === field) {
                             setAdNameSortOrder(adNameSortOrder === 'asc' ? 'desc' : 'asc');
                           } else {
-                            setAdNameSortField(field as any);
+                            setAdNameSortField(field as 'adName' | 'total' | 'estimateSet' | 'percentage');
                             setAdNameSortOrder('desc');
                           }
                         }, showTopRankedAdNames)}
@@ -1030,7 +776,7 @@ export const LeadAnalytics = () => {
                           if (adNameSortField === field) {
                             setAdNameSortOrder(adNameSortOrder === 'asc' ? 'desc' : 'asc');
                           } else {
-                            setAdNameSortField(field as any);
+                            setAdNameSortField(field as 'adName' | 'total' | 'estimateSet' | 'percentage');
                             setAdNameSortOrder('desc');
                           }
                         }, showTopRankedAdNames)}
@@ -1038,7 +784,7 @@ export const LeadAnalytics = () => {
                           if (adNameSortField === field) {
                             setAdNameSortOrder(adNameSortOrder === 'asc' ? 'desc' : 'asc');
                           } else {
-                            setAdNameSortField(field as any);
+                            setAdNameSortField(field as 'adName' | 'total' | 'estimateSet' | 'percentage');
                             setAdNameSortOrder('desc');
                           }
                         }, showTopRankedAdNames)}
@@ -1046,18 +792,18 @@ export const LeadAnalytics = () => {
                           if (adNameSortField === field) {
                             setAdNameSortOrder(adNameSortOrder === 'asc' ? 'desc' : 'asc');
                           } else {
-                            setAdNameSortField(field as any);
+                            setAdNameSortField(field as 'adName' | 'total' | 'estimateSet' | 'percentage');
                             setAdNameSortOrder('desc');
                           }
                         }, showTopRankedAdNames)}
                     </tr>
                   </thead>
                   <tbody>
-                      {paginatedAdNameData.length > 0 ? (
-                        paginatedAdNameData.map((ad, index) => (
+                      {tableData?.adNameData.data && tableData.adNameData.data.length > 0 ? (
+                        tableData.adNameData.data.map((ad, index) => (
                           <tr key={`${ad.adName}-${ad.adSetName}`} className="border-b hover:bg-muted/50">
                             <td className="p-2 text-amber-900 font-semibold">
-                              #{((adNamePage - 1) * adNameItemsPerPage) + index + 1}
+                              {showTopRankedAdNames ? `#${((adNamePage - 1) * adNameItemsPerPage) + index + 1}` : `${((adNamePage - 1) * adNameItemsPerPage) + index + 1}`}
                             </td>
                             <td className="p-2">
                               <div className="flex flex-col">
@@ -1088,7 +834,12 @@ export const LeadAnalytics = () => {
                   </tbody>
                 </table>
               </div>
-                {renderPagination(adNamePage, sortedAdNameData.length, setAdNamePage, adNameItemsPerPage)}
+                {tableData?.adNameData.pagination && renderPagination(
+                  tableData.adNameData.pagination.currentPage, 
+                  tableData.adNameData.pagination.totalCount, 
+                  setAdNamePage, 
+                  adNameItemsPerPage
+                )}
             </CardContent>
           </Card>
                       </div>
