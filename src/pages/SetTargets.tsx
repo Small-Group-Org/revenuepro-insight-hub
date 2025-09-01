@@ -29,10 +29,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { FullScreenLoader } from "@/components/ui/full-screen-loader";
 import { useCombinedLoading } from "@/hooks/useCombinedLoading";
+import { useRoleAccess } from "@/hooks/useRoleAccess";
 
 export const SetTargets = () => {
   const { toast } = useToast();
-  
+  const { userRole } = useRoleAccess();
+
   const [fieldValues, setFieldValues] = useState<FieldValue>(getDefaultValues());
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [period, setPeriod] = useState<PeriodType>('monthly');
@@ -62,9 +64,9 @@ export const SetTargets = () => {
   );
 
   const disableLogic = useMemo(() => 
-    handleInputDisable(period, selectedDate, currentTarget, 'setTargets'), 
+    handleInputDisable(period, selectedDate, currentTarget, 'setTargets', userRole), 
     [period, selectedDate, currentTarget]
-  );
+  );  
 
   const [disableStatus, setDisableStatus] = useState(disableLogic);
 
