@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import useAuthStore from "@/stores/authStore";
 import { login } from "@/service/authService";
@@ -11,6 +12,9 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [privacyPolicyChecked, setPrivacyPolicyChecked] = useState(false);
+  const [caPrivacyPolicyChecked, setCaPrivacyPolicyChecked] = useState(false);
+  const [termsConditionsChecked, setTermsConditionsChecked] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { login: setLoggedIn, setUser } = useAuthStore();
@@ -18,6 +22,17 @@ export default function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check if all checkboxes are checked
+    if (!privacyPolicyChecked || !caPrivacyPolicyChecked || !termsConditionsChecked) {
+      toast({
+        title: "Error",
+        description: "Please agree to all policies and terms to continue.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsLoading(true);
     
     try {
@@ -89,9 +104,9 @@ export default function Login() {
 
       {/* Right Section - 55% */}
       <div className="lg:w-[55%] w-full bg-white flex items-center justify-center p-6 sm:p-8 lg:p-12 min-h-[50vh] lg:min-h-screen">
-        <div className="w-full max-w-md space-y-6">
+        <div className="w-full max-w-md ">
           {/* Form Header */}
-          <div className="text-center space-y-3">
+          <div className="text-center space-y-3 mb-6">
             <h3 className="text-2xl sm:text-3xl font-bold text-gray-900">Welcome back</h3>
             <p className="text-base text-gray-600">Sign in to your account</p>
           </div>
@@ -134,19 +149,76 @@ export default function Login() {
               type="submit" 
               className="w-full h-12 text-white rounded-lg font-medium shadow-lg transition-colors"
               style={{ backgroundColor: '#1f1c13' }}
-              disabled={isLoading}
+              disabled={isLoading || !privacyPolicyChecked || !caPrivacyPolicyChecked || !termsConditionsChecked}
             >
               {isLoading ? "Please wait..." : "Sign In"}
             </Button>
           </form>
 
-          {/* Footer Links */}
-          <div className="text-center space-y-4 pt-6">
-            <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-gray-500">
-              <a href="#" className="hover:text-gray-700 transition-colors">Privacy Policy</a>
-              <a href="#" className="hover:text-gray-700 transition-colors">CA Privacy Policy</a>
-              <a href="#" className="hover:text-gray-700 transition-colors">Terms & Conditions</a>
+          {/* Checkboxes */}
+          <div className="text-center pt-6">
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="privacy-policy" 
+                  checked={privacyPolicyChecked}
+                  onCheckedChange={(checked) => setPrivacyPolicyChecked(checked === true)}
+                />
+                <label htmlFor="privacy-policy" className="text-sm text-gray-600">
+                  I have read and agreed to the{" "}
+                  <a 
+                    href="https://getrevpro.co/privacy-policy" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-800 underline"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    Privacy Policy
+                  </a>
+                </label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="ca-privacy-policy" 
+                  checked={caPrivacyPolicyChecked}
+                  onCheckedChange={(checked) => setCaPrivacyPolicyChecked(checked === true)}
+                />
+                <label htmlFor="ca-privacy-policy" className="text-sm text-gray-600">
+                  I have read and agreed to the{" "}
+                  <a 
+                    href="https://getrevpro.co/revenue-pro-california-privacy-policy" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-800 underline"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    CA Privacy Policy
+                  </a>
+                </label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="terms-conditions" 
+                  checked={termsConditionsChecked}
+                  onCheckedChange={(checked) => setTermsConditionsChecked(checked === true)}
+                />
+                <label htmlFor="terms-conditions" className="text-sm text-gray-600">
+                  I have read and agreed to the{" "}
+                  <a 
+                    href="https://getrevpro.co/revenue-pro-terms-and-conditions" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-800 underline"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    Terms and Conditions
+                  </a>
+                </label>
+              </div>
             </div>
+            
             {/* Mobile Copyright */}
             <div className="block lg:hidden pt-4">
               <p className="text-gray-400 text-xs">Copyright © HomeownerMarketers</p>
