@@ -137,6 +137,7 @@ export const DashboardTopCards: React.FC<DashboardTopCardsProps> = ({
       acc.estimatesSet += dataPoint.estimatesSet || 0;
       acc.estimatesRan += dataPoint.estimatesRan || 0;
       acc.budgetSpent += dataPoint.testingBudgetSpent + dataPoint.leadGenerationBudgetSpent + dataPoint.awarenessBrandingBudgetSpent || 0;
+      acc.managementCost += dataPoint.managementCost || 0;
       return acc;
     }, {
       revenue: 0,
@@ -144,7 +145,8 @@ export const DashboardTopCards: React.FC<DashboardTopCardsProps> = ({
       leads: 0,
       estimatesSet: 0,
       estimatesRan: 0,
-      budgetSpent: 0
+      budgetSpent: 0,
+      managementCost: 0
     });
     
     // Calculate derived metrics
@@ -152,8 +154,8 @@ export const DashboardTopCards: React.FC<DashboardTopCardsProps> = ({
     const costPerLead = totals.leads > 0 ? totals.budgetSpent / totals.leads : 0;
     const costPerAppointmentSet = totals.estimatesSet > 0 ? totals.budgetSpent / totals.estimatesSet : 0;
     const appointmentRate = totals.leads > 0 ? (totals.estimatesSet / totals.leads) * 100 : 0;
-    const targetBudget = processedTargetData.reduce((acc, dataPoint) => {
-      acc += dataPoint.weeklyBudget || 0;
+    const totalManagementCost = processedTargetData.reduce((acc, dataPoint) => {
+      acc += dataPoint.managementCost || 0;
       return acc;
     }, 0);
 
@@ -161,18 +163,7 @@ export const DashboardTopCards: React.FC<DashboardTopCardsProps> = ({
     let totalCom = 0;
     if (totals.revenue > 0) {
       if (processedTargetData) {
-        let managementCost = 0;
-        if (period === "monthly") {
-          managementCost = calculateManagementCost(targetBudget);
-        } else if (period === "yearly") {
-          managementCost = calculateManagementCost(targetBudget / 12);
-        } else if (period === "ytd") {
-          const currentMonth = new Date().getMonth();
-          const monthsElapsed = currentMonth + 1;
-          managementCost = calculateManagementCost((targetBudget / 12) * monthsElapsed);
-        }
-
-        totalCom = ((managementCost + totals.budgetSpent) / totals.revenue) * 100;
+        totalCom = ((totalManagementCost + totals.budgetSpent) / totals.revenue) * 100;
       } else {
         // If no target data, just calculate based on budget spent
         totalCom = (totals.budgetSpent / totals.revenue) * 100;

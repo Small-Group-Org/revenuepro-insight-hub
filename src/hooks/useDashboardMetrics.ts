@@ -36,7 +36,7 @@ export const useDashboardMetrics = () => {
       });
     }
 
-    if (period === "yearly" || period === "ytd") {
+    if (period === "yearly" || period === "ytd") {      
       return data.map((item, index) => {
         return processFunction(item, index);
       });

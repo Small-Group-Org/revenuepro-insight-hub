@@ -164,18 +164,9 @@ export const CompareResults = () => {
     
     // COM% from target data
     metrics.com = actual.revenue > 0 ? (actual.budgetSpent / actual.revenue) * 100 : 0;
-    
+
     if (metrics.revenue > 0 && period !== "weekly") {
-      let managementCost = 0;
-      const budget = processedTargetData?.weeklyBudget || 0;
-
-      if (period === "monthly") {
-        managementCost = calculateManagementCost(budget);
-      } else if (period === "yearly") {
-        managementCost = calculateManagementCost(budget / 12);
-      }
-
-      metrics.totalCom = ((managementCost + metrics.budget) / metrics.revenue) * 100;
+      metrics.totalCom = ((processedTargetData.managementCost + metrics.budget) / metrics.revenue) * 100;
     }
 
     return metrics;
