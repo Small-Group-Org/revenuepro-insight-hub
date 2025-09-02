@@ -97,7 +97,10 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
     const displayValue = displayValues[field.value] || value.toString();
 
     // Determine if this field should be disabled
-    const isFieldDisabled = isDisabled || (shouldDisableNonRevenueFields && field.value !== 'revenue');
+    const isFieldDisabled = 
+      isDisabled || 
+      (shouldDisableNonRevenueFields && field.value !== 'revenue') || 
+      (period === 'yearly' && field.value === 'managementCost');
 
     return (
       <div key={field.value} className="space-y-2">
