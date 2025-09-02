@@ -158,6 +158,15 @@ export const handleInputDisable = (
     }
   } else {
     // For SetTargets page, check if the time frame is editable (not in the past)
+    if(userRole === 'ADMIN'){
+      return {
+        isDisabled,
+        disabledMessage,
+        noteMessage,
+        shouldDisableNonRevenueFields,
+        isButtonDisabled,
+      }
+    }
     const isEditable = isTimeFrameEditable(period, selectedDate);
     if (!isEditable) {
       // Past date logic - disable everything
