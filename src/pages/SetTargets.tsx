@@ -1,22 +1,44 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { TrendingUp, Calculator, DollarSign, BarChart3, Target } from "lucide-react";
-import { DatePeriodSelector } from '../components/DatePeriodSelector';
-import { TargetSection } from '../components/TargetSection';
-import { YearlyTargetModal } from '../components/YearlyTargetModal';
+import {
+  TrendingUp,
+  Calculator,
+  DollarSign,
+  Target,
+} from "lucide-react";
+import { DatePeriodSelector } from "../components/DatePeriodSelector";
+import { TargetSection } from "../components/TargetSection";
+import { YearlyTargetModal } from "../components/YearlyTargetModal";
 import { useTargetStore } from "../stores/targetStore";
 import { useUserStore } from "../stores/userStore";
 import useAuthStore from "../stores/authStore";
-import { endOfWeek, startOfWeek, format, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
-import { calculateFields, targetValidation } from "@/utils/page-utils/targetUtils";
-import { calculateManagementCost, getDaysInMonth } from "@/utils/page-utils/commonUtils";
+import {
+  endOfWeek,
+  startOfWeek,
+  format,
+  startOfMonth,
+  endOfMonth,
+  startOfYear,
+  endOfYear,
+} from "date-fns";
+import {
+  calculateFields,
+  targetValidation,
+} from "@/utils/page-utils/targetUtils";
+import {
+  calculateManagementCost,
+  getDaysInMonth,
+} from "@/utils/page-utils/commonUtils";
 import { handleInputDisable } from "@/utils/page-utils/compareUtils";
 import { months, targetFields } from "@/utils/constant";
 import { DisableMetadata } from "@/types";
 import { FieldConfig, FieldValue, InputField, PeriodType } from "@/types";
 import type { MonthlyData } from "../components/YearlyTargetModal";
-import { getDefaultValues, processTargetData } from "@/utils/page-utils/targetUtils";
-import { IWeeklyTarget, upsertTarget } from "@/service/targetService";
+import {
+  getDefaultValues,
+  processTargetData,
+} from "@/utils/page-utils/targetUtils";
+import { upsertTarget } from "@/service/targetService";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,53 +52,65 @@ import {
 import { FullScreenLoader } from "@/components/ui/full-screen-loader";
 import { useCombinedLoading } from "@/hooks/useCombinedLoading";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
+import { Card, CardContent } from "@/components/ui/card";
 
 export const SetTargets = () => {
   const { toast } = useToast();
   const { userRole } = useRoleAccess();
 
-  const [fieldValues, setFieldValues] = useState<FieldValue>(getDefaultValues());
+  const [fieldValues, setFieldValues] = useState<FieldValue>(
+    getDefaultValues()
+  );
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [period, setPeriod] = useState<PeriodType>('monthly');
+  const [period, setPeriod] = useState<PeriodType>("monthly");
   const [daysInMonth, setDaysInMonth] = useState(getDaysInMonth(new Date()));
   const [lastChanged, setLastChanged] = useState<string | null>(null);
   const [prevValues, setPrevValues] = useState<FieldValue>({});
   const [selectedStartDate, setSelectedStartDate] = useState<string>(
-    format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd')
+    format(startOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd")
   );
   const [selectedEndDate, setSelectedEndDate] = useState<string>(
-    format(endOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd')
+    format(endOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd")
   );
   const [isYearlyModalOpen, setIsYearlyModalOpen] = useState(false);
-  
+  const [createYearlyTarget, setCreateYearlyTarget] = useState(false);
+
   const [showPriorityModal, setShowPriorityModal] = useState(false);
   const [pendingSaveData, setPendingSaveData] = useState<any>(null);
 
-  const { upsertWeeklyTarget, error, getTargetsForUser, currentTarget } = useTargetStore();
+  const { upsertWeeklyTarget, error, getTargetsForUser, currentTarget } =
+    useTargetStore();
   const { isLoading } = useCombinedLoading();
   const selectedYear = selectedDate.getFullYear();
   const { selectedUserId } = useUserStore();
   const { user } = useAuthStore();
 
-  const calculatedValues = useMemo(() => 
-    calculateFields(fieldValues, period, daysInMonth),
+  const calculatedValues = useMemo(
+    () => calculateFields(fieldValues, period, daysInMonth),
     [fieldValues, daysInMonth, period]
   );
 
-  const disableLogic = useMemo(() => 
-    handleInputDisable(period, selectedDate, currentTarget, 'setTargets', userRole), 
+  const disableLogic = useMemo(
+    () =>
+      handleInputDisable(
+        period,
+        selectedDate,
+        currentTarget,
+        "setTargets",
+        userRole
+      ),
     [period, selectedDate, currentTarget]
-  );  
+  );
 
   const [disableStatus, setDisableStatus] = useState(disableLogic);
 
   const getInputFieldNames = useCallback(() => {
     const inputNames: string[] = [];
-    Object.values(targetFields).forEach(section => {
-      section.forEach(field => {
-        if (field.fieldType === 'input') {
+    Object.values(targetFields).forEach((section) => {
+      section.forEach((field) => {
+        if (field.fieldType === "input") {
           // Exclude managementCost for weekly periods
-          if (period === 'weekly' && field.value === 'managementCost') {
+          if (period === "weekly" && field.value === "managementCost") {
             return;
           }
           inputNames.push(field.value);
@@ -86,39 +120,44 @@ export const SetTargets = () => {
     return inputNames;
   }, [period]);
 
-  const getPriorityConflict = useCallback((newPeriod: PeriodType) => {
-    if (!currentTarget) return null;
-    
-    const priorityOrder = { yearly: 3, monthly: 2, weekly: 1 };
-    const newPriority = priorityOrder[newPeriod as keyof typeof priorityOrder];
-    
-    // Get unique query types from current target
-    const queryTypes = getUniqueQueryTypes(currentTarget);
-    
-    for (const queryType of queryTypes) {
-      const existingPriority = priorityOrder[queryType as keyof typeof priorityOrder];
-      if (existingPriority > newPriority) {
-        const monthName = format(selectedDate, 'MMMM');
-        return {
-          existingType: queryType,
-          newType: newPeriod,
-          monthName: monthName,
-          message: `The target for ${monthName} is already set in ${queryType} basis. Are you sure you want to update the target?`
-        };
+  const getPriorityConflict = useCallback(
+    (newPeriod: PeriodType) => {
+      if (!currentTarget) return null;
+
+      const priorityOrder = { yearly: 3, monthly: 2, weekly: 1 };
+      const newPriority =
+        priorityOrder[newPeriod as keyof typeof priorityOrder];
+
+      // Get unique query types from current target
+      const queryTypes = getUniqueQueryTypes(currentTarget);
+
+      for (const queryType of queryTypes) {
+        const existingPriority =
+          priorityOrder[queryType as keyof typeof priorityOrder];
+        if (existingPriority > newPriority) {
+          const monthName = format(selectedDate, "MMMM");
+          return {
+            existingType: queryType,
+            newType: newPeriod,
+            monthName: monthName,
+            message: `The target for ${monthName} is already set in ${queryType} basis. Are you sure you want to update the target?`,
+          };
+        }
       }
-    }
-    
-    return null;
-  }, [currentTarget, selectedDate]);
+
+      return null;
+    },
+    [currentTarget, selectedDate]
+  );
 
   // Helper function to get unique query types
   const getUniqueQueryTypes = useCallback((target: any[] | null): string[] => {
     if (!target || target.length === 0) return [];
-    
+
     let allTargetData: any[] = [];
-    
+
     if (target.length === 12 && Array.isArray(target[0])) {
-      target.forEach(monthData => {
+      target.forEach((monthData) => {
         if (Array.isArray(monthData)) {
           allTargetData = allTargetData.concat(monthData);
         }
@@ -126,7 +165,7 @@ export const SetTargets = () => {
     } else {
       allTargetData = target;
     }
-    
+
     const queryTypes = allTargetData
       .map((t) => t.queryType)
       .filter((queryType) => queryType && queryType.trim() !== "");
@@ -141,10 +180,10 @@ export const SetTargets = () => {
     let startDate: Date;
     let endDate: Date;
 
-    if (period === 'weekly') {
+    if (period === "weekly") {
       startDate = startOfWeek(selectedDate, { weekStartsOn: 1 });
       endDate = endOfWeek(selectedDate, { weekStartsOn: 1 });
-    } else if (period === 'monthly') {
+    } else if (period === "monthly") {
       startDate = startOfMonth(selectedDate);
       endDate = endOfMonth(selectedDate);
     } else {
@@ -152,8 +191,8 @@ export const SetTargets = () => {
       endDate = endOfYear(selectedDate);
     }
 
-    const formattedStartDate = format(startDate, 'yyyy-MM-dd');
-    const formattedEndDate = format(endDate, 'yyyy-MM-dd');
+    const formattedStartDate = format(startDate, "yyyy-MM-dd");
+    const formattedEndDate = format(endDate, "yyyy-MM-dd");
 
     setSelectedStartDate(formattedStartDate);
     setSelectedEndDate(formattedEndDate);
@@ -171,73 +210,94 @@ export const SetTargets = () => {
     if (currentTarget) {
       const newValues = processTargetData(currentTarget);
       setFieldValues(newValues);
-      setLastChanged(null); 
+      setLastChanged(null);
       setPrevValues(newValues);
     }
-  }, [currentTarget, period]); 
+  }, [currentTarget, period]);
 
-  const isHighlighted = useCallback((fieldName: string) => {
-    if (!lastChanged) return false;
-    return prevValues[fieldName] !== calculatedValues[fieldName];
-  }, [lastChanged, prevValues, calculatedValues]);
+  const isHighlighted = useCallback(
+    (fieldName: string) => {
+      if (!lastChanged) return false;
+      return prevValues[fieldName] !== calculatedValues[fieldName];
+    },
+    [lastChanged, prevValues, calculatedValues]
+  );
 
-  const handleInputChange = useCallback((fieldName: string, value: number) => {
-    if (value === undefined || value === null || isNaN(value)) {
-      value = 0;
-    }
-    
-    const validatedValue = Math.max(0, value);
-
-    setLastChanged(fieldName);
-    setPrevValues(calculatedValues);
-    
-    const field = findFieldByName(fieldName);
-    if (field && field.fieldType === 'input') {
-      const inputField = field as InputField;
-      let finalValue = validatedValue;
-      
-      if (inputField.max !== undefined) {
-        finalValue = Math.min(finalValue, inputField.max);
-      }
-      if (inputField.min !== undefined) {
-        finalValue = Math.max(finalValue, inputField.min);
+  const handleInputChange = useCallback(
+    (fieldName: string, value: number) => {
+      if (value === undefined || value === null || isNaN(value)) {
+        value = 0;
       }
 
-      if(fieldName === 'com' && !fieldValues.managementCost && fieldValues.revenue && fieldValues.revenue > 0) {
-        const adBudget = (finalValue * fieldValues.revenue) / 100;
-        const managementCost = calculateManagementCost(adBudget);
-        
-        setFieldValues(prev => ({
-          ...prev,
-          [fieldName]: finalValue,
-          managementCost: managementCost
-        }));
-      } else {
-        setFieldValues(prev => ({
-          ...prev,
-          [fieldName]: finalValue
-        }));
+      const validatedValue = Math.max(0, value);
+
+      setLastChanged(fieldName);
+      setPrevValues(calculatedValues);
+
+      const field = findFieldByName(fieldName);
+      if (field && field.fieldType === "input") {
+        const inputField = field as InputField;
+        let finalValue = validatedValue;
+
+        if (inputField.max !== undefined) {
+          finalValue = Math.min(finalValue, inputField.max);
+        }
+        if (inputField.min !== undefined) {
+          finalValue = Math.max(finalValue, inputField.min);
+        }
+
+        if (
+          fieldName === "com" &&
+          !fieldValues.managementCost &&
+          fieldValues.revenue &&
+          fieldValues.revenue > 0
+        ) {
+          const adBudget = (finalValue * fieldValues.revenue) / 100;
+          const managementCost = calculateManagementCost(adBudget);
+
+          setFieldValues((prev) => ({
+            ...prev,
+            [fieldName]: finalValue,
+            managementCost: managementCost,
+          }));
+        } else {
+          setFieldValues((prev) => ({
+            ...prev,
+            [fieldName]: finalValue,
+          }));
+        }
       }
-    }
-  }, [calculatedValues]);
+    },
+    [calculatedValues]
+  );
 
-  const findFieldByName = useCallback((fieldName: string): FieldConfig | null => {
-    for (const section of Object.values(targetFields)) {
-      const field = section.find((f: FieldConfig) => f.value === fieldName);
-      if (field) return field;
-    }
-    return null;
-  }, []);
+  const findFieldByName = useCallback(
+    (fieldName: string): FieldConfig | null => {
+      for (const section of Object.values(targetFields)) {
+        const field = section.find((f: FieldConfig) => f.value === fieldName);
+        if (field) return field;
+      }
+      return null;
+    },
+    []
+  );
 
-  const getSectionFields = useCallback((sectionKey: keyof typeof targetFields) => {
-    return targetFields[sectionKey];
-  }, []);
+  const getSectionFields = useCallback(
+    (sectionKey: keyof typeof targetFields) => {
+      return targetFields[sectionKey];
+    },
+    []
+  );
 
-  const handleDatePeriodChange = useCallback((date: Date, period: PeriodType) => {
-    setSelectedDate(date);
-    setPeriod(period);
-    setLastChanged(null);
-  }, []);
+  const handleDatePeriodChange = useCallback(
+    (date: Date, period: PeriodType) => {
+      setSelectedDate(date);
+      setPeriod(period);
+      setLastChanged(null);
+      setCreateYearlyTarget(false);
+    },
+    []
+  );
 
   const handleDisableStatusChange = useCallback((status: DisableMetadata) => {
     setDisableStatus(status);
@@ -253,7 +313,9 @@ export const SetTargets = () => {
         description: (
           <div>
             <div>The following fields cannot be 0:</div>
-            <div><em>{zeroFields.join(', ')}</em></div>
+            <div>
+              <em>{zeroFields.join(", ")}</em>
+            </div>
           </div>
         ),
         variant: "destructive",
@@ -266,7 +328,7 @@ export const SetTargets = () => {
     if (priorityConflict) {
       // Store the save data and show confirmation modal
       const inputData: { [key: string]: number | undefined } = {};
-      inputFieldNames.forEach(name => {
+      inputFieldNames.forEach((name) => {
         inputData[name] = fieldValues[name];
       });
 
@@ -274,7 +336,7 @@ export const SetTargets = () => {
         startDate: selectedStartDate,
         endDate: selectedEndDate,
         queryType: period,
-        ...inputData
+        ...inputData,
       };
 
       setPendingSaveData(saveData);
@@ -284,10 +346,20 @@ export const SetTargets = () => {
 
     // No priority conflict, proceed with save
     await performSave();
-  }, [upsertWeeklyTarget, selectedStartDate, selectedEndDate, period, fieldValues, toast, error, getInputFieldNames, getPriorityConflict]);
+  }, [
+    upsertWeeklyTarget,
+    selectedStartDate,
+    selectedEndDate,
+    period,
+    fieldValues,
+    toast,
+    error,
+    getInputFieldNames,
+    getPriorityConflict,
+  ]);
 
   const performSave = useCallback(async () => {
-    if (period === 'yearly') {
+    if (period === "yearly") {
       setIsYearlyModalOpen(true);
       return;
     }
@@ -295,7 +367,7 @@ export const SetTargets = () => {
     try {
       const inputFieldNames = getInputFieldNames();
       const inputData: { [key: string]: number | undefined } = {};
-      inputFieldNames.forEach(name => {
+      inputFieldNames.forEach((name) => {
         inputData[name] = fieldValues[name];
       });
 
@@ -303,7 +375,7 @@ export const SetTargets = () => {
         startDate: selectedStartDate,
         endDate: selectedEndDate,
         queryType: period,
-        ...inputData
+        ...inputData,
       });
 
       toast({
@@ -317,64 +389,83 @@ export const SetTargets = () => {
         variant: "destructive",
       });
     }
-  }, [upsertWeeklyTarget, selectedStartDate, selectedEndDate, period, fieldValues, toast, error, getInputFieldNames]);
+  }, [
+    upsertWeeklyTarget,
+    selectedStartDate,
+    selectedEndDate,
+    period,
+    fieldValues,
+    toast,
+    error,
+    getInputFieldNames,
+  ]);
 
   const handleCancelPrioritySave = useCallback(() => {
     setShowPriorityModal(false);
     setPendingSaveData(null);
   }, []);
 
-  const performSaveMonthlyTargets = useCallback(async (monthlyData: { [key: string]: MonthlyData }) => {
-    const inputFieldNames = getInputFieldNames();
-    const userId = useUserStore.getState().selectedUserId;
+  const performSaveMonthlyTargets = useCallback(
+    async (monthlyData: { [key: string]: MonthlyData }) => {
+      const inputFieldNames = getInputFieldNames();
+      const userId = useUserStore.getState().selectedUserId;
 
-    try {
-      const targets: any[] = [];
-      
-      Object.entries(monthlyData).forEach(([month, data]) => {
-        const monthIndex = months.indexOf(month);
-        if (monthIndex === -1) return;
-        
-        const startDate = new Date(selectedYear, monthIndex, 1);
-        const endDate = new Date(selectedYear, monthIndex + 1, 0);
-        
-        const targetData: any = {
-          startDate: format(startDate, 'yyyy-MM-dd'),
-          endDate: format(endDate, 'yyyy-MM-dd'),
-          queryType: 'yearly',
-          appointmentRate: fieldValues?.appointmentRate,
-          avgJobSize: fieldValues?.avgJobSize,
-          closeRate: fieldValues?.closeRate,
-          com: fieldValues?.com,
-          showRate: fieldValues?.showRate,
-          userId,
-        };
+      try {
+        const targets: any[] = [];
+        const currentMonth = new Date().getMonth(); // 0-based month index
 
-        inputFieldNames.forEach(name => {
-          if (data[name as keyof MonthlyData] !== undefined) {
-            targetData[name] = data[name as keyof MonthlyData];
-          }
+        Object.entries(monthlyData).forEach(([month, data]) => {
+          const monthIndex = months.indexOf(month);
+          if (monthIndex === -1) return;
+
+          // Only include months that are after the current month until December
+          if (monthIndex <= currentMonth) return;
+
+          const startDate = new Date(selectedYear, monthIndex, 1);
+          const endDate = new Date(selectedYear, monthIndex + 1, 0);
+
+          const targetData: any = {
+            startDate: format(startDate, "yyyy-MM-dd"),
+            endDate: format(endDate, "yyyy-MM-dd"),
+            queryType: "yearly",
+            appointmentRate: fieldValues?.appointmentRate,
+            avgJobSize: fieldValues?.avgJobSize,
+            closeRate: fieldValues?.closeRate,
+            com: fieldValues?.com,
+            showRate: fieldValues?.showRate,
+            userId,
+          };
+
+          inputFieldNames.forEach((name) => {
+            if (data[name as keyof MonthlyData] !== undefined) {
+              targetData[name] = data[name as keyof MonthlyData];
+            }
+          });
+
+          targets.push(targetData);
         });
-        
-        targets.push(targetData);
-      });
-      
-      await upsertTarget(targets);
-      
-      toast({
-        title: "Monthly Targets Saved Successfully!",
-        description: "Your yearly targets have been distributed across months.",
-      });
-      
-      setIsYearlyModalOpen(false);
-    } catch (err) {
-      toast({
-        title: "Error Saving Monthly Targets",
-        description: error || "Failed to save monthly targets. Please try again.",
-        variant: "destructive",
-      });
-    }
-  }, [toast, error, getInputFieldNames, selectedYear, fieldValues]);
+
+        await upsertTarget(targets);
+        // setCreateYearlyTarget(false);
+
+        toast({
+          title: "Monthly Targets Saved Successfully!",
+          description:
+            "Your yearly targets have been distributed across months.",
+        });
+
+        setIsYearlyModalOpen(false);
+      } catch (err) {
+        toast({
+          title: "Error Saving Monthly Targets",
+          description:
+            error || "Failed to save monthly targets. Please try again.",
+          variant: "destructive",
+        });
+      }
+    },
+    [toast, error, getInputFieldNames, selectedYear, fieldValues]
+  );
 
   const handleConfirmPrioritySave = useCallback(async () => {
     setShowPriorityModal(false);
@@ -400,24 +491,34 @@ export const SetTargets = () => {
         });
       }
     }
-  }, [upsertWeeklyTarget, pendingSaveData, period, toast, error, performSaveMonthlyTargets]);
+  }, [
+    upsertWeeklyTarget,
+    pendingSaveData,
+    period,
+    toast,
+    error,
+    performSaveMonthlyTargets,
+  ]);
 
-  const handleSaveMonthlyTargets = useCallback(async (monthlyData: { [key: string]: MonthlyData }) => {
-    const inputFieldNames = getInputFieldNames();
-    const userId = useUserStore.getState().selectedUserId;
+  const resetYearlyTargets = () => {
+    setFieldValues(getDefaultValues());
+    setLastChanged(null);
+    setPrevValues(getDefaultValues());
+    setCreateYearlyTarget(true);
 
-    // Check for priority conflicts for yearly targets
-    const priorityConflict = getPriorityConflict('yearly');
-    if (priorityConflict) {
-      // Store the monthly data and show confirmation modal
-      setPendingSaveData({ monthlyData, userId, selectedYear, fieldValues });
-      setShowPriorityModal(true);
-      return;
+    toast({
+      title: "✅ Targets Reset",
+      description: "All yearly target values have been reset to default.",
+    });
+  };
+
+  const viewYearlyTargets = () => {
+    setCreateYearlyTarget(false);
+    
+    if (user) {
+      getTargetsForUser(period, selectedStartDate, selectedEndDate);
     }
-
-    // No priority conflict, proceed with save
-    await performSaveMonthlyTargets(monthlyData);
-  }, [toast, error, getInputFieldNames, selectedYear, fieldValues, getPriorityConflict, performSaveMonthlyTargets]);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -438,7 +539,7 @@ export const SetTargets = () => {
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto mb-8">
+        <div className="max-w-7xl mx-auto mb-2">
           <DatePeriodSelector
             initialDate={selectedDate}
             initialPeriod={period}
@@ -451,13 +552,72 @@ export const SetTargets = () => {
           />
         </div>
 
+        {period === "yearly" && (
+          <div className="max-w-7xl mx-auto mb-6">
+            <Card className="bg-gradient-to-br from-background via-muted/15 to-primary/3 shadow-lg border border-border hover:shadow-lg hover:border-primary/10 transition-all duration-300 backdrop-blur-sm">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    {createYearlyTarget ? (
+                      <p className="text-muted-foreground text-sm">
+                        Please set the yearly targets from{" "}
+                        <i>
+                          {format(
+                            new Date(
+                              selectedDate.getFullYear(),
+                              selectedDate.getMonth() + 1,
+                              1
+                            ),
+                            "MMMM yyyy"
+                          )}
+                        </i>{" "}
+                        to <i>December {selectedYear}</i>. To view yearly aggregated targets, please click{" "}
+                        <span
+                          className="text-primary cursor-pointer underline"
+                          onClick={viewYearlyTargets}
+                        >
+                          here
+                        </span>
+                        .
+                      </p>
+                    ) : (
+                      <p className="text-muted-foreground text-sm">
+                        Below yearly targets are aggregated for the whole year.
+                        To create a new yearly targets from{" "}
+                        <i>
+                          {format(
+                            new Date(
+                              selectedDate.getFullYear(),
+                              selectedDate.getMonth() + 1,
+                              1
+                            ),
+                            "MMMM yyyy"
+                          )}
+                        </i>{" "}
+                        to <i>December {selectedYear}</i>, please click{" "}
+                        <span
+                          className="text-primary cursor-pointer underline"
+                          onClick={resetYearlyTargets}
+                        >
+                          here
+                        </span>
+                        .
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
           <TargetSection
             sectionKey="funnelRate"
             title="Funnel Rates"
             icon={<TrendingUp className="h-5 w-5 text-primary" />}
             gradientClass="bg-gradient-primary/10"
-            fields={getSectionFields('funnelRate')}
+            fields={getSectionFields("funnelRate")}
             fieldValues={fieldValues}
             calculatedValues={calculatedValues}
             onInputChange={handleInputChange}
@@ -467,15 +627,19 @@ export const SetTargets = () => {
             selectedDate={selectedDate}
             isDisabled={disableStatus.isDisabled}
             disabledMessage={disableStatus.disabledMessage}
-            shouldDisableNonRevenueFields={disableStatus.shouldDisableNonRevenueFields}
+            shouldDisableNonRevenueFields={
+              disableStatus.shouldDisableNonRevenueFields
+            }
           />
 
           <TargetSection
             sectionKey="budget"
-            title={`${period.charAt(0).toUpperCase() + period.slice(1)} Targets`}
+            title={`${
+              period.charAt(0).toUpperCase() + period.slice(1)
+            } Targets`}
             icon={<Calculator className="h-5 w-5 text-accent" />}
             gradientClass="bg-gradient-accent/10"
-            fields={getSectionFields('budget')}
+            fields={getSectionFields("budget")}
             fieldValues={fieldValues}
             calculatedValues={calculatedValues}
             onInputChange={handleInputChange}
@@ -485,7 +649,9 @@ export const SetTargets = () => {
             selectedDate={selectedDate}
             isDisabled={disableStatus.isDisabled}
             disabledMessage={disableStatus.disabledMessage}
-            shouldDisableNonRevenueFields={disableStatus.shouldDisableNonRevenueFields}
+            shouldDisableNonRevenueFields={
+              disableStatus.shouldDisableNonRevenueFields
+            }
           />
 
           <TargetSection
@@ -493,7 +659,7 @@ export const SetTargets = () => {
             title="Budget Targets"
             icon={<DollarSign className="h-5 w-5 text-success" />}
             gradientClass="bg-gradient-secondary/10"
-            fields={getSectionFields('budgetTarget')}
+            fields={getSectionFields("budgetTarget")}
             fieldValues={fieldValues}
             calculatedValues={calculatedValues}
             onInputChange={handleInputChange}
@@ -503,21 +669,26 @@ export const SetTargets = () => {
             selectedDate={selectedDate}
             isDisabled={disableStatus.isDisabled}
             disabledMessage={disableStatus.disabledMessage}
-            shouldDisableNonRevenueFields={disableStatus.shouldDisableNonRevenueFields}
+            shouldDisableNonRevenueFields={
+              disableStatus.shouldDisableNonRevenueFields
+            }
           />
         </div>
       </div>
 
       {/* Yearly Target Modal */}
-      <YearlyTargetModal
-        isOpen={isYearlyModalOpen}
-        onOpenChange={setIsYearlyModalOpen}
-        annualFieldValues={fieldValues}
-        onSave={handleSaveMonthlyTargets}
-        isLoading={isLoading}
-        selectedYear={selectedYear}
-        apiData={currentTarget}
-      />
+      {isYearlyModalOpen && (
+        <YearlyTargetModal
+          isOpen={isYearlyModalOpen}
+          onOpenChange={setIsYearlyModalOpen}
+          type={createYearlyTarget ? "create" : "update"}
+          annualFieldValues={fieldValues}
+          onSave={performSaveMonthlyTargets}
+          isLoading={isLoading}
+          selectedYear={selectedYear}
+          apiData={currentTarget}
+        />
+      )}
 
       {/* Priority Conflict Confirmation Modal */}
       <AlertDialog open={showPriorityModal} onOpenChange={setShowPriorityModal}>
@@ -526,20 +697,24 @@ export const SetTargets = () => {
             <AlertDialogTitle>Priority Conflict</AlertDialogTitle>
             <AlertDialogDescription>
               {(() => {
-                const priorityConflict = pendingSaveData?.monthlyData ? 
-                  getPriorityConflict('yearly') : 
-                  getPriorityConflict(period);
-                return priorityConflict?.message || '';
+                const priorityConflict = pendingSaveData?.monthlyData
+                  ? getPriorityConflict("yearly")
+                  : getPriorityConflict(period);
+                return priorityConflict?.message || "";
               })()}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleCancelPrioritySave}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmPrioritySave}>Continue</AlertDialogAction>
+            <AlertDialogCancel onClick={handleCancelPrioritySave}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmPrioritySave}>
+              Continue
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      
+
       {/* Full Screen Loader */}
       <FullScreenLoader isLoading={isLoading} message="Loading targets..." />
     </div>
