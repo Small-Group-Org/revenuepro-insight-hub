@@ -47,7 +47,7 @@ export default function Login() {
         setUser(response.data.user);
         setLoggedIn();
         
-        if (!response.data.user.hasLoggedIn) {
+        if (!response.data.user.hasLoggedIn && response.data.user.role === "USER") {
           setShowWelcomeModal(true);
         } else {
           const from = location.state?.from?.pathname || "/";
