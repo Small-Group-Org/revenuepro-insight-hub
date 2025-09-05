@@ -21,18 +21,7 @@ export default function Login() {
   const { toast } = useToast();
 
   const handleWelcomeModalClose = () => {
-    if (!privacyPolicyChecked || !caPrivacyPolicyChecked || !termsConditionsChecked) {
-      toast({
-        title: "Error",
-        description: "Please agree to all policies and terms to continue.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
     setShowWelcomeModal(false);
-    const from = location.state?.from?.pathname || "/";
-    navigate(from, { replace: true });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
