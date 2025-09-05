@@ -564,8 +564,8 @@ export const SetTargets = () => {
                         <i>
                           {format(
                             new Date(
-                              selectedDate.getFullYear(),
-                              selectedDate.getMonth() + 1,
+                              new Date().getFullYear(),
+                              new Date().getMonth() + 1,
                               1
                             ),
                             "MMMM yyyy"
@@ -587,8 +587,8 @@ export const SetTargets = () => {
                         <i>
                           {format(
                             new Date(
-                              selectedDate.getFullYear(),
-                              selectedDate.getMonth() + 1,
+                              new Date().getFullYear(),
+                              new Date().getMonth() + 1,
                               1
                             ),
                             "MMMM yyyy"
