@@ -11,6 +11,7 @@ interface LoginResponse {
       name: string;
       email: string;
       role?: string; // Add role here
+      hasLoggedIn: boolean;
     };
   };
   message?: string;

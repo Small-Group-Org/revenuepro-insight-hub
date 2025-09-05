@@ -2,11 +2,10 @@ import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import useAuthStore from "@/stores/authStore";
 import { login } from "@/service/authService";
 import { useToast } from "@/hooks/use-toast";
+import WelcomeModal from "@/components/WelcomeModal";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -15,15 +14,13 @@ export default function Login() {
   const [privacyPolicyChecked, setPrivacyPolicyChecked] = useState(false);
   const [caPrivacyPolicyChecked, setCaPrivacyPolicyChecked] = useState(false);
   const [termsConditionsChecked, setTermsConditionsChecked] = useState(false);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { login: setLoggedIn, setUser } = useAuthStore();
   const { toast } = useToast();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Check if all checkboxes are checked
+  const handleWelcomeModalClose = () => {
     if (!privacyPolicyChecked || !caPrivacyPolicyChecked || !termsConditionsChecked) {
       toast({
         title: "Error",
@@ -32,6 +29,14 @@ export default function Login() {
       });
       return;
     }
+    
+    setShowWelcomeModal(false);
+    const from = location.state?.from?.pathname || "/";
+    navigate(from, { replace: true });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     
     setIsLoading(true);
     
@@ -42,9 +47,12 @@ export default function Login() {
         setUser(response.data.user);
         setLoggedIn();
         
-        // Navigate to the page they were trying to access, or home
-        const from = location.state?.from?.pathname || "/";
-        navigate(from, { replace: true });
+        if (!response.data.user.hasLoggedIn) {
+          setShowWelcomeModal(true);
+        } else {
+          const from = location.state?.from?.pathname || "/";
+          navigate(from, { replace: true });
+        }
         
         toast({
           title: "Success",
@@ -149,83 +157,33 @@ export default function Login() {
               type="submit" 
               className="w-full h-12 text-white rounded-lg font-medium shadow-lg transition-colors"
               style={{ backgroundColor: '#1f1c13' }}
-              disabled={isLoading || !privacyPolicyChecked || !caPrivacyPolicyChecked || !termsConditionsChecked}
+              disabled={isLoading}
             >
               {isLoading ? "Please wait..." : "Sign In"}
             </Button>
           </form>
 
-          {/* Checkboxes */}
+          {/* Mobile Copyright */}
           <div className="text-center pt-6">
-            <div className="space-y-3">
-              <div className="flex items-center space-x-2">
-                <Checkbox 
-                  id="privacy-policy" 
-                  checked={privacyPolicyChecked}
-                  onCheckedChange={(checked) => setPrivacyPolicyChecked(checked === true)}
-                />
-                <label htmlFor="privacy-policy" className="text-sm text-gray-600">
-                  I have read and agreed to the{" "}
-                  <a 
-                    href="https://getrevpro.co/privacy-policy" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:text-blue-800 underline"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    Privacy Policy
-                  </a>
-                </label>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <Checkbox 
-                  id="ca-privacy-policy" 
-                  checked={caPrivacyPolicyChecked}
-                  onCheckedChange={(checked) => setCaPrivacyPolicyChecked(checked === true)}
-                />
-                <label htmlFor="ca-privacy-policy" className="text-sm text-gray-600">
-                  I have read and agreed to the{" "}
-                  <a 
-                    href="https://getrevpro.co/revenue-pro-california-privacy-policy" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:text-blue-800 underline"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    CA Privacy Policy
-                  </a>
-                </label>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <Checkbox 
-                  id="terms-conditions" 
-                  checked={termsConditionsChecked}
-                  onCheckedChange={(checked) => setTermsConditionsChecked(checked === true)}
-                />
-                <label htmlFor="terms-conditions" className="text-sm text-gray-600">
-                  I have read and agreed to the{" "}
-                  <a 
-                    href="https://getrevpro.co/revenue-pro-terms-and-conditions" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:text-blue-800 underline"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    Terms and Conditions
-                  </a>
-                </label>
-              </div>
-            </div>
-            
-            {/* Mobile Copyright */}
-            <div className="block lg:hidden pt-4">
+            <div className="block lg:hidden">
               <p className="text-gray-400 text-xs">Copyright © HomeownerMarketers</p>
             </div>
           </div>
         </div>
       </div>
+      
+      {/* Welcome Modal */}
+      <WelcomeModal 
+        isOpen={showWelcomeModal}
+        onClose={handleWelcomeModalClose}
+        privacyPolicyChecked={privacyPolicyChecked}
+        caPrivacyPolicyChecked={caPrivacyPolicyChecked}
+        termsConditionsChecked={termsConditionsChecked}
+        onPrivacyPolicyChange={setPrivacyPolicyChecked}
+        onCaPrivacyPolicyChange={setCaPrivacyPolicyChecked}
+        onTermsConditionsChange={setTermsConditionsChecked}
+        userId={useAuthStore.getState().user?._id || ""}
+      />
     </div>
   );
 } 
