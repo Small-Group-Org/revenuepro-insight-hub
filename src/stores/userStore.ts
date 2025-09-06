@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { getAllUsers, User, CreateUserPayload, UpdateUserPayload, createUser as createUserService, updateUser as updateUserService, deleteUser as deleteUserService } from "@/service/userService";
+import { getAllUsers, User, CreateUserPayload, UpdateUserPayload, UpdatePasswordPayload, createUser as createUserService, updateUser as updateUserService, deleteUser as deleteUserService, updatePassword as updatePasswordService } from "@/service/userService";
 
 interface UserStoreState {
   users: User[];
@@ -11,6 +11,7 @@ interface UserStoreState {
   createUser: (payload: CreateUserPayload) => Promise<{ error: boolean; message?: string }>;
   updateUser: (payload: UpdateUserPayload) => Promise<{ error: boolean; message?: string }>;
   deleteUser: (userId: string) => Promise<{ error: boolean; message?: string }>;
+  updatePassword: (payload: UpdatePasswordPayload) => Promise<{ error: boolean; message?: string }>;
 }
 
 export const useUserStore = create<UserStoreState>((set, get) => ({
@@ -59,6 +60,15 @@ export const useUserStore = create<UserStoreState>((set, get) => ({
       get().fetchUsers(); // Refresh users after deletion
     } else {
       set({ error: res.message || "Failed to delete user", loading: false });
+    }
+    set({ loading: false });
+    return { error: res.error, message: res.message };
+  },
+  updatePassword: async (payload) => {
+    set({ loading: true, error: undefined });
+    const res = await updatePasswordService(payload);
+    if (res.error) {
+      set({ error: res.message || "Failed to update password", loading: false });
     }
     set({ loading: false });
     return { error: res.error, message: res.message };

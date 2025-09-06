@@ -20,6 +20,11 @@ export interface UpdateUserPayload {
   name?: string;
 }
 
+export interface UpdatePasswordPayload {
+  userId: string;
+  newPassword: string;
+}
+
 export const createUser = async (payload: CreateUserPayload) => {
   // Always set role to USER for this admin action
   const response = await doPOST("/admin/users/upsert", payload);
@@ -47,5 +52,10 @@ export const deleteUser = async (userId: string) => {
 
 export const getUserById = async (userId: string) => {
   const response = await doGET(`/admin/get/users/${userId}`);
+  return response;
+};
+
+export const updatePassword = async (payload: UpdatePasswordPayload) => {
+  const response = await doPUT("/users/update-password", payload);
   return response;
 };
