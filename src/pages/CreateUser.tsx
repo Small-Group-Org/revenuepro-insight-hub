@@ -8,12 +8,13 @@ import { User as ServiceUser } from "@/service/userService";
 import { useUserContext } from "@/utils/UserContext";
 import { useUserStore } from "@/stores/userStore";
 import CreateUserModal from "@/components/CreateUserModal";
-import { UserPlus, Pencil, Trash2 } from "lucide-react";
+import ResetPasswordModal from "@/components/ResetPasswordModal";
+import { UserPlus, Pencil, Trash2, Key } from "lucide-react";
 
 const CreateUser = () => {
   const { toast } = useToast();
   const { user: loggedInUser } = useUserContext();
-  const { users, loading: fetchingUsers, fetchUsers, createUser, updateUser, deleteUser } = useUserStore();
+  const { users, loading: fetchingUsers, fetchUsers, createUser, updateUser, deleteUser, updatePassword } = useUserStore();
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
@@ -21,6 +22,9 @@ const CreateUser = () => {
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [passwordResetUserId, setPasswordResetUserId] = useState<string | null>(null);
+  const [passwordResetUserName, setPasswordResetUserName] = useState<string>("");
 
   // Fetch users when role filter changes
   useEffect(() => {
@@ -69,6 +73,27 @@ const CreateUser = () => {
     }
   };
 
+  const handlePasswordResetClick = (userId: string, userName: string) => {
+    setPasswordResetUserId(userId);
+    setPasswordResetUserName(userName);
+    setIsPasswordModalOpen(true);
+  };
+
+  const handlePasswordReset = async (userId: string, newPassword: string) => {
+    setLoading(true);
+    const res = await updatePassword({ userId, newPassword });
+    
+    if (!res.error) {
+      toast({ title: "Password Reset", description: "Password has been reset successfully!" });
+      setIsPasswordModalOpen(false);
+      setPasswordResetUserId(null);
+      setPasswordResetUserName("");
+    } else {
+      toast({ title: "Error", description: res.message || "Failed to reset password", variant: "destructive" });
+    }
+    setLoading(false);
+  };
+
   const handleModalSave = async (userId: string | null, userData: { email: string; name: string; password?: string; role: string }) => {
     setLoading(true);
     let res;
@@ -96,6 +121,15 @@ const CreateUser = () => {
         isCreating={isCreating}
         editingUserId={editingUserId}
         onSave={handleModalSave}
+        loading={loading}
+      />
+
+      <ResetPasswordModal
+        isOpen={isPasswordModalOpen}
+        onOpenChange={setIsPasswordModalOpen}
+        userId={passwordResetUserId || ""}
+        userName={passwordResetUserName}
+        onSave={handlePasswordReset}
         loading={loading}
       />
 
@@ -193,6 +227,16 @@ const CreateUser = () => {
                             title="Edit"
                           >
                             <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="flex items-center px-2 gap-1 text-orange-600 font-medium rounded-md transition-colors hover:bg-orange-100 hover:text-orange-700"
+                            onClick={() => handlePasswordResetClick(user.id, user.name || user.email)}
+                            aria-label="Reset Password"
+                            title="Reset Password"
+                          >
+                            <Key className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
