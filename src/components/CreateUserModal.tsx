@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { User as ServiceUser, getUserById } from "@/service/userService";
+import { Copy, Check } from "lucide-react";
 
 interface CreateUserModalProps {
   isOpen: boolean;
@@ -42,6 +43,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
     password: "",
     role: "USER",
   });
+  const [copied, setCopied] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -86,6 +88,26 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
     await onSave(editingUserId, currentUserData);
   };
 
+  const handleCopyUserId = async () => {
+    if (editingUserId) {
+      try {
+        await navigator.clipboard.writeText(editingUserId);
+        setCopied(true);
+        toast({
+          title: "Copied!",
+          description: "Client ID has been copied to clipboard",
+        });
+        setTimeout(() => setCopied(false), 2000);
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to copy Client ID",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
@@ -96,6 +118,35 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {!isCreating && editingUserId && (
+            <div>
+              <label htmlFor="userId" className="block text-sm font-medium mb-1 text-card-foreground">Client ID</label>
+              <div className="flex gap-2">
+                <Input 
+                  id="userId" 
+                  type="text" 
+                  value={editingUserId} 
+                  readOnly 
+                  disabled 
+                  className="border-border bg-muted text-muted-foreground font-mono text-sm" 
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={handleCopyUserId}
+                  disabled={loading}
+                  className="shrink-0"
+                >
+                  {copied ? (
+                    <Check className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
           <div>
             <label htmlFor="name" className="block text-sm font-medium mb-1 text-card-foreground">Name</label>
             <Input id="name" type="text" value={currentUserData.name} onChange={handleChange} required={!isCreating} disabled={loading} placeholder="Enter user name" className="border-border focus:ring-primary" />
