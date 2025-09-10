@@ -42,7 +42,7 @@ const App = () => {
                   <Route path="/compare" element={<CompareResults />} />
                   <Route path="/leads" element={<LeadSheet />} />
                   <Route path="/lead-analytics" element={<LeadAnalytics />} />
-                  <Route path="/create-user" element={<CreateUser />} />
+                  <Route path="/user-managment" element={<CreateUser />} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
               </Routes>

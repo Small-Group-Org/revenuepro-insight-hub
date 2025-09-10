@@ -52,7 +52,7 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }: SidebarProp
       </div>
 
       {/* User Select for Admin */}
-      {isAdmin && location.pathname !== "/create-user" && (
+      {isAdmin && location.pathname !== "/user-managment" && (
         <div className={`p-2 border-b border-slate-700 ${isCollapsed ? "p-0" : "px-2 py-4"}`}>
           <UserSelect isCollapsed={isCollapsed} />
         </div>
@@ -82,18 +82,18 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }: SidebarProp
           {/* Admin Section */}
           {isAdmin && (
             <button
-              onClick={() => navigate('/create-user')}
+              onClick={() => navigate('/user-managment')}
                           className={cn(
               "w-full flex items-center gap-3 p-3 rounded-lg transition-all duration-200",
               "hover:bg-sidebar-accent",
-              location.pathname === '/create-user'
+              location.pathname === '/user-managment'
                 ? "bg-gradient-accent shadow-md"
                 : "text-sidebar-foreground"
             )}
             >
               <UserPlus size={isCollapsed ? 24 : 20} />
               {!isCollapsed && (
-                <span className="font-medium">Create User</span>
+                <span className="font-medium">User Management</span>
               )}
             </button>
           )}
