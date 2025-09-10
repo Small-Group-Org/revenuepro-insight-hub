@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/select";
 import { format, addWeeks, subWeeks, startOfYear } from "date-fns";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { getWeekInfo, formatWeekRange } from "@/utils/weekLogic";
 import { PeriodType } from "@/types";
 import { DisableMetadata } from "@/types";
@@ -248,18 +249,27 @@ export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
         </div>
         <div className="flex items-center gap-2">
           {showRefreshButton && (
-            <button
-              onClick={onRefreshClick}
-              className="h-[38px] w-[38px] rounded-md border border-border bg-transparent hover:bg-muted hover:border-muted-foreground/50 transition-colors duration-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={isRefreshing}
-              type="button"
-            >
-              {isRefreshing ? (
-                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-              ) : (
-                <RefreshCw className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors duration-200" />
-              )}
-            </button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={onRefreshClick}
+                    className="h-8 w-8 rounded-full hover:bg-muted/50 transition-colors duration-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed group"
+                    disabled={isRefreshing}
+                    type="button"
+                  >
+                    {isRefreshing ? (
+                      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                    ) : (
+                      <RefreshCw className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors duration-200" />
+                    )}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Refresh Leads</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
           <Select value={period} onValueChange={handlePeriodChange}>
             <SelectTrigger className="w-28">
