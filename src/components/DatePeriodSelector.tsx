@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { ChevronLeft, ChevronRight, Loader2, Info } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, Info, RefreshCw } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -67,6 +67,12 @@ interface DatePeriodSelectorProps {
    * Default: 300ms
    */
   debounceDelay?: number;
+  /** 
+   * Show refresh button for lead sheet processing
+   */
+  showRefreshButton?: boolean;
+  onRefreshClick?: () => void;
+  isRefreshing?: boolean;
 }
 
 export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
@@ -80,6 +86,9 @@ export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
   onDisableStatusChange,
   onNavigationAttempt,
   debounceDelay = 700, // Default 300ms debounce delay
+  showRefreshButton = false,
+  onRefreshClick,
+  isRefreshing = false,
 }) => {
   const [selectedDate, setSelectedDate] = useState<Date>(initialDate);
   const [period, setPeriod] = useState<PeriodType>(
@@ -238,6 +247,20 @@ export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
           </span>
         </div>
         <div className="flex items-center gap-2">
+          {showRefreshButton && (
+            <button
+              onClick={onRefreshClick}
+              className="h-[38px] w-[38px] rounded-md border border-border bg-transparent hover:bg-muted hover:border-muted-foreground/50 transition-colors duration-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isRefreshing}
+              type="button"
+            >
+              {isRefreshing ? (
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              ) : (
+                <RefreshCw className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors duration-200" />
+              )}
+            </button>
+          )}
           <Select value={period} onValueChange={handlePeriodChange}>
             <SelectTrigger className="w-28">
               <SelectValue />

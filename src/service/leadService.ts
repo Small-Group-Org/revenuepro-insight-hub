@@ -1,4 +1,4 @@
-import { doGET, doPATCH } from "@/utils/HttpUtils";
+import { doGET, doPATCH, doPOST } from "@/utils/HttpUtils";
 import { Lead } from "@/types";
 
 export interface GetLeadsPayload {
@@ -159,6 +159,19 @@ export interface GetAnalyticsTablePayload {
   showTopRanked?: boolean;
 }
 
+// Lead sheet processing interfaces
+export interface ProcessLeadSheetPayload {
+  sheetUrl: string;
+  clientId: string;
+  uniquenessByPhoneEmail: boolean;
+}
+
+export interface ProcessLeadSheetResponse {
+  success: boolean;
+  message?: string;
+  data?: any;
+}
+
 export const getLeads = async (payload?: GetLeadsPayload) => {
   let url = '/leads';
   const params = new URLSearchParams();
@@ -292,5 +305,11 @@ export const getAnalyticsTable = async (payload: GetAnalyticsTablePayload) => {
   
   const url = `/leads/analytics/ad-table?${params.toString()}`;
   const response = await doGET(url);
+  return response;
+};
+
+// Lead sheet processing function
+export const processLeadSheet = async (payload: ProcessLeadSheetPayload) => {
+  const response = await doPOST("/process-lead-sheet", payload);
   return response;
 };

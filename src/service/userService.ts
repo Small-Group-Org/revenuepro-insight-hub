@@ -5,6 +5,7 @@ export interface User {
   email: string;
   name?: string;
   role: string;
+  leadSheetUrl?: string;
 }
 
 export interface CreateUserPayload {
