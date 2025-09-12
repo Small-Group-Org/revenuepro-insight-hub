@@ -259,6 +259,8 @@ export const LeadAnalytics = () => {
     },
   };
 
+  const unqualifiedPercentage = (analyticsData?.overview.unqualifiedCount/analyticsData?.overview.totalLeads)*100 || 0;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 overflow-x-hidden">
       <div className="relative z-10 pt-4 pb-12 px-4">
@@ -367,7 +369,7 @@ export const LeadAnalytics = () => {
                 },
                 {
                   label: "Unqualified %",
-                  value: 100 - parseFloat(analyticsData.overview.conversionRate),
+                  value: unqualifiedPercentage,
                   format: 'percent' as const
                 }
               ]}
