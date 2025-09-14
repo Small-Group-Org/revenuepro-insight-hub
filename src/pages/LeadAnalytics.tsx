@@ -16,6 +16,7 @@ import {
   AnalyticsTableResponse,
   AnalyticsDataPoint
 } from '@/service/leadService';
+import { TimeFilter, TIME_FILTER_LABELS } from '@/types/timeFilter';
 
 // Chart colors
 const COLORS = ['#1f1c13', '#9ca3af', '#306BC8', '#2A388F', '#396F9C'];
@@ -41,20 +42,11 @@ const CHART_DIMENSIONS = {
 };
 
 // Time filter labels for display
-const TIME_FILTER_LABELS: Record<string, string> = {
-  all: 'All Time',
-  this_month: 'This Month',
-  last_month: 'Last Month',
-  this_quarter: 'This Quarter',
-  last_quarter: 'Last Quarter',
-  this_year: 'This Year',
-  last_year: 'Last Year',
-};
 
 export const LeadAnalytics = () => {
   const { selectedUserId } = useUserStore();
   const [selectedMetric, setSelectedMetric] = useState<string>('overview');
-  const [timeFilter, setTimeFilter] = useState<'all' | 'this_month' | 'last_month' | 'this_quarter' | 'last_quarter' | 'this_year' | 'last_year'>('all');
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
   
   // Analytics data states
   const [analyticsData, setAnalyticsData] = useState<AnalyticsSummaryResponse['data'] | null>(null);
@@ -281,18 +273,14 @@ export const LeadAnalytics = () => {
               </p>
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
-                <Select value={timeFilter} onValueChange={(value: string) => setTimeFilter(value as 'all' | 'this_month' | 'last_month' | 'this_quarter' | 'last_quarter' | 'this_year' | 'last_year')}>
+                <Select value={timeFilter} onValueChange={(value: string) => setTimeFilter(value as TimeFilter)}>
                   <SelectTrigger className="w-40 h-8 text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="this_month">This Month</SelectItem>
-                    <SelectItem value="this_quarter">This Quarter</SelectItem>
-                    <SelectItem value="last_quarter">Last Quarter</SelectItem>
-                    <SelectItem value="this_year">This Year</SelectItem>
-                    <SelectItem value="last_month">Last Month</SelectItem>
-                    <SelectItem value="last_year">Last Year</SelectItem>
-                    <SelectItem value="all">All Time</SelectItem>
+                    {Object.entries(TIME_FILTER_LABELS).map(([value, label]) => (
+                      <SelectItem key={value} value={value}>{label}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
