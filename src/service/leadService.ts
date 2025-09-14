@@ -1,5 +1,6 @@
 import { doGET, doPATCH, doPOST } from "@/utils/HttpUtils";
 import { Lead } from "@/types";
+import { TimeFilter } from '../types/timeFilter';
 
 export interface GetLeadsPayload {
   clientId?: string;
@@ -140,9 +141,10 @@ export interface AnalyticsTableResponse {
   };
 }
 
+
 export interface GetAnalyticsSummaryPayload {
   clientId: string;
-  timeFilter?: 'all' | 'this_month' | 'last_month' | 'this_quarter' | 'last_quarter' | 'this_year' | 'last_year';
+  timeFilter?: TimeFilter;
 }
 
 export interface GetAnalyticsTablePayload {
