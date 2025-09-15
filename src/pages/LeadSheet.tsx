@@ -1,16 +1,16 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { Users, Calendar, Phone, Mail, Tag, Target, Star, Download } from 'lucide-react';
+import { Users, Calendar, Phone, Mail, Tag, Target } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { DatePeriodSelector } from '@/components/DatePeriodSelector';
 import { PeriodType } from '@/types';
 import { getWeekInfo } from '@/utils/weekLogic';
 import { useLeadStore } from '@/stores/leadStore';
 import { useUserStore } from '@/stores/userStore';
+import { processLeadSheet } from '@/service/leadService';
 import { useRoleAccess } from '@/hooks/useRoleAccess';
 import { handleInputDisable } from '@/utils/page-utils/compareUtils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { getScoreInfo, getStatusInfo, FIELD_WEIGHTS } from '@/utils/leadProcessing';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { LeadSummaryCards } from '@/components/LeadSheet/LeadSummaryCards';
@@ -460,6 +460,8 @@ export const LeadSheet = () => {
   const [showFilters, setShowFilters] = useState<boolean>(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(25);
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+  const lastRefreshRef = useRef<number>(0);
   
   const { 
     leads, 
@@ -480,7 +482,7 @@ export const LeadSheet = () => {
     setSorting,
     clearFilters
   } = useLeadStore();
-  const { selectedUserId } = useUserStore();
+  const { selectedUserId, users } = useUserStore();
 
   // Calculate disable logic for LeadSheet page with role-based restrictions
   const disableLogic = useMemo(() => 
@@ -730,10 +732,68 @@ export const LeadSheet = () => {
     setCurrentPage(1); // Reset to first page when clearing filters
   }, [clearFilters]);
 
+  const handleRefreshLeads = useCallback(async () => {
+    // Prevent spam clicking - allow only one refresh per 3 seconds
+    const now = Date.now();
+    if (now - lastRefreshRef.current < 3000) {
+      return;
+    }
+    lastRefreshRef.current = now;
+
+    const selectedUser = users.find(user => user.id === selectedUserId);
+
+    setIsRefreshing(true);
+    try {
+      const response = await processLeadSheet({
+        sheetUrl: selectedUser.leadSheetUrl,
+        clientId: selectedUserId,
+        uniquenessByPhoneEmail: true
+      });
+
+      if (!response.error) {
+        showSuccessToast("Leads refreshed successfully!");
+        const { startDate, endDate } = getDateRange(selectedDate, period);
+        
+        // Fetch filter options and status counts
+        fetchFilterOptions({
+          clientId: selectedUserId,
+          startDate,
+          endDate
+        });
+        
+        // Fetch paginated leads
+        fetchPaginatedLeads({
+          clientId: selectedUserId,
+          startDate,
+          endDate,
+          page: currentPage,
+          limit: pageSize,
+          sortBy: currentSorting.sortBy,
+          sortOrder: currentSorting.sortOrder,
+          ...currentFilters
+        });
+      } else {
+        showErrorToast("Failed to refresh leads. Please contact Revenue Pro Support.");
+      }
+    } catch (error) {
+      console.error('Error refreshing leads:', error);
+      showErrorToast("Failed to refresh leads. Please contact Revenue Pro support.");
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [selectedUserId, users, selectedDate, period, currentPage, pageSize, currentSorting, currentFilters, fetchPaginatedLeads, fetchFilterOptions, getDateRange, showSuccessToast, showErrorToast]);
+
   // Check if any filters are active
   const hasActiveFilters = useMemo(() => {
     return Boolean(currentFilters.adSetName || currentFilters.adName || currentFilters.status || currentFilters.unqualifiedLeadReason);
   }, [currentFilters]);
+
+  // Check if current user has a valid leadSheetUrl
+  const hasValidLeadSheetUrl = useMemo(() => {
+    if (!selectedUserId) return false;
+    const selectedUser = users.find(user => user.id === selectedUserId);
+    return Boolean(selectedUser?.leadSheetUrl && selectedUser.leadSheetUrl.trim() !== '');
+  }, [selectedUserId, users]);
 
   // Excel Export Function
   const exportToExcel = useCallback(async (exportType: 'current' | 'all') => {
@@ -887,6 +947,9 @@ export const LeadSheet = () => {
             onChange={handleDatePeriodChange}
             allowedPeriods={['weekly', 'monthly', 'yearly']}
             disableLogic={disableLogic}
+            showRefreshButton={hasValidLeadSheetUrl}
+            onRefreshClick={handleRefreshLeads}
+            isRefreshing={isRefreshing}
           />
 
           {/* Lead Cards */}

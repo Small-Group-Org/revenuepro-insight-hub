@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { ChevronLeft, ChevronRight, Loader2, Info } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, Info, RefreshCw } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/select";
 import { format, addWeeks, subWeeks, startOfYear } from "date-fns";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { getWeekInfo, formatWeekRange } from "@/utils/weekLogic";
 import { PeriodType } from "@/types";
 import { DisableMetadata } from "@/types";
@@ -67,6 +68,12 @@ interface DatePeriodSelectorProps {
    * Default: 300ms
    */
   debounceDelay?: number;
+  /** 
+   * Show refresh button for lead sheet processing
+   */
+  showRefreshButton?: boolean;
+  onRefreshClick?: () => void;
+  isRefreshing?: boolean;
 }
 
 export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
@@ -80,6 +87,9 @@ export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
   onDisableStatusChange,
   onNavigationAttempt,
   debounceDelay = 700, // Default 300ms debounce delay
+  showRefreshButton = false,
+  onRefreshClick,
+  isRefreshing = false,
 }) => {
   const [selectedDate, setSelectedDate] = useState<Date>(initialDate);
   const [period, setPeriod] = useState<PeriodType>(
@@ -238,6 +248,29 @@ export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
           </span>
         </div>
         <div className="flex items-center gap-2">
+          {showRefreshButton && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={onRefreshClick}
+                    className="h-8 w-8 rounded-full hover:bg-muted/50 transition-colors duration-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed group"
+                    disabled={isRefreshing}
+                    type="button"
+                  >
+                    {isRefreshing ? (
+                      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                    ) : (
+                      <RefreshCw className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors duration-200" />
+                    )}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Refresh Leads</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
           <Select value={period} onValueChange={handlePeriodChange}>
             <SelectTrigger className="w-28">
               <SelectValue />

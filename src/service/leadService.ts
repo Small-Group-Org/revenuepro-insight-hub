@@ -1,5 +1,6 @@
-import { doGET, doPATCH } from "@/utils/HttpUtils";
+import { doGET, doPATCH, doPOST } from "@/utils/HttpUtils";
 import { Lead } from "@/types";
+import { TimeFilter } from '../types/timeFilter';
 
 export interface GetLeadsPayload {
   clientId?: string;
@@ -140,9 +141,10 @@ export interface AnalyticsTableResponse {
   };
 }
 
+
 export interface GetAnalyticsSummaryPayload {
   clientId: string;
-  timeFilter?: 'all' | 'this_month' | 'last_month' | 'this_quarter' | 'last_quarter' | 'this_year' | 'last_year';
+  timeFilter?: TimeFilter;
 }
 
 export interface GetAnalyticsTablePayload {
@@ -157,6 +159,19 @@ export interface GetAnalyticsTablePayload {
   adNameSortField?: 'adName' | 'total' | 'estimateSet' | 'percentage';
   adNameSortOrder?: 'asc' | 'desc';
   showTopRanked?: boolean;
+}
+
+// Lead sheet processing interfaces
+export interface ProcessLeadSheetPayload {
+  sheetUrl: string;
+  clientId: string;
+  uniquenessByPhoneEmail: boolean;
+}
+
+export interface ProcessLeadSheetResponse {
+  success: boolean;
+  message?: string;
+  data?: any;
 }
 
 export const getLeads = async (payload?: GetLeadsPayload) => {
@@ -292,5 +307,11 @@ export const getAnalyticsTable = async (payload: GetAnalyticsTablePayload) => {
   
   const url = `/leads/analytics/ad-table?${params.toString()}`;
   const response = await doGET(url);
+  return response;
+};
+
+// Lead sheet processing function
+export const processLeadSheet = async (payload: ProcessLeadSheetPayload) => {
+  const response = await doPOST("/process-lead-sheet", payload);
   return response;
 };
