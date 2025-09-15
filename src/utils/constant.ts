@@ -12,9 +12,8 @@ export const API_METHODS = {
 
 export const tabs = ["basic", "templates", "target"];
 
-// export const API_URL = import.meta.env.VITE_API_URL;
-// export const API_URL = "https://revenue-pro-backend-1057029383450.asia-south2.run.app/api/v1";
-export const API_URL = " http://localhost:4000/api/v1";
+// export const API_URL = " http://localhost:4000/api/v1";
+export const API_URL = "https://revenue-pro-backend-1057029383450.asia-south2.run.app/api/v1";
 
 export const menuItems = [
   { id: 'dashboard', label: 'Dashboard', icon: BarChart3, path: '/' },
