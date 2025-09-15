@@ -128,20 +128,6 @@ export const handleInputDisable = (
   const shouldDisableNonRevenueFields = false;
   let isButtonDisabled = false;
 
-  if (pageType === "leadSheet" && userRole !== 'ADMIN') {
-    isDisabled = true;
-    isButtonDisabled = true;
-    disabledMessage = "Only Revenue PRO team members can modify lead sheet data";
-    noteMessage = "Access restricted to Revenue PRO team members";
-    return {
-      isDisabled,
-      disabledMessage,
-      noteMessage,
-      shouldDisableNonRevenueFields,
-      isButtonDisabled,
-    };
-  }
-
   if (pageType === "addActualData") {
     const isInPast = isTimeFrameInPast(period, selectedDate);
     if (!isInPast) {
