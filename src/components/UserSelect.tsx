@@ -64,7 +64,7 @@ const UserSelect: React.FC<UserSelectProps> = ({ value, onChange, placeholder, i
           <SelectItem 
             key={user.id} 
             value={user.id}
-            className="text-sidebar-foreground hover:bg-sidebar-accent"
+            className="text-sidebar-foreground hover:bg-sidebar-accent focus:bg-sidebar-accent data-[highlighted]:bg-sidebar-accent data-[highlighted]:text-sidebar-foreground"
           >
             {user.name || user.email}
           </SelectItem>
