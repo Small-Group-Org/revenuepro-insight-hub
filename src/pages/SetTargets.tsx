@@ -83,11 +83,11 @@ export const SetTargets = () => {
   const { isLoading } = useCombinedLoading();
   const selectedYear = selectedDate.getFullYear();
   const { selectedUserId } = useUserStore();
-  const { user } = useAuthStore();
+  const { user } = useAuthStore();  
 
   const calculatedValues = useMemo(
-    () => calculateFields(fieldValues, period, daysInMonth),
-    [fieldValues, daysInMonth, period]
+    () => calculateFields(fieldValues, period, 7 * currentTarget?.length),
+    [fieldValues, currentTarget, period]
   );
 
   const disableLogic = useMemo(

@@ -81,7 +81,11 @@ export const calculateFields = (
 
   // Calculate daily budget
   if (values.budget !== undefined) {
-    values.dailyBudget = values.budget / daysInMonth;
+    if(period === 'weekly'){
+      values.dailyBudget = values.budget / 7;
+    } else {
+      values.dailyBudget = values.budget / daysInMonth;
+    }
   }
 
   // Calculate cost metrics
@@ -287,7 +291,11 @@ export const calculateFieldsForApiData = (
 
   // Calculate daily budget
   if (values.budget !== undefined) {
-    values.dailyBudget = values.budget / daysInMonth;
+    if(period === 'weekly'){
+      values.dailyBudget = values.budget / 7;
+    } else {
+      values.dailyBudget = values.budget / daysInMonth;
+    }
   }
 
   // Calculate cost metrics

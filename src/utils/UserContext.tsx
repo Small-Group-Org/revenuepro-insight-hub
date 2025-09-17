@@ -40,7 +40,7 @@ interface UserProviderProps {
 
 // Provider
 export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
-  const [isVerifying, setIsVerifying] = useState<boolean>(false);
+  const [isVerifying, setIsVerifying] = useState<boolean>(true);
 
   const navigate = useNavigate();
   const login = useAuthStore((state) => state.login);
@@ -65,7 +65,6 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     const refreshToken = localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
 
     if (accessToken && refreshToken) {
-      setIsVerifying(true);
       try {
         const response = await verifyToken(accessToken, refreshToken);
         if (response?.status === 403) {
@@ -101,8 +100,6 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
           variant: "destructive",
         });
         navigate("/login");
-      } finally {
-        setIsVerifying(false);
       }
     } else {
       navigate("/login");
