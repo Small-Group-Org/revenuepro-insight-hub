@@ -16,7 +16,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { LeadSummaryCards } from '@/components/LeadSheet/LeadSummaryCards';
 import { LeadFiltersAndControls } from '@/components/LeadSheet/LeadFiltersAndControls';
 import { LeadPagination } from '@/components/LeadSheet/LeadPagination';
-import { useUserContext } from '@/utils/UserContext';
 
 // Memoized component for lead tiles to optimize re-renders
 const LeadTiles = React.memo(({ 
@@ -483,8 +482,7 @@ export const LeadSheet = () => {
     setSorting,
     clearFilters
   } = useLeadStore();
-  const { selectedUserId, users, setSelectedUserId } = useUserStore();
-  const { user } = useUserContext();
+  const { selectedUserId, users } = useUserStore();
 
   // Calculate disable logic for LeadSheet page with role-based restrictions
   const disableLogic = useMemo(() => 
