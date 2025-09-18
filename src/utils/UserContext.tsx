@@ -6,10 +6,11 @@ import { useNavigate } from "react-router-dom";
 import { STORAGE_KEYS } from "./storage";
 import { verifyToken } from "@/service/authService";
 import { useToast } from "@/hooks/use-toast";
+import { useUserStore } from "@/stores/userStore";
 
 // Types
 interface User {
-  id?: string;
+  _id?: string;
   name?: string;
   email?: string;
   role?: string; // Add role here
@@ -46,9 +47,8 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   const login = useAuthStore((state) => state.login);
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
+  const setSelectedUserId = useUserStore((state) => state.setSelectedUserId);
   const { toast } = useToast();
-
-  
 
   useEffect(() => {
     checkExistingToken();
@@ -79,6 +79,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         
         if (response?.status === 200 && response?.data?.user) {
           setUser(response.data.user);
+          setSelectedUserId(response.data.user._id);
           login();
           navigate("/");
           return;

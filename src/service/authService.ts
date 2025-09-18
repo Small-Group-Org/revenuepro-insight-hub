@@ -1,5 +1,6 @@
 import { doGET, doPOST } from "@/utils/HttpUtils";
 import { STORAGE_KEYS } from "@/utils/storage";
+import { User } from "./userService";
 
 interface LoginResponse {
   status: number;
@@ -7,7 +8,7 @@ interface LoginResponse {
     accessToken: string;
     refreshToken: string;
     user: {
-      id: string;
+      _id: string;
       name: string;
       email: string;
       role?: string; // Add role here
@@ -21,7 +22,7 @@ interface VerifyResponse {
   status: number;
   data?: {
     user: {
-      id: string;
+      _id: string;
       name: string;
       email: string;
       role?: string; // Add role here
