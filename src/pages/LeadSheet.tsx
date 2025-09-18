@@ -16,6 +16,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { LeadSummaryCards } from '@/components/LeadSheet/LeadSummaryCards';
 import { LeadFiltersAndControls } from '@/components/LeadSheet/LeadFiltersAndControls';
 import { LeadPagination } from '@/components/LeadSheet/LeadPagination';
+import { useUserContext } from '@/utils/UserContext';
 
 // Memoized component for lead tiles to optimize re-renders
 const LeadTiles = React.memo(({ 
@@ -482,7 +483,8 @@ export const LeadSheet = () => {
     setSorting,
     clearFilters
   } = useLeadStore();
-  const { selectedUserId, users } = useUserStore();
+  const { selectedUserId, users, setSelectedUserId } = useUserStore();
+  const { user } = useUserContext();
 
   // Calculate disable logic for LeadSheet page with role-based restrictions
   const disableLogic = useMemo(() => 
@@ -566,6 +568,12 @@ export const LeadSheet = () => {
 
     return { startDate, endDate };
   }, []);
+
+  useEffect(() => {
+    if (!selectedUserId && user?.role === 'USER' && user?._id) {
+      setSelectedUserId(user._id);
+    }
+  }, [selectedUserId, user, setSelectedUserId]);
 
   // Fetch filter options once when component loads or date/period changes
   useEffect(() => {
