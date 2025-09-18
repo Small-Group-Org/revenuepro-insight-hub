@@ -569,12 +569,6 @@ export const LeadSheet = () => {
     return { startDate, endDate };
   }, []);
 
-  useEffect(() => {
-    if (!selectedUserId && user?.role === 'USER' && user?._id) {
-      setSelectedUserId(user._id);
-    }
-  }, [selectedUserId, user, setSelectedUserId]);
-
   // Fetch filter options once when component loads or date/period changes
   useEffect(() => {
     if (selectedUserId) {

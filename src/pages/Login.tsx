@@ -6,6 +6,7 @@ import useAuthStore from "@/stores/authStore";
 import { login } from "@/service/authService";
 import { useToast } from "@/hooks/use-toast";
 import WelcomeModal from "@/components/WelcomeModal";
+import { useUserStore } from "@/stores/userStore";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -18,6 +19,7 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const { login: setLoggedIn, setUser } = useAuthStore();
+  const setSelectedUserId = useUserStore((state) => state.setSelectedUserId);
   const { toast } = useToast();
 
   const handleWelcomeModalClose = () => {
@@ -33,6 +35,7 @@ export default function Login() {
       const response = await login(email, password);
 
       if (response.status === 200 && response.data) {
+        setSelectedUserId(response.data.user._id);
         setUser(response.data.user);
         setLoggedIn();
         
