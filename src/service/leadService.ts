@@ -1,4 +1,4 @@
-import { doGET, doPATCH, doPOST } from "@/utils/HttpUtils";
+import { doGET, doPATCH, doPOST, doDELETE, doDELETEWithBody } from "@/utils/HttpUtils";
 import { Lead } from "@/types";
 import { TimeFilter } from '../types/timeFilter';
 
@@ -90,6 +90,19 @@ export interface GetLeadsResponse {
 export interface UpdateLeadResponse {
   success: boolean;
   data: Lead;
+}
+
+export interface DeleteLeadPayload {
+  _id: string;
+}
+
+export interface BulkDeleteLeadsPayload {
+  leadIds: string[];
+}
+
+export interface DeleteLeadResponse {
+  success: boolean;
+  message?: string;
 }
 
 export interface AnalyticsOverview {
@@ -269,6 +282,16 @@ export const exportAllFilteredLeads = async (payload: GetPaginatedLeadsPayload) 
 
 export const updateLead = async (payload: UpdateLeadPayload) => {
   const response = await doPATCH("/leads", payload);
+  return response;
+};
+
+export const deleteLead = async (payload: DeleteLeadPayload) => {
+  const response = await doDELETE(`/leads/${payload._id}`);
+  return response;
+};
+
+export const bulkDeleteLeads = async (payload: BulkDeleteLeadsPayload) => {
+  const response = await doDELETEWithBody("/leads/", payload);
   return response;
 };
 

@@ -32,9 +32,9 @@ const apiHandler = async (
         const response: AxiosResponse = await api({
             method: method,
             url: endPoint,
-            ...(![API_METHODS.GET, API_METHODS.DELETE].includes(method) && { data: data }),
+            ...(data !== null && { data: data }),
             headers: {
-                ...(method !== API_METHODS.DELETE && { "Content-Type": contentType }),
+                ...(data !== null && { "Content-Type": contentType }),
                 "accessToken" : `${getValue(STORAGE_KEYS.ACCESS_TOKEN)}`,
                 "refreshToken" : `${getValue(STORAGE_KEYS.REFRESH_TOKEN)}`,
                 "Accept": "application/json",

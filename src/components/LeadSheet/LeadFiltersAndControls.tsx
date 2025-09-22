@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Star, Download } from 'lucide-react';
+import { Calendar, Star, Download, Trash2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { getStatusInfo } from '@/utils/leadProcessing';
@@ -32,11 +32,13 @@ interface LeadFiltersAndControlsProps {
   processedLeads: any[];
   pagination: any;
   hasActiveFilters: boolean;
+  selectedLeads: Set<string>;
   setFilters: (filters: Partial<{ adSetName?: string; adName?: string; status?: string; unqualifiedLeadReason?: string }>) => void;
   setSorting: (sortBy: 'date' | 'score', sortOrder: 'asc' | 'desc') => void;
   setCurrentPage: (page: number) => void;
   handleClearFilters: () => void;
   exportToExcel: (type: 'current' | 'all') => void;
+  handleBulkDelete: () => void;
 }
 
 export const LeadFiltersAndControls = React.memo(({
@@ -48,11 +50,13 @@ export const LeadFiltersAndControls = React.memo(({
   processedLeads,
   pagination,
   hasActiveFilters,
+  selectedLeads,
   setFilters,
   setSorting,
   setCurrentPage,
   handleClearFilters,
-  exportToExcel
+  exportToExcel,
+  handleBulkDelete
 }: LeadFiltersAndControlsProps) => (
   <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 shadow-lg p-4">
     {/* Filters Section - Appears Above When Toggled */}
@@ -288,24 +292,37 @@ export const LeadFiltersAndControls = React.memo(({
         )}
       </div>
       
-      {/* Export Dropdown */}
-      <Select onValueChange={(value) => exportToExcel(value as 'current' | 'all')}>
-        <SelectTrigger 
-          disabled={processedLeads.length === 0}
-          className="flex items-center gap-1 px-2 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all text-xs font-medium shadow-sm border-0 w-auto min-w-0"
-        >
-          <Download className="w-3 h-3" />
-          Export
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="current">
-            Current Page ({processedLeads.length} leads)
-          </SelectItem>
-          <SelectItem value="all">
-            All Filtered Data ({pagination?.totalCount || 0} leads)
-          </SelectItem>
-        </SelectContent>
-      </Select>
+      {/* Action Buttons */}
+      <div className="flex items-center gap-2">
+        {/* Delete Button - Only show when leads are selected */}
+        {selectedLeads.size > 0 && (
+          <button
+            onClick={handleBulkDelete}
+            className="flex items-center gap-1 p-3  hover:text-red-50 bg-red-100 border-[1px] border-red-200 text-white rounded-md hover:bg-red-200 transition-all text-xs font-medium shadow-sm border-0"
+          >
+            <Trash2 className="w-4 h-4 text-red-600" />
+          </button>
+        )}
+        
+        {/* Export Dropdown */}
+        <Select onValueChange={(value) => exportToExcel(value as 'current' | 'all')}>
+          <SelectTrigger 
+            disabled={processedLeads.length === 0}
+            className="flex items-center gap-1 px-2 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all text-xs font-medium shadow-sm border-0 w-auto min-w-0"
+          >
+            <Download className="w-3 h-3" />
+            Export
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="current">
+              Current Page ({processedLeads.length} leads)
+            </SelectItem>
+            <SelectItem value="all">
+              All Filtered Data ({pagination?.totalCount || 0} leads)
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
     </div>
   </div>
 ));

@@ -27,6 +27,11 @@ export const doDELETE = async (url: string): Promise<ApiResponse> => {
   return response;
 };
 
+export const doDELETEWithBody = async (url: string, data: unknown): Promise<ApiResponse> => {
+  const response = await apiHandler(url, API_METHODS.DELETE, data);
+  return response;
+};
+
 export const doPUT = async (url: string, data: unknown): Promise<ApiResponse> => {
   const response = await apiHandler(url, API_METHODS.PUT, data);
   return response;
