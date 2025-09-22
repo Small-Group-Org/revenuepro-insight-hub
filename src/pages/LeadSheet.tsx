@@ -601,6 +601,7 @@ export const LeadSheet = () => {
                   pagination={pagination}
                   hasActiveFilters={hasActiveFilters}
                   selectedLeads={selectedLeads}
+                  userRole={userRole}
                   setFilters={setFilters}
                   setSorting={setSorting}
                   setCurrentPage={setCurrentPage}
@@ -647,6 +648,7 @@ export const LeadSheet = () => {
                     customULR={customULR}
                     ULR_OPTIONS={ULR_OPTIONS}
                     selectedLeads={selectedLeads}
+                    userRole={userRole}
                     handleLeadStatusChange={handleLeadStatusChange}
                     handleULRChange={handleULRChange}
                     handleCustomULRSubmit={handleCustomULRSubmit}
