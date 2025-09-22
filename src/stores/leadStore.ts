@@ -3,10 +3,12 @@ import { Lead } from "@/types";
 import { 
   getLeads, 
   updateLead,
+  bulkDeleteLeads,
   getPaginatedLeads,
   getFilterOptions,
   GetLeadsPayload, 
   UpdateLeadPayload,
+  BulkDeleteLeadsPayload,
   GetPaginatedLeadsPayload,
   GetFilterOptionsPayload,
   PaginationInfo,
@@ -46,6 +48,7 @@ interface LeadStoreState {
   fetchPaginatedLeads: (payload: GetPaginatedLeadsPayload) => Promise<void>;
   fetchFilterOptions: (payload: GetFilterOptionsPayload) => Promise<void>;
   updateLeadData: (payload: UpdateLeadPayload) => Promise<{ error: boolean; message?: string }>;
+  bulkDeleteLeadsData: (payload: BulkDeleteLeadsPayload) => Promise<{ error: boolean; message?: string }>;
   updateLeadLocal: (leadId: string, updates: Partial<Lead>) => void;
   clearLeads: () => void;
   setFilters: (filters: Partial<{ adSetName?: string; adName?: string; status?: string; unqualifiedLeadReason?: string }>) => void;
@@ -217,6 +220,28 @@ export const useLeadStore = create<LeadStoreState>((set, get) => ({
       return { 
         error: true, 
         message: error instanceof Error ? error.message : "Failed to update lead" 
+      };
+    }
+  },
+
+  bulkDeleteLeadsData: async (payload: BulkDeleteLeadsPayload) => {
+    try {
+      const res = await bulkDeleteLeads(payload);
+      
+      if (!res.error && res.data && res.data.success) {
+        // Remove the leads from local state
+        const { leads } = get();
+        const updatedLeads = leads.filter(lead => !payload.leadIds.includes(lead.id));
+        set({ leads: updatedLeads });
+        
+        return { error: false, message: `${payload.leadIds.length} leads deleted successfully` };
+      } else {
+        return { error: true, message: res.message || res.data?.message || "Failed to delete leads" };
+      }
+    } catch (error) {
+      return { 
+        error: true, 
+        message: error instanceof Error ? error.message : "Failed to delete leads" 
       };
     }
   },
