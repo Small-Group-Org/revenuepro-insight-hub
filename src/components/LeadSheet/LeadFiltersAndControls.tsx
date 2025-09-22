@@ -33,6 +33,7 @@ interface LeadFiltersAndControlsProps {
   pagination: any;
   hasActiveFilters: boolean;
   selectedLeads: Set<string>;
+  userRole: string;
   setFilters: (filters: Partial<{ adSetName?: string; adName?: string; status?: string; unqualifiedLeadReason?: string }>) => void;
   setSorting: (sortBy: 'date' | 'score', sortOrder: 'asc' | 'desc') => void;
   setCurrentPage: (page: number) => void;
@@ -51,6 +52,7 @@ export const LeadFiltersAndControls = React.memo(({
   pagination,
   hasActiveFilters,
   selectedLeads,
+  userRole,
   setFilters,
   setSorting,
   setCurrentPage,
@@ -294,11 +296,11 @@ export const LeadFiltersAndControls = React.memo(({
       
       {/* Action Buttons */}
       <div className="flex items-center gap-2">
-        {/* Delete Button - Only show when leads are selected */}
-        {selectedLeads.size > 0 && (
+        {/* Delete Button - Only show when leads are selected and user is ADMIN */}
+        {selectedLeads.size > 0 && userRole === 'ADMIN' && (
           <button
             onClick={handleBulkDelete}
-            className="flex items-center gap-1 p-3  hover:text-red-50 bg-red-100 border-[1px] border-red-200 text-white rounded-md hover:bg-red-200 transition-all text-xs font-medium shadow-sm border-0"
+            className="flex items-center gap-1 p-3 hover:text-red-50 bg-red-100 border border-red-200 text-white rounded-md hover:bg-red-200 transition-all text-xs font-medium shadow-sm"
           >
             <Trash2 className="w-4 h-4 text-red-600" />
           </button>

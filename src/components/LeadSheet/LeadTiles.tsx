@@ -12,6 +12,7 @@ export const LeadTiles = React.memo(({
     customULR, 
     ULR_OPTIONS,
     selectedLeads,
+    userRole,
     handleLeadStatusChange,
     handleULRChange,
     handleCustomULRSubmit,
@@ -59,6 +60,7 @@ export const LeadTiles = React.memo(({
     customULR: string;
     ULR_OPTIONS: string[];
     selectedLeads: Set<string>;
+    userRole: string;
     handleLeadStatusChange: (leadId: string, value: 'new' | 'in_progress' | 'estimate_set' | 'unqualified') => Promise<void>;
     handleULRChange: (leadId: string, value: string) => Promise<void>;
     handleCustomULRSubmit: (leadId: string) => Promise<void>;
@@ -107,18 +109,20 @@ export const LeadTiles = React.memo(({
                 : 'border-gray-200 bg-white'
             } ${getHoverStyling()} ${isDisabled ? 'opacity-60' : ''} group relative`}
           >
-            {/* Checkbox - appears on hover or when checked */}
-            <div className={`absolute top-1 left-2 transition-opacity duration-200 z-10 ${
-              isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-            }`}>
-              <input
-                type="checkbox"
-                checked={isSelected}
-                onChange={(e) => handleLeadSelect(lead.id, e.target.checked)}
-                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded cursor-pointer"
-                disabled={isDisabled}
-              />
-            </div>
+            {/* Checkbox - appears on hover or when checked - Only for ADMIN role */}
+            {userRole === 'ADMIN' && (
+              <div className={`absolute top-1 left-2 transition-opacity duration-200 z-10 ${
+                isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+              }`}>
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  onChange={(e) => handleLeadSelect(lead.id, e.target.checked)}
+                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded cursor-pointer"
+                  disabled={isDisabled}
+                />
+              </div>
+            )}
             
             <div className="grid grid-cols-12 gap-4 items-center">
               {/* Lead Score */}
