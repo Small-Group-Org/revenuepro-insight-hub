@@ -1,5 +1,6 @@
 import { doPOST } from "../utils/HttpUtils";
 import { doGET } from "../utils/HttpUtils";
+import { API_ENDPOINTS } from "@/utils/constant";
 
 export interface IWeeklyTarget {
   userId?: string;
@@ -20,7 +21,7 @@ export interface IWeeklyTarget {
 
 export const upsertTarget = async (targetData: IWeeklyTarget | IWeeklyTarget[]) => {
   try {
-    const response = await doPOST('/targets/upsert', targetData);
+    const response = await doPOST(API_ENDPOINTS.TARGETS_UPSERT, targetData);
     if (response.status === 200) {
       return response.data;
     }
@@ -33,7 +34,7 @@ export const upsertTarget = async (targetData: IWeeklyTarget | IWeeklyTarget[]) 
 
 export const upsertBulkTargets = async (targetsData: IWeeklyTarget[]) => {
   try {
-    const response = await doPOST('/targets/bulk-upsert', targetsData);
+    const response = await doPOST(API_ENDPOINTS.TARGETS_BULK_UPSERT, targetsData);
     if (response.status === 200) {
       return response.data;
     }
@@ -46,7 +47,7 @@ export const upsertBulkTargets = async (targetsData: IWeeklyTarget[]) => {
 
 export const getTargets = async (userId: string, queryType: string, startDate: string, endDate:string) => {
   try {
-    let url = `/targets/get?userId=${userId}`;
+    let url = `${API_ENDPOINTS.TARGETS_GET}?userId=${userId}`;
     if (queryType) url += `&queryType=${queryType}`;
     if (startDate) url += `&startDate=${startDate}`;
     if(endDate) url += `&endDate=${endDate}`

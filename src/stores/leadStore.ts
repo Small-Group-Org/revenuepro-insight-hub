@@ -1,12 +1,10 @@
 import { create } from "zustand";
 import { Lead } from "@/types";
 import { 
-  getLeads, 
   updateLead,
   bulkDeleteLeads,
   getPaginatedLeads,
   getFilterOptions,
-  GetLeadsPayload, 
   UpdateLeadPayload,
   BulkDeleteLeadsPayload,
   GetPaginatedLeadsPayload,
@@ -44,7 +42,6 @@ interface LeadStoreState {
   };
   
   // Actions
-  fetchLeads: (clientId?: string, startDate?: string, endDate?: string) => Promise<void>;
   fetchPaginatedLeads: (payload: GetPaginatedLeadsPayload) => Promise<void>;
   fetchFilterOptions: (payload: GetFilterOptionsPayload) => Promise<void>;
   updateLeadData: (payload: UpdateLeadPayload) => Promise<{ error: boolean; message?: string }>;
@@ -81,35 +78,6 @@ export const useLeadStore = create<LeadStoreState>((set, get) => ({
   currentSorting: {
     sortBy: 'date',
     sortOrder: 'desc'
-  },
-
-  fetchLeads: async (clientId?: string, startDate?: string, endDate?: string) => {
-    set({ loading: true, error: undefined, selectedClientId: clientId });
-    
-    try {
-      const payload: GetLeadsPayload = {};
-      if (clientId) payload.clientId = clientId;
-      if (startDate) payload.startDate = startDate;
-      if (endDate) payload.endDate = endDate;
-
-      const res = await getLeads(payload);
-      
-      if (!res.error && res.data && res.data.success && res.data.data) {
-        // Map _id to id for compatibility with Lead interface
-        const leadsWithId = res.data.data.map((lead: any) => ({
-          ...lead,
-          id: lead._id || lead.id
-        }));
-        set({ leads: leadsWithId, loading: false });
-      } else {
-        set({ error: res.message || res.data?.message || "Failed to fetch leads", loading: false });
-      }
-    } catch (error) {
-      set({ 
-        error: error instanceof Error ? error.message : "Failed to fetch leads", 
-        loading: false 
-      });
-    }
   },
 
   fetchPaginatedLeads: async (payload: GetPaginatedLeadsPayload) => {
