@@ -188,29 +188,6 @@ export interface ProcessLeadSheetResponse {
   data?: any;
 }
 
-export const getLeads = async (payload?: GetLeadsPayload) => {
-  let url = API_ENDPOINTS.LEADS_BASE;
-  const params = new URLSearchParams();
-  
-  if (payload?.clientId) {
-    params.append('clientId', payload.clientId);
-  }
-  if (payload?.startDate) {
-    params.append('startDate', payload.startDate);
-  }
-  if (payload?.endDate) {
-    params.append('endDate', payload.endDate);
-  }
-  
-  if (params.toString()) {
-    url += `?${params.toString()}`;
-  }
-  
-  const response = await doGET(url);
-  return response;
-};
-
-// New function for paginated leads
 export const getPaginatedLeads = async (payload: GetPaginatedLeadsPayload) => {
   const params = new URLSearchParams();
   

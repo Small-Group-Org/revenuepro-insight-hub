@@ -1,6 +1,6 @@
 import axios, { AxiosError, AxiosResponse } from "axios";
 import { STORAGE_KEYS, getValue, removeValue } from "./storage";
-import {API_METHODS, API_URL} from "./constant";
+import { API_URL} from "./constant";
 import useAuthStore from "@/stores/authStore";
 
 export const api = axios.create({
@@ -23,6 +23,7 @@ const apiHandler = async (
 ): Promise<ApiResponse> => {
     try {
         const contentType: string = isFormData(data) ? "multipart/form-data" : "application/json";
+        const userTimeZone = typeof Intl !== 'undefined' && Intl.DateTimeFormat ? Intl.DateTimeFormat().resolvedOptions().timeZone : '';
         
         // Add LEADS_API_KEY header for specific endpoints
         const leadsApiKeyHeaders = endPoint.includes('/process-lead-sheet') ? {
@@ -38,6 +39,7 @@ const apiHandler = async (
                 "accessToken" : `${getValue(STORAGE_KEYS.ACCESS_TOKEN)}`,
                 "refreshToken" : `${getValue(STORAGE_KEYS.REFRESH_TOKEN)}`,
                 "Accept": "application/json",
+                "X-Timezone": userTimeZone,
                 ...leadsApiKeyHeaders,
             },
         });
