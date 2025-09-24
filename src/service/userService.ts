@@ -1,4 +1,5 @@
 import { doPOST, doGET, doPUT, doDELETE } from "@/utils/HttpUtils";
+import { API_ENDPOINTS } from "@/utils/constant";
 
 export interface User {
   id: string;
@@ -28,12 +29,12 @@ export interface UpdatePasswordPayload {
 
 export const createUser = async (payload: CreateUserPayload) => {
   // Always set role to USER for this admin action
-  const response = await doPOST("/admin/users/upsert", payload);
+  const response = await doPOST(API_ENDPOINTS.ADMIN_USER_UPSERT, payload);
   return response;
 };
 
 export const getAllUsers = async (role?: string) => {
-  let url = "/admin/users/list/all";
+  let url = API_ENDPOINTS.ADMIN_USERS_LIST;
   if (role && role !== "all") {
     url += `?role=${role.toUpperCase()}`;
   }
@@ -42,12 +43,12 @@ export const getAllUsers = async (role?: string) => {
 };
 
 export const updateUser = async (payload: UpdateUserPayload) => {
-  const response = await doPOST("/admin/users/upsert", payload);
+  const response = await doPOST(API_ENDPOINTS.ADMIN_USER_UPSERT, payload);
   return response;
 };
 
 export const deleteUser = async (userId: string) => {
-  const response = await doDELETE(`/admin/users/${userId}`);
+  const response = await doDELETE(`${API_ENDPOINTS.ADMIN_USER}/${userId}`);
   return response;
 };
 
@@ -57,6 +58,6 @@ export const getUserById = async (userId: string) => {
 };
 
 export const updatePassword = async (payload: UpdatePasswordPayload) => {
-  const response = await doPUT("/users/update-password", payload);
+  const response = await doPUT(API_ENDPOINTS.USER_UPDATE_PASSWORD, payload);
   return response;
 };

@@ -1,6 +1,6 @@
-import { doGET, doPOST } from "@/utils/HttpUtils";
+import { doPOST } from "@/utils/HttpUtils";
+import { API_ENDPOINTS } from "@/utils/constant";
 import { STORAGE_KEYS } from "@/utils/storage";
-import { User } from "./userService";
 
 interface LoginResponse {
   status: number;
@@ -34,7 +34,7 @@ interface VerifyResponse {
 
 export const login = async (email: string, password: string): Promise<LoginResponse> => {
   try {
-    const response = await doPOST(`/auth/login`, {
+    const response = await doPOST(API_ENDPOINTS.AUTH_LOGIN, {
       email,
       password
     });
@@ -59,7 +59,7 @@ export const login = async (email: string, password: string): Promise<LoginRespo
 
 export const verifyToken = async (accessToken: string, refreshToken: string): Promise<VerifyResponse> => {
   try {
-    const response = await doPOST(`/auth/verify-token`, {
+    const response = await doPOST(API_ENDPOINTS.AUTH_VERIFY_TOKEN, {
       accessToken,
       refreshToken
     });

@@ -1,5 +1,5 @@
 import { doPUT } from "@/utils/HttpUtils";
-import { STORAGE_KEYS, getValue } from "@/utils/storage";
+import { API_ENDPOINTS } from "@/utils/constant";
 
 interface TrackingResponse {
   error: boolean;
@@ -10,7 +10,7 @@ interface TrackingResponse {
 
 export const trackUserLogin = async (userId: string): Promise<TrackingResponse> => {
   try {
-    const response = await doPUT("/ip-tracking/track", { userId });
+    const response = await doPUT(API_ENDPOINTS.IP_TRACK, { userId });
     return response;
   } catch (error) {
     console.error("Error tracking user login:", error);

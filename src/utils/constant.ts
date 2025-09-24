@@ -15,6 +15,42 @@ export const tabs = ["basic", "templates", "target"];
 // export const API_URL = " http://localhost:4000/api/v1";
 export const API_URL = "https://revenue-pro-backend-1057029383450.asia-south2.run.app/api/v1";
 
+// Centralized API endpoints to avoid hardcoded strings across the app
+export const API_ENDPOINTS = {
+  // Auth
+  AUTH_LOGIN: "/auth/login",
+  AUTH_VERIFY_TOKEN: "/auth/verify-token",
+
+  // Admin
+  ADMIN_USER_UPSERT: "/admin/users/upsert",
+  ADMIN_USERS_LIST: "/admin/users/list/all",
+  ADMIN_USER: "/admin/users", // append /:id when needed
+
+  // Users
+  USER_UPDATE_PASSWORD: "/users/update-password",
+
+  // Leads
+  LEADS_BASE: "/leads",
+  LEADS_PAGINATED: "/leads/paginated",
+  LEADS_FILTERS_COUNTS: "/leads/filters-and-counts",
+  LEADS_BULK_DELETE: "/leads/bulk-delete",
+  LEADS_ANALYTICS_SUMMARY: "/leads/analytics/summary",
+  LEADS_ANALYTICS_AD_TABLE: "/leads/analytics/ad-table",
+  LEADS_PROCESS_SHEET: "/process-lead-sheet",
+
+  // Targets
+  TARGETS_UPSERT: "/targets/upsert",
+  TARGETS_BULK_UPSERT: "/targets/bulk-upsert",
+  TARGETS_GET: "/targets/get",
+
+  // Actual
+  ACTUAL_GET: "/actual/get",
+  ACTUAL_UPSERT: "/actual/upsert",
+
+  // IP Tracking
+  IP_TRACK: "/ip-tracking/track",
+} as const;
+
 export const menuItems = [
   { id: 'dashboard', label: 'Dashboard', icon: BarChart3, path: '/' },
   { id: 'settargets', label: 'Set Targets', icon: Target, path: '/targets' },

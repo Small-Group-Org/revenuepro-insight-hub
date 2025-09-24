@@ -1,4 +1,5 @@
 import { doGET, doPATCH, doPOST, doDELETE, doDELETEWithBody } from "@/utils/HttpUtils";
+import { API_ENDPOINTS } from "@/utils/constant";
 import { Lead } from "@/types";
 import { TimeFilter } from '../types/timeFilter';
 
@@ -188,7 +189,7 @@ export interface ProcessLeadSheetResponse {
 }
 
 export const getLeads = async (payload?: GetLeadsPayload) => {
-  let url = '/leads';
+  let url = API_ENDPOINTS.LEADS_BASE;
   const params = new URLSearchParams();
   
   if (payload?.clientId) {
@@ -228,7 +229,7 @@ export const getPaginatedLeads = async (payload: GetPaginatedLeadsPayload) => {
   if (payload.status) params.append('status', payload.status);
   if (payload.unqualifiedLeadReason) params.append('unqualifiedLeadReason', payload.unqualifiedLeadReason);
   
-  const url = `/leads/paginated?${params.toString()}`;
+  const url = `${API_ENDPOINTS.LEADS_PAGINATED}?${params.toString()}`;
   const response = await doGET(url);
   return response;
 };
@@ -244,7 +245,7 @@ export const getFilterOptions = async (payload: GetFilterOptionsPayload) => {
   if (payload.startDate) params.append('startDate', payload.startDate);
   if (payload.endDate) params.append('endDate', payload.endDate);
   
-  const url = `/leads/filters-and-counts?${params.toString()}`;
+  const url = `${API_ENDPOINTS.LEADS_FILTERS_COUNTS}?${params.toString()}`;
   const response = await doGET(url);
   return response;
 };
@@ -275,23 +276,23 @@ export const exportAllFilteredLeads = async (payload: GetPaginatedLeadsPayload) 
   if (exportPayload.status) params.append('status', exportPayload.status);
   if (exportPayload.unqualifiedLeadReason) params.append('unqualifiedLeadReason', exportPayload.unqualifiedLeadReason);
   
-  const url = `/leads/paginated?${params.toString()}`;
+  const url = `${API_ENDPOINTS.LEADS_PAGINATED}?${params.toString()}`;
   const response = await doGET(url);
   return response;
 };
 
 export const updateLead = async (payload: UpdateLeadPayload) => {
-  const response = await doPATCH("/leads", payload);
+  const response = await doPATCH(API_ENDPOINTS.LEADS_BASE, payload);
   return response;
 };
 
 export const deleteLead = async (payload: DeleteLeadPayload) => {
-  const response = await doDELETE(`/leads/${payload._id}`);
+  const response = await doDELETE(`${API_ENDPOINTS.LEADS_BASE}/${payload._id}`);
   return response;
 };
 
 export const bulkDeleteLeads = async (payload: BulkDeleteLeadsPayload) => {
-  const response = await doDELETEWithBody("/leads/", payload);
+  const response = await doDELETEWithBody(API_ENDPOINTS.LEADS_BASE, payload);
   return response;
 };
 
@@ -305,7 +306,7 @@ export const getAnalyticsSummary = async (payload: GetAnalyticsSummaryPayload) =
   // Optional parameters
   if (payload.timeFilter) params.append('timeFilter', payload.timeFilter);
   
-  const url = `/leads/analytics/summary?${params.toString()}`;
+  const url = `${API_ENDPOINTS.LEADS_ANALYTICS_SUMMARY}?${params.toString()}`;
   const response = await doGET(url);
   return response;
 };
@@ -328,13 +329,13 @@ export const getAnalyticsTable = async (payload: GetAnalyticsTablePayload) => {
   if (payload.adNameSortOrder) params.append('adNameSortOrder', payload.adNameSortOrder);
   if (payload.showTopRanked !== undefined) params.append('showTopRanked', payload.showTopRanked.toString());
   
-  const url = `/leads/analytics/ad-table?${params.toString()}`;
+  const url = `${API_ENDPOINTS.LEADS_ANALYTICS_AD_TABLE}?${params.toString()}`;
   const response = await doGET(url);
   return response;
 };
 
 // Lead sheet processing function
 export const processLeadSheet = async (payload: ProcessLeadSheetPayload) => {
-  const response = await doPOST("/process-lead-sheet", payload);
+  const response = await doPOST(API_ENDPOINTS.LEADS_PROCESS_SHEET, payload);
   return response;
 };
