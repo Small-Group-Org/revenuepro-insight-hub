@@ -1,7 +1,7 @@
-import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
+import { format } from 'date-fns';
 import { PeriodType } from '@/types';
-import { getWeekInfo } from '@/utils/weekLogic';
-import { getScoreInfo, getStatusInfo } from '@/utils/leadProcessing';
+import { getStatusInfo } from '@/utils/leadProcessing';
+import { createDateRangeFromPeriod } from '@/utils/dateRangeHelpers';
 import { 
   DateRange, 
   ProcessedLead, 
@@ -19,23 +19,10 @@ import {
 
 /**
  * Calculate date range based on selected date and period type
+ * Returns UTC ISO format for backend consistency
  */
 export const getDateRange = (date: Date, periodType: PeriodType): DateRange => {
-  let startDate: string, endDate: string;
-
-  if (periodType === 'weekly') {
-    const weekInfo = getWeekInfo(date);
-    startDate = format(weekInfo.weekStart, DATE_FORMATS.API);
-    endDate = format(weekInfo.weekEnd, DATE_FORMATS.API);
-  } else if (periodType === 'monthly') {
-    startDate = format(startOfMonth(date), DATE_FORMATS.API);
-    endDate = format(endOfMonth(date), DATE_FORMATS.API);
-  } else {
-    startDate = format(startOfYear(date), DATE_FORMATS.API);
-    endDate = format(endOfYear(date), DATE_FORMATS.API);
-  }
-
-  return { startDate, endDate };
+  return createDateRangeFromPeriod(date, periodType);
 };
 
 /**

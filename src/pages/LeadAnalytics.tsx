@@ -14,38 +14,20 @@ import {
   GetAnalyticsTablePayload,
   AnalyticsSummaryResponse,
   AnalyticsTableResponse,
-  AnalyticsDataPoint
 } from '@/service/leadService';
 import { TimeFilter, TIME_FILTER_LABELS } from '@/types/timeFilter';
+import { createDateRangeFromTimeFilter, createNumericDayRanges } from '@/utils/dateRangeHelpers';
 
 // Chart colors
 const COLORS = ['#1f1c13', '#9ca3af', '#306BC8', '#2A388F', '#396F9C'];
-
-// Modern gradient colors for bar charts
-const GRADIENT_COLORS = [
-  ['#667eea', '#764ba2'],
-  ['#f093fb', '#f5576c'],
-  ['#4facfe', '#00f2fe'],
-  ['#43e97b', '#38f9d7'],
-  ['#fa709a', '#fee140']
-];
-
-// Responsive breakpoints and dimensions
-const SCREEN_BREAKPOINTS = {
-  lg: '1024px', // Large screen breakpoint
-  xl: '1280px', // Extra large screen breakpoint
-};
 
 const CHART_DIMENSIONS = {
   minWidth: '600px', // Minimum width for charts on small screens
   height: '320px', // Chart height (h-80 = 320px)
 };
 
-// Time filter labels for display
-
 export const LeadAnalytics = () => {
   const { selectedUserId } = useUserStore();
-  const [selectedMetric, setSelectedMetric] = useState<string>('overview');
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
   
   // Analytics data states
@@ -81,9 +63,13 @@ export const LeadAnalytics = () => {
     setError(null);
     
     try {
+      // Convert timeFilter to date ranges
+      const { startDate, endDate } = createDateRangeFromTimeFilter(timeFilter);
+      
       const payload: GetAnalyticsSummaryPayload = {
         clientId: selectedUserId,
-        timeFilter
+        startDate,
+        endDate
       };
       
       const response = await getAnalyticsSummary(payload);
@@ -105,9 +91,13 @@ export const LeadAnalytics = () => {
     if (!selectedUserId) return;
     
     try {
+      // Convert commonTimeFilter to date ranges
+      const { startDate, endDate } = createNumericDayRanges(commonTimeFilter);
+      
       const payload: GetAnalyticsTablePayload = {
         clientId: selectedUserId,
-        commonTimeFilter,
+        startDate,
+        endDate,
         adSetPage,
         adNamePage,
         adSetItemsPerPage,
