@@ -8,7 +8,7 @@ import { useLeadStore } from '@/stores/leadStore';
 import { useUserStore } from '@/stores/userStore';
 import { useRoleAccess } from '@/hooks/useRoleAccess';
 import { handleInputDisable } from '@/utils/page-utils/compareUtils';
-import { getScoreInfo, getStatusInfo, FIELD_WEIGHTS } from '@/utils/leadProcessing';
+import { getScoreInfo, getStatusInfo, FIELD_WEIGHTS } from '@/utils/leads/leadProcessing';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { LeadSummaryCards } from '@/components/LeadSheet/LeadSummaryCards';
 import { LeadFiltersAndControls } from '@/components/LeadSheet/LeadFiltersAndControls';
@@ -19,7 +19,7 @@ import { processLeadSheet } from '@/service/leadService';
 
 // Import refactored utilities and constants
 import { ULR_OPTIONS, TOAST_MESSAGES, REFRESH_RATE_LIMIT } from '@/constants/leadSheet.constants';
-import { getDateRange, processLeadsData, formatDate, hasActiveFilters, hasValidLeadSheetUrl, findLeadById, validateCustomULR, isRefreshRateLimited, isCustomULR, generateExportFileName, generateExportDescription, convertLeadsToExportFormat, generateCSVContent, downloadCSVFile } from '@/utils/leadSheet.utils';
+import { getDateRange, processLeadsData, formatDate, hasActiveFilters, hasValidLeadSheetUrl, findLeadById, validateCustomULR, isRefreshRateLimited, isCustomULR, generateExportFileName, generateExportDescription, convertLeadsToExportFormat, generateCSVContent, downloadCSVFile } from '@/utils/leads/leadSheet.utils';
 import { LeadStatus, LeadUpdateData } from '@/types/leadSheet.types';
 
 // ULR = Unqualified Lead Reason

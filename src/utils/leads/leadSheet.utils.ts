@@ -1,7 +1,7 @@
 import { format } from 'date-fns';
 import { PeriodType } from '@/types';
-import { getStatusInfo } from '@/utils/leadProcessing';
-import { createDateRangeFromPeriod } from '@/utils/dateRangeHelpers';
+import { getStatusInfo } from '@/utils/leads/leadProcessing';
+import { createDateRangeFromPeriod } from '@/utils/leads/dateRangeHelpers';
 import { 
   DateRange, 
   ProcessedLead, 

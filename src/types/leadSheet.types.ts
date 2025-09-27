@@ -1,5 +1,3 @@
-import { PeriodType } from './index';
-
 // Lead status types
 export type LeadStatus = 'new' | 'in_progress' | 'estimate_set' | 'unqualified';
 

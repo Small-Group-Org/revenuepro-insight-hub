@@ -16,7 +16,7 @@ import {
   AnalyticsTableResponse,
 } from '@/service/leadService';
 import { TimeFilter, TIME_FILTER_LABELS } from '@/types/timeFilter';
-import { createDateRangeFromTimeFilter, createNumericDayRanges } from '@/utils/dateRangeHelpers';
+import { createDateRangeFromTimeFilter, createNumericDayRanges } from '@/utils/leads/dateRangeHelpers';
 
 // Chart colors
 const COLORS = ['#1f1c13', '#9ca3af', '#306BC8', '#2A388F', '#396F9C'];
