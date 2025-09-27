@@ -39,7 +39,6 @@ const apiHandler = async (
                 "accessToken" : `${getValue(STORAGE_KEYS.ACCESS_TOKEN)}`,
                 "refreshToken" : `${getValue(STORAGE_KEYS.REFRESH_TOKEN)}`,
                 "Accept": "application/json",
-                "X-Timezone": userTimeZone,
                 ...leadsApiKeyHeaders,
             },
         });
