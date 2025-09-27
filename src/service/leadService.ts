@@ -110,7 +110,7 @@ export interface AnalyticsOverview {
   totalLeads: number;
   estimateSetCount: number;
   unqualifiedCount: number;
-  conversionRate: string;
+  estimateSetRate: string;
 }
 
 export interface AnalyticsDataPoint {
