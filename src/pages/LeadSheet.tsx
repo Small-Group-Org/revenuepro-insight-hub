@@ -1,61 +1,50 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { Users, Calendar, Phone, Mail, Tag, Target, Trash2 } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
+import { Users } from 'lucide-react';
+import { startOfYear } from 'date-fns';
 import { DatePeriodSelector } from '@/components/DatePeriodSelector';
 import { PeriodType } from '@/types';
-import { getWeekInfo } from '@/utils/weekLogic';
 import { useLeadStore } from '@/stores/leadStore';
 import { useUserStore } from '@/stores/userStore';
-import { processLeadSheet } from '@/service/leadService';
 import { useRoleAccess } from '@/hooks/useRoleAccess';
 import { handleInputDisable } from '@/utils/page-utils/compareUtils';
 import { getScoreInfo, getStatusInfo, FIELD_WEIGHTS } from '@/utils/leadProcessing';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { LeadSummaryCards } from '@/components/LeadSheet/LeadSummaryCards';
 import { LeadFiltersAndControls } from '@/components/LeadSheet/LeadFiltersAndControls';
 import { LeadPagination } from '@/components/LeadSheet/LeadPagination';
 import { useUserContext } from '@/utils/UserContext';
 import { LeadTiles } from '@/components/LeadSheet/LeadTiles';
+import { processLeadSheet } from '@/service/leadService';
+
+// Import refactored utilities and constants
+import { ULR_OPTIONS, TOAST_MESSAGES, REFRESH_RATE_LIMIT } from '@/constants/leadSheet.constants';
+import { getDateRange, processLeadsData, formatDate, hasActiveFilters, hasValidLeadSheetUrl, findLeadById, validateCustomULR, isRefreshRateLimited, isCustomULR, generateExportFileName, generateExportDescription, convertLeadsToExportFormat, generateCSVContent, downloadCSVFile } from '@/utils/leadSheet.utils';
+import { LeadStatus, LeadUpdateData } from '@/types/leadSheet.types';
 
 // ULR = Unqualified Lead Reason
 export const LeadSheet = () => {
   const { toast } = useToast();
   const { userRole } = useRoleAccess();
   const { user } = useUserContext();
+  
+  // Local state for date and period
   const [selectedDate, setSelectedDate] = useState<Date>(startOfYear(new Date()));
   const [period, setPeriod] = useState<PeriodType>('yearly');
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(25);
+  
+  // Lead operations state
   const [pendingULRLeadId, setPendingULRLeadId] = useState<string | null>(null);
   const [customULR, setCustomULR] = useState<string>('');
   const [showCustomInput, setShowCustomInput] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState<boolean>(false);
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const [pageSize, setPageSize] = useState<number>(25);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [leadToDelete, setLeadToDelete] = useState<string[]>([]);
   const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
   const lastRefreshRef = useRef<number>(0);
   
-  const { 
-    leads, 
-    loading, 
-    error, 
-    pagination,
-    filterOptions,
-    statusCounts,
-    filterOptionsLoading,
-    currentFilters,
-    currentSorting,
-    fetchPaginatedLeads, 
-    fetchFilterOptions,
-    exportAllFilteredLeads,
-    updateLeadData, 
-    bulkDeleteLeadsData,
-    updateLeadLocal,
-    setFilters,
-    setSorting,
-    clearFilters
-  } = useLeadStore();
+  const { leads, loading, error, pagination, filterOptions, statusCounts, filterOptionsLoading, currentFilters, currentSorting, fetchPaginatedLeads, fetchFilterOptions, exportAllFilteredLeads, updateLeadData, bulkDeleteLeadsData, updateLeadLocal, setFilters, setSorting, clearFilters } = useLeadStore();
   const { selectedUserId, users } = useUserStore();
 
   // Calculate disable logic for LeadSheet page with role-based restrictions
@@ -66,12 +55,10 @@ export const LeadSheet = () => {
 
   const { isDisabled } = disableLogic;
 
-  // Helper functions to reduce code duplication
-  const findLead = useCallback((leadId: string) => leads.find(l => l.id === leadId), [leads]);
-
+  // Helper functions
   const showErrorToast = useCallback((message: string) => {
     toast({
-      title: "❌ Error Updating Lead",
+      title: TOAST_MESSAGES.ERROR.TITLE,
       description: message,
       variant: "destructive",
     });
@@ -79,7 +66,7 @@ export const LeadSheet = () => {
 
   const showSuccessToast = useCallback((message: string) => {
     toast({
-      title: "✅ Lead Updated",
+      title: TOAST_MESSAGES.SUCCESS.TITLE,
       description: message,
     });
   }, [toast]);
@@ -92,10 +79,10 @@ export const LeadSheet = () => {
 
   const handleLeadUpdate = useCallback(async (
     leadId: string, 
-    updateData: { status: 'new' | 'in_progress' | 'estimate_set' | 'unqualified'; unqualifiedLeadReason?: string },
+    updateData: LeadUpdateData,
     successMessage: string,
     revertOnError = false
-  ) => {
+  ): Promise<boolean> => {
     const result = await updateLeadData({ _id: leadId, ...updateData });
     
     if (result.error) {
@@ -109,37 +96,6 @@ export const LeadSheet = () => {
       return true;
     }
   }, [updateLeadData, updateLeadLocal, showErrorToast, showSuccessToast]);
-
-  // Unqualified Lead Reason options
-  const ULR_OPTIONS = useMemo(() => [
-    'Bad Phone Number',
-    'Out of Area',
-    'Job Too Small',
-    'Said Didn\'t Fill Out Form',
-    'No Longer Interested',
-    'Service we don\'t offer',
-    'Never responded',
-    'In contact, estimate not yet set',
-  ], []);
-
-  // Helper function to get date range based on selected date and period
-  const getDateRange = useCallback((date: Date, periodType: PeriodType) => {
-    let startDate: string, endDate: string;
-
-    if (periodType === 'weekly') {
-      const weekInfo = getWeekInfo(date);
-      startDate = format(weekInfo.weekStart, 'yyyy-MM-dd');
-      endDate = format(weekInfo.weekEnd, 'yyyy-MM-dd');
-    } else if (periodType === 'monthly') {
-      startDate = format(startOfMonth(date), 'yyyy-MM-dd');
-      endDate = format(endOfMonth(date), 'yyyy-MM-dd');
-    } else {
-      startDate = format(startOfYear(date), 'yyyy-MM-dd');
-      endDate = format(endOfYear(date), 'yyyy-MM-dd');
-    }
-
-    return { startDate, endDate };
-  }, []);
 
   // Fetch filter options once when component loads or date/period changes
   useEffect(() => {
@@ -190,8 +146,9 @@ export const LeadSheet = () => {
     // Leads will be fetched automatically via useEffect
   }, []);
 
-  const handleLeadStatusChange = useCallback(async (leadId: string, value: 'new' | 'in_progress' | 'estimate_set' | 'unqualified') => {
-    const lead = findLead(leadId);
+  // Lead status change handler
+  const handleLeadStatusChange = useCallback(async (leadId: string, value: LeadStatus) => {
+    const lead = leads.find(l => l.id === leadId);
     if (!lead) return;
 
     if (value === 'unqualified') {
@@ -200,8 +157,8 @@ export const LeadSheet = () => {
       setPendingULRLeadId(leadId);
       
       toast({
-        title: "ℹ️ Select Unqualified Reason",
-        description: "Please select a reason from the dropdown to complete this action.",
+        title: TOAST_MESSAGES.INFO.SELECT_ULR,
+        description: TOAST_MESSAGES.INFO.SELECT_ULR_DESCRIPTION,
       });
     } else {
       // Update the lead with the selected status and clear unqualified reason
@@ -217,17 +174,18 @@ export const LeadSheet = () => {
         clearULRStates();
       }
     }
-  }, [findLead, handleLeadUpdate, updateLeadLocal, toast, clearULRStates]);
+  }, [leads, handleLeadUpdate, updateLeadLocal, toast, clearULRStates]);
 
+  // ULR change handler
   const handleULRChange = useCallback(async (leadId: string, value: string) => {
-    const lead = findLead(leadId);
+    const lead = leads.find(l => l.id === leadId);
     if (!lead) return;
 
     if (value === 'custom') {
       // Show custom input for this lead with current value pre-filled only if it's a custom reason
       setShowCustomInput(leadId);
       const currentReason = lead.unqualifiedLeadReason || '';
-      const isCustomReason = currentReason && !ULR_OPTIONS.includes(currentReason);
+      const isCustomReason = isCustomULR(currentReason, ULR_OPTIONS);
       setCustomULR(isCustomReason ? currentReason : '');
       return;
     }
@@ -245,15 +203,17 @@ export const LeadSheet = () => {
       updateLeadLocal(leadId, { status: 'unqualified', unqualifiedLeadReason: value });
       clearULRStates();
     }
-  }, [findLead, handleLeadUpdate, updateLeadLocal, clearULRStates, ULR_OPTIONS]);
+  }, [leads, handleLeadUpdate, updateLeadLocal, clearULRStates]);
 
+  // Custom ULR submit handler
   const handleCustomULRSubmit = useCallback(async (leadId: string) => {
-    if (!customULR.trim()) {
-      showErrorToast("Please enter a custom reason.");
+    const validation = validateCustomULR(customULR);
+    if (!validation.isValid) {
+      showErrorToast(validation.message!);
       return;
     }
 
-    const lead = findLead(leadId);
+    const lead = leads.find(l => l.id === leadId);
     if (!lead) return;
 
     // Update the lead with the custom ULR
@@ -269,13 +229,14 @@ export const LeadSheet = () => {
       updateLeadLocal(leadId, { status: 'unqualified', unqualifiedLeadReason: customULR.trim() });
       clearULRStates();
     }
-  }, [customULR, findLead, handleLeadUpdate, updateLeadLocal, showErrorToast, clearULRStates]);
+  }, [customULR, leads, handleLeadUpdate, updateLeadLocal, showErrorToast, clearULRStates]);
 
+  // Lead delete handler
   const handleLeadDelete = useCallback((leadId: string) => {
     setLeadToDelete([leadId]);
   }, []);
 
-  // Checkbox selection handlers
+  // Lead selection handlers
   const handleLeadSelect = useCallback((leadId: string, isSelected: boolean) => {
     setSelectedLeads(prev => {
       const newSet = new Set(prev);
@@ -288,20 +249,14 @@ export const LeadSheet = () => {
     });
   }, []);
 
-  const handleSelectAll = useCallback((isSelected: boolean) => {
-    if (isSelected) {
-      setSelectedLeads(new Set(leads.map(lead => lead.id)));
-    } else {
-      setSelectedLeads(new Set());
-    }
-  }, [leads]);
-
+  // Bulk delete handler
   const handleBulkDelete = useCallback(() => {
     if (selectedLeads.size > 0) {
       setLeadToDelete(Array.from(selectedLeads));
     }
   }, [selectedLeads]);
 
+  // Confirm bulk delete
   const confirmBulkDelete = useCallback(async () => {
     if (selectedLeads.size === 0) return;
 
@@ -309,66 +264,84 @@ export const LeadSheet = () => {
       const result = await bulkDeleteLeadsData({ leadIds: Array.from(selectedLeads) });
       
       if (result.error) {
-        showErrorToast(result.message || "Failed to delete leads. Please try again.");
+        showErrorToast(result.message || TOAST_MESSAGES.ERROR.BULK_DELETE_FAILED);
       } else {
-        showSuccessToast(result.message || `${selectedLeads.size} leads deleted successfully.`);
+        showSuccessToast(result.message || `${selectedLeads.size} ${TOAST_MESSAGES.SUCCESS.BULK_DELETE_SUCCESS}`);
         setSelectedLeads(new Set());
       }
     } catch (error) {
-      showErrorToast("Failed to delete leads. Please try again.");
+      showErrorToast(TOAST_MESSAGES.ERROR.BULK_DELETE_FAILED);
     }
   }, [selectedLeads, bulkDeleteLeadsData, showSuccessToast, showErrorToast]);
 
+  // Cancel bulk delete
   const cancelBulkDelete = useCallback(() => {
     setLeadToDelete([]);
   }, []);
 
-  const formatDate = useCallback((dateString: string) => {
-    return format(new Date(dateString), 'MMM dd, yyyy');
-  }, []);
+  // Export to Excel
+  const exportToExcel = useCallback(async (exportType: 'current' | 'all') => {
+    try {
+      let exportData: any[] = [];
+      let fileName = '';
+      let description = '';
 
-  // With backend pagination, we don't need to filter or sort on frontend
-  // The backend handles all filtering and sorting
-  const processedLeads = useMemo(() => {
-    return leads.map(lead => {
-      // Use backend-provided lead score
-      const score = lead.leadScore || 0;
-      
-      // Use backend-provided conversion rates for tooltip
-      const tooltipData = {
-        serviceRate: lead.conversionRates?.service ? (lead.conversionRates.service * 100).toFixed(1) : '0.0',
-        adSetRate: lead.conversionRates?.adSetName ? (lead.conversionRates.adSetName * 100).toFixed(1) : '0.0',
-        adNameRate: lead.conversionRates?.adName ? (lead.conversionRates.adName * 100).toFixed(1) : '0.0',
-        dateRate: lead.conversionRates?.leadDate ? (lead.conversionRates.leadDate * 100).toFixed(1) : '0.0',
-        zipRate: lead.conversionRates?.zip ? (lead.conversionRates.zip * 100).toFixed(1) : '0.0'
-      };
-      
-      return {
-        ...lead,
-        score,
-        tooltipData
-      };
-    });
-  }, [leads]);
+      if (exportType === 'current') {
+        // Export current page data
+        exportData = convertLeadsToExportFormat(processedLeads, formatDate);
+        fileName = generateExportFileName('current');
+        description = generateExportDescription('current', exportData.length);
+      } else {
+        // Export all filtered data
+        if (!selectedUserId) {
+          showErrorToast(TOAST_MESSAGES.ERROR.NO_USER_SELECTED);
+          return;
+        }
 
-  // Clear all filters
-  const handleClearFilters = useCallback(() => {
-    clearFilters();
-    setShowFilters(false);
-    setCurrentPage(1); // Reset to first page when clearing filters
-  }, [clearFilters]);
+        const { startDate, endDate } = getDateRange(selectedDate, period);
+        
+        const result = await exportAllFilteredLeads({
+          clientId: selectedUserId,
+          startDate,
+          endDate,
+          sortBy: currentSorting.sortBy,
+          sortOrder: currentSorting.sortOrder,
+          ...currentFilters
+        });
 
+        if (result.error) {
+          showErrorToast(result.message || TOAST_MESSAGES.ERROR.EXPORT_FAILED);
+          return;
+        }
+
+        exportData = convertLeadsToExportFormat(processLeadsData(result.data || []), formatDate);
+        fileName = generateExportFileName('all');
+        description = generateExportDescription('all', exportData.length);
+      }
+
+      // Create and download CSV
+      const csvContent = generateCSVContent(exportData);
+      downloadCSVFile(csvContent, fileName);
+
+      showSuccessToast(description);
+    } catch (error) {
+      showErrorToast(TOAST_MESSAGES.ERROR.EXPORT_FAILED);
+    }
+  }, [selectedUserId, selectedDate, period, currentSorting, currentFilters, exportAllFilteredLeads, showErrorToast, showSuccessToast]);
+
+  // Refresh leads
   const handleRefreshLeads = useCallback(async () => {
     // Prevent spam clicking - allow only one refresh per 3 seconds
-    const now = Date.now();
-    if (now - lastRefreshRef.current < 3000) {
+    if (isRefreshRateLimited(lastRefreshRef.current, REFRESH_RATE_LIMIT)) {
       return;
     }
-    lastRefreshRef.current = now;
+    lastRefreshRef.current = Date.now();
 
     const selectedUser = users.find(user => user.id === selectedUserId);
+    if (!selectedUser) return;
 
     setIsRefreshing(true);
+    
     try {
       const response = await processLeadSheet({
         sheetUrl: selectedUser.leadSheetUrl,
@@ -377,7 +350,7 @@ export const LeadSheet = () => {
       });
 
       if (!response.error) {
-        showSuccessToast("Leads refreshed successfully!");
+        showSuccessToast(TOAST_MESSAGES.SUCCESS.LEADS_REFRESHED);
         const { startDate, endDate } = getDateRange(selectedDate, period);
         
         // Fetch filter options and status counts
@@ -399,151 +372,32 @@ export const LeadSheet = () => {
           ...currentFilters
         });
       } else {
-        showErrorToast("Failed to refresh leads. Please contact Revenue Pro Support.");
+        showErrorToast(TOAST_MESSAGES.ERROR.REFRESH_FAILED);
       }
     } catch (error) {
       console.error('Error refreshing leads:', error);
-      showErrorToast("Failed to refresh leads. Please contact Revenue Pro support.");
+      showErrorToast(TOAST_MESSAGES.ERROR.REFRESH_FAILED);
     } finally {
       setIsRefreshing(false);
     }
-  }, [selectedUserId, users, selectedDate, period, currentPage, pageSize, currentSorting, currentFilters, fetchPaginatedLeads, fetchFilterOptions, getDateRange, showSuccessToast, showErrorToast]);
+  }, [selectedUserId, users, selectedDate, period, currentPage, pageSize, currentSorting, currentFilters, fetchPaginatedLeads, fetchFilterOptions, showSuccessToast, showErrorToast]);
+
+  // Clear filters
+  const handleClearFilters = useCallback(() => {
+    clearFilters();
+    setShowFilters(false);
+    setCurrentPage(1); // Reset to first page when clearing filters
+  }, [clearFilters]);
+
+  // Process leads data using utility function
+  const processedLeads = useMemo(() => processLeadsData(leads), [leads]);
 
   // Check if any filters are active
-  const hasActiveFilters = useMemo(() => {
-    return Boolean(currentFilters.adSetName || currentFilters.adName || currentFilters.status || currentFilters.unqualifiedLeadReason);
-  }, [currentFilters]);
+  const hasActiveFiltersValue = useMemo(() => hasActiveFilters(currentFilters), [currentFilters]);
 
   // Check if current user has a valid leadSheetUrl
-  const hasValidLeadSheetUrl = useMemo(() => {
-    if (!selectedUserId) return false;
-    const selectedUser = users.find(user => user.id === selectedUserId);
-    return Boolean(selectedUser?.leadSheetUrl && selectedUser.leadSheetUrl.trim() !== '');
-  }, [selectedUserId, users]);
+  const hasValidLeadSheetUrlValue = useMemo(() => hasValidLeadSheetUrl(selectedUserId, users), [selectedUserId, users]);
 
-  // Excel Export Function
-  const exportToExcel = useCallback(async (exportType: 'current' | 'all') => {
-    try {
-      let exportData: Array<{
-        'Lead Name': string;
-        'Email': string;
-        'Phone': string;
-        'Service': string;
-        'ZIP Code': string;
-        'Lead Date': string;
-        'Ad Set Name': string;
-        'Ad Name': string;
-        'Lead Status': string;
-        'Lead Score': number;
-        'Unqualified Reason': string;
-      }> = [];
-      let fileName = '';
-      let description = '';
-
-      if (exportType === 'current') {
-        // Export current page data
-        exportData = processedLeads.map(lead => ({
-          'Lead Name': lead.name,
-          'Email': lead.email,
-          'Phone': lead.phone,
-          'Service': lead.service,
-          'ZIP Code': lead.zip,
-          'Lead Date': formatDate(lead.leadDate),
-          'Ad Set Name': lead.adSetName,
-          'Ad Name': lead.adName,
-          'Lead Status': getStatusInfo(lead.status).label,
-          'Lead Score': lead.score,
-          'Unqualified Reason': lead.status === 'unqualified' ? (lead.unqualifiedLeadReason || 'Not specified') : '',
-        }));
-        fileName = `leads_current_page_${format(new Date(), 'yyyyMMdd_HHmmss')}.csv`;
-        description = `Exported ${exportData.length} leads from current page.`;
-      } else {
-        // Export all filtered data
-        if (!selectedUserId) {
-          toast({
-            title: "❌ Export Failed",
-            description: "No user selected for export.",
-            variant: "destructive",
-          });
-          return;
-        }
-
-        const { startDate, endDate } = getDateRange(selectedDate, period);
-        
-        const result = await exportAllFilteredLeads({
-          clientId: selectedUserId,
-          startDate,
-          endDate,
-          sortBy: currentSorting.sortBy,
-          sortOrder: currentSorting.sortOrder,
-          ...currentFilters
-        });
-
-        if (result.error) {
-          toast({
-            title: "❌ Export Failed",
-            description: result.message || "Failed to export all leads.",
-            variant: "destructive",
-          });
-          return;
-        }
-
-        exportData = (result.data || []).map(lead => ({
-          'Lead Name': lead.name,
-          'Email': lead.email,
-          'Phone': lead.phone,
-          'Service': lead.service,
-          'ZIP Code': lead.zip,
-          'Lead Date': formatDate(lead.leadDate),
-          'Ad Set Name': lead.adSetName,
-          'Ad Name': lead.adName,
-          'Lead Status': getStatusInfo(lead.status).label,
-          'Lead Score': lead.leadScore || 0,
-          'Unqualified Reason': lead.status === 'unqualified' ? (lead.unqualifiedLeadReason || 'Not specified') : '',
-        }));
-        fileName = `leads_all_filtered_${format(new Date(), 'yyyyMMdd_HHmmss')}.csv`;
-        description = `Exported ${exportData.length} leads from all filtered data.`;
-      }
-
-      // Create CSV content
-      const headers = Object.keys(exportData[0]);
-      const csvContent = [
-        headers.join(','),
-        ...exportData.map(row => 
-          headers.map(header => {
-            const value = row[header as keyof typeof row];
-            // Escape commas and quotes in CSV
-            if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
-              return `"${value.replace(/"/g, '""')}"`;
-            }
-            return value;
-          }).join(',')
-        )
-      ].join('\n');
-
-      // Create and download file
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', fileName);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      toast({
-        title: "✅ Export Successful",
-        description: description,
-      });
-    } catch (error) {
-      toast({
-        title: "❌ Export Failed",
-        description: "Failed to export leads. Please try again.",
-        variant: "destructive",
-      });
-    }
-  }, [processedLeads, formatDate, toast, selectedUserId, selectedDate, period, currentSorting, currentFilters, exportAllFilteredLeads, getDateRange]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200">
@@ -573,7 +427,7 @@ export const LeadSheet = () => {
             onChange={handleDatePeriodChange}
             allowedPeriods={['weekly', 'monthly', 'yearly']}
             disableLogic={disableLogic}
-            showRefreshButton={hasValidLeadSheetUrl}
+            showRefreshButton={hasValidLeadSheetUrlValue}
             onRefreshClick={handleRefreshLeads}
             isRefreshing={isRefreshing}
           />
@@ -599,7 +453,7 @@ export const LeadSheet = () => {
                   filterOptions={filterOptions}
                   processedLeads={processedLeads}
                   pagination={pagination}
-                  hasActiveFilters={hasActiveFilters}
+                  hasActiveFilters={hasActiveFiltersValue}
                   selectedLeads={selectedLeads}
                   userRole={userRole}
                   setFilters={setFilters}
@@ -615,12 +469,12 @@ export const LeadSheet = () => {
                   <div className="text-center py-12 text-muted-foreground">
                     <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                     <p className="text-lg mb-2">
-                      {hasActiveFilters 
+                      {hasActiveFiltersValue 
                         ? `No leads found matching your filters.` 
                         : `No leads found for the selected period.`
                       }
                     </p>
-                    {hasActiveFilters && (
+                    {hasActiveFiltersValue && (
                       <p className="text-sm text-gray-500">
                         Try adjusting your filters or click "Clear All" to see all leads.
                       </p>
@@ -646,7 +500,7 @@ export const LeadSheet = () => {
                     pendingULRLeadId={pendingULRLeadId}
                     showCustomInput={showCustomInput}
                     customULR={customULR}
-                    ULR_OPTIONS={ULR_OPTIONS}
+                    ULR_OPTIONS={[...ULR_OPTIONS]}
                     selectedLeads={selectedLeads}
                     userRole={userRole}
                     handleLeadStatusChange={handleLeadStatusChange}
@@ -709,7 +563,7 @@ export const LeadSheet = () => {
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                       {leadToDelete.map((leadId) => {
-                        const lead = findLead(leadId);
+                        const lead = findLeadById(processedLeads, leadId);
                         if (!lead) return null;
                         
                         return (
