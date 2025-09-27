@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Users } from 'lucide-react';
 import { startOfYear } from 'date-fns';
@@ -13,7 +13,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { LeadSummaryCards } from '@/components/LeadSheet/LeadSummaryCards';
 import { LeadFiltersAndControls } from '@/components/LeadSheet/LeadFiltersAndControls';
 import { LeadPagination } from '@/components/LeadSheet/LeadPagination';
-import { useUserContext } from '@/utils/UserContext';
 import { LeadTiles } from '@/components/LeadSheet/LeadTiles';
 import { processLeadSheet } from '@/service/leadService';
 
@@ -26,7 +25,6 @@ import { LeadStatus, LeadUpdateData } from '@/types/leadSheet.types';
 export const LeadSheet = () => {
   const { toast } = useToast();
   const { userRole } = useRoleAccess();
-  const { user } = useUserContext();
   
   // Local state for date and period
   const [selectedDate, setSelectedDate] = useState<Date>(startOfYear(new Date()));
