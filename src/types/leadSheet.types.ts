@@ -84,6 +84,7 @@ export interface LeadFilters {
   adName?: string;
   status?: string;
   unqualifiedLeadReason?: string;
+  searchName?: string;
 }
 
 export interface LeadSorting {

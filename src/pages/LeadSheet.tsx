@@ -41,6 +41,7 @@ export const LeadSheet = () => {
   const [leadToDelete, setLeadToDelete] = useState<string[]>([]);
   const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
   const lastRefreshRef = useRef<number>(0);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const { leads, loading, error, pagination, filterOptions, statusCounts, filterOptionsLoading, currentFilters, currentSorting, fetchPaginatedLeads, fetchFilterOptions, exportAllFilteredLeads, updateLeadData, bulkDeleteLeadsData, updateLeadLocal, setFilters, setSorting, clearFilters } = useLeadStore();
   const { selectedUserId, users } = useUserStore();
@@ -126,7 +127,52 @@ export const LeadSheet = () => {
         ...currentFilters
       });
     }
-  }, [selectedUserId, selectedDate, period, currentPage, pageSize, currentSorting, currentFilters, fetchPaginatedLeads, getDateRange]);
+  }, [selectedUserId, selectedDate, period, currentPage, pageSize, currentSorting, currentFilters.adSetName, currentFilters.adName, currentFilters.status, currentFilters.unqualifiedLeadReason, fetchPaginatedLeads, getDateRange]);
+
+  // Debounced search effect - handle search with 3+ characters or clear search when empty
+  useEffect(() => {
+    // Clear existing timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    const searchName = currentFilters.searchName;
+
+    if (searchName && searchName.length < 3) {
+      return;
+    }
+
+    // Debounce the search API call by 500ms (for both search and clear)
+    searchTimeoutRef.current = setTimeout(async () => {
+      if (selectedUserId && !isDisabled) {
+        const { startDate, endDate } = getDateRange(selectedDate, period);
+        
+        // If searchName is empty, remove it from filters to fetch all leads
+        const filtersToUse = searchName 
+          ? currentFilters 
+          : { ...currentFilters, searchName: undefined };
+        
+        await fetchPaginatedLeads({
+          clientId: selectedUserId,
+          startDate,
+          endDate,
+          page: 1,
+          limit: pageSize,
+          sortBy: currentSorting.sortBy,
+          sortOrder: currentSorting.sortOrder,
+          ...filtersToUse
+        });
+        setCurrentPage(1);
+      }
+    }, 500);
+
+    // Cleanup timeout on unmount or dependency change
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [currentFilters.searchName, selectedUserId, selectedDate, period, pageSize, currentSorting, currentFilters, fetchPaginatedLeads, getDateRange, setCurrentPage, isDisabled]);
 
   useEffect(() => {
     if (error) {
@@ -325,7 +371,7 @@ export const LeadSheet = () => {
     } catch (error) {
       showErrorToast(TOAST_MESSAGES.ERROR.EXPORT_FAILED);
     }
-  }, [selectedUserId, selectedDate, period, currentSorting, currentFilters, exportAllFilteredLeads, showErrorToast, showSuccessToast]);
+  }, [selectedUserId, selectedDate, period, currentSorting, currentFilters.adSetName, currentFilters.adName, currentFilters.status, currentFilters.unqualifiedLeadReason, currentFilters.searchName, exportAllFilteredLeads, showErrorToast, showSuccessToast]);
 
   // Refresh leads
   const handleRefreshLeads = useCallback(async () => {
@@ -378,7 +424,7 @@ export const LeadSheet = () => {
     } finally {
       setIsRefreshing(false);
     }
-  }, [selectedUserId, users, selectedDate, period, currentPage, pageSize, currentSorting, currentFilters, fetchPaginatedLeads, fetchFilterOptions, showSuccessToast, showErrorToast]);
+  }, [selectedUserId, users, selectedDate, period, currentPage, pageSize, currentSorting, currentFilters.adSetName, currentFilters.adName, currentFilters.status, currentFilters.unqualifiedLeadReason, currentFilters.searchName, fetchPaginatedLeads, fetchFilterOptions, showSuccessToast, showErrorToast]);
 
   // Clear filters
   const handleClearFilters = useCallback(() => {
