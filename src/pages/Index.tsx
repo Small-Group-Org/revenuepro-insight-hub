@@ -1,11 +1,7 @@
-
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { DataProvider } from '@/contexts/DataContext';
 import { Sidebar } from '@/components/Sidebar';
 import { Dashboard } from '@/components/Dashboard';
-import { SetTargets } from '@/pages/SetTargets';
-import { AddActualData } from '@/pages/AddActualData';
-import { CompareResults } from '@/pages/CompareResults';
 
 const Index = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
