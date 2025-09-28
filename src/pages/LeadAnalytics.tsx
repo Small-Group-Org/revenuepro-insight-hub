@@ -328,8 +328,8 @@ export const LeadAnalytics = () => {
                   format: 'number' as const
                 },
                 {
-                  label: "Conversion Rate",
-                  value: parseFloat(analyticsData.overview.conversionRate),
+                  label: "Estimate Set Rate",
+                  value: parseFloat(analyticsData.overview.estimateSetRate),
                   format: 'percent' as const
                 }
               ]}
@@ -355,12 +355,12 @@ export const LeadAnalytics = () => {
             />
 
             <TopCard
-              title="Conversion Rate"
+              title="Estimate Set Rate"
               icon={<TrendingUp className="h-5 w-5 opacity-50 text-blue-600" />}
               metrics={[
                 {
-                  label: "Conversion Rate",
-                  value: parseFloat(analyticsData.overview.conversionRate),
+                  label: "Estimate Set Rate",
+                  value: parseFloat(analyticsData.overview.estimateSetRate),
                   format: 'percent' as const
                 }
               ]}
@@ -680,7 +680,7 @@ export const LeadAnalytics = () => {
                             setAdSetSortOrder('desc');
                           }
                         }, showTopRankedAdSets)}
-                        {renderSortableHeader('percentage', 'Appointment %', adSetSortField, adSetSortOrder, (field) => {
+                        {renderSortableHeader('percentage', 'Estimate Set %', adSetSortField, adSetSortOrder, (field) => {
                           if (adSetSortField === field) {
                             setAdSetSortOrder(adSetSortOrder === 'asc' ? 'desc' : 'asc');
                           } else {
@@ -768,7 +768,7 @@ export const LeadAnalytics = () => {
                             setAdNameSortOrder('desc');
                           }
                         }, showTopRankedAdNames)}
-                        {renderSortableHeader('percentage', 'Appointment %', adNameSortField, adNameSortOrder, (field) => {
+                        {renderSortableHeader('percentage', 'Estimate Set%', adNameSortField, adNameSortOrder, (field) => {
                           if (adNameSortField === field) {
                             setAdNameSortOrder(adNameSortOrder === 'asc' ? 'desc' : 'asc');
                           } else {
