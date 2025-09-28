@@ -473,7 +473,7 @@ export const LeadAnalytics = () => {
                               <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
                                 <p className="font-semibold text-gray-900 mb-1">{data.zip}</p>
                                 <p className="text-sm text-gray-700">
-                                  <span className="font-medium">Estimate Set Count:</span> {data.estimateSetCount}
+                                  <span className="font-medium">Count:</span> {data.estimateSetCount}
                                 </p>
                                 <p className="text-sm text-gray-700">
                                   <span className="font-medium">Estimate Set Rate:</span> {data.estimateSetRate}%
