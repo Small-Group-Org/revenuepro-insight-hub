@@ -328,8 +328,8 @@ export const LeadAnalytics = () => {
                   format: 'number' as const
                 },
                 {
-                  label: "Estimate Set Rate",
-                  value: parseFloat(analyticsData.overview.estimateSetRate),
+                  label: "Estimate Set %",
+                  value: parseFloat(analyticsData.overview.estimateSetPercent),
                   format: 'percent' as const
                 }
               ]}
@@ -364,7 +364,7 @@ export const LeadAnalytics = () => {
                   format: 'percent' as const
                 }
               ]}
-              description="Estimate to lead ratio"
+              description="Estimate Set / (Estimate Set + Unqualified)"
             />
           </div>
 
@@ -403,7 +403,7 @@ export const LeadAnalytics = () => {
                       innerRadius={0}
                       paddingAngle={2}
                       fill="#8884d8"
-                      dataKey="count"
+                      dataKey="estimateSetCount"
                     >
                       {analyticsData.serviceData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -417,7 +417,7 @@ export const LeadAnalytics = () => {
                             <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
                               <p className="font-semibold text-gray-900 mb-1">{data.service}</p>
                               <p className="text-sm text-gray-700">
-                                <span className="font-medium">Count:</span> {data.count} leads
+                                <span className="font-medium">Count:</span> {data.estimateSetCount} leads
                               </p>
                               <p className="text-sm text-gray-700">
                                 <span className="font-medium">Percentage:</span> {data.percentage}%
@@ -457,12 +457,25 @@ export const LeadAnalytics = () => {
                     <XAxis dataKey="zip" />
                     <YAxis />
                     <ChartTooltip 
-                      content={<ChartTooltipContent />}
-                      formatter={(value, name, props) => [
-                        `${value} leads (${props.payload.percentage}%)`
-                      ]}
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          const data = payload[0].payload;
+                          return (
+                            <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
+                              <p className="font-semibold text-gray-900 mb-1">{data.zip}</p>
+                              <p className="text-sm text-gray-700">
+                                <span className="font-medium">Leads:</span> {data.estimateSetCount}
+                              </p>
+                              <p className="text-sm text-gray-700">
+                                <span className="font-medium">Estimate Set Rate:</span> {data.estimateSetRate}%
+                              </p>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
                     />
-                    <Bar dataKey="count" fill="url(#zipGradient)" name="Estimate Set Leads" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="estimateSetCount" fill="url(#zipGradient)" name="Estimate Set Leads" radius={[4, 4, 0, 0]} />
                   </BarChart>
                   </ChartContainer>
                   </div>
@@ -516,15 +529,17 @@ export const LeadAnalytics = () => {
                       content={({ active, payload, label }) => {
                         if (active && payload && payload.length && label) {
                           const data = payload[0].payload;
-                          const percentage = data.total > 0 ? ((data.estimateSet / data.total) * 100).toFixed(1) : '0.0';
                           return (
                             <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
                               <p className="font-semibold text-gray-900 mb-2">{label}</p>
                               <p className="text-sm text-gray-700">
-                                <span className="font-medium">Total leads:</span> {data.total}
+                                <span className="font-medium">Total leads:</span> {data.totalLeads}
                               </p>
                               <p className="text-sm text-gray-700">
-                                <span className="font-medium">Estimate set:</span> {data.estimateSet} ({percentage}%)
+                                <span className="font-medium">Estimate Set:</span> {data.estimateSetCount}
+                              </p>
+                              <p className="text-sm text-gray-700">
+                                <span className="font-medium">Estimate Set Rate: </span> {data.estimateSetRate}%
                               </p>
                             </div>
                           );
@@ -532,8 +547,8 @@ export const LeadAnalytics = () => {
                         return null;
                       }}
                     />
-                    <Bar dataKey="total" fill="url(#totalGradient)" name="Total Leads" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="estimateSet" fill="url(#estimateGradient)" name="Estimate Set Leads" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="totalLeads" fill="url(#totalGradient)" name="Total Leads" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="estimateSetCount" fill="url(#estimateGradient)" name="Estimate Set Leads" radius={[4, 4, 0, 0]} />
                   </BarChart>
                   </ChartContainer>
                   </div>
@@ -565,7 +580,7 @@ export const LeadAnalytics = () => {
                             innerRadius={0}
                             paddingAngle={2}
                             fill="#8884d8"
-                            dataKey="count"
+                            dataKey="totalLeads"
                           >
                             {analyticsData.ulrData.map((entry, index) => (
                               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -579,7 +594,7 @@ export const LeadAnalytics = () => {
                                   <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
                                     <p className="font-semibold text-gray-900 mb-1">{data.reason}</p>
                                     <p className="text-sm text-gray-700">
-                                      <span className="font-medium">Count:</span> {data.count} leads
+                                      <span className="font-medium">Count:</span> {data.totalLeads}
                                     </p>
                                     <p className="text-sm text-gray-700">
                                       <span className="font-medium">Percentage:</span> {data.percentage}%
@@ -698,11 +713,11 @@ export const LeadAnalytics = () => {
                               {showTopRankedAdSets ? `#${((adSetPage - 1) * adSetItemsPerPage) + index + 1}` : `${((adSetPage - 1) * adSetItemsPerPage) + index + 1}`}
                             </td>
                         <td className="p-2 font-medium">{adSet.adSetName}</td>
-                        <td className="text-right p-2">{adSet.total}</td>
+                        <td className="text-right p-2">{adSet.totalLeads}</td>
                         <td className="text-right p-2 text-green-600 font-medium">{adSet.estimateSet}</td>
                         <td className="text-right p-2">
                           <span className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">
-                            {adSet.percentage}%
+                            {adSet.estimateSetRate}%
                           </span>
                         </td>
                       </tr>
@@ -793,11 +808,11 @@ export const LeadAnalytics = () => {
                                 </span>
                               </div>
                             </td>
-                        <td className="text-right p-2">{ad.total}</td>
+                        <td className="text-right p-2">{ad.totalLeads}</td>
                         <td className="text-right p-2 text-green-600 font-medium">{ad.estimateSet}</td>
                         <td className="text-right p-2">
                           <span className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">
-                            {ad.percentage}%
+                            {ad.estimateSetRate}%
                           </span>
                         </td>
                       </tr>

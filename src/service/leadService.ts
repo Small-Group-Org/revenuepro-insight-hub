@@ -111,45 +111,70 @@ export interface AnalyticsOverview {
   estimateSetCount: number;
   unqualifiedCount: number;
   estimateSetRate: string;
+  estimateSetPercent: string;
 }
 
-export interface AnalyticsDataPoint {
-  zip?: string;
-  service?: string;
-  adSetName?: string;
-  adName?: string;
-  date?: string;
-  day?: string;
-  reason?: string;
-  count: number;
+export interface ZipAnalyticsDataPoint {
+  zip: string;
+  estimateSetCount: number;
+  estimateSetRate: string;
+}
+
+export interface ServiceAnalyticsDataPoint {
+  service: string;
+  estimateSetCount: number;
+  estimateSetRate: string;
   percentage: string;
-  total?: number;
-  estimateSet?: number;
+}
+
+export interface DayOfWeekAnalyticsDataPoint {
+  day: string;
+  totalLeads: number;
+  estimateSetCount: number;
+  estimateSetRate: string;
+}
+
+export interface UnqualifiedReasonAnalyticsDataPoint {
+  reason: string;
+  totalLeads: number;
+  percentage: string;
 }
 
 export interface AnalyticsSummaryResponse {
   success: boolean;
   data: {
     overview: AnalyticsOverview;
-    zipData: AnalyticsDataPoint[];
-    serviceData: AnalyticsDataPoint[];
-    adSetData: AnalyticsDataPoint[];
-    adNameData: AnalyticsDataPoint[];
-    leadDateData: AnalyticsDataPoint[];
-    dayOfWeekData: AnalyticsDataPoint[];
-    ulrData: AnalyticsDataPoint[];
+    zipData: ZipAnalyticsDataPoint[];
+    serviceData: ServiceAnalyticsDataPoint[];
+    dayOfWeekData: DayOfWeekAnalyticsDataPoint[];
+    ulrData: UnqualifiedReasonAnalyticsDataPoint[];
   };
+}
+
+export interface AdSetTableDataPoint {
+  adSetName: string;
+  totalLeads: number;
+  estimateSet: number;
+  estimateSetRate: string;
+}
+
+export interface AdNameTableDataPoint {
+  adName: string;
+  adSetName: string;
+  totalLeads: number;
+  estimateSet: number;
+  estimateSetRate: string;
 }
 
 export interface AnalyticsTableResponse {
   success: boolean;
   data: {
     adSetData: {
-      data: AnalyticsDataPoint[];
+      data: AdSetTableDataPoint[];
       pagination: PaginationInfo;
     };
     adNameData: {
-      data: AnalyticsDataPoint[];
+      data: AdNameTableDataPoint[];
       pagination: PaginationInfo;
     };
   };
