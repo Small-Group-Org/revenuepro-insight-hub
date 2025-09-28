@@ -35,10 +35,6 @@ class ErrorBoundary extends Component<Props, State> {
     window.location.reload();
   };
 
-  handleReset = () => {
-    this.setState({ hasError: false, error: undefined, errorInfo: undefined });
-  };
-
   render() {
     if (this.state.hasError) {
       if (this.props.fallback) {
@@ -61,16 +57,7 @@ class ErrorBoundary extends Component<Props, State> {
               Oops! Something went wrong. Don't worry — contact <strong>Revenue Pro Support</strong> and we'll get you back on track.
               </p>
 
-              <div className="flex gap-3 justify-center">
-                <Button
-                  onClick={this.handleReset}
-                  variant="outline"
-                  className="flex items-center gap-2"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                  Retry
-                </Button>
-                
+              <div className="flex justify-center">
                 <Button
                   onClick={this.handleReload}
                   className="flex items-center gap-2"
