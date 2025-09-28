@@ -35,6 +35,7 @@ interface LeadStoreState {
     adName?: string;
     status?: string;
     unqualifiedLeadReason?: string;
+    searchName?: string;
   };
   currentSorting: {
     sortBy: 'date' | 'score';
@@ -48,7 +49,7 @@ interface LeadStoreState {
   bulkDeleteLeadsData: (payload: BulkDeleteLeadsPayload) => Promise<{ error: boolean; message?: string }>;
   updateLeadLocal: (leadId: string, updates: Partial<Lead>) => void;
   clearLeads: () => void;
-  setFilters: (filters: Partial<{ adSetName?: string; adName?: string; status?: string; unqualifiedLeadReason?: string }>) => void;
+  setFilters: (filters: Partial<{ adSetName?: string; adName?: string; status?: string; unqualifiedLeadReason?: string; searchName?: string }>) => void;
   setSorting: (sortBy: 'date' | 'score', sortOrder: 'asc' | 'desc') => void;
   clearFilters: () => void;
   exportAllFilteredLeads: (payload: GetPaginatedLeadsPayload) => Promise<{ error: boolean; data?: Lead[]; message?: string }>;
@@ -73,7 +74,8 @@ export const useLeadStore = create<LeadStoreState>((set, get) => ({
     adSetName: undefined,
     adName: undefined,
     status: undefined,
-    unqualifiedLeadReason: undefined
+    unqualifiedLeadReason: undefined,
+    searchName: undefined
   },
   currentSorting: {
     sortBy: 'date',
@@ -241,7 +243,8 @@ export const useLeadStore = create<LeadStoreState>((set, get) => ({
         adSetName: undefined,
         adName: undefined,
         status: undefined,
-        unqualifiedLeadReason: undefined
+        unqualifiedLeadReason: undefined,
+        searchName: undefined
       },
       currentSorting: {
         sortBy: 'date',
@@ -262,7 +265,8 @@ export const useLeadStore = create<LeadStoreState>((set, get) => ({
         adSetName: undefined,
         adName: undefined,
         status: undefined,
-        unqualifiedLeadReason: undefined
+        unqualifiedLeadReason: undefined,
+        searchName: undefined
       },
       currentSorting: {
         sortBy: 'date',

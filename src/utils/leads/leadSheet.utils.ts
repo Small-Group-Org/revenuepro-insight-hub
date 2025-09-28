@@ -134,7 +134,8 @@ export const hasActiveFilters = (filters: any): boolean => {
     filters.adSetName || 
     filters.adName || 
     filters.status || 
-    filters.unqualifiedLeadReason
+    filters.unqualifiedLeadReason ||
+    filters.searchName
   );
 };
 

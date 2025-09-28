@@ -28,6 +28,7 @@ export interface GetPaginatedLeadsPayload {
   adName?: string;
   status?: string;
   unqualifiedLeadReason?: string;
+  searchName?: string;
 }
 
 export interface PaginationInfo {
@@ -207,6 +208,7 @@ export const getPaginatedLeads = async (payload: GetPaginatedLeadsPayload) => {
   if (payload.adName) params.append('adName', payload.adName);
   if (payload.status) params.append('status', payload.status);
   if (payload.unqualifiedLeadReason) params.append('unqualifiedLeadReason', payload.unqualifiedLeadReason);
+  if (payload.searchName) params.append('name', payload.searchName);
   
   const url = `${API_ENDPOINTS.LEADS_PAGINATED}?${params.toString()}`;
   const response = await doGET(url);
