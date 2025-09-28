@@ -61,9 +61,10 @@ export const LeadPagination = React.memo(({
         <span>leads per page</span>
       </div>
 
-      {/* Pagination - Right aligned */}
-      {pagination.totalPages > 1 && (
-        <div className="flex flex-col items-end gap-0">
+      {/* Right side - Pagination and Total Count */}
+      <div className="flex flex-col items-end gap-0">
+        {/* Pagination - Only show if multiple pages */}
+        {pagination.totalPages > 1 && (
           <Pagination>
             <PaginationContent>
               {/* Previous Page */}
@@ -143,13 +144,13 @@ export const LeadPagination = React.memo(({
               </PaginationItem>
             </PaginationContent>
           </Pagination>
+        )}
 
-          {/* Total Count Display - Below pagination */}
-          <div className="text-xs mr-4 text-gray-500 whitespace-nowrap">
-            ({pagination.totalCount.toLocaleString()} total leads)
-          </div>
+        {/* Total Count Display - Always show */}
+        <div className="text-xs mr-4 text-gray-500 whitespace-nowrap">
+          ({pagination.totalCount.toLocaleString()} total leads)
         </div>
-      )}
+      </div>
     </div>
   );
 });
