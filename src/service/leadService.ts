@@ -28,6 +28,7 @@ export interface GetPaginatedLeadsPayload {
   adName?: string;
   status?: string;
   unqualifiedLeadReason?: string;
+  searchName?: string;
 }
 
 export interface PaginationInfo {
@@ -110,7 +111,7 @@ export interface AnalyticsOverview {
   totalLeads: number;
   estimateSetCount: number;
   unqualifiedCount: number;
-  conversionRate: string;
+  estimateSetRate: string;
 }
 
 export interface AnalyticsDataPoint {
@@ -158,12 +159,14 @@ export interface AnalyticsTableResponse {
 
 export interface GetAnalyticsSummaryPayload {
   clientId: string;
-  timeFilter?: TimeFilter;
+  startDate?: string; // UTC ISO format
+  endDate?: string;   // UTC ISO format
 }
 
 export interface GetAnalyticsTablePayload {
   clientId: string;
-  commonTimeFilter?: 'all' | '7' | '14' | '30' | '60';
+  startDate?: string; // UTC ISO format
+  endDate?: string;   // UTC ISO format
   adSetPage?: number;
   adNamePage?: number;
   adSetItemsPerPage?: number;
@@ -205,6 +208,7 @@ export const getPaginatedLeads = async (payload: GetPaginatedLeadsPayload) => {
   if (payload.adName) params.append('adName', payload.adName);
   if (payload.status) params.append('status', payload.status);
   if (payload.unqualifiedLeadReason) params.append('unqualifiedLeadReason', payload.unqualifiedLeadReason);
+  if (payload.searchName) params.append('name', payload.searchName);
   
   const url = `${API_ENDPOINTS.LEADS_PAGINATED}?${params.toString()}`;
   const response = await doGET(url);
@@ -281,7 +285,8 @@ export const getAnalyticsSummary = async (payload: GetAnalyticsSummaryPayload) =
   params.append('clientId', payload.clientId);
   
   // Optional parameters
-  if (payload.timeFilter) params.append('timeFilter', payload.timeFilter);
+  if (payload.startDate) params.append('startDate', payload.startDate);
+  if (payload.endDate) params.append('endDate', payload.endDate);
   
   const url = `${API_ENDPOINTS.LEADS_ANALYTICS_SUMMARY}?${params.toString()}`;
   const response = await doGET(url);
@@ -295,7 +300,8 @@ export const getAnalyticsTable = async (payload: GetAnalyticsTablePayload) => {
   params.append('clientId', payload.clientId);
   
   // Optional parameters
-  if (payload.commonTimeFilter) params.append('commonTimeFilter', payload.commonTimeFilter);
+  if (payload.startDate) params.append('startDate', payload.startDate);
+  if (payload.endDate) params.append('endDate', payload.endDate);
   if (payload.adSetPage) params.append('adSetPage', payload.adSetPage.toString());
   if (payload.adNamePage) params.append('adNamePage', payload.adNamePage.toString());
   if (payload.adSetItemsPerPage) params.append('adSetItemsPerPage', payload.adSetItemsPerPage.toString());

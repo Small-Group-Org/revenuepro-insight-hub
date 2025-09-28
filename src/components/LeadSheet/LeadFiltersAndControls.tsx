@@ -1,14 +1,16 @@
 import React from 'react';
-import { Calendar, Star, Download, Trash2 } from 'lucide-react';
+import { Calendar, Star, Download, Trash2, Search, X } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { getStatusInfo } from '@/utils/leadProcessing';
+import { Input } from '@/components/ui/input';
+import { getStatusInfo } from '@/utils/leads/leadProcessing';
 
 interface CurrentFilters {
   adSetName?: string;
   adName?: string;
   status?: string;
   unqualifiedLeadReason?: string;
+  searchName?: string;
 }
 
 interface CurrentSorting {
@@ -34,7 +36,7 @@ interface LeadFiltersAndControlsProps {
   hasActiveFilters: boolean;
   selectedLeads: Set<string>;
   userRole: string;
-  setFilters: (filters: Partial<{ adSetName?: string; adName?: string; status?: string; unqualifiedLeadReason?: string }>) => void;
+  setFilters: (filters: Partial<{ adSetName?: string; adName?: string; status?: string; unqualifiedLeadReason?: string; searchName?: string }>) => void;
   setSorting: (sortBy: 'date' | 'score', sortOrder: 'asc' | 'desc') => void;
   setCurrentPage: (page: number) => void;
   handleClearFilters: () => void;
@@ -186,6 +188,11 @@ export const LeadFiltersAndControls = React.memo(({
                   Unqualified Reason: {currentFilters.unqualifiedLeadReason}
                 </Badge>
               )}
+              {currentFilters.searchName && (
+                <Badge variant="secondary" className="text-xs bg-green-50 text-green-700 border-green-200">
+                  Search: "{currentFilters.searchName}"
+                </Badge>
+              )}
             </div>
             <div className="flex items-center gap-2 mt-1.5">
               <p className="text-xs text-gray-600">
@@ -292,6 +299,43 @@ export const LeadFiltersAndControls = React.memo(({
             <span>{currentSorting.sortOrder === 'desc' ? 'High → Low' : 'Low → High'}</span>
           </button>
         )}
+        
+        {/* Search Input */}
+        <div className="relative">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-3 h-3 text-gray-400" />
+            <Input
+              type="text"
+              placeholder={currentFilters.searchName && currentFilters.searchName.length < 3 ? "Type at least 3 characters..." : "Search by name..."}
+              value={currentFilters.searchName || ''}
+              onChange={(e) => {
+                const value = e.target.value;
+                setFilters({ searchName: value });
+                setCurrentPage(1); // Reset to first page when search changes
+              }}
+              className={`pl-9 pr-8 h-8 w-64 text-xs border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 ${
+                currentFilters.searchName && currentFilters.searchName.length < 3 ? 'border-orange-300 bg-orange-50' : ''
+              }`}
+            />
+            {currentFilters.searchName && (
+              <button
+                onClick={() => {
+                  setFilters({ searchName: undefined });
+                  setCurrentPage(1);
+                }}
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+          {/* Helper text for minimum characters */}
+          {currentFilters.searchName && currentFilters.searchName.length > 0 && currentFilters.searchName.length < 3 && (
+            <p className="absolute top-full left-0 mt-1 text-[10px] text-orange-600">
+              Type at least 3 characters to search
+            </p>
+          )}
+        </div>
       </div>
       
       {/* Action Buttons */}

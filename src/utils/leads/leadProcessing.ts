@@ -1,5 +1,3 @@
-import { Lead } from '@/types';
-
 export const FIELD_WEIGHTS = {
   service: 30,
   adSetName: 10, 
@@ -7,10 +5,6 @@ export const FIELD_WEIGHTS = {
   leadDate: 0,
   zip: 50
 } as const;
-
-
-
-
 
 export const getScoreInfo = (score: number) => {
   if (score >= 80) return { 

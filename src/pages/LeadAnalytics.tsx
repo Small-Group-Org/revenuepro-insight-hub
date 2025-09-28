@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useUserStore } from '@/stores/userStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
@@ -14,38 +14,20 @@ import {
   GetAnalyticsTablePayload,
   AnalyticsSummaryResponse,
   AnalyticsTableResponse,
-  AnalyticsDataPoint
 } from '@/service/leadService';
 import { TimeFilter, TIME_FILTER_LABELS } from '@/types/timeFilter';
+import { createDateRangeFromTimeFilter, createNumericDayRanges } from '@/utils/leads/dateRangeHelpers';
 
 // Chart colors
 const COLORS = ['#1f1c13', '#9ca3af', '#306BC8', '#2A388F', '#396F9C'];
-
-// Modern gradient colors for bar charts
-const GRADIENT_COLORS = [
-  ['#667eea', '#764ba2'],
-  ['#f093fb', '#f5576c'],
-  ['#4facfe', '#00f2fe'],
-  ['#43e97b', '#38f9d7'],
-  ['#fa709a', '#fee140']
-];
-
-// Responsive breakpoints and dimensions
-const SCREEN_BREAKPOINTS = {
-  lg: '1024px', // Large screen breakpoint
-  xl: '1280px', // Extra large screen breakpoint
-};
 
 const CHART_DIMENSIONS = {
   minWidth: '600px', // Minimum width for charts on small screens
   height: '320px', // Chart height (h-80 = 320px)
 };
 
-// Time filter labels for display
-
 export const LeadAnalytics = () => {
   const { selectedUserId } = useUserStore();
-  const [selectedMetric, setSelectedMetric] = useState<string>('overview');
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
   
   // Analytics data states
@@ -81,9 +63,13 @@ export const LeadAnalytics = () => {
     setError(null);
     
     try {
+      // Convert timeFilter to date ranges
+      const { startDate, endDate } = createDateRangeFromTimeFilter(timeFilter);
+      
       const payload: GetAnalyticsSummaryPayload = {
         clientId: selectedUserId,
-        timeFilter
+        startDate,
+        endDate
       };
       
       const response = await getAnalyticsSummary(payload);
@@ -105,9 +91,13 @@ export const LeadAnalytics = () => {
     if (!selectedUserId) return;
     
     try {
+      // Convert commonTimeFilter to date ranges
+      const { startDate, endDate } = createNumericDayRanges(commonTimeFilter);
+      
       const payload: GetAnalyticsTablePayload = {
         clientId: selectedUserId,
-        commonTimeFilter,
+        startDate,
+        endDate,
         adSetPage,
         adNamePage,
         adSetItemsPerPage,
@@ -338,8 +328,8 @@ export const LeadAnalytics = () => {
                   format: 'number' as const
                 },
                 {
-                  label: "Conversion Rate",
-                  value: parseFloat(analyticsData.overview.conversionRate),
+                  label: "Estimate Set Rate",
+                  value: parseFloat(analyticsData.overview.estimateSetRate),
                   format: 'percent' as const
                 }
               ]}
@@ -365,12 +355,12 @@ export const LeadAnalytics = () => {
             />
 
             <TopCard
-              title="Conversion Rate"
+              title="Estimate Set Rate"
               icon={<TrendingUp className="h-5 w-5 opacity-50 text-blue-600" />}
               metrics={[
                 {
-                  label: "Conversion Rate",
-                  value: parseFloat(analyticsData.overview.conversionRate),
+                  label: "Estimate Set Rate",
+                  value: parseFloat(analyticsData.overview.estimateSetRate),
                   format: 'percent' as const
                 }
               ]}
@@ -690,7 +680,7 @@ export const LeadAnalytics = () => {
                             setAdSetSortOrder('desc');
                           }
                         }, showTopRankedAdSets)}
-                        {renderSortableHeader('percentage', 'Appointment %', adSetSortField, adSetSortOrder, (field) => {
+                        {renderSortableHeader('percentage', 'Estimate Set %', adSetSortField, adSetSortOrder, (field) => {
                           if (adSetSortField === field) {
                             setAdSetSortOrder(adSetSortOrder === 'asc' ? 'desc' : 'asc');
                           } else {
@@ -778,7 +768,7 @@ export const LeadAnalytics = () => {
                             setAdNameSortOrder('desc');
                           }
                         }, showTopRankedAdNames)}
-                        {renderSortableHeader('percentage', 'Appointment %', adNameSortField, adNameSortOrder, (field) => {
+                        {renderSortableHeader('percentage', 'Estimate Set%', adNameSortField, adNameSortOrder, (field) => {
                           if (adNameSortField === field) {
                             setAdNameSortOrder(adNameSortOrder === 'asc' ? 'desc' : 'asc');
                           } else {
