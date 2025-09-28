@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useUserStore } from '@/stores/userStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, PieChart, Pie, Cell } from 'recharts';
 import { TrendingUp, MapPin, Wrench, Tag, FileText, Users, CheckCircle, XCircle, Calendar, BarChart3, ChevronLeft, ChevronRight, ArrowUpDown, ChevronUp, ChevronDown, Trophy } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -20,6 +20,8 @@ import { createDateRangeFromTimeFilter, createNumericDayRanges } from '@/utils/l
 
 // Chart colors
 const COLORS = ['#1f1c13', '#9ca3af', '#306BC8', '#2A388F', '#396F9C'];
+
+const TOP_N_ZIP = 15;
 
 const CHART_DIMENSIONS = {
   minWidth: '600px', // Minimum width for charts on small screens
@@ -243,6 +245,12 @@ export const LeadAnalytics = () => {
 
   const unqualifiedPercentage = (analyticsData?.overview.unqualifiedCount/analyticsData?.overview.totalLeads)*100 || 0;
 
+  // Process ZIP data to show top N ZIP
+  const processedZipData = useMemo(() => {
+    return analyticsData.zipData
+      .slice(0, TOP_N_ZIP);
+  }, [analyticsData?.zipData, TOP_N_ZIP]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 overflow-x-hidden">
       <div className="relative z-10 pt-4 pb-12 px-4">
@@ -440,43 +448,43 @@ export const LeadAnalytics = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <MapPin className="h-5 w-5 text-purple-600" />
-                  Zip Codes (Estimate Set Leads)
+                  Top Performing Zip Codes (Estimate Set Leads)
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto lg:overflow-visible">
                   <div style={{ minWidth: CHART_DIMENSIONS.minWidth }} className="lg:min-w-0">
-                    <ChartContainer config={chartConfig} style={{ height: CHART_DIMENSIONS.height }}>
-                  <BarChart data={analyticsData.zipData}>
-                    <defs>
-                      <linearGradient id="zipGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.9}/>
-                        <stop offset="100%" stopColor="#a78bfa" stopOpacity={0.6}/>
-                      </linearGradient>
-                    </defs>
-                    <XAxis dataKey="zip" />
-                    <YAxis />
-                    <ChartTooltip 
-                      content={({ active, payload }) => {
-                        if (active && payload && payload.length) {
-                          const data = payload[0].payload;
-                          return (
-                            <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
-                              <p className="font-semibold text-gray-900 mb-1">{data.zip}</p>
-                              <p className="text-sm text-gray-700">
-                                <span className="font-medium">Leads:</span> {data.estimateSetCount}
-                              </p>
-                              <p className="text-sm text-gray-700">
-                                <span className="font-medium">Estimate Set Rate:</span> {data.estimateSetRate}%
-                              </p>
-                            </div>
-                          );
-                        }
-                        return null;
-                      }}
-                    />
-                    <Bar dataKey="estimateSetCount" fill="url(#zipGradient)" name="Estimate Set Leads" radius={[4, 4, 0, 0]} />
-                  </BarChart>
+                  <ChartContainer config={chartConfig} style={{ height: CHART_DIMENSIONS.height }}>
+                    <BarChart data={processedZipData}>
+                      <defs>
+                        <linearGradient id="zipGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.9}/>
+                          <stop offset="100%" stopColor="#a78bfa" stopOpacity={0.6}/>
+                        </linearGradient>
+                      </defs>
+                      <XAxis dataKey="zip" />
+                      <YAxis />
+                      <ChartTooltip 
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            const data = payload[0].payload;
+                            return (
+                              <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
+                                <p className="font-semibold text-gray-900 mb-1">{data.zip}</p>
+                                <p className="text-sm text-gray-700">
+                                  <span className="font-medium">Estimate Set Count:</span> {data.estimateSetCount}
+                                </p>
+                                <p className="text-sm text-gray-700">
+                                  <span className="font-medium">Estimate Set Rate:</span> {data.estimateSetRate}%
+                                </p>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                      <Bar dataKey="estimateSetCount" fill="url(#zipGradient)" name="Estimate Set Count" radius={[4, 4, 0, 0]} />
+                    </BarChart>
                   </ChartContainer>
                   </div>
                 </div>
