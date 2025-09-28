@@ -328,7 +328,7 @@ export const LeadAnalytics = () => {
                   format: 'number' as const
                 },
                 {
-                  label: "Estimate Set %",
+                  label: "Estimate Set Rate",
                   value: parseFloat(analyticsData.overview.estimateSetPercent),
                   format: 'percent' as const
                 }
@@ -695,7 +695,7 @@ export const LeadAnalytics = () => {
                             setAdSetSortOrder('desc');
                           }
                         }, showTopRankedAdSets)}
-                        {renderSortableHeader('percentage', 'Estimate Set %', adSetSortField, adSetSortOrder, (field) => {
+                        {renderSortableHeader('percentage', 'Estimate Set Rate', adSetSortField, adSetSortOrder, (field) => {
                           if (adSetSortField === field) {
                             setAdSetSortOrder(adSetSortOrder === 'asc' ? 'desc' : 'asc');
                           } else {
