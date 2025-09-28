@@ -246,10 +246,11 @@ export const LeadAnalytics = () => {
   const unqualifiedPercentage = (analyticsData?.overview.unqualifiedCount/analyticsData?.overview.totalLeads)*100 || 0;
 
   // Process ZIP data to show top N ZIP
-  const processedZipData = useMemo(() => {
+  const getProcessedZipData = () => {
+    if (!analyticsData?.zipData) return [];
     return analyticsData.zipData
       .slice(0, TOP_N_ZIP);
-  }, [analyticsData?.zipData, TOP_N_ZIP]);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 overflow-x-hidden">
@@ -455,7 +456,7 @@ export const LeadAnalytics = () => {
                 <div className="overflow-x-auto lg:overflow-visible">
                   <div style={{ minWidth: CHART_DIMENSIONS.minWidth }} className="lg:min-w-0">
                   <ChartContainer config={chartConfig} style={{ height: CHART_DIMENSIONS.height }}>
-                    <BarChart data={processedZipData}>
+                    <BarChart data={getProcessedZipData()}>
                       <defs>
                         <linearGradient id="zipGradient" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.9}/>

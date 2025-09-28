@@ -1,11 +1,9 @@
-import React from 'react';
-import { BarChart3, Target, Plus, TrendingUp, Menu, X, UserPlus, LogOut, Users } from 'lucide-react';
+import {  Menu, X, UserPlus, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigate, useLocation } from "react-router-dom";
 import { useUserContext } from "../utils/UserContext";
 import UserSelect from './UserSelect';
 import { menuItems } from '@/utils/constant';
-import { useUserStore } from '@/stores/userStore';
 
 interface SidebarProps {
   isCollapsed: boolean;

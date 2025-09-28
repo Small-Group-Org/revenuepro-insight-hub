@@ -4,6 +4,7 @@ import { useUserContext } from "@/utils/UserContext";
 import { useState } from "react";
 import useAuthStore from "@/stores/authStore";
 import { useNavigate } from "react-router-dom";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 export default function AppLayout() {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -23,7 +24,9 @@ export default function AppLayout() {
           onLogout={handleLogout}
         />
         <main className="flex-1 overflow-auto">
+          <ErrorBoundary>
             <Outlet />
+          </ErrorBoundary>
         </main>
       </div>
   );

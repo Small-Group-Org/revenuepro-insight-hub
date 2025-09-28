@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import AppLayout from "@/layout/AppLayout";
 import { useState } from "react";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 // Import components
 import { Dashboard } from "@/components/Dashboard";
@@ -17,7 +18,6 @@ import Login from "./pages/Login";
 import { UserProvider } from "./utils/UserContext";
 import { CompareResults } from "@/pages/CompareResults";
 import CreateUser from "./pages/CreateUser";
-import UserSelect from "@/components/UserSelect";
 import { DataProvider } from "@/contexts/DataContext";
 
 const App = () => {
@@ -25,32 +25,34 @@ const App = () => {
   const [queryClient] = useState(() => new QueryClient());
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <UserProvider>
-            <DataProvider>
-              <Routes>
-                <Route path="/login" element={<Login />} />
-                <Route element={<AppLayout />}>
-                  <Route path="/" element={<Dashboard />} />
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/targets" element={<SetTargets />} />
-                  <Route path="/actuals" element={<AddActualData />} />
-                  <Route path="/compare" element={<CompareResults />} />
-                  <Route path="/leads" element={<LeadSheet />} />
-                  <Route path="/lead-analytics" element={<LeadAnalytics />} />
-                  <Route path="/user-managment" element={<CreateUser />} />
-                </Route>
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </DataProvider>
-          </UserProvider>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <UserProvider>
+              <DataProvider>
+                <Routes>
+                  <Route path="/login" element={<Login />} />
+                  <Route element={<AppLayout />}>
+                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/targets" element={<SetTargets />} />
+                    <Route path="/actuals" element={<AddActualData />} />
+                    <Route path="/compare" element={<CompareResults />} />
+                    <Route path="/leads" element={<LeadSheet />} />
+                    <Route path="/lead-analytics" element={<LeadAnalytics />} />
+                    <Route path="/user-managment" element={<CreateUser />} />
+                  </Route>
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </DataProvider>
+            </UserProvider>
+          </BrowserRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 };
 
