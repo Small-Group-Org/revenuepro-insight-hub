@@ -2,7 +2,7 @@ import React from 'react';
 import { Calendar, Star, Download, Trash2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { getStatusInfo } from '@/utils/leadProcessing';
+import { getStatusInfo } from '@/utils/leads/leadProcessing';
 
 interface CurrentFilters {
   adSetName?: string;
