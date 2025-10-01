@@ -127,7 +127,7 @@ export const DashboardTopCards: React.FC<DashboardTopCardsProps> = ({
         costPerLead: 0,
         totalAppointmentsSet: 0,
         costPerAppointmentSet: 0,
-        appointmentRate: 0
+        estimateSetRate: 0
       };
     }
     const totals = reportingData.reduce((acc, dataPoint) => {
@@ -153,7 +153,7 @@ export const DashboardTopCards: React.FC<DashboardTopCardsProps> = ({
     const avgJobSize = totals.sales > 0 ? totals.revenue / totals.sales : 0;
     const costPerLead = totals.leads > 0 ? totals.budgetSpent / totals.leads : 0;
     const costPerAppointmentSet = totals.estimatesSet > 0 ? totals.budgetSpent / totals.estimatesSet : 0;
-    const appointmentRate = totals.leads > 0 ? (totals.estimatesSet / totals.leads) * 100 : 0;
+    const estimateSetRate = totals.estimatesSet > 0 ? (totals.estimatesSet / (totals.leads)) * 100 : 0;
     const totalManagementCost = processedTargetData.reduce((acc, dataPoint) => {
       acc += dataPoint.managementCost || 0;
       return acc;
@@ -178,7 +178,7 @@ export const DashboardTopCards: React.FC<DashboardTopCardsProps> = ({
       costPerLead,
       totalAppointmentsSet: totals.estimatesSet,
       costPerAppointmentSet,
-      appointmentRate
+      estimateSetRate
     };
   }, [reportingData, processedTargetData, period]);
 
@@ -247,16 +247,16 @@ export const DashboardTopCards: React.FC<DashboardTopCardsProps> = ({
       description: "Total number of appointments scheduled."
     },
     {
-      title: "Appointment Rate %",
+      title: "Estimate Set Rate %",
       icon: <TrendingUp className="h-5 w-5 opacity-50 text-warning" />,
       metrics: [
         {
-          label: "Appointment Rate %",
-          value: aggregatedMetrics.appointmentRate,
+          label: "Estimate Set Rate %",
+          value: aggregatedMetrics.estimateSetRate,
           format: 'percent' as const
         }
       ],
-      description: "Percentage of leads that resulted in an appointment."
+      description: "Percentage of Estimate Sets out of (Estimate Sets + Unqualified)."
     }
   ];
 
