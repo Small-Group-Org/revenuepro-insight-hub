@@ -359,7 +359,7 @@ export const LeadAnalytics = () => {
                   format: 'number' as const
                 },
                 {
-                  label: "Unqualified rate",
+                  label: "Unqualified Rate",
                   value: unqualifiedRate,
                   format: 'percent' as const
                 }
