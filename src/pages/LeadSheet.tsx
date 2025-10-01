@@ -110,39 +110,26 @@ export const LeadSheet = () => {
     }
   }, [selectedUserId, selectedDate, period, fetchFilterOptions, getDateRange]);
 
-  // Fetch paginated leads when filters, sorting, or pagination changes
+  // Unified effect for fetching leads - handles all filter changes including debounced search
   useEffect(() => {
-    if (selectedUserId) {
-      const { startDate, endDate } = getDateRange(selectedDate, period);
-      
-      // Fetch paginated leads
-      fetchPaginatedLeads({
-        clientId: selectedUserId,
-        startDate,
-        endDate,
-        page: currentPage,
-        limit: pageSize,
-        sortBy: currentSorting.sortBy,
-        sortOrder: currentSorting.sortOrder,
-        ...currentFilters
-      });
-    }
-  }, [selectedUserId, selectedDate, period, currentPage, pageSize, currentSorting, currentFilters.adSetName, currentFilters.adName, currentFilters.status, currentFilters.unqualifiedLeadReason, fetchPaginatedLeads, getDateRange]);
+    if (!selectedUserId) return;
 
-  // Debounced search effect - handle search with 3+ characters or clear search when empty
-  useEffect(() => {
     // Clear existing timeout
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
 
     const searchName = currentFilters.searchName;
-
+    
+    // If searchName is less than 3 characters (but not empty), don't make API call
     if (searchName && searchName.length < 3) {
       return;
     }
 
-    // Debounce the search API call by 500ms (for both search and clear)
+    // For search changes, debounce by 500ms. For other changes, execute immediately
+    const shouldDebounce = searchName !== undefined;
+    const delay = shouldDebounce ? 500 : 0;
+
     searchTimeoutRef.current = setTimeout(async () => {
       if (selectedUserId && !isDisabled) {
         const { startDate, endDate } = getDateRange(selectedDate, period);
@@ -152,19 +139,26 @@ export const LeadSheet = () => {
           ? currentFilters 
           : { ...currentFilters, searchName: undefined };
         
+        // For search changes, reset to page 1. For other changes, use current page
+        const pageToUse = shouldDebounce ? 1 : currentPage;
+        
         await fetchPaginatedLeads({
           clientId: selectedUserId,
           startDate,
           endDate,
-          page: 1,
+          page: pageToUse,
           limit: pageSize,
           sortBy: currentSorting.sortBy,
           sortOrder: currentSorting.sortOrder,
           ...filtersToUse
         });
-        setCurrentPage(1);
+        
+        // Only reset page for search changes
+        if (shouldDebounce) {
+          setCurrentPage(1);
+        }
       }
-    }, 500);
+    }, delay);
 
     // Cleanup timeout on unmount or dependency change
     return () => {
@@ -172,7 +166,23 @@ export const LeadSheet = () => {
         clearTimeout(searchTimeoutRef.current);
       }
     };
-  }, [currentFilters.searchName, selectedUserId, selectedDate, period, pageSize, currentSorting, currentFilters, fetchPaginatedLeads, getDateRange, setCurrentPage, isDisabled]);
+  }, [
+    selectedUserId, 
+    selectedDate, 
+    period, 
+    currentPage, 
+    pageSize, 
+    currentSorting, 
+    currentFilters.adSetName, 
+    currentFilters.adName, 
+    currentFilters.status, 
+    currentFilters.unqualifiedLeadReason, 
+    currentFilters.searchName, 
+    fetchPaginatedLeads, 
+    getDateRange, 
+    setCurrentPage, 
+    isDisabled
+  ]);
 
   useEffect(() => {
     if (error) {
