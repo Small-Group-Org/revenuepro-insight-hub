@@ -243,14 +243,18 @@ export const LeadAnalytics = () => {
     },
   };
 
-  const unqualifiedPercentage = (analyticsData?.overview.unqualifiedCount/analyticsData?.overview.totalLeads)*100 || 0;
-
   // Process ZIP data to show top N ZIP
   const getProcessedZipData = () => {
     if (!analyticsData?.zipData) return [];
     return analyticsData.zipData
       .slice(0, TOP_N_ZIP);
   };
+
+  const totalEffectiveLeads = analyticsData?.overview.estimateSetCount + analyticsData?.overview.unqualifiedCount || 0;
+
+  const estimateSetRate = totalEffectiveLeads > 0 ? (analyticsData?.overview.estimateSetCount/totalEffectiveLeads)*100 : 0;
+
+  const unqualifiedRate = totalEffectiveLeads > 0 ? (analyticsData?.overview.unqualifiedCount/totalEffectiveLeads)*100 : 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 overflow-x-hidden">
@@ -337,8 +341,8 @@ export const LeadAnalytics = () => {
                   format: 'number' as const
                 },
                 {
-                  label: "Estimate Set %",
-                  value: parseFloat(analyticsData.overview.estimateSetPercent),
+                  label: "Estimate Set Rate",
+                  value: estimateSetRate,
                   format: 'percent' as const
                 }
               ]}
@@ -355,8 +359,8 @@ export const LeadAnalytics = () => {
                   format: 'number' as const
                 },
                 {
-                  label: "Unqualified %",
-                  value: unqualifiedPercentage,
+                  label: "Unqualified Rate",
+                  value: unqualifiedRate,
                   format: 'percent' as const
                 }
               ]}
@@ -369,7 +373,7 @@ export const LeadAnalytics = () => {
               metrics={[
                 {
                   label: "Estimate Set Rate",
-                  value: parseFloat(analyticsData.overview.estimateSetRate),
+                  value: estimateSetRate,
                   format: 'percent' as const
                 }
               ]}

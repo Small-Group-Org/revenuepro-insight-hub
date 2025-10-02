@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 import { useNavigate, useLocation } from "react-router-dom";
 import { useUserContext } from "../utils/UserContext";
 import UserSelect from './UserSelect';
-import { menuItems } from '@/utils/constant';
+import { menuItems, API_URL } from '@/utils/constant';
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -25,10 +25,11 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }: SidebarProp
   const { user } = useUserContext();
   const userWithRole = user as UserWithRole | null;
   const isAdmin = userWithRole && (userWithRole.role === 'ADMIN');
+  const isDev = (API_URL || '').trim().includes('http://localhost');
   
   return (
     <div className={cn(
-      "bg-sidebar text-sidebar-foreground transition-all duration-300 flex flex-col",
+      "bg-sidebar text-sidebar-foreground transition-all duration-300 flex flex-col relative",
       isCollapsed ? "w-16" : "w-64"
     )}>
       {/* Header */}
@@ -97,6 +98,25 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }: SidebarProp
           )}
         </div>
       </nav>
+
+      {isDev && (
+        <div
+          className={cn(
+            "absolute left-2 right-2",
+            isCollapsed ? "bottom-20" : "bottom-24"
+          )}
+        >
+          <div
+            className={cn(
+              "w-full rounded-md border text-xs font-semibold tracking-wide",
+              "px-2 py-1 flex items-center justify-center",
+              "bg-yellow-500/15 border-yellow-500 text-yellow-300 shadow-sm"
+            )}
+          >
+            DEV Mode
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <div className="p-2 border-t border-slate-700">

@@ -111,8 +111,6 @@ export interface AnalyticsOverview {
   totalLeads: number;
   estimateSetCount: number;
   unqualifiedCount: number;
-  estimateSetRate: string;
-  estimateSetPercent: string;
 }
 
 export interface ZipAnalyticsDataPoint {
