@@ -21,10 +21,10 @@ const UserSelect: React.FC<UserSelectProps> = ({ value, onChange, placeholder, i
   }, []);
 
   useEffect(() => {
+    // Do not override if a selection already exists (from persistence or context)
+    if (selectedUserId) return;
     const firstClientUser = users.find(user => user.role !== "ADMIN");
-    if (firstClientUser) {
-      setSelectedUserId(firstClientUser.id);
-    }
+    if (firstClientUser) setSelectedUserId(firstClientUser.id);
   }, [users])
 
   // Handle value and onChange

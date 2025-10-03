@@ -249,12 +249,12 @@ export const LeadDateTimeSelector: React.FC<LeadDateTimeSelectorProps> = ({
                 </Button>
               </PopoverTrigger>
               <PopoverContent
-                className="w-[555px] p-0"
+                className="w-[570px] mr-10 md:mr-40 py-0 pl-2"
                 onOpenAutoFocus={(e) => e.preventDefault()}
               >
                 <div className="grid grid-cols-1 md:grid-cols-2 ">
                   <div className="">
-                    <p className=" absolute top-6 left-10 text-sm font-medium ">Start</p>
+                    <p className="absolute top-6 left-14 text-sm font-medium ">Start</p>
                     <Calendar
                       mode="single"
                       selected={customStart}
@@ -286,7 +286,7 @@ export const LeadDateTimeSelector: React.FC<LeadDateTimeSelectorProps> = ({
                     />
                   </div>
                   <div className="">
-                    <p className="absolute  top-6 left-[56%] text-sm font-medium">End</p>
+                    <p className="absolute  top-6 left-[44%] text-sm font-medium">End</p>
                     <Calendar
                       mode="single"
                       selected={customEnd}
@@ -318,7 +318,7 @@ export const LeadDateTimeSelector: React.FC<LeadDateTimeSelectorProps> = ({
                     />
                   </div>
                 </div>
-                <div className="flex items-center justify-end gap-2 px-2 pb-3">
+                <div className="flex items-center justify-end gap-2 px-1 pb-3">
                   <Button variant="ghost" onClick={() => setOpenPicker(false)}>
                     Cancel
                   </Button>

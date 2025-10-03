@@ -405,12 +405,12 @@ export const LeadAnalytics = () => {
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent
-                      className="w-[560px] p-0"
+                      className="w-[570px] mr-10 md:mr-40 py-0 pl-2"
                       onOpenAutoFocus={(e) => e.preventDefault()}
                     >
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
                         <div className="">
-                          <p className="absolute top-6 left-10 text-sm font-medium">Start</p>
+                          <p className="absolute top-6 left-12 text-sm font-medium">Start</p>
                           <UICalendar
                             mode="single"
                             selected={customStart}
@@ -442,7 +442,7 @@ export const LeadAnalytics = () => {
                           />
                         </div>
                         <div className="">
-                          <p className="absolute  top-6 left-[56%] text-sm font-medium">End</p>
+                          <p className="absolute  top-6 left-[44%] text-sm font-medium">End</p>
                           <UICalendar
                             mode="single"
                             selected={customEnd}
@@ -474,7 +474,7 @@ export const LeadAnalytics = () => {
                           />
                         </div>
                       </div>
-                      <div className="flex items-center justify-end gap-2  px-2 pb-3">
+                      <div className="flex items-center justify-end gap-2  px-0 pb-3">
                         <Button
                           variant="ghost"
                           onClick={() => setOpenPicker(false)}
@@ -1059,7 +1059,7 @@ export const LeadAnalytics = () => {
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent
-                          className="w-[560px] p-0"
+                          className="w-[570px] mr-10 md:mr-40 py-0 pl-2"
                           onOpenAutoFocus={(e) => e.preventDefault()}
                         >
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
@@ -1130,7 +1130,7 @@ export const LeadAnalytics = () => {
                               />
                             </div>
                           </div>
-                          <div className="flex items-center justify-end gap-2 px-2 pb-3">
+                          <div className="flex items-center justify-end gap-2 px-0 pb-3">
                             <Button
                               variant="ghost"
                               onClick={() => setOpenTablePicker(false)}
