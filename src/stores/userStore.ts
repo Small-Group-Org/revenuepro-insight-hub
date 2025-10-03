@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { getAllUsers, User, CreateUserPayload, UpdateUserPayload, UpdatePasswordPayload, createUser as createUserService, updateUser as updateUserService, deleteUser as deleteUserService, updatePassword as updatePasswordService } from "@/service/userService";
+import { getValue, setValue, STORAGE_KEYS } from "@/utils/storage";
 
 interface UserStoreState {
   users: User[];
@@ -18,19 +19,26 @@ export const useUserStore = create<UserStoreState>((set, get) => ({
   users: [],
   loading: false,
   error: undefined,
-  selectedUserId: undefined,
+  selectedUserId: getValue(STORAGE_KEYS.SELECTED_USER_ID) || undefined,
   fetchUsers: async (role?: string) => {
     set({ loading: true, error: undefined });
     const res = await getAllUsers(role);
     if (!res.error && Array.isArray(res.data.data)) {
       const users = res.data.data.sort((a, b) => a.name.localeCompare(b.name));
-      
-      set({ users, loading: false, selectedUserId: users.length > 0 ? users[0].id : undefined });
+      // Decide selected user ID prioritizing persisted value if valid
+      const persistedId = getValue(STORAGE_KEYS.SELECTED_USER_ID) || undefined;
+      const currentSelected = get().selectedUserId;
+      const candidateId = [persistedId, currentSelected, users.length > 0 ? users[0].id : undefined]
+        .find((id) => !!id && users.some((u) => u.id === id));
+      set({ users, loading: false, selectedUserId: candidateId });
     } else {
       set({ error: res.message || "Failed to fetch users", loading: false });
     }
   },
-  setSelectedUserId: (id: string) => set({ selectedUserId: id }),
+  setSelectedUserId: (id: string) => {
+    setValue(STORAGE_KEYS.SELECTED_USER_ID, id);
+    set({ selectedUserId: id });
+  },
   createUser: async (payload) => {
     set({ loading: true, error: undefined });
     const res = await createUserService(payload);
