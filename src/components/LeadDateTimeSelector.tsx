@@ -249,12 +249,12 @@ export const LeadDateTimeSelector: React.FC<LeadDateTimeSelectorProps> = ({
                 </Button>
               </PopoverTrigger>
               <PopoverContent
-                className="w-[720px] p-4"
+                className="w-[555px] p-0"
                 onOpenAutoFocus={(e) => e.preventDefault()}
               >
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">Start</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 ">
+                  <div className="">
+                    <p className=" absolute top-6 left-10 text-sm font-medium ">Start</p>
                     <Calendar
                       mode="single"
                       selected={customStart}
@@ -270,14 +270,14 @@ export const LeadDateTimeSelector: React.FC<LeadDateTimeSelectorProps> = ({
                         day_today:
                           "relative text-muted-foreground after:content-[''] after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1 after:h-1 after:rounded-full after:bg-muted-foreground",
                         caption:
-                          "flex justify-center pt-1 relative items-center",
+                          "flex pl-10 justify-center pt-1 relative items-center",
                         caption_label: "hidden",
                         caption_dropdowns:
                           "flex items-center gap-2 justify-center",
                         dropdown_month:
-                          "h-9 px-2 text-sm bg-background border border-input rounded-md flex items-center leading-none text-foreground focus:outline-none focus:ring-0",
+                          "h-9  text-sm bg-background border border-input rounded-md flex items-center leading-none text-foreground focus:outline-none focus:ring-0",
                         dropdown_year:
-                          "h-9 px-2 text-sm bg-background border border-input rounded-md flex items-center leading-none text-foreground focus:outline-none focus:ring-0",
+                          "h-9  text-sm bg-background border border-input rounded-md flex items-center leading-none text-foreground focus:outline-none focus:ring-0",
                       }}
                       captionLayout="dropdown"
                       fromYear={1990}
@@ -285,8 +285,8 @@ export const LeadDateTimeSelector: React.FC<LeadDateTimeSelectorProps> = ({
                       pagedNavigation
                     />
                   </div>
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">End</p>
+                  <div className="">
+                    <p className="absolute  top-6 left-[56%] text-sm font-medium">End</p>
                     <Calendar
                       mode="single"
                       selected={customEnd}
@@ -302,14 +302,14 @@ export const LeadDateTimeSelector: React.FC<LeadDateTimeSelectorProps> = ({
                         day_today:
                           "relative text-muted-foreground after:content-[''] after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1 after:h-1 after:rounded-full after:bg-muted-foreground",
                         caption:
-                          "flex justify-center pt-1 relative items-center",
+                          "flex pl-10  justify-center pt-1 relative items-center",
                         caption_label: "hidden",
                         caption_dropdowns:
                           "flex items-center gap-2 justify-center",
                         dropdown_month:
-                          "h-9 px-2 text-sm bg-background border border-input rounded-md flex items-center leading-none text-foreground focus:outline-none focus:ring-0",
+                          "h-9  text-sm bg-background border border-input rounded-md flex items-center leading-none text-foreground focus:outline-none focus:ring-0",
                         dropdown_year:
-                          "h-9 px-2 text-sm bg-background border border-input rounded-md flex items-center leading-none text-foreground focus:outline-none focus:ring-0",
+                          "h-9  text-sm bg-background border border-input rounded-md flex items-center leading-none text-foreground focus:outline-none focus:ring-0",
                       }}
                       captionLayout="dropdown"
                       fromYear={1990}
@@ -318,7 +318,7 @@ export const LeadDateTimeSelector: React.FC<LeadDateTimeSelectorProps> = ({
                     />
                   </div>
                 </div>
-                <div className="flex items-center justify-end gap-2 mt-4">
+                <div className="flex items-center justify-end gap-2 px-2 pb-3">
                   <Button variant="ghost" onClick={() => setOpenPicker(false)}>
                     Cancel
                   </Button>

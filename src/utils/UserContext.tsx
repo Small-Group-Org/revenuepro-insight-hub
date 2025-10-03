@@ -81,7 +81,6 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
           setUser(response.data.user);
           setSelectedUserId(response.data.user._id);
           login();
-          navigate("/");
           return;
         }
 
