@@ -67,11 +67,11 @@ const formatCustomRangeLabel = (startDate: Date, endDate: Date): string => {
   const endYear = endDate.getFullYear();
   
   if (startYear === endYear) {
-    // Same year: "Sept 29 → Oct 5, 2025"
-    return `${format(startDate, "MMM dd")} → ${format(endDate, "MMM dd, yyyy")}`;
+    // Same year: "Sept 29 - Oct 5, 2025"
+    return `${format(startDate, "MMM dd")} - ${format(endDate, "MMM dd, yyyy")}`;
   } else {
-    // Different years: "Dec 29, 2024 → Jan 4, 2025"
-    return `${format(startDate, "MMM dd, yyyy")} → ${format(endDate, "MMM dd, yyyy")}`;
+    // Different years: "Dec 29, 2024 - Jan 4, 2025"
+    return `${format(startDate, "MMM dd, yyyy")} - ${format(endDate, "MMM dd, yyyy")}`;
   }
 };
 
@@ -413,20 +413,20 @@ export const LeadAnalytics = () => {
                     </SelectContent>
                   </Select>
                   {timeFilter === "custom" && (
-                    <div className="absolute top-full left-[2%] mt-1 text-xs text-muted-foreground whitespace-nowrap">
-                      {formatCustomRangeLabel(customStart, customEnd)}
+                    <div className="absolute top-full left-[2%] text-xs text-muted-foreground whitespace-nowrap mt-2">
+                      ({formatCustomRangeLabel(customStart, customEnd)})
                     </div>
                   )}
                 </div>
                 {timeFilter === "custom" && (
                   <Popover open={openPicker} onOpenChange={setOpenPicker}>
                     <PopoverTrigger asChild>
-                      <Button variant="outline" className="h-8 px-3 text-xs">
+                      <Button variant="outline" className="h-8 px-3 text-xs bg-black/80 hover:bg-black text-white border-black/80 hover:border-black">
                         Select Dates
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent
-                      className="w-[570px] mr-10 md:mr-40 py-0 pl-2"
+                      className="w-[570px] mr-10 md:mr-40 py-0 pl-2 border border-black/40"
                       onOpenAutoFocus={(e) => e.preventDefault()}
                     >
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
@@ -1075,13 +1075,13 @@ export const LeadAnalytics = () => {
                           <PopoverTrigger asChild>
                             <Button
                               variant="outline"
-                              className="h-9 px-3 text-xs"
+                              className="h-9 px-3 text-xs bg-black/80 hover:bg-black text-white border-black/80 hover:border-black"
                             >
                               Select Dates
                             </Button>
                           </PopoverTrigger>
                           <PopoverContent
-                            className="w-[570px] mr-10 md:mr-40 py-0 pl-2"
+                            className="w-[570px] mr-10 md:mr-40 py-0 pl-2 border border-black/40"
                             onOpenAutoFocus={(e) => e.preventDefault()}
                           >
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
