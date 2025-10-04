@@ -102,6 +102,7 @@ export const LeadDateTimeSelector: React.FC<LeadDateTimeSelectorProps> = ({
   const [customEnd, setCustomEnd] = useState<Date>(initialDate);
   const [startTime, setStartTime] = useState<string>("00:00");
   const [endTime, setEndTime] = useState<string>("23:59");
+  const [customRangeApplied, setCustomRangeApplied] = useState(false);
   const currentYear = new Date().getFullYear();
   // Visible months for calendars (avoid jumping back and enable dropdown control)
   const [startMonth, setStartMonth] = useState<Date>(initialDate);
@@ -130,9 +131,14 @@ export const LeadDateTimeSelector: React.FC<LeadDateTimeSelectorProps> = ({
     if (period === "monthly") return format(selectedDate, "MMMM yyyy");
     if (period === "ytd") return `YTD ${format(new Date(), "yyyy")}`;
     if (period === "yearly") return format(selectedDate, "yyyy");
-    if (period === "custom") return formatCustomRangeLabel(customStart, customEnd);
+    if (period === "custom") {
+      if (!customRangeApplied) {
+        return "(Select Date Range)";
+      }
+      return formatCustomRangeLabel(customStart, customEnd);
+    }
     return format(selectedDate, "MMM dd, yyyy");
-  }, [period, selectedDate, customStart, customEnd]);
+  }, [period, selectedDate, customStart, customEnd, customRangeApplied]);
 
   const navigatePrev = () => {
     if (period === "ytd" || period === "custom") return;
@@ -175,6 +181,7 @@ export const LeadDateTimeSelector: React.FC<LeadDateTimeSelectorProps> = ({
       setCustomEnd(currentDate);
       setStartMonth(currentDate);
       setEndMonth(currentDate);
+      setCustomRangeApplied(false);
       // Do not auto-open. User will click "Pick range" to open.
       setOpenPicker(false);
     } else {
@@ -196,6 +203,7 @@ export const LeadDateTimeSelector: React.FC<LeadDateTimeSelectorProps> = ({
     const startDate = toUTCISOString(customStart, false);
     const endDate = toUTCISOString(customEnd, true);
     onCustomRangeChange?.({ startDate, endDate });
+    setCustomRangeApplied(true);
     setOpenPicker(false);
   }, [customStart, customEnd, onCustomRangeChange]);
 
@@ -229,7 +237,11 @@ export const LeadDateTimeSelector: React.FC<LeadDateTimeSelectorProps> = ({
           >
             <ChevronRight className="h-5 w-5 text-muted-foreground" />
           </button>
-          <span className="ml-4 text-xl font-medium text-card-foreground">
+          <span className={`ml-4  font-medium ${
+            period === "custom" && !customRangeApplied 
+              ? "text-gray-400 text-md" 
+              : "text-card-foreground text-xl"
+          }`}>
             {label}
           </span>
         </div>
@@ -305,6 +317,7 @@ export const LeadDateTimeSelector: React.FC<LeadDateTimeSelectorProps> = ({
                       showOutsideDays
                       month={startMonth}
                       onMonthChange={(m) => m && setStartMonth(m)}
+                      disabled={(date) => date > new Date()}
                       classNames={{
                         day_today:
                           "relative text-muted-foreground after:content-[''] after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1 after:h-1 after:rounded-full after:bg-muted-foreground",
@@ -337,6 +350,7 @@ export const LeadDateTimeSelector: React.FC<LeadDateTimeSelectorProps> = ({
                       showOutsideDays
                       month={endMonth}
                       onMonthChange={(m) => m && setEndMonth(m)}
+                      disabled={(date) => date > new Date()}
                       classNames={{
                         day_today:
                           "relative text-muted-foreground after:content-[''] after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1 after:h-1 after:rounded-full after:bg-muted-foreground",

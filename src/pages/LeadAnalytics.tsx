@@ -87,6 +87,7 @@ export const LeadAnalytics = () => {
   const [openPicker, setOpenPicker] = useState(false);
   const [customStart, setCustomStart] = useState<Date>(new Date());
   const [customEnd, setCustomEnd] = useState<Date>(new Date());
+  const [customRangeApplied, setCustomRangeApplied] = useState(false);
   const [startMonth, setStartMonth] = useState<Date>(new Date());
   const [endMonth, setEndMonth] = useState<Date>(new Date());
   const currentYear = new Date().getFullYear();
@@ -130,6 +131,7 @@ export const LeadAnalytics = () => {
   const [openTablePicker, setOpenTablePicker] = useState(false);
   const [tableCustomStart, setTableCustomStart] = useState<Date>(new Date());
   const [tableCustomEnd, setTableCustomEnd] = useState<Date>(new Date());
+  const [tableCustomRangeApplied, setTableCustomRangeApplied] = useState(false);
   const [tableStartMonth, setTableStartMonth] = useState<Date>(new Date());
   const [tableEndMonth, setTableEndMonth] = useState<Date>(new Date());
 
@@ -394,9 +396,13 @@ export const LeadAnalytics = () => {
                 <div className="relative">
                   <Select
                     value={timeFilter}
-                    onValueChange={(value: string) =>
-                      setTimeFilter(value as AnalyticsTimeFilter)
-                    }
+                    onValueChange={(value: string) => {
+                      const newFilter = value as AnalyticsTimeFilter;
+                      setTimeFilter(newFilter);
+                      if (newFilter === "custom") {
+                        setCustomRangeApplied(false);
+                      }
+                    }}
                   >
                     <SelectTrigger className="w-40 h-8 text-xs">
                       <SelectValue />
@@ -413,8 +419,12 @@ export const LeadAnalytics = () => {
                     </SelectContent>
                   </Select>
                   {timeFilter === "custom" && (
-                    <div className="absolute top-full left-[2%] text-xs text-muted-foreground whitespace-nowrap mt-2">
-                      ({formatCustomRangeLabel(customStart, customEnd)})
+                    <div className="absolute top-full left-[2%] text-xs whitespace-nowrap mt-2">
+                      {!customRangeApplied ? (
+                        <span className="text-gray-400">(Select Date Range)</span>
+                      ) : (
+                        <span className="text-muted-foreground">({formatCustomRangeLabel(customStart, customEnd)})</span>
+                      )}
                     </div>
                   )}
                 </div>
@@ -443,9 +453,12 @@ export const LeadAnalytics = () => {
                             showOutsideDays
                             month={startMonth}
                             onMonthChange={(m) => m && setStartMonth(m)}
+                            disabled={(date) => date > new Date()}
                             classNames={{
                               day_today:
                                 "relative text-muted-foreground after:content-[''] after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1 after:h-1 after:rounded-full after:bg-muted-foreground",
+                              day_disabled:
+                                "cursor-not-allowed opacity-50",
                               caption:
                                 "flex pl-10 justify-center pt-1 relative items-center",
                               caption_label: "hidden",
@@ -475,9 +488,12 @@ export const LeadAnalytics = () => {
                             showOutsideDays
                             month={endMonth}
                             onMonthChange={(m) => m && setEndMonth(m)}
+                            disabled={(date) => date > new Date()}
                             classNames={{
                               day_today:
                                 "relative text-muted-foreground after:content-[''] after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1 after:h-1 after:rounded-full after:bg-muted-foreground",
+                              day_disabled:
+                                "cursor-not-allowed opacity-50",
                               caption:
                                 "flex justify-center pt-1 relative items-center",
                               caption_label: "hidden",
@@ -523,6 +539,7 @@ export const LeadAnalytics = () => {
                               999
                             ).toISOString();
                             setCustomRange({ startDate: start, endDate: end });
+                            setCustomRangeApplied(true);
                             setOpenPicker(false);
                           }}
                           className="mr-1"
@@ -1048,11 +1065,13 @@ export const LeadAnalytics = () => {
                     </span>
                     <Select
                       value={commonTimeFilter}
-                      onValueChange={(value: string) =>
-                        setCommonTimeFilter(
-                          value as "all" | "7" | "14" | "30" | "60" | "custom"
-                        )
-                      }
+                      onValueChange={(value: string) => {
+                        const newFilter = value as "all" | "7" | "14" | "30" | "60" | "custom";
+                        setCommonTimeFilter(newFilter);
+                        if (newFilter === "custom") {
+                          setTableCustomRangeApplied(false);
+                        }
+                      }}
                     >
                       <SelectTrigger className="w-40 h-9">
                         <SelectValue />
@@ -1100,9 +1119,12 @@ export const LeadAnalytics = () => {
                                 onMonthChange={(m) =>
                                   m && setTableStartMonth(m)
                                 }
+                                disabled={(date) => date > new Date()}
                                 classNames={{
                                   day_today:
                                     "relative text-muted-foreground after:content-[''] after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1 after:h-1 after:rounded-full after:bg-muted-foreground",
+                                  day_disabled:
+                                    "cursor-not-allowed opacity-50",
                                   caption:
                                     "flex  pl-10  justify-center pt-1 relative items-center",
                                   caption_label: "hidden",
@@ -1132,9 +1154,12 @@ export const LeadAnalytics = () => {
                                 showOutsideDays
                                 month={tableEndMonth}
                                 onMonthChange={(m) => m && setTableEndMonth(m)}
+                                disabled={(date) => date > new Date()}
                                 classNames={{
                                   day_today:
                                     "relative text-muted-foreground after:content-[''] after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1 after:h-1 after:rounded-full after:bg-muted-foreground",
+                                  day_disabled:
+                                    "cursor-not-allowed opacity-50",
                                   caption:
                                     "flex justify-center pt-1 relative items-center",
                                   caption_label: "hidden",
@@ -1184,6 +1209,7 @@ export const LeadAnalytics = () => {
                                   startDate: start,
                                   endDate: end,
                                 });
+                                setTableCustomRangeApplied(true);
                                 setOpenTablePicker(false);
                               }}
                             >
@@ -1192,8 +1218,12 @@ export const LeadAnalytics = () => {
                           </div>
                         </PopoverContent>
                       </Popover>
-                        <span className="text-sm font-medium text-gray-700">
-                          {formatCustomRangeLabel(tableCustomStart, tableCustomEnd)}
+                        <span className={`text-sm font-medium  ${!tableCustomRangeApplied ? "text-gray-400" : "text-gray-700"}`}>
+                          {!tableCustomRangeApplied ? (
+                            "(Select Date Range)"
+                          ) : (
+                            formatCustomRangeLabel(tableCustomStart, tableCustomEnd)
+                          )}
                         </span>
                       </>
                     )}
