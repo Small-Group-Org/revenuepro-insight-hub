@@ -74,10 +74,10 @@ const formatCustomRangeLabel = (startDate: Date, endDate: Date): string => {
   
   if (startYear === endYear) {
     // Same year: "Sept 29 - Oct 5, 2025"
-    return `${format(startDate, "MMM dd")} → ${format(endDate, "MMM dd, yyyy")}`;
+    return `${format(startDate, "MMM dd")} - ${format(endDate, "MMM dd, yyyy")}`;
   } else {
     // Different years: "Dec 29, 2024 - Jan 4, 2025"
-    return `${format(startDate, "MMM dd, yyyy")} → ${format(endDate, "MMM dd, yyyy")}`;
+    return `${format(startDate, "MMM dd, yyyy")} - ${format(endDate, "MMM dd, yyyy")}`;
   }
 };
 
@@ -283,15 +283,15 @@ export const LeadDateTimeSelector: React.FC<LeadDateTimeSelectorProps> = ({
           {period === "custom" && (
             <Popover open={openPicker} onOpenChange={setOpenPicker}>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="h-9 px-3">
+                <Button variant="outline" className="h-9 px-3 bg-black/80 hover:bg-black text-white border-black/80 hover:border-black">
                   Select Dates
                 </Button>
               </PopoverTrigger>
               <PopoverContent
-                className="w-[570px] mr-10 md:mr-40 py-0 pl-2"
+                className="w-[570px] mr-10 md:mr-40 py-0 pl-2 border border-black/40"
                 onOpenAutoFocus={(e) => e.preventDefault()}
               >
-                <div className="grid grid-cols-1 md:grid-cols-2 ">
+                <div className="grid grid-cols-1 md:grid-cols-2 b">
                   <div className="">
                     <p className="absolute top-6 left-14 text-sm font-medium ">Start</p>
                     <Calendar
