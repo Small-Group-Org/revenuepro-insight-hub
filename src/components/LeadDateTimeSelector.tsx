@@ -20,7 +20,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { format, addWeeks, subWeeks } from "date-fns";
+import { format, addWeeks, subWeeks, startOfWeek, endOfWeek } from "date-fns";
 import { PeriodType } from "@/types";
 
 type ExtendedPeriod = PeriodType | "custom";
@@ -50,6 +50,35 @@ const toUTCISOString = (d: Date, endOfMinute = false): string => {
     endOfMinute ? 999 : 0
   );
   return date.toISOString();
+};
+
+const formatWeekLabel = (date: Date): string => {
+  const weekStart = startOfWeek(date, { weekStartsOn: 1 }); // Monday as start of week
+  const weekEnd = endOfWeek(date, { weekStartsOn: 1 }); // Sunday as end of week
+  
+  const startYear = weekStart.getFullYear();
+  const endYear = weekEnd.getFullYear();
+  
+  if (startYear === endYear) {
+    // Same year: "Sept 29 - Oct 5, 2025"
+    return `${format(weekStart, "MMM dd")} - ${format(weekEnd, "MMM dd, yyyy")}`;
+  } else {
+    // Different years: "Dec 29, 2024 - Jan 4, 2025"
+    return `${format(weekStart, "MMM dd, yyyy")} - ${format(weekEnd, "MMM dd, yyyy")}`;
+  }
+};
+
+const formatCustomRangeLabel = (startDate: Date, endDate: Date): string => {
+  const startYear = startDate.getFullYear();
+  const endYear = endDate.getFullYear();
+  
+  if (startYear === endYear) {
+    // Same year: "Sept 29 - Oct 5, 2025"
+    return `${format(startDate, "MMM dd")} → ${format(endDate, "MMM dd, yyyy")}`;
+  } else {
+    // Different years: "Dec 29, 2024 - Jan 4, 2025"
+    return `${format(startDate, "MMM dd, yyyy")} → ${format(endDate, "MMM dd, yyyy")}`;
+  }
 };
 
 export const LeadDateTimeSelector: React.FC<LeadDateTimeSelectorProps> = ({
@@ -97,15 +126,11 @@ export const LeadDateTimeSelector: React.FC<LeadDateTimeSelectorProps> = ({
   }, [startTime, endTime, customStart, customEnd]);
 
   const label = useMemo(() => {
-    if (period === "weekly") return format(selectedDate, "wo 'week' MMM yyyy");
+    if (period === "weekly") return formatWeekLabel(selectedDate);
     if (period === "monthly") return format(selectedDate, "MMMM yyyy");
     if (period === "ytd") return `YTD ${format(new Date(), "yyyy")}`;
     if (period === "yearly") return format(selectedDate, "yyyy");
-    if (period === "custom")
-      return `${format(customStart, "MMM dd, yyyy")} → ${format(
-        customEnd,
-        "MMM dd, yyyy"
-      )}`;
+    if (period === "custom") return formatCustomRangeLabel(customStart, customEnd);
     return format(selectedDate, "MMM dd, yyyy");
   }, [period, selectedDate, customStart, customEnd]);
 
@@ -144,10 +169,24 @@ export const LeadDateTimeSelector: React.FC<LeadDateTimeSelectorProps> = ({
   const handlePeriodChange = (value: ExtendedPeriod) => {
     setPeriod(value);
     if (value === "custom") {
+      // Set custom range to current date when first selected
+      const currentDate = new Date();
+      setCustomStart(currentDate);
+      setCustomEnd(currentDate);
+      setStartMonth(currentDate);
+      setEndMonth(currentDate);
       // Do not auto-open. User will click "Pick range" to open.
       setOpenPicker(false);
     } else {
-      onChange?.(selectedDate, value);
+      let newDate = selectedDate;
+      
+      // When switching to weekly or monthly, set to current date
+      if (value === "weekly" || value === "monthly") {
+        newDate = new Date();
+        setSelectedDate(newDate);
+      }
+      
+      onChange?.(newDate, value);
       // Ensure popover is closed when leaving custom
       setOpenPicker(false);
     }
