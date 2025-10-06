@@ -72,6 +72,8 @@ export interface Lead {
   unqualifiedLeadReason?: string;
   updatedAt?: string;
   leadScore?: number;
+  jobBookedAmount?: number;
+  proposalAmount?: number;
   conversionRates?: {
     service: number;
     adSetName: number;

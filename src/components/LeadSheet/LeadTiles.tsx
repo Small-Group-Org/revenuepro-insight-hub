@@ -1,7 +1,7 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@radix-ui/react-tooltip";
-import { Calendar, Mail, Phone, Tag, Target, Users } from "lucide-react";
-import React from "react";
+import { Calendar, Mail, Phone, Tag, Target, Users, Save } from "lucide-react";
+import React, { useState } from "react";
 
 // Memoized component for lead tiles to optimize re-renders
 export const LeadTiles = React.memo(({ 
@@ -16,6 +16,7 @@ export const LeadTiles = React.memo(({
     handleLeadStatusChange,
     handleULRChange,
     handleCustomULRSubmit,
+    handleAmountUpdate,
     handleLeadDelete,
     handleLeadSelect,
     setCustomULR,
@@ -39,6 +40,8 @@ export const LeadTiles = React.memo(({
       score: number;
       leadScore?: number;
       unqualifiedLeadReason?: string;
+      jobBookedAmount?: number;
+      proposalAmount?: number;
       conversionRates?: {
         service?: number;
         adSetName?: number;
@@ -64,6 +67,7 @@ export const LeadTiles = React.memo(({
     handleLeadStatusChange: (leadId: string, value: 'new' | 'in_progress' | 'estimate_set' | 'unqualified') => Promise<void>;
     handleULRChange: (leadId: string, value: string) => Promise<void>;
     handleCustomULRSubmit: (leadId: string) => Promise<void>;
+    handleAmountUpdate: (leadId: string, jobBookedAmount: number, proposalAmount: number) => Promise<void>;
     handleLeadDelete: (leadId: string) => void;
     handleLeadSelect: (leadId: string, isSelected: boolean) => void;
     setCustomULR: (value: string) => void;
@@ -72,9 +76,29 @@ export const LeadTiles = React.memo(({
     getScoreInfo: (score: number) => { color: string; label: string };
     getStatusInfo: (status: string) => { color: string; label: string };
     FIELD_WEIGHTS: { zip: number; service: number; adSetName: number; adName: number };
-  }) => (
-    <div className="space-y-4">
-      {leads.map((lead) => {
+  }) => {
+    // State for managing amount inputs
+    const [amountInputs, setAmountInputs] = useState<{[leadId: string]: {jobBookedAmount: number, proposalAmount: number}}>({});
+    // State for tracking which lead is being edited
+    const [editingLeadId, setEditingLeadId] = useState<string | null>(null);
+
+    // Initialize amount inputs when leads change
+    React.useEffect(() => {
+      const newAmountInputs: {[leadId: string]: {jobBookedAmount: number, proposalAmount: number}} = {};
+      leads.forEach(lead => {
+        if (lead.status === 'estimate_set') {
+          newAmountInputs[lead.id] = {
+            jobBookedAmount: lead.jobBookedAmount || 0,
+            proposalAmount: lead.proposalAmount || 0
+          };
+        }
+      });
+      setAmountInputs(newAmountInputs);
+    }, [leads]);
+
+    return (
+      <div className="space-y-4">
+        {leads.map((lead) => {
         const scoreInfo = getScoreInfo(lead.score);
         const statusInfo = getStatusInfo(lead.status);
         const isSelected = selectedLeads.has(lead.id);
@@ -456,12 +480,122 @@ export const LeadTiles = React.memo(({
                       )}
                     </div>
                   )}
+
+                  {/* Amount Fields - Only show when status is estimate_set */}
+                  {lead.status === 'estimate_set' && (
+                    <div className="mt-2 space-y-2 flex items-center  ">
+                      <div className="flex items-start flex-wrap gap-1 justify-around  w-full">
+
+                       {/* Proposal Amount */}
+                        <div className={`flex flex-col items-center gap-1`}>
+                          {editingLeadId === lead.id ? (
+                            <>
+                              <input
+                                type="number"
+                                value={amountInputs[lead.id]?.proposalAmount || ''}
+                                onChange={(e) => {
+                                  const value = parseFloat(e.target.value) || 0;
+                                  setAmountInputs(prev => ({
+                                    ...prev,
+                                    [lead.id]: {
+                                      ...prev[lead.id],
+                                      proposalAmount: value
+                                    }
+                                  }));
+                                }}
+                                placeholder="0"
+                                className="w-20 px-2 py-1 text-xs text-center border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
+                                disabled={isDisabled}
+                                min="0"
+                                step="0.01"
+                              />
+                            </>
+                          ) : (
+                            <div 
+                              className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 rounded px-1 py-1"
+                              onClick={() => {
+                                if (!isDisabled && editingLeadId !== lead.id) {
+                                  setEditingLeadId(lead.id);
+                                }
+                              }}
+                            >
+                              <span className="text-xs font-medium">${lead.proposalAmount || 0}</span>
+                            </div>
+                          )}
+                          <div className="text-xs text-gray-500 text-wrap text-center w-20 ">
+                             Proposal Amount
+                          </div>
+                        </div>
+
+                        {/* Job Booked Amount */}
+                        <div className={`flex flex-col items-center gap-1`}>
+                          {editingLeadId === lead.id ? (
+                            <>
+                              <input
+                                type="number"
+                                value={amountInputs[lead.id]?.jobBookedAmount || ''}
+                                onChange={(e) => {
+                                  const value = parseFloat(e.target.value) || 0;
+                                  setAmountInputs(prev => ({
+                                    ...prev,
+                                    [lead.id]: {
+                                      ...prev[lead.id],
+                                      jobBookedAmount: value
+                                    }
+                                  }));
+                                }}
+                                placeholder="0"
+                                className="w-20 px-2 py-1 text-xs text-center border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
+                                disabled={isDisabled}
+                                min="0"
+                                step="0.01"
+                              />
+                            </>
+                          ) : (
+                            <div 
+                              className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 rounded px-1 py-1"
+                              onClick={() => {
+                                if (!isDisabled && editingLeadId !== lead.id) {
+                                  setEditingLeadId(lead.id);
+                                }
+                              }}
+                            >
+                              <span className="text-xs font-medium">${lead.jobBookedAmount || 0}</span>
+                            </div>
+                          )}
+                          <div className="text-xs text-gray-500 text-wrap text-center w-20 ">
+                            Job Booked Amount
+                          </div>
+                        </div>
+
+                     
+
+                        {/* Save Button - Only show when editing */}
+                        {editingLeadId === lead.id && (
+                          <button
+                            onClick={() => {
+                              const jobBookedAmount = amountInputs[lead.id]?.jobBookedAmount || 0;
+                              const proposalAmount = amountInputs[lead.id]?.proposalAmount || 0;
+                              handleAmountUpdate(lead.id, jobBookedAmount, proposalAmount);
+                              setEditingLeadId(null);
+                            }}
+                            className="p-1 text-green-600 hover:text-green-700 hover:bg-green-50 rounded transition-colors"
+                            disabled={isDisabled}
+                            title="Save amounts"
+                          >
+                            <Save className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           </div>
         );
       })}
-    </div>
-  ));
+      </div>
+    );
+  });
   

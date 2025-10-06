@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Users } from "lucide-react";
 import { startOfYear } from "date-fns";
-import { DatePeriodSelector } from "@/components/DatePeriodSelector";
 import LeadDateTimeSelector from "@/components/LeadDateTimeSelector";
 import { PeriodType } from "@/types";
 import { useLeadStore } from "@/stores/leadStore";
@@ -170,6 +169,64 @@ export const LeadSheet = () => {
       }
     },
     [updateLeadData, updateLeadLocal, showErrorToast, showSuccessToast]
+  );
+
+  // Amount update handler
+  const handleAmountUpdate = useCallback(
+    async (leadId: string, jobBookedAmount: number, proposalAmount: number) => {
+      const success = await handleLeadUpdate(
+        leadId,
+        { 
+          status: "estimate_set", 
+          jobBookedAmount, 
+          proposalAmount 
+        },
+        "Amounts have been updated successfully."
+      );
+
+      if (success) {
+        // Update local state
+        updateLeadLocal(leadId, { 
+          status: "estimate_set", 
+          jobBookedAmount, 
+          proposalAmount 
+        });
+        
+        // Refresh only the lead data instead of full page reload
+        if (selectedUserId) {
+          const { startDate, endDate } =
+            period === "custom" && customRange
+              ? customRange
+              : getDateRange(selectedDate, period as PeriodType);
+
+          // Re-fetch the current page of leads
+          await fetchPaginatedLeads({
+            clientId: selectedUserId,
+            startDate,
+            endDate,
+            page: currentPage,
+            limit: pageSize,
+            sortBy: currentSorting.sortBy,
+            sortOrder: currentSorting.sortOrder,
+            ...currentFilters,
+          });
+        }
+      }
+    },
+    [
+      handleLeadUpdate, 
+      updateLeadLocal, 
+      selectedUserId, 
+      period, 
+      customRange, 
+      selectedDate, 
+      currentPage, 
+      pageSize, 
+      currentSorting, 
+      currentFilters, 
+      fetchPaginatedLeads,
+      getDateRange
+    ]
   );
 
   // Fetch filter options once when component loads or date/period changes
@@ -741,6 +798,7 @@ export const LeadSheet = () => {
                     handleLeadStatusChange={handleLeadStatusChange}
                     handleULRChange={handleULRChange}
                     handleCustomULRSubmit={handleCustomULRSubmit}
+                    handleAmountUpdate={handleAmountUpdate}
                     handleLeadDelete={handleLeadDelete}
                     handleLeadSelect={handleLeadSelect}
                     setCustomULR={setCustomULR}
