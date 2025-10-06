@@ -29,6 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { SortSwitch } from "@/components/ui/sort-switch";
 import { TopCard } from "@/components/DashboardTopCards";
 import {
   getAnalyticsSummary,
@@ -60,6 +61,14 @@ const CHART_DIMENSIONS = {
   minWidth: "600px", // Minimum width for charts on small screens
   height: "320px", // Chart height (h-80 = 320px)
 };
+
+// Currency formatter
+const formatCurrency = (value: number) =>
+  new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(value || 0);
 
 // Helper function to format custom date range label
 const formatCustomRangeLabel = (startDate: Date, endDate: Date): string => {
@@ -110,11 +119,11 @@ export const LeadAnalytics = () => {
 
   // Sorting states for each table
   const [adSetSortField, setAdSetSortField] = useState<
-    "adSetName" | "total" | "estimateSet" | "percentage"
+    "adSetName" | "total" | "estimateSet" | "jobBookedAmount" | "percentage"
   >("estimateSet");
   const [adSetSortOrder, setAdSetSortOrder] = useState<"asc" | "desc">("desc");
   const [adNameSortField, setAdNameSortField] = useState<
-    "adName" | "total" | "estimateSet" | "percentage"
+    "adName" | "total" | "estimateSet" | "jobBookedAmount" | "percentage"
   >("estimateSet");
   const [adNameSortOrder, setAdNameSortOrder] = useState<"asc" | "desc">(
     "desc"
@@ -142,6 +151,7 @@ export const LeadAnalytics = () => {
   // Fetch analytics summary data
   const fetchAnalyticsSummary = useCallback(async () => {
     if (!selectedUserId) return;
+    if (timeFilter === "custom" && !customRangeApplied) return;
 
     setLoading(true);
     setError(null);
@@ -173,11 +183,12 @@ export const LeadAnalytics = () => {
     } finally {
       setLoading(false);
     }
-  }, [selectedUserId, timeFilter, customRange]);
+  }, [selectedUserId, timeFilter, customRange, customRangeApplied]);
 
   // Fetch analytics table data
   const fetchAnalyticsTable = useCallback(async () => {
     if (!selectedUserId) return;
+    if (commonTimeFilter === "custom" && !tableCustomRangeApplied) return;
 
     try {
       // Convert commonTimeFilter to date ranges
@@ -232,12 +243,13 @@ export const LeadAnalytics = () => {
     adNameSortOrder,
     showTopRankedAdSets,
     showTopRankedAdNames,
+    tableCustomRangeApplied,
   ]);
 
   // Fetch analytics summary when time filter or user changes
   useEffect(() => {
     fetchAnalyticsSummary();
-  }, [selectedUserId, timeFilter, fetchAnalyticsSummary, customRange]);
+  }, [selectedUserId, timeFilter, fetchAnalyticsSummary, customRange, customRangeApplied]);
 
   // Fetch table data when table-related states change
   useEffect(() => {
@@ -255,6 +267,7 @@ export const LeadAnalytics = () => {
     showTopRankedAdSets,
     showTopRankedAdNames,
     fetchAnalyticsTable,
+    tableCustomRangeApplied,
   ]);
 
   // Reset pagination when filters change
@@ -279,14 +292,14 @@ export const LeadAnalytics = () => {
     isDisabled: boolean = false
   ) => (
     <th
-      className={`text-left p-2 transition-colors ${
+      className={`text-left p-1 transition-colors ${
         isDisabled
           ? "cursor-not-allowed opacity-60"
           : "cursor-pointer hover:bg-gray-50"
       }`}
       onClick={isDisabled ? undefined : () => onSort(field)}
     >
-      <div className="flex items-center gap-1">
+      <div className="flex items-center justify-start gap-1">
         <span>{label}</span>
         {isDisabled ? (
           <Trophy className="w-3 h-3 text-orange-500" />
@@ -320,11 +333,11 @@ export const LeadAnalytics = () => {
           {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems}{" "}
           results
         </p>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <button
             onClick={() => onPageChange(currentPage - 1)}
             disabled={currentPage === 1}
-            className="p-2 hover:bg-gray-100 rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="p-1 hover:bg-gray-100 rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <ChevronLeft className="w-5 h-5 font-bold stroke-2 text-gray-700" />
           </button>
@@ -334,7 +347,7 @@ export const LeadAnalytics = () => {
           <button
             onClick={() => onPageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
-            className="p-2 hover:bg-gray-100 rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="p-1 hover:bg-gray-100 rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <ChevronRight className="w-5 h-5 font-bold stroke-2 text-gray-700" />
           </button>
@@ -352,11 +365,19 @@ export const LeadAnalytics = () => {
     },
   };
 
-  // Process ZIP data to show top N ZIP
-  const getProcessedZipData = () => {
+  // Zip chart metric toggle state
+  const [zipMetric, setZipMetric] = useState<"estimateSetCount" | "jobBookedAmount">(
+    "estimateSetCount"
+  );
+
+  // Process ZIP data to show top N ZIP sorted by selected metric
+  const getProcessedZipData = useCallback(() => {
     if (!analyticsData?.zipData) return [];
-    return analyticsData.zipData.slice(0, TOP_N_ZIP);
-  };
+    const metric = zipMetric;
+    return [...analyticsData.zipData]
+      .sort((a: any, b: any) => ((b?.[metric] ?? 0) - (a?.[metric] ?? 0)))
+      .slice(0, TOP_N_ZIP);
+  }, [analyticsData, zipMetric]);
 
   const totalEffectiveLeads =
     analyticsData?.overview.estimateSetCount +
@@ -391,7 +412,7 @@ export const LeadAnalytics = () => {
                 Complete analysis of lead performance - focusing on successful
                 conversions and trends
               </p>
-              <div className="flex items-center gap-2 relative">
+              <div className="flex items-center gap-1 relative">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
                 <div className="relative">
                   <Select
@@ -463,7 +484,7 @@ export const LeadAnalytics = () => {
                                 "flex pl-10 justify-center pt-1 relative items-center",
                               caption_label: "hidden",
                               caption_dropdowns:
-                                "flex items-center gap-2 justify-center",
+                                "flex items-center gap-1 justify-center",
                               dropdown_month:
                                 "h-9 text-sm bg-background border border-input rounded-md flex items-center leading-none text-foreground focus:outline-none focus:ring-0",
                               dropdown_year:
@@ -498,7 +519,7 @@ export const LeadAnalytics = () => {
                                 "flex justify-center pt-1 relative items-center",
                               caption_label: "hidden",
                               caption_dropdowns:
-                                "flex pl-10 items-center gap-2 justify-center",
+                                "flex pl-10 items-center gap-1 justify-center",
                               dropdown_month:
                                 "h-9  text-sm bg-background border border-input rounded-md flex items-center leading-none text-foreground focus:outline-none focus:ring-0",
                               dropdown_year:
@@ -511,7 +532,7 @@ export const LeadAnalytics = () => {
                           />
                         </div>
                       </div>
-                      <div className="flex items-center justify-end gap-2  px-0 pb-3">
+                      <div className="flex items-center justify-end gap-1  px-0 pb-3">
                         <Button
                           variant="ghost"
                           onClick={() => setOpenPicker(false)}
@@ -685,7 +706,7 @@ export const LeadAnalytics = () => {
                   {/* Service Analysis */}
                   <Card>
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
+                      <CardTitle className="flex items-center gap-1">
                         <Wrench className="h-5 w-5 text-blue-600" />
                         Service Analysis (Estimate Set Leads)
                       </CardTitle>
@@ -758,10 +779,23 @@ export const LeadAnalytics = () => {
                   {/* Zip Code Analysis */}
                   <Card>
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <MapPin className="h-5 w-5 text-purple-600" />
-                        Top Performing Zip Codes (Estimate Set Leads)
-                      </CardTitle>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="flex items-center gap-1">
+                          <MapPin className="h-5 w-5 text-purple-600" />
+                          Top Performing Zip Codes
+                        </CardTitle>
+                        <div className="flex items-center gap-2">
+                          
+                          <SortSwitch
+                            checked={zipMetric === "jobBookedAmount"}
+                            onCheckedChange={(checked) =>
+                              setZipMetric(checked ? "jobBookedAmount" : "estimateSetCount")
+                            }
+                            className=""
+                          />
+                          <span className="text-xs text-gray-700 font-medium"> Job Booked Amount</span>
+                        </div>
+                      </div>
                     </CardHeader>
                     <CardContent>
                       <div className="overflow-x-auto lg:overflow-visible">
@@ -801,22 +835,31 @@ export const LeadAnalytics = () => {
                                   if (active && payload && payload.length) {
                                     const data = payload[0].payload;
                                     return (
-                                      <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
+                                      <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg w-52">
                                         <p className="font-semibold text-gray-900 mb-1">
                                           {data.zip}
                                         </p>
                                         <p className="text-sm text-gray-700">
-                                          <span className="font-medium">
-                                            Count:
-                                          </span>{" "}
+                                          <span className="font-medium">Estimated Set Count:</span>{" "}
                                           {data.estimateSetCount}
                                         </p>
                                         <p className="text-sm text-gray-700">
-                                          <span className="font-medium">
-                                            Estimate Set Rate:
-                                          </span>{" "}
+                                          <span className="font-medium">Estimate Set Rate:</span>{" "}
                                           {data.estimateSetRate}%
                                         </p>
+                                        {typeof data.jobBookedAmount !== "undefined" && (
+                                          <p className="text-sm text-gray-700">
+                                            <span className="font-medium">Job Booked Amount:</span>{" "}
+                                            {formatCurrency(data.jobBookedAmount)}
+                                          </p>
+                                        )}
+                                        {typeof data.proposalAmount !== "undefined" && (
+                                          <p className="text-sm text-gray-700">
+                                            <span className="font-medium">Proposal Amount:</span>{" "}
+                                            {formatCurrency(data.proposalAmount)}
+                                          </p>
+                                        )}
+                                        
                                       </div>
                                     );
                                   }
@@ -824,9 +867,9 @@ export const LeadAnalytics = () => {
                                 }}
                               />
                               <Bar
-                                dataKey="estimateSetCount"
+                                dataKey={zipMetric}
                                 fill="url(#zipGradient)"
-                                name="Estimate Set Count"
+                                name={zipMetric === "estimateSetCount" ? "Estimate Set Count" : "Job Booked Amount"}
                                 radius={[4, 4, 0, 0]}
                               />
                             </BarChart>
@@ -839,13 +882,13 @@ export const LeadAnalytics = () => {
                   {/* Day of Week Analysis */}
                   <Card>
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
+                      <CardTitle className="flex items-center gap-1">
                         <TrendingUp className="h-5 w-5 text-indigo-600" />
                         Day of Week Analysis
                       </CardTitle>
                       {/* Color Legend */}
                       <div className="flex items-center gap-4 mt-2">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1">
                           <div
                             className="w-3 h-3 rounded"
                             style={{ backgroundColor: "#94a3b8" }}
@@ -854,7 +897,7 @@ export const LeadAnalytics = () => {
                             Total Leads
                           </span>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1">
                           <div
                             className="w-3 h-3 rounded"
                             style={{ backgroundColor: "#10b981" }}
@@ -983,7 +1026,7 @@ export const LeadAnalytics = () => {
                   {analyticsData.ulrData.length > 0 && (
                     <Card>
                       <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
+                        <CardTitle className="flex items-center gap-1">
                           <XCircle className="h-5 w-5 text-red-600" />
                           Unqualified Reasons
                         </CardTitle>
@@ -1058,7 +1101,7 @@ export const LeadAnalytics = () => {
               <div className="space-y-4">
                 {/* Table Time Filter */}
                 <div className="flex items-center justify-between bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
                     <Calendar className="h-4 w-4 text-gray-600" />
                     <span className="text-sm font-medium text-gray-700">
                       Table Time Filter:
@@ -1129,7 +1172,7 @@ export const LeadAnalytics = () => {
                                     "flex  pl-10  justify-center pt-1 relative items-center",
                                   caption_label: "hidden",
                                   caption_dropdowns:
-                                    "flex items-center gap-2 justify-center",
+                                    "flex items-center gap-1 justify-center",
                                   dropdown_month:
                                     "h-9 text-sm bg-background border border-input rounded-md flex items-center leading-none text-foreground focus:outline-none focus:ring-0",
                                   dropdown_year:
@@ -1164,7 +1207,7 @@ export const LeadAnalytics = () => {
                                     "flex justify-center pt-1 relative items-center",
                                   caption_label: "hidden",
                                   caption_dropdowns:
-                                    "flex pl-10 items-center gap-2 justify-center",
+                                    "flex pl-10 items-center gap-1 justify-center",
                                   dropdown_month:
                                     "h-9 text-sm bg-background border border-input rounded-md flex items-center leading-none text-foreground focus:outline-none focus:ring-0",
                                   dropdown_year:
@@ -1177,7 +1220,7 @@ export const LeadAnalytics = () => {
                               />
                             </div>
                           </div>
-                          <div className="flex items-center justify-end gap-2 px-0 pb-3">
+                          <div className="flex items-center justify-end gap-1 px-0 pb-3">
                             <Button
                               variant="ghost"
                               onClick={() => setOpenTablePicker(false)}
@@ -1228,7 +1271,7 @@ export const LeadAnalytics = () => {
                       </>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
                     <Trophy className="h-4 w-4 text-orange-500" />
                     <span className="text-sm font-medium text-gray-700">
                       Sort Mode:
@@ -1259,7 +1302,7 @@ export const LeadAnalytics = () => {
                   {/* Ad Set Performance Table */}
                   <Card>
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
+                      <CardTitle className="flex items-center gap-1">
                         <Tag className="h-5 w-5 text-orange-600" />
                         Top Ad Set Performance
                       </CardTitle>
@@ -1269,8 +1312,8 @@ export const LeadAnalytics = () => {
                         <table className="w-full text-sm">
                           <thead>
                             <tr className="border-b">
-                              <th className="text-left p-2 w-20 text-amber-900 font-semibold">
-                                {showTopRankedAdSets ? "Ranking" : "S. No."}
+                              <th className="text-left p-1 w-10 text-amber-900 font-semibold">
+                                {showTopRankedAdSets ? "Rank" : "S. No."}
                               </th>
                               {renderSortableHeader(
                                 "adSetName",
@@ -1288,6 +1331,7 @@ export const LeadAnalytics = () => {
                                         | "adSetName"
                                         | "total"
                                         | "estimateSet"
+                                        | "jobBookedAmount"
                                         | "percentage"
                                     );
                                     setAdSetSortOrder("desc");
@@ -1311,6 +1355,7 @@ export const LeadAnalytics = () => {
                                         | "adSetName"
                                         | "total"
                                         | "estimateSet"
+                                        | "jobBookedAmount"
                                         | "percentage"
                                     );
                                     setAdSetSortOrder("desc");
@@ -1334,6 +1379,32 @@ export const LeadAnalytics = () => {
                                         | "adSetName"
                                         | "total"
                                         | "estimateSet"
+                                        | "jobBookedAmount"
+                                        | "percentage"
+                                    );
+                                    setAdSetSortOrder("desc");
+                                  }
+                                },
+                                showTopRankedAdSets
+                              )}
+                              {renderSortableHeader(
+                                "jobBookedAmount",
+                                "Job Booked Amount",
+                                adSetSortField,
+                                adSetSortOrder,
+                                (field) => {
+                                  if (adSetSortField === field) {
+                                    setAdSetSortOrder(
+                                      adSetSortOrder === "asc" ? "desc" : "asc"
+                                    );
+                                  } else {
+                                    setAdSetSortField(
+                                      field as
+                                        | "adSetName"
+                                        | "total"
+                                        | "estimateSet"
+                                        | "jobBookedAmount"
+                                        | "jobBookedAmount"
                                         | "percentage"
                                     );
                                     setAdSetSortOrder("desc");
@@ -1357,6 +1428,7 @@ export const LeadAnalytics = () => {
                                         | "adSetName"
                                         | "total"
                                         | "estimateSet"
+                                        | "jobBookedAmount"
                                         | "percentage"
                                     );
                                     setAdSetSortOrder("desc");
@@ -1374,7 +1446,7 @@ export const LeadAnalytics = () => {
                                   key={adSet.adSetName}
                                   className="border-b hover:bg-muted/50"
                                 >
-                                  <td className="p-2 text-amber-900 font-semibold">
+                                  <td className="p-1 text-amber-900 font-semibold">
                                     {showTopRankedAdSets
                                       ? `#${
                                           (adSetPage - 1) * adSetItemsPerPage +
@@ -1387,16 +1459,19 @@ export const LeadAnalytics = () => {
                                           1
                                         }`}
                                   </td>
-                                  <td className="p-2 font-medium">
+                                  <td className="p-1 font-medium">
                                     {adSet.adSetName}
                                   </td>
-                                  <td className="text-right p-2">
+                                  <td className="text-right p-1">
                                     {adSet.totalLeads}
                                   </td>
-                                  <td className="text-right p-2 text-green-600 font-medium">
+                                  <td className="text-right p-1 text-green-600 font-medium">
                                     {adSet.estimateSet}
                                   </td>
-                                  <td className="text-right p-2">
+                                  <td className="text-right p-1">
+                                    {formatCurrency(adSet.jobBookedAmount ?? 0)}
+                                  </td>
+                                  <td className="text-right p-1">
                                     <span className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">
                                       {adSet.estimateSetRate}%
                                     </span>
@@ -1406,7 +1481,7 @@ export const LeadAnalytics = () => {
                             ) : (
                               <tr>
                                 <td
-                                  colSpan={5}
+                                  colSpan={6}
                                   className="text-center py-8 text-gray-500"
                                 >
                                   <Calendar className="h-8 w-8 mx-auto mb-2 text-gray-300" />
@@ -1435,7 +1510,7 @@ export const LeadAnalytics = () => {
                   {/* Ad Name Performance Table */}
                   <Card>
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
+                      <CardTitle className="flex items-center gap-1">
                         <FileText className="h-5 w-5 text-green-600" />
                         Top Ad Name Performance
                       </CardTitle>
@@ -1445,8 +1520,8 @@ export const LeadAnalytics = () => {
                         <table className="w-full text-sm">
                           <thead>
                             <tr className="border-b">
-                              <th className="text-left p-2 w-20 text-amber-900 font-semibold">
-                                {showTopRankedAdNames ? "Ranking" : "S. No."}
+                              <th className="text-left p-1 w-10 text-amber-900 font-semibold">
+                                {showTopRankedAdNames ? "Rank" : "S. No."}
                               </th>
                               {renderSortableHeader(
                                 "adName",
@@ -1464,6 +1539,7 @@ export const LeadAnalytics = () => {
                                         | "adName"
                                         | "total"
                                         | "estimateSet"
+                                        | "jobBookedAmount"
                                         | "percentage"
                                     );
                                     setAdNameSortOrder("desc");
@@ -1487,6 +1563,7 @@ export const LeadAnalytics = () => {
                                         | "adName"
                                         | "total"
                                         | "estimateSet"
+                                        | "jobBookedAmount"
                                         | "percentage"
                                     );
                                     setAdNameSortOrder("desc");
@@ -1510,6 +1587,32 @@ export const LeadAnalytics = () => {
                                         | "adName"
                                         | "total"
                                         | "estimateSet"
+                                        | "jobBookedAmount"
+                                        | "percentage"
+                                    );
+                                    setAdNameSortOrder("desc");
+                                  }
+                                },
+                                showTopRankedAdNames
+                              )}
+                              {renderSortableHeader(
+                                "jobBookedAmount",
+                                "Job Booked Amount",
+                                adNameSortField,
+                                adNameSortOrder,
+                                (field) => {
+                                  if (adNameSortField === field) {
+                                    setAdNameSortOrder(
+                                      adNameSortOrder === "asc" ? "desc" : "asc"
+                                    );
+                                  } else {
+                                    setAdNameSortField(
+                                      field as
+                                        | "adName"
+                                        | "total"
+                                        | "estimateSet"
+                                        | "jobBookedAmount"
+                                        | "jobBookedAmount"
                                         | "percentage"
                                     );
                                     setAdNameSortOrder("desc");
@@ -1533,6 +1636,7 @@ export const LeadAnalytics = () => {
                                         | "adName"
                                         | "total"
                                         | "estimateSet"
+                                        | "jobBookedAmount"
                                         | "percentage"
                                     );
                                     setAdNameSortOrder("desc");
@@ -1550,7 +1654,7 @@ export const LeadAnalytics = () => {
                                   key={`${ad.adName}-${ad.adSetName}`}
                                   className="border-b hover:bg-muted/50"
                                 >
-                                  <td className="p-2 text-amber-900 font-semibold">
+                                  <td className="p-1 text-amber-900 font-semibold">
                                     {showTopRankedAdNames
                                       ? `#${
                                           (adNamePage - 1) *
@@ -1565,7 +1669,7 @@ export const LeadAnalytics = () => {
                                           1
                                         }`}
                                   </td>
-                                  <td className="p-2">
+                                  <td className="p-1">
                                     <div className="flex flex-col">
                                       <span className="font-medium text-gray-900">
                                         {ad.adName}
@@ -1575,13 +1679,16 @@ export const LeadAnalytics = () => {
                                       </span>
                                     </div>
                                   </td>
-                                  <td className="text-right p-2">
+                                  <td className="text-right p-1">
                                     {ad.totalLeads}
                                   </td>
-                                  <td className="text-right p-2 text-green-600 font-medium">
+                                  <td className="text-right p-1 text-green-600 font-medium">
                                     {ad.estimateSet}
                                   </td>
-                                  <td className="text-right p-2">
+                                  <td className="text-right p-1">
+                                    {formatCurrency(ad.jobBookedAmount ?? 0)}
+                                  </td>
+                                  <td className="text-right p-1">
                                     <span className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">
                                       {ad.estimateSetRate}%
                                     </span>
@@ -1591,7 +1698,7 @@ export const LeadAnalytics = () => {
                             ) : (
                               <tr>
                                 <td
-                                  colSpan={5}
+                                  colSpan={6}
                                   className="text-center py-8 text-gray-500"
                                 >
                                   <Calendar className="h-8 w-8 mx-auto mb-2 text-gray-300" />
