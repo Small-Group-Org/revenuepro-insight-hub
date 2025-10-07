@@ -1,0 +1,9 @@
+version: 1
+
+allowedMergeBranches:
+  - main
+
+services:
+  - name: revenuepro-insight-hub
+    path: .
+    dockerfile: Dockerfile
