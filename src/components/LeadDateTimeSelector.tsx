@@ -1,0 +1,389 @@
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight, Loader2, RefreshCw } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { format, addWeeks, subWeeks, startOfWeek, endOfWeek } from "date-fns";
+import { PeriodType } from "@/types";
+
+type ExtendedPeriod = PeriodType | "custom";
+
+interface LeadDateTimeSelectorProps {
+  initialDate?: Date;
+  initialPeriod?: ExtendedPeriod;
+  allowedPeriods?: ExtendedPeriod[];
+  onChange?: (date: Date, period: ExtendedPeriod) => void;
+  onCustomRangeChange?: (payload: {
+    startDate: string;
+    endDate: string;
+  }) => void;
+  showRefreshButton?: boolean;
+  onRefreshClick?: () => void;
+  isRefreshing?: boolean;
+}
+
+const toUTCISOString = (d: Date, endOfMinute = false): string => {
+  const date = new Date(
+    d.getFullYear(),
+    d.getMonth(),
+    d.getDate(),
+    d.getHours(),
+    d.getMinutes(),
+    endOfMinute ? 59 : 0,
+    endOfMinute ? 999 : 0
+  );
+  return date.toISOString();
+};
+
+const formatWeekLabel = (date: Date): string => {
+  const weekStart = startOfWeek(date, { weekStartsOn: 1 }); // Monday as start of week
+  const weekEnd = endOfWeek(date, { weekStartsOn: 1 }); // Sunday as end of week
+  
+  const startYear = weekStart.getFullYear();
+  const endYear = weekEnd.getFullYear();
+  
+  if (startYear === endYear) {
+    // Same year: "Sept 29 - Oct 5, 2025"
+    return `${format(weekStart, "MMM dd")} - ${format(weekEnd, "MMM dd, yyyy")}`;
+  } else {
+    // Different years: "Dec 29, 2024 - Jan 4, 2025"
+    return `${format(weekStart, "MMM dd, yyyy")} - ${format(weekEnd, "MMM dd, yyyy")}`;
+  }
+};
+
+const formatCustomRangeLabel = (startDate: Date, endDate: Date): string => {
+  const startYear = startDate.getFullYear();
+  const endYear = endDate.getFullYear();
+  
+  if (startYear === endYear) {
+    // Same year: "Sept 29 - Oct 5, 2025"
+    return `${format(startDate, "MMM dd")} - ${format(endDate, "MMM dd, yyyy")}`;
+  } else {
+    // Different years: "Dec 29, 2024 - Jan 4, 2025"
+    return `${format(startDate, "MMM dd, yyyy")} - ${format(endDate, "MMM dd, yyyy")}`;
+  }
+};
+
+export const LeadDateTimeSelector: React.FC<LeadDateTimeSelectorProps> = ({
+  initialDate = new Date(),
+  initialPeriod = "monthly",
+  allowedPeriods = ["weekly", "monthly", "yearly", "ytd", "custom"],
+  onChange,
+  onCustomRangeChange,
+  showRefreshButton = false,
+  onRefreshClick,
+  isRefreshing = false,
+}) => {
+  const [selectedDate, setSelectedDate] = useState<Date>(initialDate);
+  const [period, setPeriod] = useState<ExtendedPeriod>(
+    allowedPeriods.includes(initialPeriod) ? initialPeriod : allowedPeriods[0]
+  );
+
+  // Custom range state
+  const [openPicker, setOpenPicker] = useState(false);
+  const [customStart, setCustomStart] = useState<Date>(initialDate);
+  const [customEnd, setCustomEnd] = useState<Date>(initialDate);
+  const [startTime, setStartTime] = useState<string>("00:00");
+  const [endTime, setEndTime] = useState<string>("23:59");
+  const [customRangeApplied, setCustomRangeApplied] = useState(false);
+  const currentYear = new Date().getFullYear();
+  // Visible months for calendars (avoid jumping back and enable dropdown control)
+  const [startMonth, setStartMonth] = useState<Date>(initialDate);
+  const [endMonth, setEndMonth] = useState<Date>(initialDate);
+
+  useEffect(() => {
+    // Sync times into dates and avoid unnecessary loops
+    const [sh, sm] = startTime.split(":").map((x) => parseInt(x || "0", 10));
+    const [eh, em] = endTime.split(":").map((x) => parseInt(x || "0", 10));
+
+    const nextStart = new Date(customStart);
+    nextStart.setHours(sh || 0, sm || 0, 0, 0);
+    if (nextStart.getTime() !== customStart.getTime()) {
+      setCustomStart(nextStart);
+    }
+
+    const nextEnd = new Date(customEnd);
+    nextEnd.setHours(eh || 0, em || 0, 59, 999);
+    if (nextEnd.getTime() !== customEnd.getTime()) {
+      setCustomEnd(nextEnd);
+    }
+  }, [startTime, endTime, customStart, customEnd]);
+
+  const label = useMemo(() => {
+    if (period === "weekly") return formatWeekLabel(selectedDate);
+    if (period === "monthly") return format(selectedDate, "MMMM yyyy");
+    if (period === "ytd") return `YTD ${format(new Date(), "yyyy")}`;
+    if (period === "yearly") return format(selectedDate, "yyyy");
+    if (period === "custom") {
+      if (!customRangeApplied) {
+        return "(Select Date Range)";
+      }
+      return formatCustomRangeLabel(customStart, customEnd);
+    }
+    return format(selectedDate, "MMM dd, yyyy");
+  }, [period, selectedDate, customStart, customEnd, customRangeApplied]);
+
+  const navigatePrev = () => {
+    if (period === "ytd" || period === "custom") return;
+    let newDate = new Date(selectedDate);
+    if (period === "weekly") newDate = subWeeks(selectedDate, 1);
+    if (period === "monthly")
+      newDate = new Date(
+        selectedDate.getFullYear(),
+        selectedDate.getMonth() - 1,
+        1
+      );
+    if (period === "yearly")
+      newDate = new Date(selectedDate.getFullYear() - 1, 0, 1);
+    setSelectedDate(newDate);
+    onChange?.(newDate, period);
+  };
+
+  const navigateNext = () => {
+    if (period === "ytd" || period === "custom") return;
+    let newDate = new Date(selectedDate);
+    if (period === "weekly") newDate = addWeeks(selectedDate, 1);
+    if (period === "monthly")
+      newDate = new Date(
+        selectedDate.getFullYear(),
+        selectedDate.getMonth() + 1,
+        1
+      );
+    if (period === "yearly")
+      newDate = new Date(selectedDate.getFullYear() + 1, 0, 1);
+    setSelectedDate(newDate);
+    onChange?.(newDate, period);
+  };
+
+  const handlePeriodChange = (value: ExtendedPeriod) => {
+    setPeriod(value);
+    if (value === "custom") {
+      // Set custom range to current date when first selected
+      const currentDate = new Date();
+      setCustomStart(currentDate);
+      setCustomEnd(currentDate);
+      setStartMonth(currentDate);
+      setEndMonth(currentDate);
+      setCustomRangeApplied(false);
+      // Do not auto-open. User will click "Pick range" to open.
+      setOpenPicker(false);
+    } else {
+      let newDate = selectedDate;
+      
+      // When switching to weekly or monthly, set to current date
+      if (value === "weekly" || value === "monthly") {
+        newDate = new Date();
+        setSelectedDate(newDate);
+      }
+      
+      onChange?.(newDate, value);
+      // Ensure popover is closed when leaving custom
+      setOpenPicker(false);
+    }
+  };
+
+  const applyCustomRange = useCallback(() => {
+    const startDate = toUTCISOString(customStart, false);
+    const endDate = toUTCISOString(customEnd, true);
+    onCustomRangeChange?.({ startDate, endDate });
+    setCustomRangeApplied(true);
+    setOpenPicker(false);
+  }, [customStart, customEnd, onCustomRangeChange]);
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between w-full py-2 px-4 bg-card rounded-lg shadow border border-border">
+        <div className="flex items-center gap-2">
+          <button
+            className={`rounded-full p-2 transition ${
+              period === "ytd" || period === "custom"
+                ? "bg-muted/50 cursor-not-allowed opacity-50"
+                : "bg-muted hover:bg-muted/80"
+            }`}
+            onClick={navigatePrev}
+            aria-label="Previous"
+            type="button"
+            disabled={period === "ytd" || period === "custom"}
+          >
+            <ChevronLeft className="h-5 w-5 text-muted-foreground" />
+          </button>
+          <button
+            className={`rounded-full p-2 transition ${
+              period === "ytd" || period === "custom"
+                ? "bg-muted/50 cursor-not-allowed opacity-50"
+                : "bg-muted hover:bg-muted/80"
+            }`}
+            onClick={navigateNext}
+            aria-label="Next"
+            type="button"
+            disabled={period === "ytd" || period === "custom"}
+          >
+            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+          </button>
+          <span className={`ml-4  font-medium ${
+            period === "custom" && !customRangeApplied 
+              ? "text-gray-400 text-md" 
+              : "text-card-foreground text-xl"
+          }`}>
+            {label}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          {showRefreshButton && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={onRefreshClick}
+                    className="h-8 w-8 rounded-full hover:bg-muted/50 transition-colors duration-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed group"
+                    disabled={isRefreshing}
+                    type="button"
+                  >
+                    {isRefreshing ? (
+                      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                    ) : (
+                      <RefreshCw className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors duration-200" />
+                    )}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Refresh Leads</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+          <Select value={period} onValueChange={handlePeriodChange}>
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {allowedPeriods.includes("weekly") && (
+                <SelectItem value="weekly">Week</SelectItem>
+              )}
+              {allowedPeriods.includes("monthly") && (
+                <SelectItem value="monthly">Month</SelectItem>
+              )}
+              {allowedPeriods.includes("yearly") && (
+                <SelectItem value="yearly">Year</SelectItem>
+              )}
+              {allowedPeriods.includes("ytd") && (
+                <SelectItem value="ytd">YTD</SelectItem>
+              )}
+              {allowedPeriods.includes("custom") && (
+                <SelectItem value="custom">Custom</SelectItem>
+              )}
+            </SelectContent>
+          </Select>
+
+          {period === "custom" && (
+            <Popover open={openPicker} onOpenChange={setOpenPicker}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="h-9 px-3 bg-black/80 hover:bg-black text-white border-black/80 hover:border-black">
+                  Select Dates
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                className="w-[570px] mr-10 md:mr-40 py-0 pl-2 border border-black/40"
+                onOpenAutoFocus={(e) => e.preventDefault()}
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 b">
+                  <div className="">
+                    <p className="absolute top-6 left-14 text-sm font-medium ">Start</p>
+                    <Calendar
+                      mode="single"
+                      selected={customStart}
+                      onSelect={(d) => {
+                        if (!d) return;
+                        setCustomStart(d);
+                        setStartMonth(d);
+                      }}
+                      showOutsideDays
+                      month={startMonth}
+                      onMonthChange={(m) => m && setStartMonth(m)}
+                      disabled={(date) => date > new Date()}
+                      classNames={{
+                        day_today:
+                          "relative text-muted-foreground after:content-[''] after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1 after:h-1 after:rounded-full after:bg-muted-foreground",
+                        caption:
+                          "flex pl-10 justify-center pt-1 relative items-center",
+                        caption_label: "hidden",
+                        caption_dropdowns:
+                          "flex items-center gap-2 justify-center",
+                        dropdown_month:
+                          "h-9  text-sm bg-background border border-input rounded-md flex items-center leading-none text-foreground focus:outline-none focus:ring-0",
+                        dropdown_year:
+                          "h-9  text-sm bg-background border border-input rounded-md flex items-center leading-none text-foreground focus:outline-none focus:ring-0",
+                      }}
+                      captionLayout="dropdown"
+                      fromYear={1990}
+                      toYear={currentYear + 10}
+                      pagedNavigation
+                    />
+                  </div>
+                  <div className="">
+                    <p className="absolute  top-6 left-[44%] text-sm font-medium">End</p>
+                    <Calendar
+                      mode="single"
+                      selected={customEnd}
+                      onSelect={(d) => {
+                        if (!d) return;
+                        setCustomEnd(d);
+                        setEndMonth(d);
+                      }}
+                      showOutsideDays
+                      month={endMonth}
+                      onMonthChange={(m) => m && setEndMonth(m)}
+                      disabled={(date) => date > new Date()}
+                      classNames={{
+                        day_today:
+                          "relative text-muted-foreground after:content-[''] after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1 after:h-1 after:rounded-full after:bg-muted-foreground",
+                        caption:
+                          "flex pl-10  justify-center pt-1 relative items-center",
+                        caption_label: "hidden",
+                        caption_dropdowns:
+                          "flex items-center gap-2 justify-center",
+                        dropdown_month:
+                          "h-9  text-sm bg-background border border-input rounded-md flex items-center leading-none text-foreground focus:outline-none focus:ring-0",
+                        dropdown_year:
+                          "h-9  text-sm bg-background border border-input rounded-md flex items-center leading-none text-foreground focus:outline-none focus:ring-0",
+                      }}
+                      captionLayout="dropdown"
+                      fromYear={1990}
+                      toYear={currentYear + 10}
+                      pagedNavigation
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center justify-end gap-2 px-1 pb-3">
+                  <Button variant="ghost" onClick={() => setOpenPicker(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={applyCustomRange}>Apply</Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default LeadDateTimeSelector;

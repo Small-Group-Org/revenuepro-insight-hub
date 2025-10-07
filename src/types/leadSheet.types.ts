@@ -5,6 +5,8 @@ export type LeadStatus = 'new' | 'in_progress' | 'estimate_set' | 'unqualified';
 export interface LeadUpdateData {
   status: LeadStatus;
   unqualifiedLeadReason?: string;
+  jobBookedAmount?: number;
+  proposalAmount?: number;
 }
 
 // Lead processing result interface
@@ -21,6 +23,8 @@ export interface ProcessedLead {
   status: LeadStatus;
   unqualifiedLeadReason?: string;
   leadScore?: number;
+  jobBookedAmount?: number;
+  proposalAmount?: number;
   conversionRates?: {
     service?: number;
     adSetName?: number;

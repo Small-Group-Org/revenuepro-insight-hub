@@ -26,4 +26,5 @@ export const removeValue = (key: string): void => {
 export const STORAGE_KEYS = {
   ACCESS_TOKEN: 'ACCESS_TOKEN',
   REFRESH_TOKEN: 'REFRESH_TOKEN',
+  SELECTED_USER_ID: 'SELECTED_USER_ID',
 };

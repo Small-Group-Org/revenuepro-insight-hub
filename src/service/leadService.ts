@@ -13,6 +13,8 @@ export interface UpdateLeadPayload {
   _id: string;
   status: 'new' | 'in_progress' | 'estimate_set' | 'unqualified';
   unqualifiedLeadReason?: string;
+  jobBookedAmount?: number;
+  proposalAmount?: number;
 }
 
 // New interfaces for paginated API
@@ -154,6 +156,7 @@ export interface AdSetTableDataPoint {
   adSetName: string;
   totalLeads: number;
   estimateSet: number;
+  jobBookedAmount?: number;
   estimateSetRate: string;
 }
 
@@ -162,6 +165,7 @@ export interface AdNameTableDataPoint {
   adSetName: string;
   totalLeads: number;
   estimateSet: number;
+  jobBookedAmount?: number;
   estimateSetRate: string;
 }
 
@@ -194,9 +198,9 @@ export interface GetAnalyticsTablePayload {
   adNamePage?: number;
   adSetItemsPerPage?: number;
   adNameItemsPerPage?: number;
-  adSetSortField?: 'adSetName' | 'total' | 'estimateSet' | 'percentage';
+  adSetSortField?: 'adSetName' | 'total' | 'estimateSet' | 'jobBookedAmount' | 'percentage';
   adSetSortOrder?: 'asc' | 'desc';
-  adNameSortField?: 'adName' | 'total' | 'estimateSet' | 'percentage';
+  adNameSortField?: 'adName' | 'total' | 'estimateSet' | 'jobBookedAmount' | 'percentage';
   adNameSortOrder?: 'asc' | 'desc';
   showTopRanked?: boolean;
 }

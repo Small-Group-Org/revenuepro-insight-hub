@@ -1,7 +1,17 @@
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DollarSign, TrendingUp, Users, Calendar, Target, BarChart3 } from 'lucide-react';
-import { formatCurrencyValue, calculateManagementCost } from '@/utils/page-utils/commonUtils';
+import React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  DollarSign,
+  TrendingUp,
+  Users,
+  Calendar,
+  Target,
+  BarChart3,
+} from "lucide-react";
+import {
+  formatCurrencyValue,
+  calculateManagementCost,
+} from "@/utils/page-utils/commonUtils";
 
 interface TopCardProps {
   title: string;
@@ -15,13 +25,20 @@ interface TopCardProps {
   metrics: Array<{
     label: string;
     value: number;
-    format: 'currency' | 'percent' | 'number';
+    format: "currency" | "percent" | "number";
   }>;
   // New prop for 2-row design for Lead Sheet
   twoRowDesign?: boolean;
 }
 
-export const TopCard: React.FC<TopCardProps> = ({ title, icon, description, trend, metrics, twoRowDesign = false }) => {
+export const TopCard: React.FC<TopCardProps> = ({
+  title,
+  icon,
+  description,
+  trend,
+  metrics,
+  twoRowDesign = false,
+}) => {
   const formatValue = (val: number, fmt: string) => {
     if (fmt === "currency") {
       return formatCurrencyValue(val);
@@ -38,7 +55,9 @@ export const TopCard: React.FC<TopCardProps> = ({ title, icon, description, tren
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <CardTitle className="text-sm font-medium text-card-foreground">{title}</CardTitle>
+              <CardTitle className="text-sm font-medium text-card-foreground">
+                {title}
+              </CardTitle>
             </div>
           </div>
         </CardHeader>
@@ -50,8 +69,12 @@ export const TopCard: React.FC<TopCardProps> = ({ title, icon, description, tren
             <>
               <div className="flex flex-col justify-center">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-lg font-semibold text-card-foreground">{title}</span>
-                  <span className={`font-bold text-card-foreground transition-all duration-300 text-[30px]`}>
+                  <span className="text-lg font-semibold text-card-foreground">
+                    {title}
+                  </span>
+                  <span
+                    className={`font-bold text-card-foreground transition-all duration-300 text-[30px]`}
+                  >
                     {formatValue(metrics[0].value, metrics[0].format)}
                   </span>
                 </div>
@@ -66,7 +89,9 @@ export const TopCard: React.FC<TopCardProps> = ({ title, icon, description, tren
             // Original single metric design
             <>
               <div className="flex flex-col justify-center">
-                <span className={`font-bold text-card-foreground transition-all duration-300 text-[30px]`}>
+                <span
+                  className={`font-bold text-card-foreground transition-all duration-300 text-[30px]`}
+                >
                   {formatValue(metrics[0].value, metrics[0].format)}
                 </span>
               </div>
@@ -80,25 +105,29 @@ export const TopCard: React.FC<TopCardProps> = ({ title, icon, description, tren
             // Original multiple metrics design
             <>
               <div className="flex flex-col justify-center">
-                <span className={`font-bold text-card-foreground transition-all duration-300 text-[30px]`}>
+                <span
+                  className={`font-bold text-card-foreground transition-all duration-300 text-[30px]`}
+                >
                   {formatValue(metrics[0].value, metrics[0].format)}
                 </span>
               </div>
               <div className="flex flex-col justify-center mt-auto">
-                <span className="text-xs text-muted-foreground">{metrics[1].label}</span>
-                <span className={`font-bold text-card-foreground transition-all duration-300 text-sm`}>
+                <span className="text-xs text-muted-foreground">
+                  {metrics[1].label}
+                </span>
+                <span
+                  className={`font-bold text-card-foreground transition-all duration-300 text-sm`}
+                >
                   {formatValue(metrics[1].value, metrics[1].format)}
                 </span>
               </div>
             </>
           )}
         </div>
-        
+
         {/* Bottom right corner icon */}
         <div className="absolute bottom-3 right-3 opacity-40 group-hover:opacity-70 transition-all duration-300">
-          <div className="text-2xl">
-            {icon}
-          </div>
+          <div className="text-2xl">{icon}</div>
         </div>
       </CardContent>
     </Card>
@@ -111,10 +140,10 @@ interface DashboardTopCardsProps {
   period: string;
 }
 
-export const DashboardTopCards: React.FC<DashboardTopCardsProps> = ({ 
-  reportingData, 
-  processedTargetData, 
-  period 
+export const DashboardTopCards: React.FC<DashboardTopCardsProps> = ({
+  reportingData,
+  processedTargetData,
+  period,
 }) => {
   // Calculate aggregated metrics from reporting data
   const aggregatedMetrics = React.useMemo(() => {
@@ -127,33 +156,42 @@ export const DashboardTopCards: React.FC<DashboardTopCardsProps> = ({
         costPerLead: 0,
         totalAppointmentsSet: 0,
         costPerAppointmentSet: 0,
-        estimateSetRate: 0
+        estimateSetRate: 0,
       };
     }
-    const totals = reportingData.reduce((acc, dataPoint) => {
-      acc.revenue += dataPoint.revenue || 0;
-      acc.sales += dataPoint.sales || 0;
-      acc.leads += dataPoint.leads || 0;
-      acc.estimatesSet += dataPoint.estimatesSet || 0;
-      acc.estimatesRan += dataPoint.estimatesRan || 0;
-      acc.budgetSpent += dataPoint.testingBudgetSpent + dataPoint.leadGenerationBudgetSpent + dataPoint.awarenessBrandingBudgetSpent || 0;
-      acc.managementCost += dataPoint.managementCost || 0;
-      return acc;
-    }, {
-      revenue: 0,
-      sales: 0,
-      leads: 0,
-      estimatesSet: 0,
-      estimatesRan: 0,
-      budgetSpent: 0,
-      managementCost: 0
-    });
-    
+    const totals = reportingData.reduce(
+      (acc, dataPoint) => {
+        acc.revenue += dataPoint.revenue || 0;
+        acc.sales += dataPoint.sales || 0;
+        acc.leads += dataPoint.leads || 0;
+        acc.estimatesSet += dataPoint.estimatesSet || 0;
+        acc.estimatesRan += dataPoint.estimatesRan || 0;
+        acc.budgetSpent +=
+          dataPoint.testingBudgetSpent +
+            dataPoint.leadGenerationBudgetSpent +
+            dataPoint.awarenessBrandingBudgetSpent || 0;
+        acc.managementCost += dataPoint.managementCost || 0;
+        return acc;
+      },
+      {
+        revenue: 0,
+        sales: 0,
+        leads: 0,
+        estimatesSet: 0,
+        estimatesRan: 0,
+        budgetSpent: 0,
+        managementCost: 0,
+      }
+    );
+
     // Calculate derived metrics
     const avgJobSize = totals.sales > 0 ? totals.revenue / totals.sales : 0;
-    const costPerLead = totals.leads > 0 ? totals.budgetSpent / totals.leads : 0;
-    const costPerAppointmentSet = totals.estimatesSet > 0 ? totals.budgetSpent / totals.estimatesSet : 0;
-    const estimateSetRate = totals.estimatesSet > 0 ? (totals.estimatesSet / (totals.leads)) * 100 : 0;
+    const costPerLead =
+      totals.leads > 0 ? totals.budgetSpent / totals.leads : 0;
+    const costPerAppointmentSet =
+      totals.estimatesSet > 0 ? totals.budgetSpent / totals.estimatesSet : 0;
+    const estimateSetRate =
+      totals.estimatesSet > 0 ? (totals.estimatesSet / totals.leads) * 100 : 0;
     const totalManagementCost = processedTargetData.reduce((acc, dataPoint) => {
       acc += dataPoint.managementCost || 0;
       return acc;
@@ -163,7 +201,8 @@ export const DashboardTopCards: React.FC<DashboardTopCardsProps> = ({
     let totalCom = 0;
     if (totals.revenue > 0) {
       if (processedTargetData) {
-        totalCom = ((totalManagementCost + totals.budgetSpent) / totals.revenue) * 100;
+        totalCom =
+          ((totalManagementCost + totals.budgetSpent) / totals.revenue) * 100;
       } else {
         // If no target data, just calculate based on budget spent
         totalCom = (totals.budgetSpent / totals.revenue) * 100;
@@ -178,7 +217,7 @@ export const DashboardTopCards: React.FC<DashboardTopCardsProps> = ({
       costPerLead,
       totalAppointmentsSet: totals.estimatesSet,
       costPerAppointmentSet,
-      estimateSetRate
+      estimateSetRate,
     };
   }, [reportingData, processedTargetData, period]);
 
@@ -190,15 +229,15 @@ export const DashboardTopCards: React.FC<DashboardTopCardsProps> = ({
         {
           label: "Total Revenue",
           value: aggregatedMetrics.totalRevenue,
-          format: 'currency' as const
+          format: "currency" as const,
         },
         {
           label: "Avg. Job Size",
           value: aggregatedMetrics.avgJobSize,
-          format: 'currency' as const
-        }
+          format: "currency" as const,
+        },
       ],
-      description: "Total revenue generated from all jobs."
+      description: "Total revenue generated from all jobs.",
     },
     {
       title: "Total CoM %",
@@ -207,10 +246,10 @@ export const DashboardTopCards: React.FC<DashboardTopCardsProps> = ({
         {
           label: "Total CoM %",
           value: aggregatedMetrics.totalCom,
-          format: 'percent' as const
-        }
+          format: "percent" as const,
+        },
       ],
-      description: "Total cost of management as a percentage of total revenue."
+      description: "Total cost of management as a percentage of total revenue.",
     },
     {
       title: "Lead Performance",
@@ -219,15 +258,15 @@ export const DashboardTopCards: React.FC<DashboardTopCardsProps> = ({
         {
           label: "Total Leads",
           value: aggregatedMetrics.totalLeads,
-          format: 'number' as const
+          format: "number" as const,
         },
         {
           label: "Cost Per Lead",
           value: aggregatedMetrics.costPerLead,
-          format: 'currency' as const
-        }
+          format: "currency" as const,
+        },
       ],
-      description: "Total number of leads generated."
+      description: "Total number of leads generated.",
     },
     {
       title: "Appointment Set Metrics",
@@ -236,28 +275,29 @@ export const DashboardTopCards: React.FC<DashboardTopCardsProps> = ({
         {
           label: "Appointments Set",
           value: aggregatedMetrics.totalAppointmentsSet,
-          format: 'number' as const
+          format: "number" as const,
         },
         {
           label: "Cost per Appointment Set",
           value: aggregatedMetrics.costPerAppointmentSet,
-          format: 'currency' as const
-        }
+          format: "currency" as const,
+        },
       ],
-      description: "Total number of appointments scheduled."
+      description: "Total number of appointments scheduled.",
     },
     {
-      title: "Estimate Set Rate %",
+      title: "Appointment Rate %",
       icon: <TrendingUp className="h-5 w-5 opacity-50 text-warning" />,
       metrics: [
         {
           label: "Estimate Set Rate %",
           value: aggregatedMetrics.estimateSetRate,
-          format: 'percent' as const
-        }
+          format: "percent" as const,
+        },
       ],
-      description: "Percentage of Estimate Sets out of (Estimate Sets + Unqualified)."
-    }
+      description:
+        "Percentage of Appointment Sets out of (Estimate Sets + Unqualified).",
+    },
   ];
 
   return (
@@ -273,4 +313,4 @@ export const DashboardTopCards: React.FC<DashboardTopCardsProps> = ({
       ))}
     </div>
   );
-}; 
+};

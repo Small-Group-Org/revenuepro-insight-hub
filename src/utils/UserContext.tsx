@@ -79,9 +79,11 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         
         if (response?.status === 200 && response?.data?.user) {
           setUser(response.data.user);
-          setSelectedUserId(response.data.user._id);
+          // Only force selected user for non-admins; admins use persisted selection
+          if (response.data.user.role !== 'ADMIN' && response.data.user._id) {
+            setSelectedUserId(response.data.user._id);
+          }
           login();
-          navigate("/");
           return;
         }
 
