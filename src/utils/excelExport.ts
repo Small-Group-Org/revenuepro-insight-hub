@@ -52,6 +52,7 @@ export const exportToExcel = (data: ExportData): void => {
   
   // Create workbook and worksheet
   const workbook = XLSX.utils.book_new();
+  
   // Prepare data for Excel
   const excelData: any[][] = [];
   
