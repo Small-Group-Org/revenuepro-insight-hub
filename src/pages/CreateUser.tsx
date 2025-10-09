@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
@@ -9,7 +10,8 @@ import { useUserContext } from "@/utils/UserContext";
 import { useUserStore } from "@/stores/userStore";
 import CreateUserModal from "@/components/CreateUserModal";
 import ResetPasswordModal from "@/components/ResetPasswordModal";
-import { UserPlus, Pencil, Trash2, Key } from "lucide-react";
+import { UserPlus, Pencil, Trash2, Key, Search, X, UserX, UserCheck } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 const CreateUser = () => {
   const { toast } = useToast();
@@ -20,11 +22,17 @@ const CreateUser = () => {
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [passwordResetUserId, setPasswordResetUserId] = useState<string | null>(null);
   const [passwordResetUserName, setPasswordResetUserName] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+  const [statusChangeUserId, setStatusChangeUserId] = useState<string | null>(null);
+  const [statusChangeUserName, setStatusChangeUserName] = useState<string>("");
+  const [statusChangeAction, setStatusChangeAction] = useState<"activate" | "deactivate">("deactivate");
 
   // Fetch users when role filter changes
   useEffect(() => {
@@ -34,12 +42,26 @@ const CreateUser = () => {
     }
   }, [roleFilter, loggedInUser?.role, fetchUsers]);
 
+  // Filter users based on search query, role filter, and status filter
+  const filteredUsers = useMemo(() => {
+    return users.filter(user => {
+      const matchesSearch = searchQuery === "" || 
+        user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesRole = roleFilter === "all" || user.role === roleFilter;
+      const matchesStatus = statusFilter === "all" || user.status === statusFilter;
+      
+      return matchesSearch && matchesRole && matchesStatus;
+    });
+  }, [users, searchQuery, roleFilter, statusFilter]);
+
   // Pagination logic
-  const totalUsers = users.length;
+  const totalUsers = filteredUsers.length;
   const totalPages = Math.ceil(totalUsers / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = startIndex + pageSize;
-  const currentUsers = users.slice(startIndex, endIndex);
+  const currentUsers = filteredUsers.slice(startIndex, endIndex);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -48,6 +70,16 @@ const CreateUser = () => {
   const handlePageSizeChange = (newPageSize: string) => {
     setPageSize(Number(newPageSize));
     setCurrentPage(1); // Reset to first page when page size changes
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setCurrentPage(1); // Reset to first page when search changes
+  };
+
+  const clearSearch = () => {
+    setSearchQuery("");
+    setCurrentPage(1);
   };
 
   const handleEditClick = (userId: string) => {
@@ -62,16 +94,59 @@ const CreateUser = () => {
     setIsModalOpen(true);
   };
 
-  const handleDeleteClick = async (userId: string) => {
-    if (window.confirm("Are you sure you want to delete this user?")) {
-      const res = await deleteUser(userId);
-      if (!res.error) {
-        toast({ title: "User Deleted", description: "User deleted successfully!" });
-      } else {
-        toast({ title: "Error", description: res.message || "Failed to delete user", variant: "destructive" });
-      }
-    }
+  const handleToggleStatusClick = (userId: string, userName: string, currentStatus: string) => {
+    const newStatus = currentStatus === "active" ? "inactive" : "active";
+    const action = newStatus === "active" ? "activate" : "deactivate";
+    
+    setStatusChangeUserId(userId);
+    setStatusChangeUserName(userName);
+    setStatusChangeAction(action);
+    setIsStatusModalOpen(true);
   };
+
+  const handleStatusChangeConfirm = async () => {
+    if (!statusChangeUserId) return;
+    
+    // Find the user to get all their data
+    const userToUpdate = users.find(user => user.id === statusChangeUserId);
+    if (!userToUpdate) {
+      toast({ 
+        title: "Error", 
+        description: "User not found", 
+        variant: "destructive" 
+      });
+      return;
+    }
+    
+    const newStatus = statusChangeAction === "activate" ? "active" : "inactive";
+    setLoading(true);
+    
+    // Send all user data including the updated status
+    const res = await updateUser({ 
+      userId: statusChangeUserId, 
+      email: userToUpdate.email,
+      name: userToUpdate.name,
+      status: newStatus 
+    });
+    
+    if (!res.error) {
+      toast({ 
+        title: `User ${statusChangeAction === "activate" ? "Activated" : "Deactivated"}`, 
+        description: `User ${statusChangeAction}d successfully!` 
+      });
+      setIsStatusModalOpen(false);
+      setStatusChangeUserId(null);
+      setStatusChangeUserName("");
+    } else {
+      toast({ 
+        title: "Error", 
+        description: res.message || `Failed to ${statusChangeAction} user`, 
+        variant: "destructive" 
+      });
+    }
+    setLoading(false);
+  };
+
 
   const handlePasswordResetClick = (userId: string, userName: string) => {
     setPasswordResetUserId(userId);
@@ -133,6 +208,36 @@ const CreateUser = () => {
         loading={loading}
       />
 
+      <AlertDialog open={isStatusModalOpen} onOpenChange={setIsStatusModalOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {statusChangeAction === "activate" ? "Activate User" : "Deactivate User"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to {statusChangeAction} <strong>{statusChangeUserName}</strong>?
+              {statusChangeAction === "deactivate" 
+                ? " The user will no longer be able to access the system." 
+                : " The user will regain access to the system."
+              }
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleStatusChangeConfirm}
+              disabled={loading}
+              className={statusChangeAction === "activate" 
+                ? "bg-green-600 hover:bg-green-700" 
+                : "bg-orange-600 hover:bg-orange-700"
+              }
+            >
+              {loading ? "Processing..." : `${statusChangeAction === "activate" ? "Activate" : "Deactivate"} User`}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <div className="max-w-5xl mx-auto w-full">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
@@ -151,25 +256,74 @@ const CreateUser = () => {
 
         <Card className="w-full shadow-lg bg-card border-border">
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-card-foreground">All Users</CardTitle>
-              <div className="flex items-center gap-3">
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <label htmlFor="role-filter" className="text-sm font-medium text-muted-foreground">
-                    Filter by Role:
-                  </label>
-                  <Select value={roleFilter} onValueChange={setRoleFilter}>
-                    <SelectTrigger className="w-32">
-                      <SelectValue placeholder="All roles" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All roles</SelectItem>
-                      <SelectItem value="ADMIN">Admin</SelectItem>
-                      <SelectItem value="USER">Clients</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <CardTitle className="text-card-foreground">All Users</CardTitle>
+                 {/* Search Bar */}
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1 max-w-md">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    placeholder="Search by name or email..."
+                    value={searchQuery}
+                    onChange={(e) => handleSearchChange(e.target.value)}
+                    className="pl-10 pr-10"
+                  />
+                  {searchQuery && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={clearSearch}
+                      className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 hover:bg-muted"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  )}
                 </div>
+                {searchQuery && (
+                  <div className="text-sm text-muted-foreground">
+                    {totalUsers} result{totalUsers !== 1 ? 's' : ''} found
+                  </div>
+                )}
               </div>
+              </div>
+                 <div className="flex items-center gap-3">
+                   <div className="flex items-center gap-2">
+                     <label htmlFor="role-filter" className="text-sm font-medium text-muted-foreground">
+                       Filter by Role:
+                     </label>
+                     <Select value={roleFilter} onValueChange={setRoleFilter}>
+                       <SelectTrigger className="w-32">
+                         <SelectValue placeholder="All roles" />
+                       </SelectTrigger>
+                       <SelectContent>
+                         <SelectItem value="all">All roles</SelectItem>
+                         <SelectItem value="ADMIN">Admin</SelectItem>
+                         <SelectItem value="USER">Clients</SelectItem>
+                       </SelectContent>
+                     </Select>
+                   </div>
+                   <div className="flex items-center gap-2">
+                     <label htmlFor="status-filter" className="text-sm font-medium text-muted-foreground">
+                       Filter by Status:
+                     </label>
+                     <Select value={statusFilter} onValueChange={setStatusFilter}>
+                       <SelectTrigger className="w-32">
+                         <SelectValue placeholder="All status" />
+                       </SelectTrigger>
+                       <SelectContent>
+                         <SelectItem value="all">All status</SelectItem>
+                         <SelectItem value="active">Active</SelectItem>
+                         <SelectItem value="inactive">Inactive</SelectItem>
+                       </SelectContent>
+                     </Select>
+                   </div>
+                 </div>
+              </div>
+              
+             
             </div>
           </CardHeader>
           <CardContent>
@@ -186,14 +340,18 @@ const CreateUser = () => {
                 <TableBody>
                   {fetchingUsers ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                         Loading...
                       </TableCell>
                     </TableRow>
-                  ) : users.length === 0 ? (
+                  ) : filteredUsers.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                        {roleFilter === "all" ? "No users found." : `No ${roleFilter === "ADMIN" ? "admin" : "client"} users found.`}
+                      <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                        {searchQuery ? 
+                          `No users found matching "${searchQuery}".` : 
+                          (roleFilter === "all" && statusFilter === "all" ? "No users found." : 
+                           `No users found with the selected filters.`)
+                        }
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -204,8 +362,26 @@ const CreateUser = () => {
                           idx % 2 === 0 ? "bg-card" : "bg-muted/50"
                         } hover:bg-accent/10 hover:shadow-lg hover:shadow-black/10`}
                       >
-                        <TableCell className="text-card-foreground">{user.name || "-"}</TableCell>
-                        <TableCell className="text-card-foreground">{user.email}</TableCell>
+                          <TableCell className="text-card-foreground">
+                            <div className={`flex items-center gap-2 ${user.status === "inactive" ? "min-w-0" : ""}`}>
+                              <span 
+                                className={user.status === "inactive" ? "truncate max-w-[200px]" : ""} 
+                                title={user.status === "inactive" ? (user.name || "-") : undefined}
+                              >
+                                {user.name || "-"}
+                              </span>
+                              {user.status === "inactive" && (
+                                <span className="inline-block px-1.5 py-0.5 rounded text-xs font-semibold bg-red-100 text-red-800 flex-shrink-0">
+                                  INACTIVE
+                                </span>
+                              )}
+                            </div>
+                          </TableCell>
+                        <TableCell className="text-card-foreground">
+                          <span className="truncate max-w-[250px] block" title={user.email}>
+                            {user.email}
+                          </span>
+                        </TableCell>
                         <TableCell>
                           <span
                             className={`inline-block px-2 py-1 rounded text-xs font-semibold ${
@@ -241,12 +417,20 @@ const CreateUser = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="flex items-center gap-1 px-2 text-destructive font-medium rounded-md transition-colors hover:bg-destructive/10 hover:text-destructive"
-                            onClick={() => handleDeleteClick(user.id)}
-                            aria-label="Delete"
-                            title="Delete"
+                            className={`flex items-center gap-1 px-2 font-medium rounded-md transition-colors ${
+                              user.status === "active"
+                                ? "text-orange-600 hover:bg-orange-100 hover:text-orange-700"
+                                : "text-green-600 hover:bg-green-100 hover:text-green-700"
+                            }`}
+                            onClick={() => handleToggleStatusClick(user.id, user.name || user.email, user.status || "active")}
+                            aria-label={user.status === "active" ? "Deactivate" : "Activate"}
+                            title={user.status === "active" ? "Deactivate User" : "Activate User"}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            {user.status === "active" ? (
+                              <UserX className="h-4 w-4" />
+                            ) : (
+                              <UserCheck className="h-4 w-4" />
+                            )}
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -275,7 +459,7 @@ const CreateUser = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="5">5</SelectItem>
+                       
                         <SelectItem value="10">10</SelectItem>
                         <SelectItem value="20">20</SelectItem>
                         <SelectItem value="50">50</SelectItem>
