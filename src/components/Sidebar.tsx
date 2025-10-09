@@ -25,7 +25,7 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }: SidebarProp
   const { user } = useUserContext();
   const userWithRole = user as UserWithRole | null;
   const isAdmin = userWithRole && (userWithRole.role === 'ADMIN');
-  const isDev = (API_URL || '').trim().includes('http://localhost');
+  const isDev = (API_URL || '').trim().includes('https://dev-revenue-pro-backend');
   
   return (
     <div className={cn(
