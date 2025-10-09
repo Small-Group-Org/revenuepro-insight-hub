@@ -107,9 +107,27 @@ const CreateUser = () => {
   const handleStatusChangeConfirm = async () => {
     if (!statusChangeUserId) return;
     
+    // Find the user to get all their data
+    const userToUpdate = users.find(user => user.id === statusChangeUserId);
+    if (!userToUpdate) {
+      toast({ 
+        title: "Error", 
+        description: "User not found", 
+        variant: "destructive" 
+      });
+      return;
+    }
+    
     const newStatus = statusChangeAction === "activate" ? "active" : "inactive";
     setLoading(true);
-    const res = await updateUser({ userId: statusChangeUserId, status: newStatus });
+    
+    // Send all user data including the updated status
+    const res = await updateUser({ 
+      userId: statusChangeUserId, 
+      email: userToUpdate.email,
+      name: userToUpdate.name,
+      status: newStatus 
+    });
     
     if (!res.error) {
       toast({ 
@@ -128,6 +146,7 @@ const CreateUser = () => {
     }
     setLoading(false);
   };
+
 
   const handlePasswordResetClick = (userId: string, userName: string) => {
     setPasswordResetUserId(userId);
@@ -188,6 +207,36 @@ const CreateUser = () => {
         onSave={handlePasswordReset}
         loading={loading}
       />
+
+      <AlertDialog open={isStatusModalOpen} onOpenChange={setIsStatusModalOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {statusChangeAction === "activate" ? "Activate User" : "Deactivate User"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to {statusChangeAction} <strong>{statusChangeUserName}</strong>?
+              {statusChangeAction === "deactivate" 
+                ? " The user will no longer be able to access the system." 
+                : " The user will regain access to the system."
+              }
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleStatusChangeConfirm}
+              disabled={loading}
+              className={statusChangeAction === "activate" 
+                ? "bg-green-600 hover:bg-green-700" 
+                : "bg-orange-600 hover:bg-orange-700"
+              }
+            >
+              {loading ? "Processing..." : `${statusChangeAction === "activate" ? "Activate" : "Deactivate"} User`}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <div className="max-w-5xl mx-auto w-full">
         <div className="flex items-center justify-between mb-6">
