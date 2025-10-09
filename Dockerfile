@@ -12,6 +12,10 @@ COPY bun.lockb ./
 # This layer will only rebuild if package files change
 RUN npm ci
 
+# Accept build argument for API URL
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
+
 # Copy source code in layers for better caching
 # Copy configuration files first (they change less frequently)
 COPY tsconfig*.json ./
