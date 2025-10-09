@@ -305,23 +305,6 @@ export const SetTargets = () => {
 
   const handleSave = useCallback(async () => {
     const inputFieldNames = getInputFieldNames();
-    const zeroFields = targetValidation(inputFieldNames, fieldValues);
-
-    if (zeroFields.length > 0) {
-      toast({
-        title: "Validation Error",
-        description: (
-          <div>
-            <div>The following fields cannot be 0:</div>
-            <div>
-              <em>{zeroFields.join(", ")}</em>
-            </div>
-          </div>
-        ),
-        variant: "destructive",
-      });
-      return;
-    }
 
     // Check for priority conflicts
     const priorityConflict = getPriorityConflict(period);
