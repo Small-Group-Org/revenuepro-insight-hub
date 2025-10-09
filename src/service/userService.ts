@@ -7,6 +7,7 @@ export interface User {
   name?: string;
   role: string;
   leadSheetUrl?: string;
+  status?: string;
 }
 
 export interface CreateUserPayload {
@@ -20,6 +21,7 @@ export interface UpdateUserPayload {
   userId: string;
   email?: string;
   name?: string;
+  status?: string;
 }
 
 export interface UpdatePasswordPayload {

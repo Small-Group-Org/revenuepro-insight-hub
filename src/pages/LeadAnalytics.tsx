@@ -300,7 +300,7 @@ export const LeadAnalytics = () => {
       onClick={isDisabled ? undefined : () => onSort(field)}
     >
       <div className="flex items-center justify-start gap-1">
-        <span>{label}</span>
+        <span className="text-center">{label}</span>
         {isDisabled ? (
           <Trophy className="w-3 h-3 text-orange-500" />
         ) : currentSortField === field ? (
@@ -1462,16 +1462,16 @@ export const LeadAnalytics = () => {
                                   <td className="p-1 font-medium">
                                     {adSet.adSetName}
                                   </td>
-                                  <td className="text-right p-1">
+                                  <td className="text-center p-1">
                                     {adSet.totalLeads}
                                   </td>
-                                  <td className="text-right p-1 text-green-600 font-medium">
+                                  <td className="text-center p-1 text-green-600 font-medium">
                                     {adSet.estimateSet}
                                   </td>
-                                  <td className="text-right p-1">
+                                  <td className="text-center p-1">
                                     {formatCurrency(adSet.jobBookedAmount ?? 0)}
                                   </td>
-                                  <td className="text-right p-1">
+                                  <td className="text-center p-1">
                                     <span className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">
                                       {adSet.estimateSetRate}%
                                     </span>
@@ -1520,7 +1520,7 @@ export const LeadAnalytics = () => {
                         <table className="w-full text-sm">
                           <thead>
                             <tr className="border-b">
-                              <th className="text-left p-1 w-10 text-amber-900 font-semibold">
+                              <th className="text-left p-2 w-10 text-amber-900 font-semibold">
                                 {showTopRankedAdNames ? "Rank" : "S. No."}
                               </th>
                               {renderSortableHeader(
@@ -1679,16 +1679,16 @@ export const LeadAnalytics = () => {
                                       </span>
                                     </div>
                                   </td>
-                                  <td className="text-right p-1">
+                                  <td className="text-center p-1">
                                     {ad.totalLeads}
                                   </td>
-                                  <td className="text-right p-1 text-green-600 font-medium">
+                                  <td className="text-center p-1 text-green-600 font-medium">
                                     {ad.estimateSet}
                                   </td>
-                                  <td className="text-right p-1">
+                                  <td className="text-center p-1">
                                     {formatCurrency(ad.jobBookedAmount ?? 0)}
                                   </td>
-                                  <td className="text-right p-1">
+                                  <td className="text-center p-1">
                                     <span className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">
                                       {ad.estimateSetRate}%
                                     </span>
