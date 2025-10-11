@@ -12,7 +12,9 @@ export const API_METHODS = {
 
 export const tabs = ["basic", "templates", "target"];
 // temp cmnt
-export const API_URL = import.meta.env.VITE_API_URL || "https://revenue-pro-backend-1057029383450.asia-south2.run.app/api/v1";
+export const API_URL =
+  import.meta.env.VITE_API_URL ||
+  "https://revenue-pro-backend-1057029383450.asia-south2.run.app/api/v1";
 
 // Centralized API endpoints to avoid hardcoded strings across the app
 export const API_ENDPOINTS = {
@@ -51,12 +53,22 @@ export const API_ENDPOINTS = {
 } as const;
 
 export const menuItems = [
-  { id: 'dashboard', label: 'Dashboard', icon: BarChart3, path: '/' },
-  { id: 'settargets', label: 'Set Targets', icon: Target, path: '/targets' },
-  { id: 'actuals', label: 'Weekly Reporting', icon: Plus, path: '/actuals' },
-  { id: 'compare', label: 'Target Vs Actual', icon: TrendingUp, path: '/compare' },
-  { id: 'leads', label: 'Lead Sheet', icon: Users, path: '/leads' },
-  { id: 'analytics', label: 'Lead Analytics', icon: BarChart3, path: '/lead-analytics' },
+  { id: "dashboard", label: "Dashboard", icon: BarChart3, path: "/" },
+  { id: "settargets", label: "Set Targets", icon: Target, path: "/targets" },
+  { id: "actuals", label: "Weekly Reporting", icon: Plus, path: "/actuals" },
+  {
+    id: "compare",
+    label: "Target Vs Actual",
+    icon: TrendingUp,
+    path: "/compare",
+  },
+  { id: "leads", label: "Lead Center", icon: Users, path: "/leads" },
+  {
+    id: "analytics",
+    label: "Lead Analytics",
+    icon: BarChart3,
+    path: "/lead-analytics",
+  },
 ];
 
 export const months = [
