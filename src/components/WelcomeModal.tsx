@@ -84,7 +84,7 @@ export default function WelcomeModal({
             <div className="flex items-start space-x-3">
               <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
               <p className="text-sm text-gray-700">
-                <strong>Lead Management:</strong> Track and analyze your leads with our comprehensive lead sheet.
+                <strong>Lead Management:</strong> Track and analyze your leads with our comprehensive lead center.
               </p>
             </div>
             

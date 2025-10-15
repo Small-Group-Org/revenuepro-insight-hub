@@ -695,7 +695,7 @@ export const LeadSheet = () => {
                 <Users className="w-5 h-5 text-primary-foreground" />
               </div>
               <h1 className="leading-[130%] text-3xl font-bold text-gradient-primary">
-                Lead Sheet
+                Lead Center
               </h1>
             </div>
             <p className="text-muted-foreground max-w-2xl mx-auto text-base mb-6 mt-2">
