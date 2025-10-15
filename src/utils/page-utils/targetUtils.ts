@@ -90,17 +90,25 @@ export const calculateFields = (
 
   // Calculate cost metrics
   if (values.budget !== undefined) {
-    if (values.leads !== undefined && values.leads > 0) {
-      values.cpl = values.budget / values.leads;
-    }
-    if (values.estimatesSet !== undefined && values.estimatesSet > 0) {
-      values.cpEstimateSet = values.budget / values.estimatesSet;
-    }
-    if (values.estimatesRan !== undefined && values.estimatesRan > 0) {
-      values.cpEstimate = values.budget / values.estimatesRan;
-    }
-    if (values.sales !== undefined && values.sales > 0) {
-      values.cpJobBooked = values.budget / values.sales;
+    // Always reset cost metrics to 0 to avoid stale values when inputs become zero
+    values.cpl = 0;
+    values.cpEstimateSet = 0;
+    values.cpEstimate = 0;
+    values.cpJobBooked = 0;
+
+    if (values.budget > 0) {
+      if (values.leads !== undefined && values.leads > 0) {
+        values.cpl = values.budget / values.leads;
+      }
+      if (values.estimatesSet !== undefined && values.estimatesSet > 0) {
+        values.cpEstimateSet = values.budget / values.estimatesSet;
+      }
+      if (values.estimatesRan !== undefined && values.estimatesRan > 0) {
+        values.cpEstimate = values.budget / values.estimatesRan;
+      }
+      if (values.sales !== undefined && values.sales > 0) {
+        values.cpJobBooked = values.budget / values.sales;
+      }
     }
   }
 
@@ -300,17 +308,25 @@ export const calculateFieldsForApiData = (
 
   // Calculate cost metrics
   if (values.budget !== undefined) {
-    if (values.leads !== undefined && values.leads > 0) {
-      values.cpl = values.budget / values.leads;
-    }
-    if (values.estimatesSet !== undefined && values.estimatesSet > 0) {
-      values.cpEstimateSet = values.budget / values.estimatesSet;
-    }
-    if (values.estimatesRan !== undefined && values.estimatesRan > 0) {
-      values.cpEstimate = values.budget / values.estimatesRan;
-    }
-    if (values.sales !== undefined && values.sales > 0) {
-      values.cpJobBooked = values.budget / values.sales;
+    // Always reset cost metrics to 0 to avoid stale values when inputs become zero
+    values.cpl = 0;
+    values.cpEstimateSet = 0;
+    values.cpEstimate = 0;
+    values.cpJobBooked = 0;
+
+    if (values.budget > 0) {
+      if (values.leads !== undefined && values.leads > 0) {
+        values.cpl = values.budget / values.leads;
+      }
+      if (values.estimatesSet !== undefined && values.estimatesSet > 0) {
+        values.cpEstimateSet = values.budget / values.estimatesSet;
+      }
+      if (values.estimatesRan !== undefined && values.estimatesRan > 0) {
+        values.cpEstimate = values.budget / values.estimatesRan;
+      }
+      if (values.sales !== undefined && values.sales > 0) {
+        values.cpJobBooked = values.budget / values.sales;
+      }
     }
   }
 
