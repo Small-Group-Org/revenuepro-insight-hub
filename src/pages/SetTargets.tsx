@@ -206,6 +206,30 @@ export const SetTargets = () => {
     setPrevValues(calculatedValues);
   }, []);
 
+  // Initial API call on component mount and when user becomes available
+  useEffect(() => {
+    if (user) {
+      let startDate: Date;
+      let endDate: Date;
+
+      if (period === "weekly") {
+        startDate = startOfWeek(selectedDate, { weekStartsOn: 1 });
+        endDate = endOfWeek(selectedDate, { weekStartsOn: 1 });
+      } else if (period === "monthly") {
+        startDate = startOfMonth(selectedDate);
+        endDate = endOfMonth(selectedDate);
+      } else {
+        startDate = startOfYear(selectedDate);
+        endDate = endOfYear(selectedDate);
+      }
+
+      const formattedStartDate = format(startDate, "yyyy-MM-dd");
+      const formattedEndDate = format(endDate, "yyyy-MM-dd");
+
+      getTargetsForUser(period, formattedStartDate, formattedEndDate);
+    }
+  }, [user]); // Run when user becomes available
+
   useEffect(() => {
     if (currentTarget) {
       const newValues = processTargetData(currentTarget);
