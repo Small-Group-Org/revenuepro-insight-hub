@@ -1,7 +1,7 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@radix-ui/react-tooltip";
-import { Calendar, Mail, Phone, Tag, Target, Users, Save } from "lucide-react";
-import React, { useState } from "react";
+import { Calendar, Mail, Phone, Tag, Target, Users, Save, FileEdit, X } from "lucide-react";
+import React, { useState, useRef, useEffect } from "react";
 
 // Memoized component for lead tiles to optimize re-renders
 export const LeadTiles = React.memo(({ 
@@ -17,6 +17,7 @@ export const LeadTiles = React.memo(({
     handleULRChange,
     handleCustomULRSubmit,
     handleAmountUpdate,
+    handleNoteUpdate,
     handleLeadDelete,
     handleLeadSelect,
     setCustomULR,
@@ -42,6 +43,7 @@ export const LeadTiles = React.memo(({
       unqualifiedLeadReason?: string;
       jobBookedAmount?: number;
       proposalAmount?: number;
+      notes?: string;
       conversionRates?: {
         service?: number;
         adSetName?: number;
@@ -68,6 +70,7 @@ export const LeadTiles = React.memo(({
     handleULRChange: (leadId: string, value: string) => Promise<void>;
     handleCustomULRSubmit: (leadId: string) => Promise<void>;
     handleAmountUpdate: (leadId: string, jobBookedAmount: number, proposalAmount: number) => Promise<void>;
+    handleNoteUpdate: (leadId: string, notes: string) => Promise<void>;
     handleLeadDelete: (leadId: string) => void;
     handleLeadSelect: (leadId: string, isSelected: boolean) => void;
     setCustomULR: (value: string) => void;
@@ -81,6 +84,45 @@ export const LeadTiles = React.memo(({
     const [amountInputs, setAmountInputs] = useState<{[leadId: string]: {jobBookedAmount: number, proposalAmount: number}}>({});
     // State for tracking which lead is being edited
     const [editingLeadId, setEditingLeadId] = useState<string | null>(null);
+    // Note editing state
+    const [editingNoteLeadId, setEditingNoteLeadId] = useState<string | null>(null);
+    const [noteDraft, setNoteDraft] = useState<string>("");
+    const notePopupRef = useRef<HTMLDivElement>(null);
+
+    const startEditingNote = (leadId: string) => {
+      const lead = leads.find(l => l.id === leadId);
+      setEditingNoteLeadId(leadId);
+      setNoteDraft(lead?.notes || "");
+    };
+
+    const saveNote = async (leadId: string) => {
+      await handleNoteUpdate(leadId, noteDraft.trim());
+      setEditingNoteLeadId(null);
+      setNoteDraft("");
+    };
+
+    const cancelEditingNote = () => {
+      setEditingNoteLeadId(null);
+      setNoteDraft("");
+    };
+
+    // Handle click outside to close note popup
+    useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (notePopupRef.current && !notePopupRef.current.contains(event.target as Node)) {
+          if (editingNoteLeadId) {
+            cancelEditingNote();
+          }
+        }
+      };
+
+      if (editingNoteLeadId) {
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+          document.removeEventListener('mousedown', handleClickOutside);
+        };
+      }
+    }, [editingNoteLeadId]);
 
     // Initialize amount inputs when leads change
     React.useEffect(() => {
@@ -359,6 +401,66 @@ export const LeadTiles = React.memo(({
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
+                  </div>
+                  {/* Feature Note (Dummy) */}
+                  <div className="flex items-start gap-1 text-xs relative">
+                    <div className="flex-1">
+                      {lead.notes ? (
+                        <div 
+                          className="flex items-center gap-1 cursor-pointer"
+                          onClick={() => !isDisabled && startEditingNote(lead.id)}
+                          title="Click to edit note"
+                        >
+                          <FileEdit className="w-3 h-3 text-gray-400 hover:text-gray-600 flex-shrink-0" />
+                          <span className="text-gray-700 truncate block min-w-0">
+                            {lead.notes}
+                          </span>
+                        </div>
+                      ) : (
+                        <div 
+                          className="flex items-center gap-1 text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                          onClick={() => !isDisabled && startEditingNote(lead.id)}
+                        >
+                          <FileEdit className="w-3 h-3" />
+                          <span>Add Note</span>
+                        </div>
+                      )}
+                      
+                      {/* Inline editing tooltip popup */}
+                      {editingNoteLeadId === lead.id && (
+                        <div 
+                          ref={notePopupRef}
+                          className="absolute top-6 left-0 z-50 bg-white border border-gray-300 rounded-lg shadow-lg p-3 min-w-64"
+                        >
+                          <textarea
+                            value={noteDraft}
+                            onChange={(e) => setNoteDraft(e.target.value)}
+                            placeholder="Write a quick note about this lead's service/ads..."
+                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                            rows={3}
+                            disabled={isDisabled}
+                            autoFocus
+                          />
+                          <div className="flex justify-end gap-1 mt-2">
+                            <button
+                              onClick={cancelEditingNote}
+                              className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded transition-colors"
+                              title="Cancel"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                            <button
+                              onClick={() => saveNote(lead.id)}
+                              className="p-1 text-green-600 hover:text-green-700 hover:bg-green-50 rounded transition-colors"
+                              disabled={isDisabled}
+                              title="Save note"
+                            >
+                              <Save className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

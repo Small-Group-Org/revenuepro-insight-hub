@@ -3,10 +3,11 @@ export type LeadStatus = 'new' | 'in_progress' | 'estimate_set' | 'unqualified';
 
 // Lead update data interface
 export interface LeadUpdateData {
-  status: LeadStatus;
+  status?: LeadStatus;
   unqualifiedLeadReason?: string;
   jobBookedAmount?: number;
   proposalAmount?: number;
+  notes?: string;
 }
 
 // Lead processing result interface

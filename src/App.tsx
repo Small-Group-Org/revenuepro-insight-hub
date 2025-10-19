@@ -19,6 +19,7 @@ import { UserProvider } from "./utils/UserContext";
 import { CompareResults } from "@/pages/CompareResults";
 import CreateUser from "./pages/CreateUser";
 import { DataProvider } from "@/contexts/DataContext";
+import Profile from "@/pages/Profile";
 
 const App = () => {
   // Create a QueryClient instance inside the component
@@ -44,6 +45,7 @@ const App = () => {
                     <Route path="/leads" element={<LeadSheet />} />
                     <Route path="/lead-analytics" element={<LeadAnalytics />} />
                     <Route path="/user-managment" element={<CreateUser />} />
+                    <Route path="/profile" element={<Profile />} />
                   </Route>
                   <Route path="*" element={<NotFound />} />
                 </Routes>
