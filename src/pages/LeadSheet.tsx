@@ -229,6 +229,56 @@ export const LeadSheet = () => {
     ]
   );
 
+  // Note update handler
+  const handleNoteUpdate = useCallback(
+    async (leadId: string, notes: string) => {
+      const success = await handleLeadUpdate(
+        leadId,
+        { notes },
+        "Note has been updated successfully."
+      );
+
+      if (success) {
+        // Update local state
+        updateLeadLocal(leadId, { notes });
+        
+        // Refresh only the lead data instead of full page reload
+        if (selectedUserId) {
+          const { startDate, endDate } =
+            period === "custom" && customRange
+              ? customRange
+              : getDateRange(selectedDate, period as PeriodType);
+
+          // Re-fetch the current page of leads
+          await fetchPaginatedLeads({
+            clientId: selectedUserId,
+            startDate,
+            endDate,
+            page: currentPage,
+            limit: pageSize,
+            sortBy: currentSorting.sortBy,
+            sortOrder: currentSorting.sortOrder,
+            ...currentFilters,
+          });
+        }
+      }
+    },
+    [
+      handleLeadUpdate, 
+      updateLeadLocal, 
+      selectedUserId, 
+      period, 
+      customRange, 
+      selectedDate, 
+      currentPage, 
+      pageSize, 
+      currentSorting, 
+      currentFilters, 
+      fetchPaginatedLeads,
+      getDateRange
+    ]
+  );
+
   // Fetch filter options once when component loads or date/period changes
   useEffect(() => {
     if (selectedUserId) {
@@ -799,6 +849,7 @@ export const LeadSheet = () => {
                     handleULRChange={handleULRChange}
                     handleCustomULRSubmit={handleCustomULRSubmit}
                     handleAmountUpdate={handleAmountUpdate}
+                    handleNoteUpdate={handleNoteUpdate}
                     handleLeadDelete={handleLeadDelete}
                     handleLeadSelect={handleLeadSelect}
                     setCustomULR={setCustomULR}

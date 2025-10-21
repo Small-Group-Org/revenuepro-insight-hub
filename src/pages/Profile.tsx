@@ -1,0 +1,371 @@
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { LogOut, TicketPlus, Ticket, Loader2, ArrowDown, Lightbulb } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
+import useAuthStore from "@/stores/authStore";
+import { useUserContext } from "@/utils/UserContext";
+import { useRoleAccess } from "@/hooks/useRoleAccess";
+import { useTicketStore } from "@/stores/ticketStore";
+import { CreateTicketForm } from "@/components/CreateTicketForm";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useState } from "react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+const getInitials = (name?: string) => {
+  if (!name) return "U";
+  const parts = name.trim().split(/\s+/);
+  const first = parts[0]?.[0] ?? "";
+  const last = parts.length > 1 ? parts[parts.length - 1][0] ?? "" : "";
+  return (first + last).toUpperCase() || first.toUpperCase() || "U";
+};
+
+export default function Profile() {
+  const navigate = useNavigate();
+  const { logout } = useAuthStore();
+  const { user } = useUserContext();
+  const { userRole } = useRoleAccess();
+  const { tickets, loading, error, fetchTickets, updateTicketData } = useTicketStore();
+  const { toast } = useToast();
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+
+  const isAdmin = userRole === 'ADMIN';
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
+
+  // Fetch tickets on component mount
+  useEffect(() => {
+    fetchTickets();
+  }, [fetchTickets]);
+
+  // Filter tickets for regular users (only their own tickets)
+  let filteredTickets = isAdmin ? tickets : tickets.filter(ticket => ticket.userId._id === user?._id);
+  
+  // Apply status filter for admin
+  if (isAdmin && statusFilter !== "all") {
+    filteredTickets = filteredTickets.filter(ticket => ticket.status === statusFilter);
+  }
+  
+  // Sort tickets based on user role
+  const userTickets = filteredTickets.sort((a, b) => {
+    if (isAdmin) {
+      // Admin: Sort by creation time (newest first)
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    } else {
+      // User: Sort by update time (newest first)
+      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+    }
+  });
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 1) return "Today";
+    if (diffDays === 2) return "Yesterday";
+    if (diffDays <= 7) return `${diffDays - 1} days ago`;
+    return date.toLocaleDateString();
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'open':
+        return <Badge className="bg-orange-500 hover:bg-orange-600 text-white">Open</Badge>;
+      case 'in_progress':
+        return <Badge className="bg-gray-400 hover:bg-gray-500 text-white">In Progress</Badge>;
+      case 'closed':
+        return <Badge className="bg-green-500 hover:bg-green-600 text-white">Closed</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  const getPriorityBadge = (priority: string) => {
+    switch (priority) {
+      case 'high':
+        return <Badge className="bg-gray-800 hover:bg-gray-900 text-white">High</Badge>;
+      case 'medium':
+        return <Badge className="bg-gray-500 hover:bg-gray-600 text-white">Medium</Badge>;
+      case 'low':
+        return <Badge className="bg-gray-300 hover:bg-gray-400 text-gray-800">Low</Badge>;
+      default:
+        return <Badge variant="outline">{priority}</Badge>;
+    }
+  };
+
+  // Helper function to truncate text
+  const truncateText = (text: string, maxLength: number = 50) => {
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
+  };
+
+  // Ticket management functions for admin
+  const handleStatusChange = async (ticketId: string, status: string) => {
+    const result = await updateTicketData({
+      _id: ticketId,
+      status: status as 'open' | 'in_progress' | 'closed',
+    });
+
+    if (result.error) {
+      toast({
+        title: "Error",
+        description: result.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: "Ticket status updated successfully",
+      });
+    }
+  };
+
+  const handlePriorityChange = async (ticketId: string, priority: string) => {
+    const result = await updateTicketData({
+      _id: ticketId,
+      priority: priority as 'low' | 'medium' | 'high',
+    });
+
+    if (result.error) {
+      toast({
+        title: "Error",
+        description: result.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: "Ticket priority updated successfully",
+      });
+    }
+  };
+
+  return (
+    <div className="h-full w-full">
+      {/* Simple header without background color */}
+      <div className="border-b">
+        <div className="mx-auto px-6 md:px-8 py-6 md:py-8 flex items-center gap-4">
+          <Avatar className="h-16 w-16">
+            <AvatarFallback className="text-lg font-semibold">
+              {getInitials(user?.name)}
+            </AvatarFallback>
+          </Avatar>
+          <div>
+            <div className="text-xl md:text-2xl font-semibold leading-tight">
+              {user?.name || "User"}
+            </div>
+            <div className="text-sm text-muted-foreground">{user?.email || "email@domain.com"}</div>
+          </div>
+          <div className="ml-auto">
+            <button onClick={handleLogout} className="inline-flex h-9 items-center gap-2 justify-center rounded-md bg-destructive px-4 text-sm font-medium text-destructive-foreground shadow transition-colors hover:opacity-90">
+              <LogOut size={18} />
+              Logout
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="mx-auto px-6 md:px-8 py-6 md:py-8">
+        <Accordion type="multiple" defaultValue={["support-tickets"]} className="w-full">
+          <AccordionItem value="support-tickets">
+            <AccordionTrigger className="text-lg font-semibold">
+              <div className="flex items-center gap-2">
+                <Ticket size={20} />
+                Support Tickets
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <Tabs defaultValue="list" className="w-full">
+                {!isAdmin && <TabsList>
+                  <TabsTrigger value="list" className="gap-2">
+                    <Ticket size={16} />
+                    My Tickets
+                  </TabsTrigger>
+                  {!isAdmin && (
+                    <TabsTrigger value="raise" className="gap-2">
+                      <TicketPlus size={16} />
+                      Raise Ticket
+                    </TabsTrigger>
+                  )}
+                </TabsList>}
+
+                {isAdmin && (
+                  <div className="flex justify-between items-center mb-4 mt-2">
+                  
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm font-medium">Filter by Status:</label>
+                      <Select value={statusFilter} onValueChange={setStatusFilter}>
+                        <SelectTrigger className="w-40">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Status</SelectItem>
+                          <SelectItem value="open">Open</SelectItem>
+                          <SelectItem value="in_progress">In Progress</SelectItem>
+                          <SelectItem value="closed">Closed</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                )}
+
+                <TabsContent value="list" className="mt-4">
+                  {loading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                      <span className="ml-2">Loading tickets...</span>
+                    </div>
+                  ) : error ? (
+                    <div className="text-center py-8 text-red-600">
+                      <p>Error loading tickets: {error}</p>
+                    </div>
+                  ) : userTickets.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Ticket className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No tickets found</p>
+                      {!isAdmin && (
+                        <p className="text-sm mt-2">Create your first ticket using the "Raise Ticket" tab</p>
+                      )}
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[25%]">Subject</TableHead>
+                          <TableHead className="w-[30%]">Description</TableHead>
+                          {isAdmin && <TableHead className="w-[15%]">User</TableHead>}
+                          <TableHead className="w-[10%]">Status</TableHead>
+                          <TableHead className="w-[10%]">Priority</TableHead>
+                          <TableHead className="text-right w-[10%]">
+                            <div className="flex items-center justify-end gap-1">
+                              {isAdmin ? "Created" : "Updated"}
+                              <ArrowDown className="h-3 w-3 text-muted-foreground" />
+                            </div>
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {userTickets.map((ticket, index) => (
+                          <TableRow key={ticket._id} className={index % 2 === 0 ? "bg-white" : "bg-gray-100"}>
+                            <TableCell className="font-medium">{ticket.title}</TableCell>
+                            <TableCell>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <div className="cursor-help">
+                                      <span className="text-sm text-muted-foreground">
+                                        {truncateText(ticket.description, 60)}
+                                      </span>
+                                    </div>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" className="max-w-xs">
+                                    <p className="text-sm">{ticket.description}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </TableCell>
+                            {isAdmin && (
+                              <TableCell className="text-sm text-muted-foreground">
+                                <div>
+                                  <div className="font-medium">{ticket.userId.name}</div>
+                                  <div className="text-xs text-gray-500">{ticket.userId.email}</div>
+                                </div>
+                              </TableCell>
+                            )}
+                            <TableCell>
+                              {isAdmin ? (
+                                <Select
+                                  value={ticket.status}
+                                  onValueChange={(value) => handleStatusChange(ticket._id, value)}
+                                >
+                                  <SelectTrigger className="w-32">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="open">Open</SelectItem>
+                                  <SelectItem value="in_progress">In Progress</SelectItem>
+                                  <SelectItem value="closed">Closed</SelectItem>
+                                </SelectContent>
+                                </Select>
+                              ) : (
+                                getStatusBadge(ticket.status)
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {isAdmin ? (
+                                <Select
+                                  value={ticket.priority}
+                                  onValueChange={(value) => handlePriorityChange(ticket._id, value)}
+                                >
+                                  <SelectTrigger className="w-32">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="low">Low</SelectItem>
+                                    <SelectItem value="medium">Medium</SelectItem>
+                                    <SelectItem value="high">High</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              ) : (
+                                getPriorityBadge(ticket.priority)
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right text-muted-foreground">
+                              {formatDate(isAdmin ? ticket.createdAt : ticket.updatedAt)}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </TabsContent>
+
+                {!isAdmin && (
+                  <TabsContent value="raise" className="mt-4">
+                    <CreateTicketForm />
+                  </TabsContent>
+                )}
+              </Tabs>
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="feature-request">
+            <AccordionTrigger className="text-lg font-semibold">
+              <div className="flex items-center gap-2">
+                <Lightbulb size={20} />
+                Feature Request
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="text-center py-12">
+                <Lightbulb className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+                <h3 className="text-xl font-semibold mb-2">Coming Soon</h3>
+                <p className="text-muted-foreground">
+                  Feature request functionality will be available soon. Stay tuned for updates!
+                </p>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </div>
+    </div>
+  );
+}
+
+

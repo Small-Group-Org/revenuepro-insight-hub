@@ -74,6 +74,7 @@ export interface Lead {
   leadScore?: number;
   jobBookedAmount?: number;
   proposalAmount?: number;
+  notes?: string;
   conversionRates?: {
     service: number;
     adSetName: number;

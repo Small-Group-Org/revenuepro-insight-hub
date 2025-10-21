@@ -50,6 +50,11 @@ export const API_ENDPOINTS = {
 
   // IP Tracking
   IP_TRACK: "/ip-tracking/track",
+
+  // Tickets
+  TICKETS_GET: "/tickets",
+  TICKETS_CREATE: "/tickets",
+  TICKETS_UPDATE: "/tickets", // append /:id when needed
 } as const;
 
 export const menuItems = [

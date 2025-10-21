@@ -11,10 +11,11 @@ export interface GetLeadsPayload {
 
 export interface UpdateLeadPayload {
   _id: string;
-  status: 'new' | 'in_progress' | 'estimate_set' | 'unqualified';
+  status?: 'new' | 'in_progress' | 'estimate_set' | 'unqualified';
   unqualifiedLeadReason?: string;
   jobBookedAmount?: number;
   proposalAmount?: number;
+  notes?: string;
 }
 
 // New interfaces for paginated API

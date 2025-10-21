@@ -175,8 +175,11 @@ export const useLeadStore = create<LeadStoreState>((set, get) => ({
           lead.id === payload._id ? {
             ...lead,
             id: updatedLead._id || updatedLead.id,
-            estimateSet: updatedLead.estimateSet,
+            status: updatedLead.status,
             unqualifiedLeadReason: updatedLead.unqualifiedLeadReason,
+            jobBookedAmount: updatedLead.jobBookedAmount,
+            proposalAmount: updatedLead.proposalAmount,
+            notes: updatedLead.notes,
             updatedAt: updatedLead.updatedAt
           } : lead
         );
