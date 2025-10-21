@@ -1,5 +1,5 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@radix-ui/react-tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Calendar, Mail, Phone, Tag, Target, Users, Save, FileEdit, X } from "lucide-react";
 import React, { useState, useRef, useEffect } from "react";
 
@@ -96,7 +96,12 @@ export const LeadTiles = React.memo(({
     };
 
     const saveNote = async (leadId: string) => {
-      await handleNoteUpdate(leadId, noteDraft.trim());
+      // Trim the note and ensure it doesn't exceed the character limit
+      const trimmedNote = noteDraft.trim();
+      if (trimmedNote.length > 2000) {
+        return; // Don't save if it exceeds the limit
+      }
+      await handleNoteUpdate(leadId, trimmedNote);
       setEditingNoteLeadId(null);
       setNoteDraft("");
     };
@@ -406,16 +411,32 @@ export const LeadTiles = React.memo(({
                   <div className="flex items-start gap-1 text-xs relative">
                     <div className="flex-1">
                       {lead.notes ? (
-                        <div 
-                          className="flex items-center gap-1 cursor-pointer"
-                          onClick={() => !isDisabled && startEditingNote(lead.id)}
-                          title="Click to edit note"
-                        >
-                          <FileEdit className="w-3 h-3 text-gray-400 hover:text-gray-600 flex-shrink-0" />
-                          <span className="text-gray-700 truncate block min-w-0">
-                            {lead.notes}
-                          </span>
-                        </div>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div 
+                                className="flex items-center gap-1 cursor-pointer"
+                                onClick={() => !isDisabled && startEditingNote(lead.id)}
+                              >
+                                <FileEdit className="w-3 h-3 text-gray-400 hover:text-gray-600 flex-shrink-0" />
+                                <span className="text-gray-700 truncate block min-w-0">
+                                  {lead.notes.length > 50 ? `${lead.notes.substring(0, 50)}...` : lead.notes}
+                                </span>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-xs">
+                              <div className="text-sm">
+                                <div className="font-medium mb-1">Full Note:</div>
+                                <div className="whitespace-pre-wrap break-words">
+                                  {lead.notes}
+                                </div>
+                                <div className="text-xs text-gray-500 mt-1">
+                                  {lead.notes.length}/2000 characters
+                                </div>
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       ) : (
                         <div 
                           className="flex items-center gap-1 text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
@@ -434,29 +455,49 @@ export const LeadTiles = React.memo(({
                         >
                           <textarea
                             value={noteDraft}
-                            onChange={(e) => setNoteDraft(e.target.value)}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              if (value.length <= 2000) {
+                                setNoteDraft(value);
+                              }
+                            }}
                             placeholder="Write a quick note about this lead's service/ads..."
-                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                            className={`w-full px-2 py-1 text-xs border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 resize-y ${
+                              noteDraft.length > 2000 
+                                ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                                : 'border-gray-300'
+                            }`}
                             rows={3}
                             disabled={isDisabled}
                             autoFocus
+                            maxLength={2000}
+                            style={{ minHeight: '60px', maxHeight: '200px' }}
                           />
-                          <div className="flex justify-end gap-1 mt-2">
-                            <button
-                              onClick={cancelEditingNote}
-                              className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded transition-colors"
-                              title="Cancel"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                            <button
-                              onClick={() => saveNote(lead.id)}
-                              className="p-1 text-green-600 hover:text-green-700 hover:bg-green-50 rounded transition-colors"
-                              disabled={isDisabled}
-                              title="Save note"
-                            >
-                              <Save className="w-3 h-3" />
-                            </button>
+                          <div className="flex justify-between items-center mt-2">
+                            <div className={`text-xs ${noteDraft.length > 2000 ? 'text-red-500' : 'text-gray-500'}`}>
+                              {noteDraft.length}/2000 characters
+                            </div>
+                            <div className="flex gap-1">
+                              <button
+                                onClick={cancelEditingNote}
+                                className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded transition-colors"
+                                title="Cancel"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                              <button
+                                onClick={() => saveNote(lead.id)}
+                                className={`p-1 rounded transition-colors ${
+                                  noteDraft.length > 2000 || noteDraft.trim().length === 0
+                                    ? 'text-gray-400 cursor-not-allowed'
+                                    : 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                                }`}
+                                disabled={isDisabled || noteDraft.length > 2000 || noteDraft.trim().length === 0}
+                                title={noteDraft.length > 2000 ? 'Note too long' : noteDraft.trim().length === 0 ? 'Note cannot be empty' : 'Save note'}
+                              >
+                                <Save className="w-3 h-3" />
+                              </button>
+                            </div>
                           </div>
                         </div>
                       )}
