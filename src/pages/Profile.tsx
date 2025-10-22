@@ -1,16 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { LogOut, TicketPlus, Ticket, Loader2, ArrowDown, Lightbulb } from "lucide-react";
+import { LogOut, TicketPlus, Ticket, Loader2, ArrowDown, Lightbulb, X, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import useAuthStore from "@/stores/authStore";
 import { useUserContext } from "@/utils/UserContext";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { useTicketStore } from "@/stores/ticketStore";
-import { CreateTicketForm } from "@/components/CreateTicketForm";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -23,6 +21,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 const getInitials = (name?: string) => {
   if (!name) return "U";
   const parts = name.trim().split(/\s+/);
@@ -39,6 +42,11 @@ export default function Profile() {
   const { tickets, loading, error, fetchTickets, updateTicketData } = useTicketStore();
   const { toast } = useToast();
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [ticketForm, setTicketForm] = useState({
+    title: "",
+    description: ""
+  });
 
   const isAdmin = userRole === 'ADMIN';
 
@@ -117,10 +125,10 @@ export default function Profile() {
 
   // Ticket management functions for admin
   const handleStatusChange = async (ticketId: string, status: string) => {
-    const result = await updateTicketData({
-      _id: ticketId,
-      status: status as 'open' | 'in_progress' | 'closed',
-    });
+      const result = await updateTicketData({
+        _id: ticketId,
+        status: status as 'open' | 'in_progress' | 'closed', 
+      });
 
     if (result.error) {
       toast({
@@ -156,6 +164,55 @@ export default function Profile() {
     }
   };
 
+  const handleTicketSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!ticketForm.title.trim() || !ticketForm.description.trim()) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const result = await useTicketStore.getState().createNewTicket({
+        title: ticketForm.title,
+        description: ticketForm.description,
+      });
+
+      if (result.error) {
+        toast({
+          title: "Error",
+          description: result.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: "Ticket created successfully",
+        });
+        setTicketForm({ title: "", description: "" });
+        setIsModalOpen(false);
+        fetchTickets(); // Refresh the tickets list
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create ticket",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleFormChange = (field: string, value: string) => {
+    setTicketForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
   return (
     <div className="h-full w-full">
       {/* Simple header without background color */}
@@ -182,50 +239,50 @@ export default function Profile() {
       </div>
 
       <div className="mx-auto px-6 md:px-8 py-6 md:py-8">
-        <Accordion type="multiple" defaultValue={["support-tickets"]} className="w-full">
-          <AccordionItem value="support-tickets">
-            <AccordionTrigger className="text-lg font-semibold">
-              <div className="flex items-center gap-2">
-                <Ticket size={20} />
-                Support Tickets
+        <Accordion type="multiple" defaultValue={["support-tickets"]} className="w-full space-y-4">
+          <AccordionItem value="support-tickets" className="border border-gray-200 rounded-lg bg-white shadow-sm">
+            <AccordionTrigger className="text-lg font-semibold px-6 py-4 hover:bg-gray-50 transition-colors">
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-2">
+                  <Ticket size={20} />
+                  Support Tickets
+                </div>
+                {!isAdmin && (
+                  <Button
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsModalOpen(true);
+                    }}
+                    className="mr-4"
+                  >
+                    <Plus size={16} />
+                    Raise Ticket
+                  </Button>
+                )}
               </div>
             </AccordionTrigger>
-            <AccordionContent>
-              <Tabs defaultValue="list" className="w-full">
-                {!isAdmin && <TabsList>
-                  <TabsTrigger value="list" className="gap-2">
-                    <Ticket size={16} />
-                    My Tickets
-                  </TabsTrigger>
-                  {!isAdmin && (
-                    <TabsTrigger value="raise" className="gap-2">
-                      <TicketPlus size={16} />
-                      Raise Ticket
-                    </TabsTrigger>
-                  )}
-                </TabsList>}
-
-                {isAdmin && (
-                  <div className="flex justify-between items-center mb-4 mt-2">
-                  
-                    <div className="flex items-center gap-2">
-                      <label className="text-sm font-medium">Filter by Status:</label>
-                      <Select value={statusFilter} onValueChange={setStatusFilter}>
-                        <SelectTrigger className="w-40">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Status</SelectItem>
-                          <SelectItem value="open">Open</SelectItem>
-                          <SelectItem value="in_progress">In Progress</SelectItem>
-                          <SelectItem value="closed">Closed</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+            <AccordionContent className="px-6 pb-6">
+              {isAdmin && (
+                <div className="flex justify-between items-center mb-4 mt-2">
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium">Filter by Status:</label>
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger className="w-40">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Status</SelectItem>
+                        <SelectItem value="open">Open</SelectItem>
+                        <SelectItem value="in_progress">In Progress</SelectItem>
+                        <SelectItem value="closed">Closed</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                )}
+                </div>
+              )}
 
-                <TabsContent value="list" className="mt-4">
+              <div className="mt-4">
                   {loading ? (
                     <div className="flex items-center justify-center py-8">
                       <Loader2 className="h-6 w-6 animate-spin" />
@@ -334,25 +391,18 @@ export default function Profile() {
                       </TableBody>
                     </Table>
                   )}
-                </TabsContent>
-
-                {!isAdmin && (
-                  <TabsContent value="raise" className="mt-4">
-                    <CreateTicketForm />
-                  </TabsContent>
-                )}
-              </Tabs>
+              </div>
             </AccordionContent>
           </AccordionItem>
 
-          <AccordionItem value="feature-request">
-            <AccordionTrigger className="text-lg font-semibold">
+          <AccordionItem value="feature-request" className="border border-gray-200 rounded-lg bg-white shadow-sm">
+            <AccordionTrigger className="text-lg font-semibold px-6 py-4 hover:bg-gray-50 transition-colors">
               <div className="flex items-center gap-2">
                 <Lightbulb size={20} />
                 Feature Request
               </div>
             </AccordionTrigger>
-            <AccordionContent>
+            <AccordionContent className="px-6 pb-6">
               <div className="text-center py-12">
                 <Lightbulb className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
                 <h3 className="text-xl font-semibold mb-2">Coming Soon</h3>
@@ -364,8 +414,66 @@ export default function Profile() {
           </AccordionItem>
         </Accordion>
       </div>
+
+      {/* Raise Ticket Modal */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <TicketPlus size={20} />
+              Raise New Ticket
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleTicketSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="title">Title *</Label>
+              <Input
+                id="title"
+                value={ticketForm.title}
+                onChange={(e) => handleFormChange('title', e.target.value)}
+                placeholder="Enter ticket title"
+                required
+              />
+            </div>
+
+
+            <div className="space-y-2">
+              <Label htmlFor="description">Description *</Label>
+              <div className="relative">
+                <Textarea
+                  id="description"
+                  value={ticketForm.description}
+                  onChange={(e) => handleFormChange('description', e.target.value)}
+                  placeholder="Describe your issue or request in detail..."
+                  className="min-h-[250px] resize-none"
+                  maxLength={2000}
+                  required
+                />
+                <div className="absolute bottom-2 right-2 text-xs text-muted-foreground bg-white px-1 rounded">
+                  {ticketForm.description.length}/2000
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setIsModalOpen(false);
+                  setTicketForm({ title: "", description: "" });
+                }}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" className="gap-2">
+                <TicketPlus size={16} />
+                Create Ticket
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
-
-

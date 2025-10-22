@@ -149,7 +149,7 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }: SidebarProp
             <div className="flex items-center justify-between w-full">
               <div className="flex flex-col text-left">
                 <span className="text-sm font-medium leading-tight">{user?.name || 'User'}</span>
-                <span className="text-xs text-gray-400 leading-tight">{user?.role.toLowerCase()}</span>
+                <span className="text-xs text-gray-400 leading-tight capitalize">{user?.role.toLowerCase()}</span>
               </div>
             </div>
           )}

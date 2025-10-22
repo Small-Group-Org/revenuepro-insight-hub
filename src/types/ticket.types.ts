@@ -1,5 +1,5 @@
 // Ticket status types
-export type TicketStatus = 'open' | 'in_progress' | 'close';
+export type TicketStatus = 'open' | 'in_progress' | 'closed';
 
 // Ticket priority types
 export type TicketPriority = 'low' | 'medium' | 'high';
