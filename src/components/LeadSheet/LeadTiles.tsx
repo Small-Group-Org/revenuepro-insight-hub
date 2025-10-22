@@ -415,11 +415,11 @@ export const LeadTiles = React.memo(({
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <div 
-                                className="flex items-center gap-1 cursor-pointer"
+                                className="flex items-center gap-1 cursor-pointer group"
                                 onClick={() => !isDisabled && startEditingNote(lead.id)}
                               >
-                                <FileEdit className="w-3 h-3 text-gray-400 hover:text-gray-600 flex-shrink-0" />
-                                <span className="text-gray-700 truncate block min-w-0">
+                                <FileEdit className="w-3 h-3 text-gray-400 hover:text-gray-600 flex-shrink-0 transition-colors" />
+                                <span className="text-gray-700 truncate block min-w-0 bg-amber-50 group-hover:bg-amber-50 px-2 py-1 rounded-md border border-amber-100 group-hover:border-amber-200 transition-all duration-200">
                                   {lead.notes.length > 50 ? `${lead.notes.substring(0, 42)}...` : lead.notes}
                                 </span>
                               </div>
