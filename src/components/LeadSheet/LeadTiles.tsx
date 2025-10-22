@@ -420,19 +420,19 @@ export const LeadTiles = React.memo(({
                               >
                                 <FileEdit className="w-3 h-3 text-gray-400 hover:text-gray-600 flex-shrink-0" />
                                 <span className="text-gray-700 truncate block min-w-0">
-                                  {lead.notes.length > 50 ? `${lead.notes.substring(0, 50)}...` : lead.notes}
+                                  {lead.notes.length > 50 ? `${lead.notes.substring(0, 42)}...` : lead.notes}
                                 </span>
                               </div>
                             </TooltipTrigger>
                             <TooltipContent side="top" className="max-w-xs">
                               <div className="text-sm">
-                                <div className="font-medium mb-1">Full Note:</div>
+                                <div className="font-medium mb-1">Note:</div>
                                 <div className="whitespace-pre-wrap break-words">
                                   {lead.notes}
                                 </div>
-                                <div className="text-xs text-gray-500 mt-1">
+                                {/* <div className="text-xs text-gray-500 mt-1">
                                   {lead.notes.length}/2000 characters
-                                </div>
+                                </div> */}
                               </div>
                             </TooltipContent>
                           </Tooltip>

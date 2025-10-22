@@ -306,14 +306,14 @@ export const LeadFiltersAndControls = React.memo(({
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-3 h-3 text-gray-400" />
             <Input
               type="text"
-              placeholder={currentFilters.searchName && currentFilters.searchName.length < 3 ? "Type at least 3 characters..." : "Search by name..."}
+              placeholder={currentFilters.searchName && currentFilters.searchName.length < 3 ? "Type at least 3 characters..." : "Search Leads..."}
               value={currentFilters.searchName || ''}
               onChange={(e) => {
                 const value = e.target.value;
                 setFilters({ searchName: value });
                 setCurrentPage(1); // Reset to first page when search changes
               }}
-              className={`pl-9 pr-8 h-8 w-64 text-xs border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 ${
+              className={`pl-9 pr-8 h-8 w-96 text-xs border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 ${
                 currentFilters.searchName && currentFilters.searchName.length < 3 ? 'border-orange-300 bg-orange-50' : ''
               }`}
             />
