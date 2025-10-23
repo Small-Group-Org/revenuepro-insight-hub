@@ -14,7 +14,7 @@ export const tabs = ["basic", "templates", "target"];
 // temp cmnt
 export const API_URL =
   import.meta.env.VITE_API_URL ||
-  "https://revenue-pro-backend-1057029383450.asia-south2.run.app/api/v1";
+  "https://prod-revenue-pro-backend-1057029383450.asia-southeast1.run.app";
 
 // Centralized API endpoints to avoid hardcoded strings across the app
 export const API_ENDPOINTS = {
