@@ -14,6 +14,7 @@ interface User {
   name?: string;
   email?: string;
   role?: string; // Add role here
+  lastAccessAt?: string; // Add lastAccessAt property
   // Add other user properties as needed
 }
 

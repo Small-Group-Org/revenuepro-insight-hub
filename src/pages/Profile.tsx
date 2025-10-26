@@ -117,6 +117,7 @@ export default function Profile() {
     }
   };
 
+
   // Helper function to truncate text
   const truncateText = (text: string, maxLength: number = 50) => {
     if (text.length <= maxLength) return text;

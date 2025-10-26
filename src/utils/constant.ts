@@ -29,6 +29,7 @@ export const API_ENDPOINTS = {
 
   // Users
   USER_UPDATE_PASSWORD: "/users/update-password",
+  USER_LAST_ACCESS: "/users/last-access",
 
   // Leads
   LEADS_BASE: "/leads",
