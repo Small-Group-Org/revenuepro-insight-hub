@@ -63,3 +63,8 @@ export const updatePassword = async (payload: UpdatePasswordPayload) => {
   const response = await doPUT(API_ENDPOINTS.USER_UPDATE_PASSWORD, payload);
   return response;
 };
+
+export const updateLastAccess = async () => {
+  const response = await doPUT(API_ENDPOINTS.USER_LAST_ACCESS, {});
+  return response;
+};

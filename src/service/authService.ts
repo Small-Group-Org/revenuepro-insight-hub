@@ -13,6 +13,7 @@ interface LoginResponse {
       email: string;
       role?: string; // Add role here
       hasLoggedIn: boolean;
+      lastAccessAt?: string; // Add lastAccessAt
     };
   };
   message?: string;
@@ -26,6 +27,7 @@ interface VerifyResponse {
       name: string;
       email: string;
       role?: string; // Add role here
+      lastAccessAt?: string; // Add lastAccessAt
     };
     newAccessToken?: string;
   };
