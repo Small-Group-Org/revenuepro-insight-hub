@@ -21,11 +21,17 @@ import {
 import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
 import { FullScreenLoader } from '@/components/ui/full-screen-loader';
 import { useCombinedLoading } from '@/hooks/useCombinedLoading';
+import { ReleaseNotesModal } from './ReleaseNotesModal';
+import { useUserContext } from '@/utils/UserContext';
+import { markUpdateAsSeen } from '@/service/userService';
+import { useToast } from '@/hooks/use-toast';
 
 
 export const Dashboard = () => {
   const { reportingData, getReportingData, getComparisonData, clearComparisonData } = useReportingDataStore();
   const { selectedUserId } = useUserStore();
+  const { user, setUser } = useUserContext();
+  const { toast } = useToast();
   const { 
     comprehensiveChartData, 
     period, 
@@ -43,6 +49,16 @@ export const Dashboard = () => {
   // State for comparison data
   const [comparisonPeriod, setComparisonPeriod] = useState<string>('');
   const [isComparisonEnabled, setIsComparisonEnabled] = useState<boolean>(false);
+  
+  // State for release notes modal
+  const [showReleaseNotesModal, setShowReleaseNotesModal] = useState<boolean>(false);
+
+  // Check if user needs to see release notes
+  useEffect(() => {
+    if (user && user.hasSeenLatestUpdate === false) {
+      setShowReleaseNotesModal(true);
+    }
+  }, [user]);
 
   // Main data fetching effect - only fetch main data
   useEffect(() => {
@@ -125,6 +141,27 @@ export const Dashboard = () => {
       jobsBooked: <DollarSign className="h-5 w-5 text-success" />
     };
     return iconMap[key as keyof typeof iconMap] || <TrendingUp className="h-5 w-5 text-muted-foreground" />;
+  };
+
+  const handleMarkUpdateAsSeen = async () => {
+    try {
+      await markUpdateAsSeen();
+      // Update user context to reflect that they've seen the update
+      if (user) {
+        setUser({ ...user, hasSeenLatestUpdate: true });
+      }
+      toast({
+        title: "Success",
+        description: "Release notes marked as seen",
+      });
+    } catch (error) {
+      console.error('Error marking update as seen:', error);
+      toast({
+        title: "Error",
+        description: "Failed to mark release notes as seen",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -227,6 +264,13 @@ export const Dashboard = () => {
           />
         </div>
       </div>
+      
+      {/* Release Notes Modal */}
+      <ReleaseNotesModal
+        isOpen={showReleaseNotesModal}
+        onClose={() => setShowReleaseNotesModal(false)}
+        onMarkAsSeen={handleMarkUpdateAsSeen}
+      />
       
       {/* Full Screen Loader */}
       <FullScreenLoader isLoading={isLoading} message="Loading dashboard data..." />
