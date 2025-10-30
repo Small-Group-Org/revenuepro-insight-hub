@@ -144,23 +144,15 @@ export const Dashboard = () => {
   };
 
   const handleMarkUpdateAsSeen = async () => {
+    setShowReleaseNotesModal(false);
+
     try {
       await markUpdateAsSeen();
-      // Update user context to reflect that they've seen the update
       if (user) {
         setUser({ ...user, hasSeenLatestUpdate: true });
       }
-      toast({
-        title: "Success",
-        description: "Release notes marked as seen",
-      });
     } catch (error) {
       console.error('Error marking update as seen:', error);
-      toast({
-        title: "Error",
-        description: "Failed to mark release notes as seen",
-        variant: "destructive",
-      });
     }
   };
 
@@ -268,7 +260,6 @@ export const Dashboard = () => {
       {/* Release Notes Modal */}
       <ReleaseNotesModal
         isOpen={showReleaseNotesModal}
-        onClose={() => setShowReleaseNotesModal(false)}
         onMarkAsSeen={handleMarkUpdateAsSeen}
       />
       
