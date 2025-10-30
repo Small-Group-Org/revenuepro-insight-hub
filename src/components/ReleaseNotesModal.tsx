@@ -12,24 +12,17 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ReleaseNotesModalProps {
   isOpen: boolean;
-  onClose: () => void;
   onMarkAsSeen: () => void;
 }
 
 export const ReleaseNotesModal: React.FC<ReleaseNotesModalProps> = ({
   isOpen,
-  onClose,
   onMarkAsSeen,
 }) => {
-  const latestRelease = RELEASE_NOTES[0]; // Get the most recent release
-
-  const handleContinue = () => {
-    onMarkAsSeen();
-    onClose();
-  };
+  const latestRelease = RELEASE_NOTES[0];
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={onMarkAsSeen}>
       <DialogContent className="max-w-3xl max-h-[85vh] p-0 gap-0">
         {/* Header */}
         <DialogHeader className="px-6 pt-6 pb-4 border-b">
@@ -84,7 +77,7 @@ export const ReleaseNotesModal: React.FC<ReleaseNotesModalProps> = ({
                 <a
                   href="/release-notes"
                   className="text-primary underline hover:no-underline font-medium"
-                  onClick={onClose}
+                  onClick={onMarkAsSeen}
                 >
                   Release Notes page
                 </a>
@@ -95,7 +88,7 @@ export const ReleaseNotesModal: React.FC<ReleaseNotesModalProps> = ({
 
         {/* Footer */}
         <div className="px-6 py-4 border-t bg-gray-50/50 flex justify-end gap-3">
-          <Button onClick={handleContinue} className="min-w-[100px]">
+          <Button onClick={onMarkAsSeen} className="min-w-[100px]">
             Got it!
           </Button>
         </div>
