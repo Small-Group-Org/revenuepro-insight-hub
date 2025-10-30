@@ -4,7 +4,6 @@ import { X, Sparkles, FileText } from "lucide-react";
 import {
   RELEASE_NOTES,
   LAST_UPDATED,
-  FEATURE_REQUEST_URL,
   COMPANY_NAME,
   PAGE_TITLE,
 } from "@/constants/releaseNotes";
@@ -14,16 +13,15 @@ const ReleaseNotes: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="relative z-10 pt-4 pb-12 px-4">
-        {/* Close Button */}
-        <button
-          onClick={() => navigate("/")}
-          className="fixed top-6 right-6 z-50 bg-gradient-to-r from-primary to-primary/60 hover:from-primary/90 hover:to-primary/50 text-primary-foreground p-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110"
-          aria-label="Close and return to home"
-        >
-          <X size={24} />
-        </button>
-
+      {/* Brand Header */}
+      <div className="bg-primary text-primary-foreground h-[100px]">
+        <div className="max-w-7xl h-full flex items-center px-8">
+          <button onClick={() => navigate("/")} aria-label="Go to home" className="inline-flex items-center">
+            <img src="/logo.png" alt="Company logo" className="h-10 w-auto" />
+          </button>
+        </div>
+      </div>
+      <div className="relative z-10 pt-4 pb-12 px-4 mt-12">
         <div className="max-w-7xl mx-auto space-y-10">
           {/* Header */}
           <div className="text-center">
