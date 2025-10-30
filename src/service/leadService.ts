@@ -206,19 +206,6 @@ export interface GetAnalyticsTablePayload {
   showTopRanked?: boolean;
 }
 
-// Lead sheet processing interfaces
-export interface ProcessLeadSheetPayload {
-  sheetUrl: string;
-  clientId: string;
-  uniquenessByPhoneEmail: boolean;
-}
-
-export interface ProcessLeadSheetResponse {
-  success: boolean;
-  message?: string;
-  data?: any;
-}
-
 export const getPaginatedLeads = async (payload: GetPaginatedLeadsPayload) => {
   const params = new URLSearchParams();
   
@@ -342,11 +329,5 @@ export const getAnalyticsTable = async (payload: GetAnalyticsTablePayload) => {
   
   const url = `${API_ENDPOINTS.LEADS_ANALYTICS_AD_TABLE}?${params.toString()}`;
   const response = await doGET(url);
-  return response;
-};
-
-// Lead sheet processing function
-export const processLeadSheet = async (payload: ProcessLeadSheetPayload) => {
-  const response = await doPOST(API_ENDPOINTS.LEADS_PROCESS_SHEET, payload);
   return response;
 };
