@@ -13,8 +13,9 @@ interface User {
   _id?: string;
   name?: string;
   email?: string;
-  role?: string; // Add role here
-  lastAccessAt?: string; // Add lastAccessAt property
+  role?: string;
+  lastAccessAt?: string;
+  hasSeenLatestUpdate?: boolean;
   // Add other user properties as needed
 }
 

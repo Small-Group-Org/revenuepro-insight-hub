@@ -20,6 +20,7 @@ import { CompareResults } from "@/pages/CompareResults";
 import CreateUser from "./pages/CreateUser";
 import { DataProvider } from "@/contexts/DataContext";
 import Profile from "@/pages/Profile";
+import ReleaseNotes from "@/pages/ReleaseNotes";
 
 const App = () => {
   // Create a QueryClient instance inside the component
@@ -36,6 +37,7 @@ const App = () => {
               <DataProvider>
                 <Routes>
                   <Route path="/login" element={<Login />} />
+                  <Route path="/release-notes" element={<ReleaseNotes />} />
                   <Route element={<AppLayout />}>
                     <Route path="/" element={<Dashboard />} />
                     <Route path="/dashboard" element={<Dashboard />} />
