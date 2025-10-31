@@ -22,6 +22,7 @@ export interface UpdateUserPayload {
   email?: string;
   name?: string;
   status?: string;
+  role?: string;
 }
 
 export interface UpdatePasswordPayload {
