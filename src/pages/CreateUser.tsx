@@ -247,6 +247,7 @@ const CreateUser = () => {
         userId: userId,
         email: userData.email,
         name: userData.name,
+        role: userData.role,
       });
     }
 
