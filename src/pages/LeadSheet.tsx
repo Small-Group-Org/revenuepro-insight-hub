@@ -308,11 +308,6 @@ export const LeadSheet = () => {
 
     const searchName = currentFilters.searchName;
 
-    // If searchName is less than 3 characters (but not empty), don't make API call
-    if (searchName && searchName.length < 3) {
-      return;
-    }
-
     // For search changes, debounce by 500ms. For other changes, execute immediately
     const shouldDebounce = searchName !== undefined;
     const delay = shouldDebounce ? 500 : 0;
