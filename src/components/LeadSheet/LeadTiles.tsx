@@ -601,7 +601,7 @@ export const LeadTiles = React.memo(({
                                 : 'border-gray-300 hover:border-gray-400 bg-white hover:bg-gray-50'
                             } transition-all duration-200`}
                           >
-                            <SelectValue placeholder={pendingULRLeadId === lead.id ? "Select reason!" : "Reason..."}>
+                            <SelectValue placeholder={pendingULRLeadId === lead.id ? "Select reason!" : "Select a reason"}>
                               {lead.unqualifiedLeadReason && !ULR_OPTIONS.includes(lead.unqualifiedLeadReason) ? (
                                 <span className="text-blue-600 font-medium text-xs">"{lead.unqualifiedLeadReason}"</span>
                               ) : (
