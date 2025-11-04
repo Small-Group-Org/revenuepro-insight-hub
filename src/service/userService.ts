@@ -22,6 +22,7 @@ export interface UpdateUserPayload {
   email?: string;
   name?: string;
   status?: string;
+  role?: string;
 }
 
 export interface UpdatePasswordPayload {
@@ -66,5 +67,10 @@ export const updatePassword = async (payload: UpdatePasswordPayload) => {
 
 export const updateLastAccess = async () => {
   const response = await doPUT(API_ENDPOINTS.USER_LAST_ACCESS, {});
+  return response;
+};
+
+export const markUpdateAsSeen = async () => {
+  const response = await doPUT(API_ENDPOINTS.USER_MARK_UPDATE_SEEN, {});
   return response;
 };

@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { LogOut, TicketPlus, Ticket, Loader2, ArrowDown, Lightbulb, X, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useEffect } from "react";
 import useAuthStore from "@/stores/authStore";
 import { useUserContext } from "@/utils/UserContext";
@@ -215,7 +216,7 @@ export default function Profile() {
   };
 
   return (
-    <div className="h-full w-full">
+    <div className="h-full w-full flex flex-col">
       {/* Simple header without background color */}
       <div className="border-b">
         <div className="mx-auto px-6 md:px-8 py-6 md:py-8 flex items-center gap-4">
@@ -239,7 +240,7 @@ export default function Profile() {
         </div>
       </div>
 
-      <div className="mx-auto px-6 md:px-8 py-6 md:py-8">
+      <div className="px-6 md:px-8 py-6 md:py-8">
         <Accordion type="multiple" defaultValue={["support-tickets"]} className="w-full space-y-4">
           <AccordionItem value="support-tickets" className="border border-gray-200 rounded-lg bg-white shadow-sm">
             <AccordionTrigger className="text-lg font-semibold px-6 py-4 hover:bg-gray-50 transition-colors">
@@ -415,6 +416,45 @@ export default function Profile() {
           </AccordionItem>
         </Accordion>
       </div>
+
+      {/* Info & Links mini list */}
+      {/* Profile footer */}
+      <footer className="mt-auto w-full z-0 bg-[#1f1c13] text-white">
+        <div className="mx-auto px-6 md:px-8 py-4">
+          <nav className="flex flex-wrap items-center justify-center gap-4 text-sm">
+            <Link to="/release-notes" target="_blank" className="opacity-90 hover:opacity-100 hover:underline">
+              Release Notes
+            </Link>
+            <span className="opacity-40">•</span>
+            <a
+              href="https://getrevpro.co/privacy-policy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="opacity-90 hover:opacity-100 hover:underline"
+            >
+              Privacy Policy
+            </a>
+            <span className="opacity-40">•</span>
+            <a
+              href="https://getrevpro.co/revenue-pro-california-privacy-policy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="opacity-90 hover:opacity-100 hover:underline"
+            >
+              CA Privacy Policy
+            </a>
+            <span className="opacity-40">•</span>
+            <a
+              href="https://getrevpro.co/revenue-pro-terms-and-conditions"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="opacity-90 hover:opacity-100 hover:underline"
+            >
+              Terms & Conditions
+            </a>
+          </nav>
+        </div>
+      </footer>
 
       {/* Raise Ticket Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>

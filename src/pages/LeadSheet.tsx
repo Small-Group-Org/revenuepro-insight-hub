@@ -27,23 +27,19 @@ import { LeadSummaryCards } from "@/components/LeadSheet/LeadSummaryCards";
 import { LeadFiltersAndControls } from "@/components/LeadSheet/LeadFiltersAndControls";
 import { LeadPagination } from "@/components/LeadSheet/LeadPagination";
 import { LeadTiles } from "@/components/LeadSheet/LeadTiles";
-import { processLeadSheet } from "@/service/leadService";
 
 // Import refactored utilities and constants
 import {
   ULR_OPTIONS,
   TOAST_MESSAGES,
-  REFRESH_RATE_LIMIT,
 } from "@/constants/leadSheet.constants";
 import {
   getDateRange,
   processLeadsData,
   formatDate,
   hasActiveFilters,
-  hasValidLeadSheetUrl,
   findLeadById,
   validateCustomULR,
-  isRefreshRateLimited,
   isCustomULR,
   generateExportFileName,
   generateExportDescription,
@@ -77,10 +73,8 @@ export const LeadSheet = () => {
   const [customULR, setCustomULR] = useState<string>("");
   const [showCustomInput, setShowCustomInput] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState<boolean>(false);
-  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [leadToDelete, setLeadToDelete] = useState<string[]>([]);
   const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
-  const lastRefreshRef = useRef<number>(0);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const {
@@ -639,79 +633,6 @@ export const LeadSheet = () => {
     ]
   );
 
-  // Refresh leads
-  const handleRefreshLeads = useCallback(async () => {
-    // Prevent spam clicking - allow only one refresh per 3 seconds
-    if (isRefreshRateLimited(lastRefreshRef.current, REFRESH_RATE_LIMIT)) {
-      return;
-    }
-    lastRefreshRef.current = Date.now();
-
-    const selectedUser = users.find((user) => user.id === selectedUserId);
-    if (!selectedUser) return;
-
-    setIsRefreshing(true);
-
-    try {
-      const response = await processLeadSheet({
-        sheetUrl: selectedUser.leadSheetUrl,
-        clientId: selectedUserId,
-        uniquenessByPhoneEmail: true,
-      });
-
-      if (!response.error) {
-        showSuccessToast(TOAST_MESSAGES.SUCCESS.LEADS_REFRESHED);
-        const { startDate, endDate } =
-          period === "custom" && customRange
-            ? customRange
-            : getDateRange(selectedDate, period as any);
-
-        // Fetch filter options and status counts
-        fetchFilterOptions({
-          clientId: selectedUserId,
-          startDate,
-          endDate,
-        });
-
-        // Fetch paginated leads
-        fetchPaginatedLeads({
-          clientId: selectedUserId,
-          startDate,
-          endDate,
-          page: currentPage,
-          limit: pageSize,
-          sortBy: currentSorting.sortBy,
-          sortOrder: currentSorting.sortOrder,
-          ...currentFilters,
-        });
-      } else {
-        showErrorToast(TOAST_MESSAGES.ERROR.REFRESH_FAILED);
-      }
-    } catch (error) {
-      console.error("Error refreshing leads:", error);
-      showErrorToast(TOAST_MESSAGES.ERROR.REFRESH_FAILED);
-    } finally {
-      setIsRefreshing(false);
-    }
-  }, [
-    selectedUserId,
-    users,
-    selectedDate,
-    period,
-    currentPage,
-    pageSize,
-    currentSorting,
-    currentFilters.adSetName,
-    currentFilters.adName,
-    currentFilters.status,
-    currentFilters.unqualifiedLeadReason,
-    currentFilters.searchName,
-    fetchPaginatedLeads,
-    fetchFilterOptions,
-    showSuccessToast,
-    showErrorToast,
-  ]);
-
   // Clear filters
   const handleClearFilters = useCallback(() => {
     clearFilters();
@@ -726,12 +647,6 @@ export const LeadSheet = () => {
   const hasActiveFiltersValue = useMemo(
     () => hasActiveFilters(currentFilters),
     [currentFilters]
-  );
-
-  // Check if current user has a valid leadSheetUrl
-  const hasValidLeadSheetUrlValue = useMemo(
-    () => hasValidLeadSheetUrl(selectedUserId, users),
-    [selectedUserId, users]
   );
 
   return (
@@ -769,9 +684,6 @@ export const LeadSheet = () => {
               setPeriod("custom");
               setCustomRange(range);
             }}
-            showRefreshButton={hasValidLeadSheetUrlValue}
-            onRefreshClick={handleRefreshLeads}
-            isRefreshing={isRefreshing}
           />
 
           {/* Lead Cards */}
