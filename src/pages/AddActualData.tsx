@@ -16,6 +16,7 @@ import { useUserStore } from '@/stores/userStore';
 import { useRoleAccess } from '@/hooks/useRoleAccess';
 import { FullScreenLoader } from '@/components/ui/full-screen-loader';
 import { useCombinedLoading } from '@/hooks/useCombinedLoading';
+import DailyBudgetManager from '@/components/DailyBudgetManager';
 
 export const AddActualData = () => {
   const { reportingData, targetData, getReportingData, upsertReportingData, error } = useReportingDataStore();
@@ -286,6 +287,17 @@ React.useEffect(() => {
             showTarget={true}
           />
         </div>
+
+        {/* Daily Budget + Ad Names Amount (Weekly only) placed below sections */}
+        {period === 'weekly' && (
+          <div className=" mx-auto mb-8">
+            <DailyBudgetManager
+              selectedDate={selectedDate}
+              weeklyBudget={Number(calculatedValues?.weeklyBudget || 0)}
+              initialAdNamesAmount={(reportingData && reportingData[0]?.adNamesAmount) || []}
+            />
+          </div>
+        )}
       </div>
       
       {/* Full Screen Loader */}
