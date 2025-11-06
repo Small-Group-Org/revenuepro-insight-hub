@@ -3,8 +3,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { useReportingDataStore } from '@/stores/reportingDataStore';
-import { format } from 'date-fns';
-import { getWeekInfo, getWeeksInMonth } from '@/utils/weekLogic';
+import { useToast } from '@/hooks/use-toast';
+import { format, addDays } from 'date-fns';
+import { getWeekInfo } from '@/utils/weekLogic';
+import { Undo2, Trash2 } from 'lucide-react';
 
 type AdNameAmount = {
   adName: string;
@@ -33,26 +35,32 @@ export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
       ? initialAdNamesAmount
       : [{ adName: '', budget: 0 }]
   );
+  const [undoHistory, setUndoHistory] = useState<AdNameAmount[][]>([]);
+  const { toast } = useToast();
 
   // Sync rows when week changes or incoming data updates
   useEffect(() => {
-    setRows(
-      initialAdNamesAmount && initialAdNamesAmount.length > 0
-        ? initialAdNamesAmount
-        : [{ adName: '', budget: 0 }]
-    );
+    const newRows = initialAdNamesAmount && initialAdNamesAmount.length > 0
+      ? initialAdNamesAmount
+      : [{ adName: '', budget: 0 }];
+    setRows(newRows);
+    // Clear undo history when week changes
+    setUndoHistory([]);
   }, [selectedDate, initialAdNamesAmount]);
 
   const { upsertReportingData } = useReportingDataStore();
 
+  // Save current state to undo history
+  const saveToUndoHistory = (currentRows: AdNameAmount[]) => {
+    setUndoHistory(prev => [...prev, JSON.parse(JSON.stringify(currentRows))]);
+  };
+
   const totals = useMemo(() => {
-    const weekInfo = getWeekInfo(selectedDate);
-    const weeksInMonth = getWeeksInMonth(weekInfo.belongsToYear, weekInfo.belongsToMonth).length || 1;
-    const dailyBudget = (weeklyBudget || 0) / weeksInMonth;
+    const dailyBudget = (weeklyBudget || 0) / 7;
     const dailyBudgetInMarket = rows.reduce((sum, r) => sum + (Number(r.budget) || 0), 0);
     const dailyBudgetLeft = dailyBudget - dailyBudgetInMarket;
-    return { dailyBudget, dailyBudgetInMarket, dailyBudgetLeft, weeksInMonth } as any;
-  }, [rows, weeklyBudget, selectedDate]);
+    return { dailyBudget, dailyBudgetInMarket, dailyBudgetLeft };
+  }, [rows, weeklyBudget]);
 
   const handleRowChange = (index: number, key: keyof AdNameAmount, value: string) => {
     setRows(prev =>
@@ -67,21 +75,69 @@ export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
     );
   };
 
-  const addRow = () => setRows(prev => [...prev, { adName: '', budget: 0 }]);
-  const removeRow = (index: number) =>
+  const addRow = () => {
+    saveToUndoHistory(rows);
+    setRows(prev => [...prev, { adName: '', budget: 0 }]);
+  };
+
+  const removeRow = (index: number) => {
+    saveToUndoHistory(rows);
     setRows(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleUndo = () => {
+    if (undoHistory.length > 0) {
+      const previousState = undoHistory[undoHistory.length - 1];
+      setUndoHistory(prev => prev.slice(0, -1));
+      setRows(previousState);
+      toast({
+        title: "Undone",
+        description: "Previous state restored",
+      });
+    }
+  };
 
   const handleSave = async () => {
     const weekInfo = getWeekInfo(selectedDate);
-    const payload = {
+    const adNamesAmount = rows
+      .filter(r => r.adName.trim().length > 0)
+      .map(r => ({ adName: r.adName.trim(), budget: Number(r.budget) || 0 }));
+
+    // Current week payload
+    const currentWeekPayload = {
       startDate: format(weekInfo.weekStart, 'yyyy-MM-dd'),
       endDate: format(weekInfo.weekEnd, 'yyyy-MM-dd'),
-      adNamesAmount: rows
-        .filter(r => r.adName.trim().length > 0)
-        .map(r => ({ adName: r.adName.trim(), budget: Number(r.budget) || 0 })),
+      adNamesAmount,
     } as any;
 
-    await upsertReportingData(payload);
+    // Next week payload
+    const nextWeekStart = addDays(weekInfo.weekStart, 7);
+    const nextWeekEnd = addDays(weekInfo.weekEnd, 7);
+    const nextWeekInfo = getWeekInfo(nextWeekStart);
+    const nextWeekPayload = {
+      startDate: format(nextWeekInfo.weekStart, 'yyyy-MM-dd'),
+      endDate: format(nextWeekInfo.weekEnd, 'yyyy-MM-dd'),
+      adNamesAmount,
+    } as any;
+
+    try {
+      // Save current week
+      await upsertReportingData(currentWeekPayload);
+      
+      // Save next week
+      await upsertReportingData(nextWeekPayload);
+      
+      toast({
+        title: "✅ Saved Successfully",
+        description: "Data saved for current week and next week",
+      });
+    } catch (error) {
+      toast({
+        title: "❌ Error Saving",
+        description: "Failed to save data",
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
@@ -98,7 +154,7 @@ export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-sm font-medium text-card-foreground">Daily Budget</div>
-                <div className="text-[10px] text-muted-foreground">Weekly ÷ Weeks in Month ({totals.weeksInMonth})</div>
+                <div className="text-[10px] text-muted-foreground">Weekly ÷ 7</div>
               </div>
               <div className="text-base font-semibold text-card-foreground">{currency.format(totals.dailyBudget)}</div>
             </div>
@@ -133,7 +189,15 @@ export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gradient-primary">Ads Costs</h2>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setRows([])}>Clear All</Button>
+                <Button 
+                  variant="outline" 
+                  onClick={handleUndo} 
+                  disabled={undoHistory.length === 0}
+                  title={undoHistory.length === 0 ? "No actions to undo" : "Undo last action"}
+                >
+                  <Undo2 className="h-4 w-4 mr-1" />
+                  Undo
+                </Button>
                 <Button variant="secondary" onClick={addRow}>Add Row</Button>
                 <Button onClick={handleSave}>Save</Button>
               </div>
@@ -144,7 +208,7 @@ export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
             <div className="grid grid-cols-12 gap-3 pb-2 text-sm font-medium text-muted-foreground">
               <div className="col-span-7">Ad Name</div>
               <div className="col-span-3">Amount</div>
-              <div className="col-span-2">Actions</div>
+              <div className="col-span-2"></div>
             </div>
 
             {rows.length === 0 && (
@@ -169,8 +233,13 @@ export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
                   />
                 </div>
                 <div className="col-span-2">
-                  <Button variant="destructive" onClick={() => removeRow(index)}>
-                    Remove
+                  <Button 
+                    variant="destructive" 
+                    size="icon"
+                    onClick={() => removeRow(index)}
+                    title="Remove row"
+                  >
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
