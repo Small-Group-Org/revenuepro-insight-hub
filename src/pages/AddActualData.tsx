@@ -290,7 +290,7 @@ React.useEffect(() => {
 
         {/* Daily Budget + Ad Names Amount (Weekly only) placed below sections */}
         {period === 'weekly' && (
-          <div className=" mx-auto mb-8">
+          <div className="w-full mx-auto mb-8">
             <DailyBudgetManager
               selectedDate={selectedDate}
               weeklyBudget={Number(calculatedValues?.weeklyBudget || 0)}

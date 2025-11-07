@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { format, addDays } from 'date-fns';
 import { getWeekInfo } from '@/utils/weekLogic';
 import { Undo2, Trash2 } from 'lucide-react';
+import { useUserContext } from '@/utils/UserContext';
 
 type AdNameAmount = {
   adName: string;
@@ -25,22 +26,48 @@ const currency = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 2,
 });
 
+// Allowed user IDs who can edit
+const ALLOWED_EDIT_USER_IDS = [
+  '68ae0fa4adbebc3a37f351ba',
+  '68ae04ddadbebc3a37f34e39',
+  '68ac6ebce46631727500499b',
+  '68c06429a91e4097d8d1a05d',
+  "683acb7561f26ee98f5d2d51"
+  
+];
+
 export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
   selectedDate,
   weeklyBudget,
   initialAdNamesAmount = [],
 }) => {
+  const { user } = useUserContext();
   const [rows, setRows] = useState<AdNameAmount[]>(
-    initialAdNamesAmount.length > 0
+    Array.isArray(initialAdNamesAmount) && initialAdNamesAmount.length > 0
       ? initialAdNamesAmount
       : [{ adName: '', budget: 0 }]
   );
   const [deletedRows, setDeletedRows] = useState<AdNameAmount[]>([]);
   const { toast } = useToast();
+  const { upsertReportingData } = useReportingDataStore();
+
+  // Check if user can view the component (all admins can view)
+  const canView = useMemo(() => {
+    if (!user?._id) return false;
+    const isAdmin = user.role === 'ADMIN';
+    const isAllowedEditUser = ALLOWED_EDIT_USER_IDS.includes(user._id);
+    return isAdmin || isAllowedEditUser;
+  }, [user]);
+
+  // Check if user can edit (only specific allowed user IDs can edit)
+  const canEdit = useMemo(() => {
+    if (!user?._id) return false;
+    return ALLOWED_EDIT_USER_IDS.includes(user._id);
+  }, [user]);
 
   // Sync rows when week changes or incoming data updates
   useEffect(() => {
-    const newRows = initialAdNamesAmount && initialAdNamesAmount.length > 0
+    const newRows = Array.isArray(initialAdNamesAmount) && initialAdNamesAmount.length > 0
       ? initialAdNamesAmount
       : [{ adName: '', budget: 0 }];
     setRows(newRows);
@@ -48,45 +75,51 @@ export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
     setDeletedRows([]);
   }, [selectedDate, initialAdNamesAmount]);
 
-  const { upsertReportingData } = useReportingDataStore();
-
   const totals = useMemo(() => {
     const dailyBudget = (weeklyBudget || 0) / 7;
-    const dailyBudgetInMarket = rows.reduce((sum, r) => sum + (Number(r.budget) || 0), 0);
+    const safeRows = Array.isArray(rows) ? rows : [];
+    const dailyBudgetInMarket = safeRows.reduce((sum, r) => sum + (Number(r.budget) || 0), 0);
     const dailyBudgetLeft = dailyBudget - dailyBudgetInMarket;
     return { dailyBudget, dailyBudgetInMarket, dailyBudgetLeft };
   }, [rows, weeklyBudget]);
 
+  // Don't render if user can't view
+  if (!canView) {
+    return null;
+  }
+
   const handleRowChange = (index: number, key: keyof AdNameAmount, value: string) => {
-    setRows(prev =>
-      prev.map((r, i) =>
+    setRows(prev => {
+      if (!Array.isArray(prev)) return [{ adName: '', budget: 0 }];
+      return prev.map((r, i) =>
         i === index
           ? {
               ...r,
               [key]: key === 'budget' ? (value === '' ? 0 : Number(value) || 0) : value,
             }
           : r
-      )
-    );
+      );
+    });
   };
 
   const addRow = () => {
-    setRows(prev => [...prev, { adName: '', budget: 0 }]);
+    setRows(prev => Array.isArray(prev) ? [...prev, { adName: '', budget: 0 }] : [{ adName: '', budget: 0 }]);
   };
 
   const removeRow = (index: number) => {
+    if (!Array.isArray(rows)) return;
     const rowToDelete = rows[index];
     if (rowToDelete) {
       setDeletedRows(prev => [...prev, rowToDelete]);
-      setRows(prev => prev.filter((_, i) => i !== index));
+      setRows(prev => Array.isArray(prev) ? prev.filter((_, i) => i !== index) : []);
     }
   };
 
   const handleUndo = () => {
     if (deletedRows.length > 0) {
       const rowToRestore = deletedRows[deletedRows.length - 1];
-      setDeletedRows(prev => prev.slice(0, -1));
-      setRows(prev => [...prev, rowToRestore]);
+      setDeletedRows(prev => Array.isArray(prev) ? prev.slice(0, -1) : []);
+      setRows(prev => Array.isArray(prev) ? [...prev, rowToRestore] : [rowToRestore]);
       toast({
         title: "Undone",
         description: "Deleted row restored",
@@ -96,7 +129,8 @@ export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
 
   const handleSave = async () => {
     const weekInfo = getWeekInfo(selectedDate);
-    const adNamesAmount = rows
+    const safeRows = Array.isArray(rows) ? rows : [];
+    const adNamesAmount = safeRows
       .filter(r => r.adName.trim().length > 0)
       .map(r => ({ adName: r.adName.trim(), budget: Number(r.budget) || 0 }));
 
@@ -189,14 +223,25 @@ export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
                 <Button 
                   variant="outline" 
                   onClick={handleUndo} 
-                  disabled={deletedRows.length === 0}
+                  disabled={!canEdit || deletedRows.length === 0}
                   title={deletedRows.length === 0 ? "No deleted rows to restore" : "Restore last deleted row"}
                 >
                   <Undo2 className="h-4 w-4 mr-1" />
                   Undo
                 </Button>
-                <Button variant="secondary" onClick={addRow}>Add Row</Button>
-                <Button onClick={handleSave}>Save</Button>
+                <Button 
+                  variant="secondary" 
+                  onClick={addRow}
+                  disabled={!canEdit}
+                >
+                  Add Row
+                </Button>
+                <Button 
+                  onClick={handleSave}
+                  disabled={!canEdit}
+                >
+                  Save
+                </Button>
               </div>
             </div>
           </div>
@@ -208,17 +253,18 @@ export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
               <div className="col-span-2"></div>
             </div>
 
-            {rows.length === 0 && (
+            {(!Array.isArray(rows) || rows.length === 0) && (
               <div className="text-sm text-muted-foreground py-4">No ads added. Click "Add Row" to start.</div>
             )}
 
-            {rows.map((row, index) => (
+            {Array.isArray(rows) && rows.map((row, index) => (
               <div key={index} className="grid grid-cols-12 gap-3 items-center py-2">
                 <div className="col-span-7">
                   <Input
                     value={row.adName}
                     onChange={e => handleRowChange(index, 'adName', e.target.value)}
                     placeholder="Campaign Name / Adset Name"
+                    disabled={!canEdit}
                   />
                 </div>
                 <div className="col-span-3">
@@ -227,6 +273,7 @@ export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
                     value={row.budget === 0 ? '' : row.budget}
                     onChange={e => handleRowChange(index, 'budget', e.target.value)}
                     min={0}
+                    disabled={!canEdit}
                   />
                 </div>
                 <div className="col-span-2">
@@ -235,7 +282,8 @@ export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
                     size="icon"
                     onClick={() => removeRow(index)}
                     title="Remove row"
-                    className="text-red-600 hover:text-red-600 hover:bg-black/5" 
+                    className="text-red-600 hover:text-red-600 hover:bg-black/5"
+                    disabled={!canEdit}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
