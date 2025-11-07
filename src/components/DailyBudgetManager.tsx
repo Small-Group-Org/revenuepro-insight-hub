@@ -231,10 +231,11 @@ export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
                 </div>
                 <div className="col-span-2">
                   <Button 
-                    variant="destructive" 
+                    variant="ghost" 
                     size="icon"
                     onClick={() => removeRow(index)}
                     title="Remove row"
+                    className="text-red-600 hover:text-red-600 hover:bg-black/5" 
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
