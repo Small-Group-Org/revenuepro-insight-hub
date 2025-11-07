@@ -35,7 +35,7 @@ export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
       ? initialAdNamesAmount
       : [{ adName: '', budget: 0 }]
   );
-  const [undoHistory, setUndoHistory] = useState<AdNameAmount[][]>([]);
+  const [deletedRows, setDeletedRows] = useState<AdNameAmount[]>([]);
   const { toast } = useToast();
 
   // Sync rows when week changes or incoming data updates
@@ -44,16 +44,11 @@ export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
       ? initialAdNamesAmount
       : [{ adName: '', budget: 0 }];
     setRows(newRows);
-    // Clear undo history when week changes
-    setUndoHistory([]);
+    // Clear deleted rows history when week changes
+    setDeletedRows([]);
   }, [selectedDate, initialAdNamesAmount]);
 
   const { upsertReportingData } = useReportingDataStore();
-
-  // Save current state to undo history
-  const saveToUndoHistory = (currentRows: AdNameAmount[]) => {
-    setUndoHistory(prev => [...prev, JSON.parse(JSON.stringify(currentRows))]);
-  };
 
   const totals = useMemo(() => {
     const dailyBudget = (weeklyBudget || 0) / 7;
@@ -68,7 +63,7 @@ export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
         i === index
           ? {
               ...r,
-              [key]: key === 'budget' ? Number(value || 0) : value,
+              [key]: key === 'budget' ? (value === '' ? 0 : Number(value) || 0) : value,
             }
           : r
       )
@@ -76,23 +71,25 @@ export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
   };
 
   const addRow = () => {
-    saveToUndoHistory(rows);
     setRows(prev => [...prev, { adName: '', budget: 0 }]);
   };
 
   const removeRow = (index: number) => {
-    saveToUndoHistory(rows);
-    setRows(prev => prev.filter((_, i) => i !== index));
+    const rowToDelete = rows[index];
+    if (rowToDelete) {
+      setDeletedRows(prev => [...prev, rowToDelete]);
+      setRows(prev => prev.filter((_, i) => i !== index));
+    }
   };
 
   const handleUndo = () => {
-    if (undoHistory.length > 0) {
-      const previousState = undoHistory[undoHistory.length - 1];
-      setUndoHistory(prev => prev.slice(0, -1));
-      setRows(previousState);
+    if (deletedRows.length > 0) {
+      const rowToRestore = deletedRows[deletedRows.length - 1];
+      setDeletedRows(prev => prev.slice(0, -1));
+      setRows(prev => [...prev, rowToRestore]);
       toast({
         title: "Undone",
-        description: "Previous state restored",
+        description: "Deleted row restored",
       });
     }
   };
@@ -164,7 +161,7 @@ export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-sm font-medium text-card-foreground">Daily Budget In Market</div>
-                <div className="text-[10px] text-muted-foreground">Sum of ad amounts</div>
+                {/* <div className="text-[10px] text-muted-foreground">Sum of ad amounts</div> */}
               </div>
               <div className="text-base font-semibold text-card-foreground">{currency.format(totals.dailyBudgetInMarket)}</div>
             </div>
@@ -187,13 +184,13 @@ export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
         <Card className="bg-card/90 backdrop-blur-sm border border-border/20 shadow-xl h-full min-h-[360px]">
           <div className="p-6 border-b border-border/50 bg-gradient-secondary/10">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gradient-primary">Ads Costs</h2>
+              <h2 className="text-lg font-semibold text-gradient-primary">Campaign Costs</h2>
               <div className="flex gap-2">
                 <Button 
                   variant="outline" 
                   onClick={handleUndo} 
-                  disabled={undoHistory.length === 0}
-                  title={undoHistory.length === 0 ? "No actions to undo" : "Undo last action"}
+                  disabled={deletedRows.length === 0}
+                  title={deletedRows.length === 0 ? "No deleted rows to restore" : "Restore last deleted row"}
                 >
                   <Undo2 className="h-4 w-4 mr-1" />
                   Undo
@@ -206,7 +203,7 @@ export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
 
           <div className="p-6">
             <div className="grid grid-cols-12 gap-3 pb-2 text-sm font-medium text-muted-foreground">
-              <div className="col-span-7">Ad Name</div>
+              <div className="col-span-7">Campaign Name / Adset Name</div>
               <div className="col-span-3">Amount</div>
               <div className="col-span-2"></div>
             </div>
@@ -221,13 +218,13 @@ export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
                   <Input
                     value={row.adName}
                     onChange={e => handleRowChange(index, 'adName', e.target.value)}
-                    placeholder="Ad name"
+                    placeholder="Campaign Name / Adset Name"
                   />
                 </div>
                 <div className="col-span-3">
                   <Input
                     type="number"
-                    value={row.budget}
+                    value={row.budget === 0 ? '' : row.budget}
                     onChange={e => handleRowChange(index, 'budget', e.target.value)}
                     min={0}
                   />
