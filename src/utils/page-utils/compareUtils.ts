@@ -142,6 +142,16 @@ export const handleInputDisable = (
         isButtonDisabled,
       };
     }
+  } else if (pageType === "leadSheet") {
+    // For LeadSheet page, allow editing regardless of time frame (past or future)
+    // Users should be able to update leads from any week
+    return {
+      isDisabled,
+      disabledMessage,
+      noteMessage,
+      shouldDisableNonRevenueFields,
+      isButtonDisabled,
+    };
   } else {
     // For SetTargets page, check if the time frame is editable (not in the past)
     if(userRole === 'ADMIN'){
