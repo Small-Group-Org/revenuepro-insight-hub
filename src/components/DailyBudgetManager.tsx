@@ -49,7 +49,7 @@ export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
   );
   const [deletedRows, setDeletedRows] = useState<AdNameAmount[]>([]);
   const { toast } = useToast();
-  const { upsertReportingData } = useReportingDataStore();
+  const { upsertReportingData, reportingData, getReportingData } = useReportingDataStore();
 
   // Check if user can view the component (all admins can view)
   const canView = useMemo(() => {
@@ -134,29 +134,56 @@ export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
       .filter(r => r.adName.trim().length > 0)
       .map(r => ({ adName: r.adName.trim(), budget: Number(r.budget) || 0 }));
 
-    // Current week payload
-    const currentWeekPayload = {
-      startDate: format(weekInfo.weekStart, 'yyyy-MM-dd'),
-      endDate: format(weekInfo.weekEnd, 'yyyy-MM-dd'),
-      adNamesAmount,
-    } as any;
-
-    // Next week payload
-    const nextWeekStart = addDays(weekInfo.weekStart, 7);
-    const nextWeekEnd = addDays(weekInfo.weekEnd, 7);
-    const nextWeekInfo = getWeekInfo(nextWeekStart);
-    const nextWeekPayload = {
-      startDate: format(nextWeekInfo.weekStart, 'yyyy-MM-dd'),
-      endDate: format(nextWeekInfo.weekEnd, 'yyyy-MM-dd'),
-      adNamesAmount,
-    } as any;
+    const startDate = format(weekInfo.weekStart, 'yyyy-MM-dd');
+    const endDate = format(weekInfo.weekEnd, 'yyyy-MM-dd');
 
     try {
+      // Get existing reporting data to preserve all other fields
+      const existingData = reportingData && reportingData[0] ? reportingData[0] : null;
+      
+      // Extract all existing fields except adNamesAmount and metadata
+      const existingFields: any = {};
+      if (existingData) {
+        Object.keys(existingData).forEach(key => {
+          if (key !== 'adNamesAmount' && 
+              key !== 'userId' && 
+              key !== '_id' && 
+              key !== 'createdAt' && 
+              key !== 'updatedAt' && 
+              key !== '__v' &&
+              key !== 'startDate' &&
+              key !== 'endDate') {
+            existingFields[key] = existingData[key];
+          }
+        });
+      }
+
+      // Current week payload - merge existing fields with new adNamesAmount
+      const currentWeekPayload = {
+        startDate: startDate,
+        endDate: endDate,
+        ...existingFields,
+        adNamesAmount,
+      } as any;
+
+      // Next week payload - for next week, we only save adNamesAmount
+      const nextWeekStart = addDays(weekInfo.weekStart, 7);
+      const nextWeekEnd = addDays(weekInfo.weekEnd, 7);
+      const nextWeekInfo = getWeekInfo(nextWeekStart);
+      const nextWeekPayload = {
+        startDate: format(nextWeekInfo.weekStart, 'yyyy-MM-dd'),
+        endDate: format(nextWeekInfo.weekEnd, 'yyyy-MM-dd'),
+        adNamesAmount,
+      } as any;
+
       // Save current week
       await upsertReportingData(currentWeekPayload);
       
       // Save next week
       await upsertReportingData(nextWeekPayload);
+      
+      // Refetch reporting data to update the store with complete data from API
+      await getReportingData(startDate, endDate, 'weekly', 'weekly');
       
       toast({
         title: "✅ Saved Successfully",

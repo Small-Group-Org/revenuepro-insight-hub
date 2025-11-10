@@ -117,7 +117,8 @@ export const useReportingDataStore = create<ReportingDataState>((set, get) => ({
       }
       const response = await saveReportingData({ ...data, userId });
       if (response && !response.error) {
-        set({ reportingData: Array.isArray(response.data) ? response.data : [response.data] });
+        // Don't update reportingData here - let the component refetch after save
+        // This prevents losing fields that might not be in the API response
       } else {
         set({ error: response?.message || 'Failed to upsert reporting data' });
       }
