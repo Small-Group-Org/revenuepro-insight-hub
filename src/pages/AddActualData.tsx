@@ -160,14 +160,45 @@ React.useEffect(() => {
       inputData[name] = fieldValues[name];
     });
 
+    // Get existing reporting data to preserve all fields
+    const existingData = reportingData && reportingData[0] ? reportingData[0] : null;
+    
+    // Preserve ALL existing fields except metadata
+    // This ensures target report fields (revenue, sales, etc.) and adNamesAmount are preserved
+    const preservedFields: any = {};
+    if (existingData) {
+      Object.keys(existingData).forEach(key => {
+        // Skip metadata fields
+        if (key !== 'userId' && 
+            key !== '_id' && 
+            key !== 'createdAt' && 
+            key !== 'updatedAt' && 
+            key !== '__v' &&
+            key !== 'startDate' &&
+            key !== 'endDate') {
+          // Preserve ALL existing fields (including target report input fields and adNamesAmount)
+          // Include even if value is 0, null, or undefined to ensure API has all fields
+          const value = existingData[key];
+          if (value !== undefined) {
+            preservedFields[key] = value !== null ? value : 0;
+          }
+        }
+      });
+    }
+
     const dataToSave = {
       startDate: startDate,
       endDate: endDate,
-      ...inputData
+      ...preservedFields, // Preserve ALL existing fields first (including target report fields)
+      ...inputData, // Then add/update input fields (this will overwrite only changed fields)
     };
 
     try {
       await upsertReportingData(dataToSave);
+      
+      // Refetch reporting data to get complete data from API
+      await getReportingData(startDate, endDate, 'weekly', period);
+      
       toast({
         title: "✅ Data Saved Successfully!",
         description: `Week of ${format(new Date(startDate), 'MMM dd, yyyy')} has been updated.`,
@@ -179,7 +210,7 @@ React.useEffect(() => {
         variant: 'destructive',
       });
     }
-  }, [selectedDate, fieldValues, upsertReportingData, toast, getInputFieldNames, error]);
+  }, [selectedDate, fieldValues, reportingData, period, upsertReportingData, getReportingData, toast, getInputFieldNames, error]);
 
   const isHighlighted = useCallback((fieldName: string) => {
     if (!lastChanged) return false;
