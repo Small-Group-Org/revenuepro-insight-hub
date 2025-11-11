@@ -2,12 +2,14 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { useReportingDataStore } from '@/stores/reportingDataStore';
 import { useToast } from '@/hooks/use-toast';
 import { format, addDays } from 'date-fns';
 import { getWeekInfo } from '@/utils/weekLogic';
 import { Undo2, Trash2 } from 'lucide-react';
 import { useUserContext } from '@/utils/UserContext';
+import { getReportingData as fetchReportingData, upsertReportingData as saveReportingData } from '@/service/reportingServices';
+import { useUserStore } from '@/stores/userStore';
+import { FullScreenLoader } from '@/components/ui/full-screen-loader';
 
 type AdNameAmount = {
   adName: string;
@@ -42,14 +44,25 @@ export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
   initialAdNamesAmount = [],
 }) => {
   const { user } = useUserContext();
+  const selectedUserId = useUserStore((s) => s.selectedUserId);
   const [rows, setRows] = useState<AdNameAmount[]>(
     Array.isArray(initialAdNamesAmount) && initialAdNamesAmount.length > 0
       ? initialAdNamesAmount
       : [{ adName: '', budget: 0 }]
   );
+  const [existingFields, setExistingFields] = useState<Record<string, any>>({});
   const [deletedRows, setDeletedRows] = useState<AdNameAmount[]>([]);
   const { toast } = useToast();
-  const { upsertReportingData, reportingData, getReportingData } = useReportingDataStore();
+  const [isDirty, setIsDirty] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  const getDraftKey = useMemo(() => {
+    const weekInfo = getWeekInfo(selectedDate);
+    const start = format(weekInfo.weekStart, 'yyyy-MM-dd');
+    const effectiveUserId = user?.role === 'ADMIN' ? (selectedUserId || user?._id) : user?._id;
+    return effectiveUserId ? `dailyBudgetDraft:${effectiveUserId}:${start}` : '';
+  }, [selectedDate, user?.role, user?._id, selectedUserId]);
+
 
   // Check if user can view the component (all admins can view)
   const canView = useMemo(() => {
@@ -65,15 +78,68 @@ export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
     return ALLOWED_EDIT_USER_IDS.includes(user._id);
   }, [user]);
 
-  // Sync rows when week changes or incoming data updates
+  // Note: Do not sync rows from props after mount.
+  // Rows are sourced from the component's local fetch to avoid clobbering unsaved or just-saved data.
+
+  // Locally fetch reporting data for this component only (decoupled from global store)
   useEffect(() => {
-    const newRows = Array.isArray(initialAdNamesAmount) && initialAdNamesAmount.length > 0
-      ? initialAdNamesAmount
-      : [{ adName: '', budget: 0 }];
-    setRows(newRows);
-    // Clear deleted rows history when week changes
-    setDeletedRows([]);
-  }, [selectedDate, initialAdNamesAmount]);
+    const load = async () => {
+      try {
+        setIsLoading(true);
+        const weekInfo = getWeekInfo(selectedDate);
+        const startDate = format(weekInfo.weekStart, 'yyyy-MM-dd');
+        const endDate = format(weekInfo.weekEnd, 'yyyy-MM-dd');
+        // Determine effective user id (admins may operate on a selected user)
+        const effectiveUserId = user?.role === 'ADMIN' ? (selectedUserId || user?._id) : user?._id;
+        if (!effectiveUserId) return;
+        const resp = await fetchReportingData(effectiveUserId, startDate, endDate, 'weekly');
+        const payload = resp?.data?.data;
+        const actualArray = Array.isArray(payload?.actual) ? payload.actual : (payload?.actual ? [payload.actual] : []);
+        const actual = actualArray && actualArray.length > 0 ? actualArray[0] : null;
+        if (actual) {
+          const fetchedRows: AdNameAmount[] = Array.isArray(actual.adNamesAmount) ? actual.adNamesAmount : [];
+          // Prefer any draft
+          let appliedRows = fetchedRows.length > 0 ? fetchedRows : [{ adName: '', budget: 0 }];
+          if (getDraftKey) {
+            const draftStr = sessionStorage.getItem(getDraftKey);
+            if (draftStr) {
+              try {
+                const draft = JSON.parse(draftStr);
+                if (Array.isArray(draft?.rows)) {
+                  appliedRows = draft.rows.length > 0 ? draft.rows : [{ adName: '', budget: 0 }];
+                  setIsDirty(true);
+                }
+              } catch {}
+            }
+          }
+          setRows(appliedRows);
+          const preserved: Record<string, any> = {};
+          Object.keys(actual).forEach((key) => {
+            if (
+              key !== 'adNamesAmount' &&
+              key !== 'userId' &&
+              key !== '_id' &&
+              key !== 'createdAt' &&
+              key !== 'updatedAt' &&
+              key !== '__v' &&
+              key !== 'startDate' &&
+              key !== 'endDate'
+            ) {
+              preserved[key] = actual[key];
+            }
+          });
+          setExistingFields(preserved);
+        } else {
+          setExistingFields({});
+        }
+      } catch {
+        // ignore fetch errors to avoid breaking UI
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    if (canView) load();
+  }, [canView, selectedDate, selectedUserId, user?.role, user?._id]);
 
   const totals = useMemo(() => {
     const dailyBudget = (weeklyBudget || 0) / 7;
@@ -90,8 +156,8 @@ export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
 
   const handleRowChange = (index: number, key: keyof AdNameAmount, value: string) => {
     setRows(prev => {
-      if (!Array.isArray(prev)) return [{ adName: '', budget: 0 }];
-      return prev.map((r, i) =>
+      const base = Array.isArray(prev) ? prev : [{ adName: '', budget: 0 }];
+      const next = base.map((r, i) =>
         i === index
           ? {
               ...r,
@@ -99,6 +165,11 @@ export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
             }
           : r
       );
+      setIsDirty(true);
+      try {
+        if (getDraftKey) sessionStorage.setItem(getDraftKey, JSON.stringify({ rows: next }));
+      } catch {}
+      return next;
     });
   };
 
@@ -137,32 +208,16 @@ export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
     const startDate = format(weekInfo.weekStart, 'yyyy-MM-dd');
     const endDate = format(weekInfo.weekEnd, 'yyyy-MM-dd');
 
+    setIsLoading(true);
     try {
-      // Get existing reporting data to preserve all other fields
-      const existingData = reportingData && reportingData[0] ? reportingData[0] : null;
-      
-      // Extract all existing fields except adNamesAmount and metadata
-      const existingFields: any = {};
-      if (existingData) {
-        Object.keys(existingData).forEach(key => {
-          if (key !== 'adNamesAmount' && 
-              key !== 'userId' && 
-              key !== '_id' && 
-              key !== 'createdAt' && 
-              key !== 'updatedAt' && 
-              key !== '__v' &&
-              key !== 'startDate' &&
-              key !== 'endDate') {
-            existingFields[key] = existingData[key];
-          }
-        });
-      }
+      // Use locally fetched existingFields to preserve other fields
+      const baseFields: any = { ...existingFields };
 
       // Current week payload - merge existing fields with new adNamesAmount
       const currentWeekPayload = {
         startDate: startDate,
         endDate: endDate,
-        ...existingFields,
+        ...baseFields,
         adNamesAmount,
       } as any;
 
@@ -176,14 +231,61 @@ export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
         adNamesAmount,
       } as any;
 
-      // Save current week
-      await upsertReportingData(currentWeekPayload);
+      // Resolve effective user id
+      const effectiveUserId = user?.role === 'ADMIN' ? (selectedUserId || user?._id) : user?._id;
+      if (!effectiveUserId) throw new Error('No user id');
+
+      // Save current week (direct service, not global store)
+      await saveReportingData({ ...currentWeekPayload, userId: effectiveUserId });
       
       // Save next week
-      await upsertReportingData(nextWeekPayload);
+      await saveReportingData({ ...nextWeekPayload, userId: effectiveUserId });
       
-      // Refetch reporting data to update the store with complete data from API
-      await getReportingData(startDate, endDate, 'weekly', 'weekly');
+      // Immediately update local state with saved data (optimistic update)
+      setRows(adNamesAmount.length > 0 ? adNamesAmount : [{ adName: '', budget: 0 }]);
+      setIsDirty(false);
+      
+      // Clear draft after successful save
+      try {
+        const draftKey = `dailyBudgetDraft:${effectiveUserId}:${startDate}`;
+        sessionStorage.removeItem(draftKey);
+      } catch {}
+      
+      // Wait a bit then refetch to sync with server (ensures API has processed)
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Locally refetch to update this component state only (decoupled from global store)
+      try {
+        const resp = await fetchReportingData(effectiveUserId, startDate, endDate, 'weekly');
+        const payload = resp?.data?.data;
+        const actualArray = Array.isArray(payload?.actual) ? payload.actual : (payload?.actual ? [payload.actual] : []);
+        const actual = actualArray && actualArray.length > 0 ? actualArray[0] : null;
+        if (actual) {
+          const fetchedRows: AdNameAmount[] = Array.isArray(actual.adNamesAmount) ? actual.adNamesAmount : [];
+          // Only update if we got data back (use saved data if fetch fails)
+          if (fetchedRows.length > 0 || adNamesAmount.length === 0) {
+            setRows(fetchedRows.length > 0 ? fetchedRows : [{ adName: '', budget: 0 }]);
+          }
+          const preserved: Record<string, any> = {};
+          Object.keys(actual).forEach((key) => {
+            if (
+              key !== 'adNamesAmount' &&
+              key !== 'userId' &&
+              key !== '_id' &&
+              key !== 'createdAt' &&
+              key !== 'updatedAt' &&
+              key !== '__v' &&
+              key !== 'startDate' &&
+              key !== 'endDate'
+            ) {
+              preserved[key] = actual[key];
+            }
+          });
+          setExistingFields(preserved);
+        }
+      } catch {
+        // If refetch fails, keep the optimistic update (data we just saved)
+      }
       
       toast({
         title: "✅ Saved Successfully",
@@ -195,11 +297,14 @@ export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
         description: "Failed to save data",
         variant: 'destructive',
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 items-stretch">
+      <FullScreenLoader isLoading={isLoading} message="Updating campaign costs..." />
       {/* 1/3 - Daily Budget Handling card */}
       <Card className="bg-card/90 backdrop-blur-sm border border-border/20 shadow-xl h-full min-h-[360px]">
         <div className="p-6 border-b border-border/50 bg-gradient-secondary/10">
