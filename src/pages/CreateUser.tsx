@@ -23,6 +23,8 @@ import { useUserContext } from "@/utils/UserContext";
 import { useUserStore } from "@/stores/userStore";
 import CreateUserModal from "@/components/CreateUserModal";
 import ResetPasswordModal from "@/components/ResetPasswordModal";
+import GhlClientModal from "@/components/GhlClientModal";
+import { getAllGhlClients, GhlClient } from "@/service/ghlClientService";
 import {
   UserPlus,
   Pencil,
@@ -79,14 +81,40 @@ const CreateUser = () => {
   const [statusChangeAction, setStatusChangeAction] = useState<
     "activate" | "deactivate"
   >("deactivate");
+  const [isGhlModalOpen, setIsGhlModalOpen] = useState(false);
+  const [ghlClientUserId, setGhlClientUserId] = useState<string | null>(null);
+  const [ghlClientUserName, setGhlClientUserName] = useState<string>("");
+  const [ghlClients, setGhlClients] = useState<GhlClient[]>([]);
+  const [fetchingGhlClients, setFetchingGhlClients] = useState(false);
 
-  // Fetch users when role filter changes
+  // Fetch users and GHL clients when role filter changes
   useEffect(() => {
     if (loggedInUser?.role === "ADMIN") {
       fetchUsers(roleFilter);
+      fetchGhlClients();
       setCurrentPage(1); // Reset to first page when filter changes
     }
   }, [roleFilter, loggedInUser?.role, fetchUsers]);
+
+  // Fetch GHL clients
+  const fetchGhlClients = async () => {
+    setFetchingGhlClients(true);
+    try {
+      const response = await getAllGhlClients();
+      if (!response.error && response.data) {
+        setGhlClients(response.data);
+      }
+    } catch (error) {
+      console.error("Error fetching GHL clients:", error);
+    } finally {
+      setFetchingGhlClients(false);
+    }
+  };
+
+  // Helper function to check if GHL client exists for a user
+  const hasGhlClient = (userId: string): boolean => {
+    return ghlClients.some((client) => client.revenueProClientId === userId);
+  };
 
   // Filter users based on search query, role filter, and status filter
   const filteredUsers = useMemo(() => {
@@ -207,6 +235,12 @@ const CreateUser = () => {
     setIsPasswordModalOpen(true);
   };
 
+  const handleGhlClientClick = (userId: string, userName: string) => {
+    setGhlClientUserId(userId);
+    setGhlClientUserName(userName);
+    setIsGhlModalOpen(true);
+  };
+
   const handlePasswordReset = async (userId: string, newPassword: string) => {
     setLoading(true);
     const res = await updatePassword({ userId, newPassword });
@@ -289,6 +323,15 @@ const CreateUser = () => {
         userName={passwordResetUserName}
         onSave={handlePasswordReset}
         loading={loading}
+      />
+
+      <GhlClientModal
+        isOpen={isGhlModalOpen}
+        onOpenChange={setIsGhlModalOpen}
+        revenueProClientId={ghlClientUserId || ""}
+        userName={ghlClientUserName}
+        ghlClients={ghlClients}
+        onRefresh={fetchGhlClients}
       />
 
       <AlertDialog open={isStatusModalOpen} onOpenChange={setIsStatusModalOpen}>
@@ -524,7 +567,7 @@ const CreateUser = () => {
                             {user.role === "ADMIN" ? "ADMIN" : "CLIENT"}
                           </span>
                         </TableCell>
-                        <TableCell className="text-right flex flex-wrap justify-end">
+                        <TableCell className="text-right flex flex-wrap justify-end gap-1">
                           <Button
                             variant="ghost"
                             size="sm"
@@ -549,6 +592,37 @@ const CreateUser = () => {
                             title="Reset Password"
                           >
                             <Key className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={`flex items-center px-2 gap-1 font-medium rounded-md transition-colors ${
+                              hasGhlClient(user.id)
+                                ? "text-blue-600 hover:bg-blue-100 hover:text-blue-700"
+                                : "text-gray-400 hover:bg-gray-100 hover:text-gray-500"
+                            }`}
+                            onClick={() =>
+                              handleGhlClientClick(
+                                user.id,
+                                user.name || user.email
+                              )
+                            }
+                            aria-label="GHL Client"
+                            title={
+                              hasGhlClient(user.id)
+                                ? "Manage GHL Client Configuration"
+                                : "Configure GHL Client"
+                            }
+                          >
+                            <img 
+                              src="/ghl.png" 
+                              alt="GHL" 
+                              className={`h-4 w-4 object-contain transition-all ${
+                                hasGhlClient(user.id)
+                                  ? ""
+                                  : "grayscale opacity-60"
+                              }`}
+                            />
                           </Button>
                           <Button
                             variant="ghost"
