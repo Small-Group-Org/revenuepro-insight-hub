@@ -90,16 +90,29 @@ React.useEffect(() => {
 
     setFieldValues(newValues);
     setLastChanged(null);
-    setPrevValues(newValues);
+    // Update prevValues with calculated values to track changes properly
+    const combinedValues = {
+      ...newValues,
+      com: processedTargetData?.com || 0,
+      targetRevenue: processedTargetData?.revenue || 0,
+    };
+    const calculatedNewValues = calculateReportingFields(combinedValues);
+    setPrevValues(calculatedNewValues);
     
   } else {
     // If no data, set to defaults
     const defaults = getReportingDefaultValues();
     setFieldValues(defaults);
     setLastChanged(null);
-    setPrevValues(defaults);
+    const combinedDefaults = {
+      ...defaults,
+      com: processedTargetData?.com || 0,
+      targetRevenue: processedTargetData?.revenue || 0,
+    };
+    const calculatedDefaults = calculateReportingFields(combinedDefaults);
+    setPrevValues(calculatedDefaults);
   }
-}, [reportingData]);
+}, [reportingData, processedTargetData]);
 
 
   const calculatedValues = useMemo(() => {
@@ -132,6 +145,17 @@ React.useEffect(() => {
     });
     return inputNames;
   }, []);
+
+  // Check if there are any changes by comparing calculatedValues with prevValues
+  const hasChanges = useMemo(() => {
+    const inputFieldNames = getInputFieldNames();
+    return inputFieldNames.some((fieldName) => {
+      const currentValue = calculatedValues[fieldName] ?? 0;
+      const prevValue = prevValues[fieldName] ?? 0;
+      // Use a small epsilon for floating point comparison
+      return Math.abs(currentValue - prevValue) > 0.01;
+    });
+  }, [calculatedValues, prevValues, getInputFieldNames]);
 
   const handleInputChange = useCallback((fieldName: string, value: number) => {
     if (value === undefined || value === null || isNaN(value)) {
@@ -199,6 +223,12 @@ React.useEffect(() => {
       // Refetch reporting data to get complete data from API
       await getReportingData(startDate, endDate, 'weekly', period);
       
+      // Update prevValues after successful save to reset change detection
+      // The useEffect will update prevValues when reportingData changes
+      // But we also update it here to ensure immediate reset
+      setPrevValues(calculatedValues);
+      setLastChanged(null);
+      
       toast({
         title: "✅ Data Saved Successfully!",
         description: `Week of ${format(new Date(startDate), 'MMM dd, yyyy')} has been updated.`,
@@ -257,7 +287,10 @@ React.useEffect(() => {
             onChange={handleDatePeriodChange}
             buttonText="Save Report"
             onButtonClick={handleSave}
-            disableLogic={disableLogic}
+            disableLogic={{
+              ...disableLogic,
+              isButtonDisabled: disableLogic.isButtonDisabled || !hasChanges,
+            }}
             onNavigationAttempt={handleNavigationAttempt}
           />
         </div>

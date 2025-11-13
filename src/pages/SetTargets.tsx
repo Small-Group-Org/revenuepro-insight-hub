@@ -120,6 +120,17 @@ export const SetTargets = () => {
     return inputNames;
   }, [period]);
 
+  // Check if there are any changes by comparing calculatedValues with prevValues
+  const hasChanges = useMemo(() => {
+    const inputFieldNames = getInputFieldNames();
+    return inputFieldNames.some((fieldName) => {
+      const currentValue = calculatedValues[fieldName] ?? 0;
+      const prevValue = prevValues[fieldName] ?? 0;
+      // Use a small epsilon for floating point comparison
+      return Math.abs(currentValue - prevValue) > 0.01;
+    });
+  }, [calculatedValues, prevValues, getInputFieldNames]);
+
   const getPriorityConflict = useCallback(
     (newPeriod: PeriodType) => {
       if (!currentTarget) return null;
@@ -235,7 +246,9 @@ export const SetTargets = () => {
       const newValues = processTargetData(currentTarget);
       setFieldValues(newValues);
       setLastChanged(null);
-      setPrevValues(newValues);
+      // Update prevValues with calculated values to track changes properly
+      const calculatedNewValues = calculateFields(newValues, period, 7 * currentTarget?.length);
+      setPrevValues(calculatedNewValues);
     }
   }, [currentTarget, period]);
 
@@ -324,8 +337,11 @@ export const SetTargets = () => {
   );
 
   const handleDisableStatusChange = useCallback((status: DisableMetadata) => {
-    setDisableStatus(status);
-  }, []);
+    setDisableStatus({
+      ...status,
+      isButtonDisabled: status.isButtonDisabled || !hasChanges,
+    });
+  }, [hasChanges]);
 
   const handleSave = useCallback(async () => {
     const inputFieldNames = getInputFieldNames();
@@ -389,6 +405,11 @@ export const SetTargets = () => {
         title: "✅ Targets Saved Successfully!",
         description: `Your ${period} target values have been updated.`,
       });
+      
+      // Update prevValues after successful save to reset change detection
+      const savedCalculatedValues = calculateFields(fieldValues, period, 7 * currentTarget?.length);
+      setPrevValues(savedCalculatedValues);
+      setLastChanged(null);
     } catch (err) {
       toast({
         title: "❌ Error Saving Targets",
@@ -405,6 +426,7 @@ export const SetTargets = () => {
     toast,
     error,
     getInputFieldNames,
+    currentTarget,
   ]);
 
   const handleCancelPrioritySave = useCallback(() => {
@@ -461,6 +483,10 @@ export const SetTargets = () => {
             "Your yearly targets have been distributed across months.",
         });
 
+        // Update prevValues after successful save to reset change detection
+        const savedCalculatedValues = calculateFields(fieldValues, period, 7 * currentTarget?.length);
+        setPrevValues(savedCalculatedValues);
+        setLastChanged(null);
         setIsYearlyModalOpen(false);
       } catch (err) {
         toast({
@@ -488,6 +514,11 @@ export const SetTargets = () => {
             title: "✅ Targets Saved Successfully!",
             description: `Your ${period} target values have been updated.`,
           });
+          
+          // Update prevValues after successful save to reset change detection
+          const savedCalculatedValues = calculateFields(fieldValues, period, 7 * currentTarget?.length);
+          setPrevValues(savedCalculatedValues);
+          setLastChanged(null);
         }
         setPendingSaveData(null);
       } catch (err) {
@@ -553,7 +584,10 @@ export const SetTargets = () => {
             onChange={handleDatePeriodChange}
             buttonText="Save Targets"
             onButtonClick={handleSave}
-            disableLogic={disableLogic}
+            disableLogic={{
+              ...disableLogic,
+              isButtonDisabled: disableLogic.isButtonDisabled || !hasChanges,
+            }}
             onDisableStatusChange={handleDisableStatusChange}
             onNavigationAttempt={() => true} // Always allow navigation
           />
