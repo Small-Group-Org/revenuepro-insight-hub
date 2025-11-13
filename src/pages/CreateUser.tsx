@@ -61,7 +61,7 @@ const CreateUser = () => {
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [roleFilter, setRoleFilter] = useState<string>("all");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("active");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
@@ -389,7 +389,7 @@ const CreateUser = () => {
                       htmlFor="role-filter"
                       className="text-sm font-medium text-muted-foreground"
                     >
-                      Filter by Role:
+                     
                     </label>
                     <Select value={roleFilter} onValueChange={setRoleFilter}>
                       <SelectTrigger className="w-32">
@@ -408,7 +408,7 @@ const CreateUser = () => {
                       htmlFor="status-filter"
                       className="text-sm font-medium text-muted-foreground"
                     >
-                      Filter by Status:
+                     
                     </label>
                     <Select
                       value={statusFilter}
