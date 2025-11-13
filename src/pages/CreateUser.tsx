@@ -32,8 +32,6 @@ import {
   Key,
   Search,
   X,
-  UserX,
-  UserCheck,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -229,6 +227,43 @@ const CreateUser = () => {
     setLoading(false);
   };
 
+  const handleStatusToggle = async (userId: string, newStatus: string) => {
+    // Find the user to get all their data
+    const userToUpdate = users.find((user) => user.id === userId);
+    if (!userToUpdate) {
+      toast({
+        title: "Error",
+        description: "User not found",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    // Send all user data including the updated status
+    const res = await updateUser({
+      userId: userId,
+      email: userToUpdate.email,
+      name: userToUpdate.name,
+      status: newStatus,
+    });
+
+    if (!res.error) {
+      toast({
+        title: `User ${newStatus === "active" ? "Activated" : "Deactivated"}`,
+        description: `User ${newStatus === "active" ? "activated" : "deactivated"} successfully!`,
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: res.message || `Failed to update user status`,
+        variant: "destructive",
+      });
+    }
+    setLoading(false);
+  };
+
   const handlePasswordResetClick = (userId: string, userName: string) => {
     setPasswordResetUserId(userId);
     setPasswordResetUserName(userName);
@@ -314,6 +349,12 @@ const CreateUser = () => {
         editingUserId={editingUserId}
         onSave={handleModalSave}
         loading={loading}
+        currentStatus={
+          editingUserId
+            ? users.find((u) => u.id === editingUserId)?.status || "active"
+            : undefined
+        }
+        onStatusToggle={handleStatusToggle}
       />
 
       <ResetPasswordModal
@@ -623,38 +664,6 @@ const CreateUser = () => {
                                   : "grayscale opacity-60"
                               }`}
                             />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className={`flex items-center gap-1 px-2 font-medium rounded-md transition-colors ${
-                              user.status === "active"
-                                ? "text-orange-600 hover:bg-orange-100 hover:text-orange-700"
-                                : "text-green-600 hover:bg-green-100 hover:text-green-700"
-                            }`}
-                            onClick={() =>
-                              handleToggleStatusClick(
-                                user.id,
-                                user.name || user.email,
-                                user.status || "active"
-                              )
-                            }
-                            aria-label={
-                              user.status === "active"
-                                ? "Deactivate"
-                                : "Activate"
-                            }
-                            title={
-                              user.status === "active"
-                                ? "Deactivate User"
-                                : "Activate User"
-                            }
-                          >
-                            {user.status === "active" ? (
-                              <UserX className="h-4 w-4" />
-                            ) : (
-                              <UserCheck className="h-4 w-4" />
-                            )}
                           </Button>
                         </TableCell>
                       </TableRow>
