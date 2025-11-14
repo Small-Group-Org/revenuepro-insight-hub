@@ -447,7 +447,7 @@ export const SetTargets = () => {
           if (monthIndex === -1) return;
 
           // Only include months that are after the current month until December
-          if (monthIndex <= currentMonth) return;
+          if (monthIndex <= currentMonth && selectedYear === new Date().getFullYear()) return;
 
           const startDate = new Date(selectedYear, monthIndex, 1);
           const endDate = new Date(selectedYear, monthIndex + 1, 0);
