@@ -228,7 +228,7 @@ const CreateUser = () => {
   };
 
   const handleStatusToggle = async (userId: string, newStatus: string) => {
-    // Find the user to get all their data
+    // Find the user to get all their data for updating the status
     const userToUpdate = users.find((user) => user.id === userId);
     if (!userToUpdate) {
       toast({
