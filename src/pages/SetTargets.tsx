@@ -338,10 +338,9 @@ export const SetTargets = () => {
 
   const handleDisableStatusChange = useCallback((status: DisableMetadata) => {
     setDisableStatus({
-      ...status,
-      isButtonDisabled: status.isButtonDisabled || !hasChanges,
+      ...status
     });
-  }, [hasChanges]);
+  }, []);
 
   const handleSave = useCallback(async () => {
     const inputFieldNames = getInputFieldNames();
@@ -585,8 +584,7 @@ export const SetTargets = () => {
             buttonText="Save Targets"
             onButtonClick={handleSave}
             disableLogic={{
-              ...disableLogic,
-              isButtonDisabled: disableLogic.isButtonDisabled || !hasChanges,
+              ...disableLogic
             }}
             onDisableStatusChange={handleDisableStatusChange}
             onNavigationAttempt={() => true} // Always allow navigation
