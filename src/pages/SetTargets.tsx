@@ -247,8 +247,8 @@ export const SetTargets = () => {
       setFieldValues(newValues);
       setLastChanged(null);
       // Update prevValues with calculated values to track changes properly
-      const calculatedNewValues = calculateFields(newValues, period, 7 * currentTarget?.length);
-      setPrevValues(calculatedNewValues);
+      // const calculatedNewValues = calculateFields(newValues, period, 7 * currentTarget?.length);
+      setPrevValues(newValues);
     }
   }, [currentTarget, period]);
 
