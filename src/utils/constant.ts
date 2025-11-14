@@ -56,9 +56,6 @@ export const API_ENDPOINTS = {
   TICKETS_GET: "/tickets",
   TICKETS_CREATE: "/tickets",
   TICKETS_UPDATE: "/tickets", // append /:id when needed
-
-  // GHL Clients
-  GHL_CLIENTS: "/ghl-clients", // append /:locationId when needed
 } as const;
 
 export const menuItems = [
