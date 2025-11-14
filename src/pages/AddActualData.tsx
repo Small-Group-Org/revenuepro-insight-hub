@@ -165,13 +165,12 @@ React.useEffect(() => {
     const validatedValue = Math.max(0, value);
     
     setLastChanged(fieldName);
-    setPrevValues(calculatedValues);
     
     setFieldValues(prev => ({
       ...prev,
       [fieldName]: validatedValue
     }));
-  }, [calculatedValues]);
+  }, []);
 
   const handleSave = useCallback(async () => {
     const weekInfo = getWeekInfo(selectedDate);
