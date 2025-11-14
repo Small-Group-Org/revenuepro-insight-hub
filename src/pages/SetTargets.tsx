@@ -247,8 +247,8 @@ export const SetTargets = () => {
       setFieldValues(newValues);
       setLastChanged(null);
       // Update prevValues with calculated values to track changes properly
-      const calculatedNewValues = calculateFields(newValues, period, 7 * currentTarget?.length);
-      setPrevValues(calculatedNewValues);
+      // const calculatedNewValues = calculateFields(newValues, period, 7 * currentTarget?.length);
+      setPrevValues(newValues);
     }
   }, [currentTarget, period]);
 
@@ -447,7 +447,7 @@ export const SetTargets = () => {
           if (monthIndex === -1) return;
 
           // Only include months that are after the current month until December
-          if (monthIndex <= currentMonth) return;
+          if (monthIndex <= currentMonth && selectedYear === new Date().getFullYear()) return;
 
           const startDate = new Date(selectedYear, monthIndex, 1);
           const endDate = new Date(selectedYear, monthIndex + 1, 0);
