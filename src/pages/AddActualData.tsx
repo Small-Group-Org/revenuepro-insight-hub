@@ -11,12 +11,17 @@ import { reportingFields } from '@/utils/constant';
 import { calculateReportingFields } from '@/utils/page-utils/actualDataUtils';
 import { handleInputDisable } from '@/utils/page-utils/compareUtils';
 import { processTargetData } from '@/utils/page-utils/targetUtils';
-import { getWeekInfo } from '@/utils/weekLogic';
+import { getWeekInfo, getCurrentWeek } from '@/utils/weekLogic';
 import { useUserStore } from '@/stores/userStore';
 import { useRoleAccess } from '@/hooks/useRoleAccess';
 import { FullScreenLoader } from '@/components/ui/full-screen-loader';
 import { useCombinedLoading } from '@/hooks/useCombinedLoading';
 import DailyBudgetManager from '@/components/DailyBudgetManager';
+import { doPOST } from '@/utils/HttpUtils';
+import { API_ENDPOINTS } from '@/utils/constant';
+
+// TEMPORARY: Specific user ID for opportunity sync feature
+const OPPORTUNITY_SYNC_USER_ID = '68c82dfdac1491efe19d5df0';
 
 export const AddActualData = () => {
   const { reportingData, targetData, getReportingData, upsertReportingData, error } = useReportingDataStore();
@@ -26,6 +31,7 @@ export const AddActualData = () => {
   const { userRole } = useRoleAccess();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [period, setPeriod] = useState<PeriodType>('weekly');
+  const [isOpportunitySyncing, setIsOpportunitySyncing] = useState(false);
 
   const [fieldValues, setFieldValues] = useState<FieldValue>({});
   const [lastChanged, setLastChanged] = useState<string | null>(null);
@@ -256,6 +262,54 @@ React.useEffect(() => {
     return true;
   }, []);
 
+  // TEMPORARY: Handle opportunity sync trigger
+  const handleOpportunitySync = useCallback(async () => {
+    setIsOpportunitySyncing(true);
+    try {
+      const response = await doPOST(API_ENDPOINTS.ADMIN_OPPORTUNITY_SYNC_TRIGGER, {});
+      
+      if (response.error) {
+        toast({
+          title: "❌ Sync Failed",
+          description: response.message || 'Failed to sync opportunities',
+          variant: 'destructive',
+        });
+      } else {
+        // After successful sync, refresh the data for current week
+        const weekInfo = getWeekInfo(selectedDate);
+        const startDate = format(weekInfo.weekStart, 'yyyy-MM-dd');
+        const endDate = format(weekInfo.weekEnd, 'yyyy-MM-dd');
+        
+        // Refresh the reporting data
+        await getReportingData(startDate, endDate, 'weekly', period);
+        
+        toast({
+          title: "✅ Sync Triggered",
+          description: 'Opportunity sync has been triggered and data refreshed',
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "❌ Sync Error",
+        description: error instanceof Error ? error.message : 'An error occurred while syncing',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsOpportunitySyncing(false);
+    }
+  }, [toast, selectedDate, period, getReportingData]);
+
+  // Check if opportunity sync button should be shown (only for specific user and current week)
+  const isCurrentWeek = useMemo(() => {
+    if (period !== 'weekly') return false;
+    const currentWeek = getCurrentWeek();
+    const selectedWeek = getWeekInfo(selectedDate);
+    // Compare week start dates to determine if it's the current week
+    return format(currentWeek.weekStart, 'yyyy-MM-dd') === format(selectedWeek.weekStart, 'yyyy-MM-dd');
+  }, [period, selectedDate]);
+
+  const shouldShowOpportunitySync = selectedUserId === OPPORTUNITY_SYNC_USER_ID && isCurrentWeek;
+
   const getSectionFields = useCallback((sectionKey: keyof typeof reportingFields) => {
     return reportingFields[sectionKey];
   }, []);
@@ -291,6 +345,9 @@ React.useEffect(() => {
               isButtonDisabled: disableLogic.isButtonDisabled || !hasChanges,
             }}
             onNavigationAttempt={handleNavigationAttempt}
+            showOpportunitySyncButton={shouldShowOpportunitySync}
+            onOpportunitySyncClick={handleOpportunitySync}
+            isOpportunitySyncing={isOpportunitySyncing}
           />
         </div>
 
