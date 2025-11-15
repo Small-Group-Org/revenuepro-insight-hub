@@ -56,6 +56,9 @@ export const API_ENDPOINTS = {
   TICKETS_GET: "/tickets",
   TICKETS_CREATE: "/tickets",
   TICKETS_UPDATE: "/tickets", // append /:id when needed
+
+  // Admin - Opportunity Sync (TEMPORARY)
+  ADMIN_OPPORTUNITY_SYNC_TRIGGER: "/admin/opportunity-sync/trigger",
 } as const;
 
 export const menuItems = [

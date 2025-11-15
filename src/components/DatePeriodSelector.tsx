@@ -74,6 +74,12 @@ interface DatePeriodSelectorProps {
   showRefreshButton?: boolean;
   onRefreshClick?: () => void;
   isRefreshing?: boolean;
+  /** 
+   * TEMPORARY: Show opportunity sync refresh button (only for specific user)
+   */
+  showOpportunitySyncButton?: boolean;
+  onOpportunitySyncClick?: () => void;
+  isOpportunitySyncing?: boolean;
 }
 
 export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
@@ -90,6 +96,9 @@ export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
   showRefreshButton = false,
   onRefreshClick,
   isRefreshing = false,
+  showOpportunitySyncButton = false,
+  onOpportunitySyncClick,
+  isOpportunitySyncing = false,
 }) => {
   const [selectedDate, setSelectedDate] = useState<Date>(initialDate);
   const [period, setPeriod] = useState<PeriodType>(
@@ -267,6 +276,30 @@ export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>Refresh Leads</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+          {/* TEMPORARY: Opportunity Sync Refresh Button - only shown for weekly period and specific user */}
+          {showOpportunitySyncButton && period === "weekly" && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={onOpportunitySyncClick}
+                    className="h-8 w-8 rounded-full hover:bg-muted/50 transition-colors duration-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed group"
+                    disabled={isOpportunitySyncing}
+                    type="button"
+                  >
+                    {isOpportunitySyncing ? (
+                      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                    ) : (
+                      <RefreshCw className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors duration-200" />
+                    )}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Sync Opportunities</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
