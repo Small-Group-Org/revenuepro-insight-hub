@@ -191,7 +191,7 @@ export const DashboardTopCards: React.FC<DashboardTopCardsProps> = ({
     const costPerAppointmentSet =
       totals.estimatesSet > 0 ? totals.budgetSpent / totals.estimatesSet : 0;
     const estimateSetRate =
-      totals.estimatesSet > 0 ? (totals.estimatesSet / totals.leads) * 100 : 0;
+      totals.estimatesSet > 0 && totals.leads > 0 ? (totals.estimatesSet / totals.leads) * 100 : 0;
     const totalManagementCost = processedTargetData.reduce((acc, dataPoint) => {
       acc += dataPoint.managementCost || 0;
       return acc;
