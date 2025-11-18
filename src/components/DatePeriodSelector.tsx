@@ -281,7 +281,7 @@ export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
             </TooltipProvider>
           )}
           {/* TEMPORARY: Opportunity Sync Refresh Button - only shown for weekly period and specific user */}
-          {showOpportunitySyncButton && period === "weekly" && (
+          {/* {showOpportunitySyncButton && period === "weekly" && (
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -303,7 +303,7 @@ export const DatePeriodSelector: React.FC<DatePeriodSelectorProps> = ({
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
-          )}
+          )} */}
           <Select value={period} onValueChange={handlePeriodChange}>
             <SelectTrigger className="w-28">
               <SelectValue />
