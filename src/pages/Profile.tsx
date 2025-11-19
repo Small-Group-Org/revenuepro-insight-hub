@@ -285,7 +285,16 @@ export default function Profile() {
             </div>
             <div className="text-sm text-muted-foreground">{user?.email || "email@domain.com"}</div>
           </div>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-3">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setIsFeatureModalOpen(true)}
+              className="gap-2"
+            >
+              <Lightbulb size={16} />
+              Request Feature
+            </Button>
             <button onClick={handleLogout} className="inline-flex h-9 items-center gap-2 justify-center rounded-md bg-destructive px-4 text-sm font-medium text-destructive-foreground shadow transition-colors hover:opacity-90">
               <LogOut size={18} />
               Logout
@@ -447,37 +456,6 @@ export default function Profile() {
                       </TableBody>
                     </Table>
                   )}
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-
-          <AccordionItem value="feature-request" className="border border-gray-200 rounded-lg bg-white shadow-sm">
-            <AccordionTrigger className="text-lg font-semibold px-6 py-4 hover:bg-gray-50 transition-colors">
-              <div className="flex items-center justify-between w-full">
-                <div className="flex items-center gap-2">
-                  <Lightbulb size={20} />
-                  Feature Request
-                </div>
-                <Button
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsFeatureModalOpen(true);
-                  }}
-                  className="mr-4"
-                >
-                  <Plus size={16} />
-                  Request Feature
-                </Button>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="px-6 pb-6">
-              <div className="text-center py-12">
-                <Lightbulb className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-                <h3 className="text-xl font-semibold mb-2">Have an idea?</h3>
-                <p className="text-muted-foreground">
-                  Click "Request Feature" to share your suggestions for improving Revenue Pro.
-                </p>
               </div>
             </AccordionContent>
           </AccordionItem>
