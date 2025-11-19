@@ -59,6 +59,8 @@ export const API_ENDPOINTS = {
 
   // Admin - Opportunity Sync (TEMPORARY)
   ADMIN_OPPORTUNITY_SYNC_TRIGGER: "/admin/opportunity-sync/trigger",
+  // Admin - Lead Sheet Sync (TEMPORARY)
+  ADMIN_LEAD_SHEET_SYNC_TRIGGER: "/admin/lead-sheets-sync/trigger",
 } as const;
 
 export const menuItems = [

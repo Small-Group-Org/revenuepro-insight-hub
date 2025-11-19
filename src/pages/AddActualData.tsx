@@ -262,39 +262,81 @@ React.useEffect(() => {
     return true;
   }, []);
 
-  // TEMPORARY: Handle opportunity sync trigger
+  // TEMPORARY: Handle opportunity sync trigger and leadsheet sync trigger
   const handleOpportunitySync = useCallback(async () => {
     setIsOpportunitySyncing(true);
+    
     try {
-      const response = await doPOST(API_ENDPOINTS.ADMIN_OPPORTUNITY_SYNC_TRIGGER, {});
+      // Step 1: Start opportunity sync
+      toast({
+        title: "🔄 Starting Opportunity Sync",
+        description: 'Opportunity sync has been triggered...',
+      });
+
+      const opportunityResponse = await doPOST(API_ENDPOINTS.ADMIN_OPPORTUNITY_SYNC_TRIGGER, {});
       
-      if (response.error) {
+      if (opportunityResponse.error) {
         toast({
-          title: "❌ Sync Failed",
-          description: response.message || 'Failed to sync opportunities',
+          title: "❌ Opportunity Sync Failed",
+          description: opportunityResponse.message || 'Failed to sync opportunities',
           variant: 'destructive',
         });
-      } else {
-        // After successful sync, refresh the data for current week
-        const weekInfo = getWeekInfo(selectedDate);
-        const startDate = format(weekInfo.weekStart, 'yyyy-MM-dd');
-        const endDate = format(weekInfo.weekEnd, 'yyyy-MM-dd');
-        
-        // Refresh the reporting data
-        await getReportingData(startDate, endDate, 'weekly', period);
-        
-        toast({
-          title: "✅ Sync Triggered",
-          description: 'Opportunity sync has been triggered and data refreshed',
-        });
+        setIsOpportunitySyncing(false);
+        return;
       }
+
+      // Step 2: Opportunity sync completed successfully
+      toast({
+        title: "✅ Opportunity Sync Completed",
+        description: 'Opportunity sync has been completed successfully',
+      });
+
+      // Step 3: After successful opportunity sync, refresh the data for current week (GET call)
+      const weekInfo = getWeekInfo(selectedDate);
+      const startDate = format(weekInfo.weekStart, 'yyyy-MM-dd');
+      const endDate = format(weekInfo.weekEnd, 'yyyy-MM-dd');
+      
+      // Refresh the reporting data
+      await getReportingData(startDate, endDate, 'weekly', period);
+
+      // Step 4: Start leadsheet sync (runs in background)
+      toast({
+        title: "🔄 Starting Lead Sheet Sync",
+        description: 'Lead sheet sync has been triggered and will continue in background...',
+      });
+
+      // Trigger leadsheet sync (don't await - let it run in background)
+      doPOST(API_ENDPOINTS.ADMIN_LEAD_SHEET_SYNC_TRIGGER, {})
+        .then((leadSheetResponse) => {
+          if (leadSheetResponse.error) {
+            toast({
+              title: "❌ Lead Sheet Sync Failed",
+              description: leadSheetResponse.message || 'Failed to sync lead sheets',
+              variant: 'destructive',
+            });
+          } else {
+            toast({
+              title: "✅ Lead Sheet Sync Completed",
+              description: 'Lead sheet sync has been completed successfully',
+            });
+          }
+        })
+        .catch((error) => {
+          toast({
+            title: "❌ Lead Sheet Sync Error",
+            description: error instanceof Error ? error.message : 'An error occurred while syncing lead sheets',
+            variant: 'destructive',
+          });
+        });
+
+      // Reset loading state (leadsheet sync continues in background)
+      setIsOpportunitySyncing(false);
     } catch (error) {
       toast({
         title: "❌ Sync Error",
         description: error instanceof Error ? error.message : 'An error occurred while syncing',
         variant: 'destructive',
       });
-    } finally {
       setIsOpportunitySyncing(false);
     }
   }, [toast, selectedDate, period, getReportingData]);
@@ -345,9 +387,6 @@ React.useEffect(() => {
               isButtonDisabled: disableLogic.isButtonDisabled || !hasChanges,
             }}
             onNavigationAttempt={handleNavigationAttempt}
-            showOpportunitySyncButton={shouldShowOpportunitySync}
-            onOpportunitySyncClick={handleOpportunitySync}
-            isOpportunitySyncing={isOpportunitySyncing}
           />
         </div>
 
@@ -405,6 +444,9 @@ React.useEffect(() => {
             disabledMessage={disabledMessage}
             targetValues={processedTargetData}
             showTarget={true}
+            showOpportunitySyncButton={shouldShowOpportunitySync}
+            onOpportunitySyncClick={handleOpportunitySync}
+            isOpportunitySyncing={isOpportunitySyncing}
           />
         </div>
 
