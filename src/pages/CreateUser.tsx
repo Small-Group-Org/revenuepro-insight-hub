@@ -24,7 +24,7 @@ import { useUserStore } from "@/stores/userStore";
 import CreateUserModal from "@/components/CreateUserModal";
 import ResetPasswordModal from "@/components/ResetPasswordModal";
 import GhlClientModal from "@/components/GhlClientModal";
-import { getAllGhlClients, GhlClient } from "@/service/ghlClientService";
+import { useGhlClientStore } from "@/stores/ghlClientStore";
 import {
   UserPlus,
   Pencil,
@@ -82,32 +82,20 @@ const CreateUser = () => {
   const [isGhlModalOpen, setIsGhlModalOpen] = useState(false);
   const [ghlClientUserId, setGhlClientUserId] = useState<string | null>(null);
   const [ghlClientUserName, setGhlClientUserName] = useState<string>("");
-  const [ghlClients, setGhlClients] = useState<GhlClient[]>([]);
-  const [fetchingGhlClients, setFetchingGhlClients] = useState(false);
+  const { clients: ghlClients, fetchClients: fetchGhlClients } = useGhlClientStore();
 
   // Fetch users and GHL clients when role filter changes
+  // Only fetch GHL clients if they haven't been loaded yet (to avoid unnecessary API calls)
   useEffect(() => {
     if (loggedInUser?.role === "ADMIN") {
       fetchUsers(roleFilter);
-      fetchGhlClients();
+      // Only fetch GHL clients if store is empty (they're already loaded in AppLayout on login)
+      if (ghlClients.length === 0) {
+        fetchGhlClients();
+      }
       setCurrentPage(1); // Reset to first page when filter changes
     }
-  }, [roleFilter, loggedInUser?.role, fetchUsers]);
-
-  // Fetch GHL clients
-  const fetchGhlClients = async () => {
-    setFetchingGhlClients(true);
-    try {
-      const response = await getAllGhlClients();
-      if (!response.error && response.data) {
-        setGhlClients(response.data);
-      }
-    } catch (error) {
-      console.error("Error fetching GHL clients:", error);
-    } finally {
-      setFetchingGhlClients(false);
-    }
-  };
+  }, [roleFilter, loggedInUser?.role, fetchUsers, fetchGhlClients, ghlClients.length]);
 
   // Helper function to check if GHL client exists for a user
   const hasGhlClient = (userId: string): boolean => {
