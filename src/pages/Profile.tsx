@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useState } from "react";
+import { createFeatureRequest } from "@/service/featureRequestService";
 import {
   Table,
   TableBody,
@@ -45,6 +46,11 @@ export default function Profile() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [ticketForm, setTicketForm] = useState({
+    title: "",
+    description: ""
+  });
+  const [isFeatureModalOpen, setIsFeatureModalOpen] = useState(false);
+  const [featureForm, setFeatureForm] = useState({
     title: "",
     description: ""
   });
@@ -210,6 +216,54 @@ export default function Profile() {
 
   const handleFormChange = (field: string, value: string) => {
     setTicketForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleFeatureSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!featureForm.title.trim() || !featureForm.description.trim()) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const result = await createFeatureRequest({
+        title: featureForm.title,
+        description: featureForm.description,
+      });
+
+      if (result.error) {
+        toast({
+          title: "Error",
+          description: result.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: "Feature request submitted successfully",
+        });
+        setFeatureForm({ title: "", description: "" });
+        setIsFeatureModalOpen(false);
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to submit feature request",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleFeatureFormChange = (field: string, value: string) => {
+    setFeatureForm(prev => ({
       ...prev,
       [field]: value
     }));
@@ -399,17 +453,30 @@ export default function Profile() {
 
           <AccordionItem value="feature-request" className="border border-gray-200 rounded-lg bg-white shadow-sm">
             <AccordionTrigger className="text-lg font-semibold px-6 py-4 hover:bg-gray-50 transition-colors">
-              <div className="flex items-center gap-2">
-                <Lightbulb size={20} />
-                Feature Request
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-2">
+                  <Lightbulb size={20} />
+                  Feature Request
+                </div>
+                <Button
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsFeatureModalOpen(true);
+                  }}
+                  className="mr-4"
+                >
+                  <Plus size={16} />
+                  Request Feature
+                </Button>
               </div>
             </AccordionTrigger>
             <AccordionContent className="px-6 pb-6">
               <div className="text-center py-12">
                 <Lightbulb className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-                <h3 className="text-xl font-semibold mb-2">Coming Soon</h3>
+                <h3 className="text-xl font-semibold mb-2">Have an idea?</h3>
                 <p className="text-muted-foreground">
-                  Feature request functionality will be available soon. Stay tuned for updates!
+                  Click "Request Feature" to share your suggestions for improving Revenue Pro.
                 </p>
               </div>
             </AccordionContent>
@@ -510,6 +577,65 @@ export default function Profile() {
               <Button type="submit" className="gap-2">
                 <TicketPlus size={16} />
                 Create Ticket
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Feature Request Modal */}
+      <Dialog open={isFeatureModalOpen} onOpenChange={setIsFeatureModalOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lightbulb size={20} />
+              Request New Feature
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleFeatureSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="feature-title">Title *</Label>
+              <Input
+                id="feature-title"
+                value={featureForm.title}
+                onChange={(e) => handleFeatureFormChange('title', e.target.value)}
+                placeholder="Brief description of the feature"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="feature-description">Description *</Label>
+              <div className="relative">
+                <Textarea
+                  id="feature-description"
+                  value={featureForm.description}
+                  onChange={(e) => handleFeatureFormChange('description', e.target.value)}
+                  placeholder="Describe the feature you'd like to see..."
+                  className="min-h-[200px] resize-none"
+                  maxLength={2000}
+                  required
+                />
+                <div className="absolute bottom-2 right-2 text-xs text-muted-foreground bg-white px-1 rounded">
+                  {featureForm.description.length}/2000
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setIsFeatureModalOpen(false);
+                  setFeatureForm({ title: "", description: "" });
+                }}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" className="gap-2">
+                <Lightbulb size={16} />
+                Submit Request
               </Button>
             </div>
           </form>
