@@ -8,7 +8,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Info } from "lucide-react";
+import { Info, Loader2, RefreshCw } from "lucide-react";
 import {
   FieldConfig,
   InputField,
@@ -42,6 +42,12 @@ interface TargetSectionProps {
   showTarget?: boolean;
   shouldDisableNonRevenueFields?: boolean; // New prop to disable all fields except revenue
   targetValues?: FieldValue; // New prop for target values
+  /** 
+   * Show opportunity sync refresh button (only for weekly period and users with active GHL clients)
+   */
+  showOpportunitySyncButton?: boolean;
+  onOpportunitySyncClick?: () => void;
+  isOpportunitySyncing?: boolean;
 }
 
 export const TargetSection: React.FC<TargetSectionProps> = ({
@@ -61,7 +67,10 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
   disabledMessage,
   showTarget = false,
   shouldDisableNonRevenueFields = false,
-  targetValues = {}
+  targetValues = {},
+  showOpportunitySyncButton = false,
+  onOpportunitySyncClick,
+  isOpportunitySyncing = false,
 }) => {
   const { currentTarget } = useTargetStore();
   
@@ -286,23 +295,49 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
               {title}
             </h2>
           </div>
-          {isDisabled && disabledMessage && (
-            <TooltipProvider>
-              <Tooltip delayDuration={200}>
-                <TooltipTrigger asChild>
-                  <div className="flex items-center gap-1 text-amber-600 hover:text-amber-700 cursor-pointer">
-                    <Info className="h-4 w-4" />
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="left"
-                  className="bg-amber-50 border-amber-200 text-amber-800 z-[9999]"
-                >
-                  <p className="text-xs">{disabledMessage}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
+          <div className="flex items-center gap-2">
+            {/* Opportunity Sync Refresh Button - only shown for weekly period and users with active GHL clients */}
+            {showOpportunitySyncButton && period === "weekly" && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={onOpportunitySyncClick}
+                      className="h-8 w-8 rounded-full hover:bg-muted/50 transition-colors duration-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed group"
+                      disabled={isOpportunitySyncing}
+                      type="button"
+                    >
+                      {isOpportunitySyncing ? (
+                        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                      ) : (
+                        <RefreshCw className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors duration-200" />
+                      )}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Sync Opportunities</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+            {isDisabled && disabledMessage && (
+              <TooltipProvider>
+                <Tooltip delayDuration={200}>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-1 text-amber-600 hover:text-amber-700 cursor-pointer">
+                      <Info className="h-4 w-4" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    side="left"
+                    className="bg-amber-50 border-amber-200 text-amber-800 z-[9999]"
+                  >
+                    <p className="text-xs">{disabledMessage}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+          </div>
         </div>
       </div>
 

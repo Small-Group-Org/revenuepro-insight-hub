@@ -17,6 +17,8 @@ import { useRoleAccess } from '@/hooks/useRoleAccess';
 import { FullScreenLoader } from '@/components/ui/full-screen-loader';
 import { useCombinedLoading } from '@/hooks/useCombinedLoading';
 import DailyBudgetManager from '@/components/DailyBudgetManager';
+import { useGhlClientStore } from '@/stores/ghlClientStore';
+import { triggerOpportunitySync, triggerLeadSheetSync } from '@/service/ghlClientService';
 
 export const AddActualData = () => {
   const { reportingData, targetData, getReportingData, upsertReportingData, error } = useReportingDataStore();
@@ -24,12 +26,14 @@ export const AddActualData = () => {
   const { toast } = useToast();
   const { selectedUserId } = useUserStore();
   const { userRole } = useRoleAccess();
+  const { getClientByRevenueProId, getActiveClients } = useGhlClientStore();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [period, setPeriod] = useState<PeriodType>('weekly');
 
   const [fieldValues, setFieldValues] = useState<FieldValue>({});
   const [lastChanged, setLastChanged] = useState<string | null>(null);
   const [prevValues, setPrevValues] = useState<FieldValue>({});
+  const [isOpportunitySyncing, setIsOpportunitySyncing] = useState(false);
 
   // Use processed target data from store (single API)
   const processedTargetData = useMemo(() => {
@@ -231,6 +235,107 @@ React.useEffect(() => {
     return reportingFields[sectionKey];
   }, []);
 
+  // Check if opportunity sync button should be shown
+  // Show button if: weekly period, user has an active GHL client configured
+  const shouldShowOpportunitySync = useMemo(() => {
+    if (period !== 'weekly' || !selectedUserId) return false;
+    const client = getClientByRevenueProId(selectedUserId);
+    return client?.status === 'active';
+  }, [period, selectedUserId, getClientByRevenueProId]);
+
+  // Handle opportunity sync trigger
+  const handleOpportunitySync = useCallback(async () => {
+    if (!selectedUserId) return;
+
+    setIsOpportunitySyncing(true);
+
+    try {
+      // Get active GHL clients for the current user
+      const client = getClientByRevenueProId(selectedUserId);
+      
+      if (!client || client.status !== 'active') {
+        toast({
+          title: "❌ No Active GHL Client",
+          description: 'No active GHL client configuration found for this user',
+          variant: 'destructive',
+        });
+        setIsOpportunitySyncing(false);
+        return;
+      }
+
+      // Step 1: Start opportunity sync for this client's location
+      toast({
+        title: "🔄 Starting Opportunity Sync",
+        description: 'Opportunity sync has been triggered...',
+      });
+
+      const opportunityResponse = await triggerOpportunitySync([client.locationId]);
+
+      if (opportunityResponse.error) {
+        toast({
+          title: "❌ Opportunity Sync Failed",
+          description: opportunityResponse.message || 'Failed to sync opportunities',
+          variant: 'destructive',
+        });
+        setIsOpportunitySyncing(false);
+        return;
+      }
+
+      toast({
+        title: "✅ Opportunity Sync Completed",
+        description: 'Opportunity sync has been completed successfully',
+      });
+
+      // Step 2: After successful opportunity sync, refresh the data for current week
+      const weekInfo = getWeekInfo(selectedDate);
+      const startDate = format(weekInfo.weekStart, 'yyyy-MM-dd');
+      const endDate = format(weekInfo.weekEnd, 'yyyy-MM-dd');
+
+      // Refresh the reporting data
+      await getReportingData(startDate, endDate, 'weekly', period);
+
+      // Step 3: Start leadsheet sync (runs in background)
+      toast({
+        title: "🔄 Starting Lead Sheet Sync",
+        description: 'Lead sheet sync has been triggered and will continue in background...',
+      });
+
+      // Trigger leadsheet sync (don't await - let it run in background)
+      triggerLeadSheetSync()
+        .then((leadSheetResponse) => {
+          if (leadSheetResponse.error) {
+            toast({
+              title: "❌ Lead Sheet Sync Failed",
+              description: leadSheetResponse.message || 'Failed to sync lead sheets',
+              variant: 'destructive',
+            });
+          } else {
+            toast({
+              title: "✅ Lead Sheet Sync Completed",
+              description: 'Lead sheet sync has been completed successfully',
+            });
+          }
+        })
+        .catch((error) => {
+          toast({
+            title: "❌ Lead Sheet Sync Error",
+            description: error instanceof Error ? error.message : 'An error occurred while syncing lead sheets',
+            variant: 'destructive',
+          });
+        });
+
+      // Reset loading state (leadsheet sync continues in background)
+      setIsOpportunitySyncing(false);
+    } catch (error) {
+      toast({
+        title: "❌ Sync Error",
+        description: error instanceof Error ? error.message : 'An error occurred while syncing',
+        variant: 'destructive',
+      });
+      setIsOpportunitySyncing(false);
+    }
+  }, [toast, selectedDate, period, selectedUserId, getReportingData, getClientByRevenueProId]);
+
   return (
     <div className="min-h-screen bg-background">
       <div className="relative z-10 pt-4 pb-12 px-4">
@@ -316,6 +421,9 @@ React.useEffect(() => {
             disabledMessage={disabledMessage}
             targetValues={processedTargetData}
             showTarget={true}
+            showOpportunitySyncButton={shouldShowOpportunitySync}
+            onOpportunitySyncClick={handleOpportunitySync}
+            isOpportunitySyncing={isOpportunitySyncing}
           />
         </div>
 
