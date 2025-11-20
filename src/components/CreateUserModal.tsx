@@ -27,8 +27,6 @@ interface CreateUserModalProps {
   editingUserId: string | null;
   onSave: (userId: string | null, userData: { email: string; name: string; password?: string; role: string }) => Promise<void>;
   loading: boolean;
-  currentStatus?: string;
-  onStatusToggle?: (userId: string, newStatus: string) => void;
 }
 
 const CreateUserModal: React.FC<CreateUserModalProps> = ({
@@ -38,8 +36,6 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
   editingUserId,
   onSave,
   loading,
-  currentStatus,
-  onStatusToggle,
 }) => {
   const [currentUserData, setCurrentUserData] = useState({
     email: "",
@@ -175,27 +171,6 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
             <div>
               <label htmlFor="password" className="block text-sm font-medium mb-1 text-card-foreground">Password</label>
               <Input id="password" type="password" value={currentUserData.password} onChange={handleChange} required disabled={loading} placeholder="Enter password" className="border-border focus:ring-primary" />
-            </div>
-          )}
-          {!isCreating && editingUserId && onStatusToggle && currentStatus && (
-            <div>
-              <label className="block text-sm font-medium mb-1 text-card-foreground">Status</label>
-              <Button
-                type="button"
-                variant="outline"
-                className={`w-full ${
-                  currentStatus === "active"
-                    ? "border-orange-500 text-orange-600 hover:bg-orange-50 hover:text-orange-700"
-                    : "border-green-500 text-green-600 hover:bg-green-50 hover:text-green-700"
-                }`}
-                onClick={() => {
-                  const newStatus = currentStatus === "active" ? "inactive" : "active";
-                  onStatusToggle(editingUserId, newStatus);
-                }}
-                disabled={loading}
-              >
-                {currentStatus === "active" ? "Deactivate User" : "Activate User"}
-              </Button>
             </div>
           )}
           <Button type="submit" className="w-full bg-gradient-primary hover:bg-gradient-accent text-primary-foreground" disabled={loading}>{loading ? (isCreating ? "Creating..." : "Saving...") : (isCreating ? "Create User" : "Save changes")}</Button>

@@ -111,7 +111,7 @@ export const calculateFields = (
       }
     }
   }
-  //
+
   // Calculate management cost and total CoM%
   if (values.calculatedMonthlyBudget !== undefined) {
     if (values.revenue !== undefined && values.revenue > 0) {
