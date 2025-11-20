@@ -2,7 +2,6 @@ version: 1
 
 allowedMergeBranches:
   - main
-  - dev-phase2
 
 services:
   - name: revenuepro-insight-hub

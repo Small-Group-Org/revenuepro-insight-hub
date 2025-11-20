@@ -57,15 +57,9 @@ export const API_ENDPOINTS = {
   TICKETS_CREATE: "/tickets",
   TICKETS_UPDATE: "/tickets", // append /:id when needed
 
-  // Feature Requests
-  FEATURE_REQUESTS: "/feature-requests",
-
-  // GHL Clients
-  GHL_CLIENTS: "/ghl-clients", // append /:locationId when needed
-
-  // Admin - Multi-Client Opportunity Sync
-  ADMIN_OPPORTUNITY_SYNC_TRIGGER: "/admin/multi-client-opportunity-sync/trigger",
-  // Admin - Lead Sheet Sync
+  // Admin - Opportunity Sync (TEMPORARY)
+  ADMIN_OPPORTUNITY_SYNC_TRIGGER: "/admin/opportunity-sync/trigger",
+  // Admin - Lead Sheet Sync (TEMPORARY)
   ADMIN_LEAD_SHEET_SYNC_TRIGGER: "/admin/lead-sheets-sync/trigger",
 } as const;
 
