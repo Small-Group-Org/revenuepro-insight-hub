@@ -321,7 +321,7 @@ export const reportingFields: ReportingFieldsConfig = {
       value: "weeklyBudget",
       fieldType: "calculated",
       formula: "targetRevenue * (com / 100)",
-      description: "Target Revenue × CoM%",
+  
       unit: "$",
     },
     {

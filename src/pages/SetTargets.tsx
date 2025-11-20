@@ -120,6 +120,17 @@ export const SetTargets = () => {
     return inputNames;
   }, [period]);
 
+  // Check if there are any changes by comparing calculatedValues with prevValues
+  const hasChanges = useMemo(() => {
+    const inputFieldNames = getInputFieldNames();
+    return inputFieldNames.some((fieldName) => {
+      const currentValue = calculatedValues[fieldName] ?? 0;
+      const prevValue = prevValues[fieldName] ?? 0;
+      // Use a small epsilon for floating point comparison
+      return Math.abs(currentValue - prevValue) > 0.01;
+    });
+  }, [calculatedValues, prevValues, getInputFieldNames]);
+
   const getPriorityConflict = useCallback(
     (newPeriod: PeriodType) => {
       if (!currentTarget) return null;
@@ -235,6 +246,8 @@ export const SetTargets = () => {
       const newValues = processTargetData(currentTarget);
       setFieldValues(newValues);
       setLastChanged(null);
+      // Update prevValues with calculated values to track changes properly
+      // const calculatedNewValues = calculateFields(newValues, period, 7 * currentTarget?.length);
       setPrevValues(newValues);
     }
   }, [currentTarget, period]);
@@ -324,7 +337,9 @@ export const SetTargets = () => {
   );
 
   const handleDisableStatusChange = useCallback((status: DisableMetadata) => {
-    setDisableStatus(status);
+    setDisableStatus({
+      ...status
+    });
   }, []);
 
   const handleSave = useCallback(async () => {
@@ -389,6 +404,11 @@ export const SetTargets = () => {
         title: "✅ Targets Saved Successfully!",
         description: `Your ${period} target values have been updated.`,
       });
+      
+      // Update prevValues after successful save to reset change detection
+      const savedCalculatedValues = calculateFields(fieldValues, period, 7 * currentTarget?.length);
+      setPrevValues(savedCalculatedValues);
+      setLastChanged(null);
     } catch (err) {
       toast({
         title: "❌ Error Saving Targets",
@@ -405,6 +425,7 @@ export const SetTargets = () => {
     toast,
     error,
     getInputFieldNames,
+    currentTarget,
   ]);
 
   const handleCancelPrioritySave = useCallback(() => {
@@ -426,7 +447,7 @@ export const SetTargets = () => {
           if (monthIndex === -1) return;
 
           // Only include months that are after the current month until December
-          if (monthIndex <= currentMonth) return;
+          if (monthIndex <= currentMonth && selectedYear === new Date().getFullYear()) return;
 
           const startDate = new Date(selectedYear, monthIndex, 1);
           const endDate = new Date(selectedYear, monthIndex + 1, 0);
@@ -461,6 +482,10 @@ export const SetTargets = () => {
             "Your yearly targets have been distributed across months.",
         });
 
+        // Update prevValues after successful save to reset change detection
+        const savedCalculatedValues = calculateFields(fieldValues, period, 7 * currentTarget?.length);
+        setPrevValues(savedCalculatedValues);
+        setLastChanged(null);
         setIsYearlyModalOpen(false);
       } catch (err) {
         toast({
@@ -488,6 +513,11 @@ export const SetTargets = () => {
             title: "✅ Targets Saved Successfully!",
             description: `Your ${period} target values have been updated.`,
           });
+          
+          // Update prevValues after successful save to reset change detection
+          const savedCalculatedValues = calculateFields(fieldValues, period, 7 * currentTarget?.length);
+          setPrevValues(savedCalculatedValues);
+          setLastChanged(null);
         }
         setPendingSaveData(null);
       } catch (err) {
@@ -553,7 +583,9 @@ export const SetTargets = () => {
             onChange={handleDatePeriodChange}
             buttonText="Save Targets"
             onButtonClick={handleSave}
-            disableLogic={disableLogic}
+            disableLogic={{
+              ...disableLogic
+            }}
             onDisableStatusChange={handleDisableStatusChange}
             onNavigationAttempt={() => true} // Always allow navigation
           />
