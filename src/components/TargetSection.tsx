@@ -43,7 +43,7 @@ interface TargetSectionProps {
   shouldDisableNonRevenueFields?: boolean; // New prop to disable all fields except revenue
   targetValues?: FieldValue; // New prop for target values
   /** 
-   * TEMPORARY: Show opportunity sync refresh button (only for specific user)
+   * Show opportunity sync refresh button (only for weekly period and users with active GHL clients)
    */
   showOpportunitySyncButton?: boolean;
   onOpportunitySyncClick?: () => void;
@@ -296,7 +296,7 @@ export const TargetSection: React.FC<TargetSectionProps> = ({
             </h2>
           </div>
           <div className="flex items-center gap-2">
-            {/* TEMPORARY: Opportunity Sync Refresh Button - only shown for weekly period and specific user */}
+            {/* Opportunity Sync Refresh Button - only shown for weekly period and users with active GHL clients */}
             {showOpportunitySyncButton && period === "weekly" && (
               <TooltipProvider>
                 <Tooltip>
