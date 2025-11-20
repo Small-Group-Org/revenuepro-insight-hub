@@ -34,11 +34,12 @@ export const AddActualData = () => {
   const { getClientByRevenueProId, getActiveClients } = useGhlClientStore();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [period, setPeriod] = useState<PeriodType>('weekly');
+  const [isOpportunitySyncing, setIsOpportunitySyncing] = useState(false);
 
   const [fieldValues, setFieldValues] = useState<FieldValue>({});
   const [lastChanged, setLastChanged] = useState<string | null>(null);
   const [prevValues, setPrevValues] = useState<FieldValue>({});
-  const [isOpportunitySyncing, setIsOpportunitySyncing] = useState(false);
+
 
   // Use processed target data from store (single API)
   const processedTargetData = useMemo(() => {
@@ -264,7 +265,6 @@ React.useEffect(() => {
     // Always allow navigation since we removed the unsaved changes modal
     return true;
   }, []);
-
 
 
   // Check if opportunity sync button should be shown (only for specific user and current week)
