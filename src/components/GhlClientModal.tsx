@@ -22,7 +22,7 @@ import {
   updateGhlClient,
   GhlClient,
 } from "@/service/ghlClientService";
-import { Loader2 } from "lucide-react";
+import { Loader2, ExternalLink } from "lucide-react";
 
 interface GhlClientModalProps {
   isOpen: boolean;
@@ -242,9 +242,22 @@ const GhlClientModal: React.FC<GhlClientModalProps> = ({
             )}
 
             <div>
-              <Label htmlFor="locationId" className="text-card-foreground">
-                Location ID <span className="text-red-500">*</span>
-              </Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="locationId" className="text-card-foreground">
+                  Location ID <span className="text-red-500">*</span>
+                </Label>
+                {!existingClient && (
+                  <a
+                    href="https://www.loom.com/share/0ff5ef9ea0a249649143ad1105787012"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-muted-foreground hover:text-primary hover:underline inline-flex items-center gap-1"
+                  >
+                    Need help?
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                )}
+              </div>
               <Input
                 id="locationId"
                 type="text"
@@ -258,10 +271,23 @@ const GhlClientModal: React.FC<GhlClientModalProps> = ({
             </div>
 
             <div>
-              <Label htmlFor="ghlApiToken" className="text-card-foreground">
-                GHL API Token{" "}
-                {!existingClient && <span className="text-red-500">*</span>}
-              </Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="ghlApiToken" className="text-card-foreground">
+                  GHL API Token{" "}
+                  {!existingClient && <span className="text-red-500">*</span>}
+                </Label>
+                {!existingClient && (
+                  <a
+                    href="https://www.loom.com/share/0ff5ef9ea0a249649143ad1105787012"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-muted-foreground hover:text-primary hover:underline inline-flex items-center gap-1"
+                  >
+                    Need help?
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                )}
+              </div>
               <Input
                 id="ghlApiToken"
                 type="password"
