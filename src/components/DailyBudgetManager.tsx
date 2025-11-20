@@ -370,7 +370,7 @@ export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
                 </Button>
                 <Button 
                   onClick={handleSave}
-                  disabled={!canEdit}
+                  disabled={!canEdit || !isDirty}
                 >
                   Save
                 </Button>

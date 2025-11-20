@@ -11,7 +11,7 @@ import { reportingFields } from '@/utils/constant';
 import { calculateReportingFields } from '@/utils/page-utils/actualDataUtils';
 import { handleInputDisable } from '@/utils/page-utils/compareUtils';
 import { processTargetData } from '@/utils/page-utils/targetUtils';
-import { getWeekInfo } from '@/utils/weekLogic';
+import { getWeekInfo, getCurrentWeek } from '@/utils/weekLogic';
 import { useUserStore } from '@/stores/userStore';
 import { useRoleAccess } from '@/hooks/useRoleAccess';
 import { FullScreenLoader } from '@/components/ui/full-screen-loader';
@@ -19,6 +19,11 @@ import { useCombinedLoading } from '@/hooks/useCombinedLoading';
 import DailyBudgetManager from '@/components/DailyBudgetManager';
 import { useGhlClientStore } from '@/stores/ghlClientStore';
 import { triggerOpportunitySync, triggerLeadSheetSync } from '@/service/ghlClientService';
+import { doPOST } from '@/utils/HttpUtils';
+import { API_ENDPOINTS } from '@/utils/constant';
+
+// TEMPORARY: Specific user ID for opportunity sync feature
+const OPPORTUNITY_SYNC_USER_ID = '68c82dfdac1491efe19d5df0';
 
 export const AddActualData = () => {
   const { reportingData, targetData, getReportingData, upsertReportingData, error } = useReportingDataStore();
@@ -94,16 +99,29 @@ React.useEffect(() => {
 
     setFieldValues(newValues);
     setLastChanged(null);
-    setPrevValues(newValues);
+    // Update prevValues with calculated values to track changes properly
+    const combinedValues = {
+      ...newValues,
+      com: processedTargetData?.com || 0,
+      targetRevenue: processedTargetData?.revenue || 0,
+    };
+    const calculatedNewValues = calculateReportingFields(combinedValues);
+    setPrevValues(calculatedNewValues);
     
   } else {
     // If no data, set to defaults
     const defaults = getReportingDefaultValues();
     setFieldValues(defaults);
     setLastChanged(null);
-    setPrevValues(defaults);
+    const combinedDefaults = {
+      ...defaults,
+      com: processedTargetData?.com || 0,
+      targetRevenue: processedTargetData?.revenue || 0,
+    };
+    const calculatedDefaults = calculateReportingFields(combinedDefaults);
+    setPrevValues(calculatedDefaults);
   }
-}, [reportingData]);
+}, [reportingData, processedTargetData]);
 
 
   const calculatedValues = useMemo(() => {
@@ -137,6 +155,17 @@ React.useEffect(() => {
     return inputNames;
   }, []);
 
+  // Check if there are any changes by comparing calculatedValues with prevValues
+  const hasChanges = useMemo(() => {
+    const inputFieldNames = getInputFieldNames();
+    return inputFieldNames.some((fieldName) => {
+      const currentValue = calculatedValues[fieldName] ?? 0;
+      const prevValue = prevValues[fieldName] ?? 0;
+      // Use a small epsilon for floating point comparison
+      return Math.abs(currentValue - prevValue) > 0.01;
+    });
+  }, [calculatedValues, prevValues, getInputFieldNames]);
+
   const handleInputChange = useCallback((fieldName: string, value: number) => {
     if (value === undefined || value === null || isNaN(value)) {
       value = 0;
@@ -145,13 +174,12 @@ React.useEffect(() => {
     const validatedValue = Math.max(0, value);
     
     setLastChanged(fieldName);
-    setPrevValues(calculatedValues);
     
     setFieldValues(prev => ({
       ...prev,
       [fieldName]: validatedValue
     }));
-  }, [calculatedValues]);
+  }, []);
 
   const handleSave = useCallback(async () => {
     const weekInfo = getWeekInfo(selectedDate);
@@ -203,6 +231,12 @@ React.useEffect(() => {
       // Refetch reporting data to get complete data from API
       await getReportingData(startDate, endDate, 'weekly', period);
       
+      // Update prevValues after successful save to reset change detection
+      // The useEffect will update prevValues when reportingData changes
+      // But we also update it here to ensure immediate reset
+      setPrevValues(calculatedValues);
+      setLastChanged(null);
+      
       toast({
         title: "✅ Data Saved Successfully!",
         description: `Week of ${format(new Date(startDate), 'MMM dd, yyyy')} has been updated.`,
@@ -230,6 +264,19 @@ React.useEffect(() => {
     // Always allow navigation since we removed the unsaved changes modal
     return true;
   }, []);
+
+
+
+  // Check if opportunity sync button should be shown (only for specific user and current week)
+  const isCurrentWeek = useMemo(() => {
+    if (period !== 'weekly') return false;
+    const currentWeek = getCurrentWeek();
+    const selectedWeek = getWeekInfo(selectedDate);
+    // Compare week start dates to determine if it's the current week
+    return format(currentWeek.weekStart, 'yyyy-MM-dd') === format(selectedWeek.weekStart, 'yyyy-MM-dd');
+  }, [period, selectedDate]);
+
+  
 
   const getSectionFields = useCallback((sectionKey: keyof typeof reportingFields) => {
     return reportingFields[sectionKey];
@@ -362,7 +409,10 @@ React.useEffect(() => {
             onChange={handleDatePeriodChange}
             buttonText="Save Report"
             onButtonClick={handleSave}
-            disableLogic={disableLogic}
+            disableLogic={{
+              ...disableLogic,
+              isButtonDisabled: disableLogic.isButtonDisabled || !hasChanges,
+            }}
             onNavigationAttempt={handleNavigationAttempt}
           />
         </div>

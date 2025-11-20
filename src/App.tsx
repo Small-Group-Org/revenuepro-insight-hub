@@ -6,6 +6,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import AppLayout from "@/layout/AppLayout";
 import { useState } from "react";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { FullScreenLoader } from "@/components/ui/full-screen-loader";
+import { useUserContext } from "@/utils/UserContext";
 
 // Import components
 import { Dashboard } from "@/components/Dashboard";
@@ -22,6 +24,34 @@ import { DataProvider } from "@/contexts/DataContext";
 import Profile from "@/pages/Profile";
 import ReleaseNotes from "@/pages/ReleaseNotes";
 
+const AppRoutes = () => {
+  const { isVerifying } = useUserContext();
+
+  return (
+    <>
+      <FullScreenLoader isLoading={isVerifying} message="Verifying authentication..." />
+      <DataProvider>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/release-notes" element={<ReleaseNotes />} />
+          <Route element={<AppLayout />}>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/targets" element={<SetTargets />} />
+            <Route path="/actuals" element={<AddActualData />} />
+            <Route path="/compare" element={<CompareResults />} />
+            <Route path="/leads" element={<LeadSheet />} />
+            <Route path="/lead-analytics" element={<LeadAnalytics />} />
+            <Route path="/user-managment" element={<CreateUser />} />
+            <Route path="/profile" element={<Profile />} />
+          </Route>
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </DataProvider>
+    </>
+  );
+};
+
 const App = () => {
   // Create a QueryClient instance inside the component
   const [queryClient] = useState(() => new QueryClient());
@@ -34,24 +64,7 @@ const App = () => {
           <Sonner />
           <BrowserRouter>
             <UserProvider>
-              <DataProvider>
-                <Routes>
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/release-notes" element={<ReleaseNotes />} />
-                  <Route element={<AppLayout />}>
-                    <Route path="/" element={<Dashboard />} />
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/targets" element={<SetTargets />} />
-                    <Route path="/actuals" element={<AddActualData />} />
-                    <Route path="/compare" element={<CompareResults />} />
-                    <Route path="/leads" element={<LeadSheet />} />
-                    <Route path="/lead-analytics" element={<LeadAnalytics />} />
-                    <Route path="/user-managment" element={<CreateUser />} />
-                    <Route path="/profile" element={<Profile />} />
-                  </Route>
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </DataProvider>
+              <AppRoutes />
             </UserProvider>
           </BrowserRouter>
         </TooltipProvider>

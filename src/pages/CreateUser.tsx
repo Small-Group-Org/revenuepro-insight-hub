@@ -61,7 +61,7 @@ const CreateUser = () => {
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [roleFilter, setRoleFilter] = useState<string>("all");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("active");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
@@ -457,12 +457,7 @@ const CreateUser = () => {
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-2">
-                    <label
-                      htmlFor="role-filter"
-                      className="text-sm font-medium text-muted-foreground"
-                    >
-                      Filter by Role:
-                    </label>
+                  
                     <Select value={roleFilter} onValueChange={setRoleFilter}>
                       <SelectTrigger className="w-32">
                         <SelectValue placeholder="All roles" />
@@ -476,12 +471,7 @@ const CreateUser = () => {
                   </div>
                   <div></div>
                   <div className="flex items-center gap-2">
-                    <label
-                      htmlFor="status-filter"
-                      className="text-sm font-medium text-muted-foreground"
-                    >
-                      Filter by Status:
-                    </label>
+                   
                     <Select
                       value={statusFilter}
                       onValueChange={setStatusFilter}
@@ -596,7 +586,7 @@ const CreateUser = () => {
                             {user.role === "ADMIN" ? "ADMIN" : "CLIENT"}
                           </span>
                         </TableCell>
-                        <TableCell className="text-right flex flex-wrap justify-end gap-1">
+                        <TableCell className="text-right flex flex-wrap justify-end">
                           <Button
                             variant="ghost"
                             size="sm"
