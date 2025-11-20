@@ -57,6 +57,9 @@ export const API_ENDPOINTS = {
   TICKETS_CREATE: "/tickets",
   TICKETS_UPDATE: "/tickets", // append /:id when needed
 
+  // Feature Requests
+  FEATURE_REQUESTS: "/feature-requests",
+
   // GHL Clients
   GHL_CLIENTS: "/ghl-clients", // append /:locationId when needed
 
