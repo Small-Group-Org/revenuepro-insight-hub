@@ -543,9 +543,9 @@ export default function Profile() {
                     <SelectContent>
                       <SelectItem value="all">All Status</SelectItem>
                       <SelectItem value="new">New</SelectItem>
+                      <SelectItem value="information_needed">Info Needed</SelectItem>
                       <SelectItem value="accepted">Accepted</SelectItem>
                       <SelectItem value="rejected">Rejected</SelectItem>
-                      <SelectItem value="information_needed">Info Needed</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -618,9 +618,9 @@ export default function Profile() {
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="new">New</SelectItem>
+                                <SelectItem value="information_needed">Info Needed</SelectItem>
                                 <SelectItem value="accepted">Accepted</SelectItem>
                                 <SelectItem value="rejected">Rejected</SelectItem>
-                                <SelectItem value="information_needed">Info Needed</SelectItem>
                               </SelectContent>
                             </Select>
                           </TableCell>

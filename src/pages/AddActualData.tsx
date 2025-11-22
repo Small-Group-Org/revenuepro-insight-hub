@@ -18,7 +18,7 @@ import { FullScreenLoader } from '@/components/ui/full-screen-loader';
 import { useCombinedLoading } from '@/hooks/useCombinedLoading';
 import DailyBudgetManager from '@/components/DailyBudgetManager';
 import { useGhlClientStore } from '@/stores/ghlClientStore';
-import { triggerOpportunitySync, triggerLeadSheetSync } from '@/service/ghlClientService';
+import { triggerOpportunitySync } from '@/service/ghlClientService';
 import { doPOST } from '@/utils/HttpUtils';
 import { API_ENDPOINTS } from '@/utils/constant';
 
@@ -283,12 +283,13 @@ React.useEffect(() => {
   }, []);
 
   // Check if opportunity sync button should be shown
-  // Show button if: weekly period, user has an active GHL client configured
+  // Show button if: weekly period, current week, user has an active GHL client configured
   const shouldShowOpportunitySync = useMemo(() => {
     if (period !== 'weekly' || !selectedUserId) return false;
+    if (!isCurrentWeek) return false; // Only show for current week
     const client = getClientByRevenueProId(selectedUserId);
     return client?.status === 'active';
-  }, [period, selectedUserId, getClientByRevenueProId]);
+  }, [period, selectedUserId, isCurrentWeek, getClientByRevenueProId]);
 
   // Handle opportunity sync trigger
   const handleOpportunitySync = useCallback(async () => {
@@ -341,37 +342,7 @@ React.useEffect(() => {
       // Refresh the reporting data
       await getReportingData(startDate, endDate, 'weekly', period);
 
-      // Step 3: Start leadsheet sync (runs in background)
-      toast({
-        title: "🔄 Starting Lead Sheet Sync",
-        description: 'Lead sheet sync has been triggered and will continue in background...',
-      });
-
-      // Trigger leadsheet sync (don't await - let it run in background)
-      triggerLeadSheetSync()
-        .then((leadSheetResponse) => {
-          if (leadSheetResponse.error) {
-            toast({
-              title: "❌ Lead Sheet Sync Failed",
-              description: leadSheetResponse.message || 'Failed to sync lead sheets',
-              variant: 'destructive',
-            });
-          } else {
-            toast({
-              title: "✅ Lead Sheet Sync Completed",
-              description: 'Lead sheet sync has been completed successfully',
-            });
-          }
-        })
-        .catch((error) => {
-          toast({
-            title: "❌ Lead Sheet Sync Error",
-            description: error instanceof Error ? error.message : 'An error occurred while syncing lead sheets',
-            variant: 'destructive',
-          });
-        });
-
-      // Reset loading state (leadsheet sync continues in background)
+      // Reset loading state
       setIsOpportunitySyncing(false);
     } catch (error) {
       toast({

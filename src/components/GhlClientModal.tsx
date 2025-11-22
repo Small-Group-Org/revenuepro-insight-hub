@@ -47,7 +47,7 @@ const GhlClientModal: React.FC<GhlClientModalProps> = ({
   const [formData, setFormData] = useState({
     locationId: "",
     ghlApiToken: "",
-    queryValue: "1st - PS Quote Total Price",
+    queryValue: "1st - Total Job Amount",
     status: "active" as "active" | "inactive",
   });
 
@@ -73,7 +73,7 @@ const GhlClientModal: React.FC<GhlClientModalProps> = ({
         setFormData({
           locationId: "",
           ghlApiToken: "",
-          queryValue: "1st - PS Quote Total Price",
+          queryValue: "1st - Total Job Amount",
           status: "active",
         });
       }
@@ -82,7 +82,7 @@ const GhlClientModal: React.FC<GhlClientModalProps> = ({
       setFormData({
         locationId: "",
         ghlApiToken: "",
-        queryValue: "1st - PS Quote Total Price",
+        queryValue: "1st - Total Job Amount",
         status: "active",
       });
       setExistingClient(null);
@@ -96,7 +96,7 @@ const GhlClientModal: React.FC<GhlClientModalProps> = ({
     if (!formData.locationId || !formData.queryValue) {
       toast({
         title: "Validation Error",
-        description: "Location ID and Query Value are required",
+        description: "Sub Account ID and Total Job Booked Amount are required",
         variant: "destructive",
       });
       return;
@@ -107,7 +107,7 @@ const GhlClientModal: React.FC<GhlClientModalProps> = ({
     if (!existingClient && !formData.ghlApiToken) {
       toast({
         title: "Validation Error",
-        description: "GHL API Token is required when creating a new client",
+        description: "GHL Integration Token is required when creating a new client",
         variant: "destructive",
       });
       return;
@@ -218,11 +218,11 @@ const GhlClientModal: React.FC<GhlClientModalProps> = ({
                 <h4 className="font-semibold text-sm">Current Configuration</h4>
                 <div className="text-sm space-y-1">
                   <p>
-                    <span className="font-medium">Location ID:</span>{" "}
+                    <span className="font-medium">Sub Account ID:</span>{" "}
                     {existingClient.locationId}
                   </p>
                   <p>
-                    <span className="font-medium">Query Value:</span>{" "}
+                    <span className="font-medium">Total Job Booked Amount:</span>{" "}
                     {existingClient.queryValue}
                   </p>
                   <p>
@@ -244,7 +244,7 @@ const GhlClientModal: React.FC<GhlClientModalProps> = ({
             <div>
               <div className="flex items-center justify-between">
                 <Label htmlFor="locationId" className="text-card-foreground">
-                  Location ID <span className="text-red-500">*</span>
+                  Sub Account ID <span className="text-red-500">*</span>
                 </Label>
                 {!existingClient && (
                   <a
@@ -265,7 +265,7 @@ const GhlClientModal: React.FC<GhlClientModalProps> = ({
                 onChange={handleChange}
                 required
                 disabled={loading}
-                placeholder="Enter GHL Location ID"
+                placeholder="Enter GHL Sub Account ID"
                 className="mt-1 border-border focus:ring-primary"
               />
             </div>
@@ -273,7 +273,7 @@ const GhlClientModal: React.FC<GhlClientModalProps> = ({
             <div>
               <div className="flex items-center justify-between">
                 <Label htmlFor="ghlApiToken" className="text-card-foreground">
-                  GHL API Token{" "}
+                  GHL Integration Token{" "}
                   {!existingClient && <span className="text-red-500">*</span>}
                 </Label>
                 {!existingClient && (
@@ -298,7 +298,7 @@ const GhlClientModal: React.FC<GhlClientModalProps> = ({
                 placeholder={
                   existingClient
                     ? "Leave empty to keep current token"
-                    : "Enter GHL API Token"
+                    : "Enter GHL Integration Token"
                 }
                 className="mt-1 border-border focus:ring-primary"
               />
@@ -312,7 +312,7 @@ const GhlClientModal: React.FC<GhlClientModalProps> = ({
 
             <div>
               <Label htmlFor="queryValue" className="text-card-foreground">
-                Query Value <span className="text-red-500">*</span>
+                Total Job Booked Amount <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="queryValue"
@@ -321,11 +321,11 @@ const GhlClientModal: React.FC<GhlClientModalProps> = ({
                 onChange={handleChange}
                 required
                 disabled={loading}
-                placeholder="e.g., 1st - PS Quote Total Price"
+                placeholder="e.g., 1st - Total Job Amount"
                 className="mt-1 border-border focus:ring-primary"
               />
               <p className="text-xs text-muted-foreground mt-1">
-                The custom field name to search for in GHL
+                The custom field name to search for in GHL (Total Job Booked Amount)
               </p>
             </div>
 
