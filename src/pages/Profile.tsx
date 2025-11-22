@@ -70,9 +70,12 @@ export default function Profile() {
     fetchTickets();
   }, [fetchTickets]);
 
+  // Only fetch feature requests for admin
   useEffect(() => {
-    fetchFeatureRequests();
-  }, [fetchFeatureRequests]);
+    if (isAdmin) {
+      fetchFeatureRequests();
+    }
+  }, [isAdmin, fetchFeatureRequests]);
 
   // Filter tickets for regular users (only their own tickets)
   let filteredTickets = isAdmin ? tickets : tickets.filter(ticket => ticket.userId._id === user?._id);
@@ -311,18 +314,21 @@ export default function Profile() {
     }
   };
 
-  // Filter feature requests for regular users (only their own)
-  let filteredFeatureRequests = isAdmin ? featureRequests : featureRequests.filter(fr => fr.userId === user?._id);
-  
-  // Apply status filter for admin
-  if (isAdmin && featureStatusFilter !== "all") {
-    filteredFeatureRequests = filteredFeatureRequests.filter(fr => fr.status === featureStatusFilter);
+  // Admin only: Filter and sort feature requests
+  let sortedFeatureRequests: any[] = [];
+  if (isAdmin) {
+    let filteredFeatureRequests = featureRequests;
+    
+    // Apply status filter
+    if (featureStatusFilter !== "all") {
+      filteredFeatureRequests = filteredFeatureRequests.filter(fr => fr.status === featureStatusFilter);
+    }
+    
+    // Sort by creation time (newest first)
+    sortedFeatureRequests = filteredFeatureRequests.sort((a, b) => {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
   }
-  
-  // Sort feature requests by creation time (newest first)
-  const sortedFeatureRequests = filteredFeatureRequests.sort((a, b) => {
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-  });
 
   return (
     <div className="h-full w-full flex flex-col">
@@ -341,15 +347,17 @@ export default function Profile() {
             <div className="text-sm text-muted-foreground">{user?.email || "email@domain.com"}</div>
           </div>
           <div className="ml-auto flex items-center gap-3">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setIsFeatureModalOpen(true)}
-              className="gap-2"
-            >
-              <Lightbulb size={16} />
-              Request Feature
-            </Button>
+            {!isAdmin && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setIsFeatureModalOpen(true)}
+                className="gap-2"
+              >
+                <Lightbulb size={16} />
+                Request Feature
+              </Button>
+            )}
             <button onClick={handleLogout} className="inline-flex h-9 items-center gap-2 justify-center rounded-md bg-destructive px-4 text-sm font-medium text-destructive-foreground shadow transition-colors hover:opacity-90">
               <LogOut size={18} />
               Logout
@@ -515,34 +523,33 @@ export default function Profile() {
             </AccordionContent>
           </AccordionItem>
 
-          {/* Feature Requests Section */}
-          <AccordionItem value="feature-requests" className="border border-gray-200 rounded-lg bg-white shadow-sm">
-            <AccordionTrigger className="text-lg font-semibold px-6 py-4 hover:bg-gray-50 transition-colors">
-              <div className="flex items-center gap-2">
-                <Lightbulb size={20} />
-                Feature Requests
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="px-6 pb-6">
-              {isAdmin && (
-                <div className="flex justify-between items-center mb-4 mt-2">
-                  <div className="flex items-center gap-2">
-                    <label className="text-sm font-medium">Filter by Status:</label>
-                    <Select value={featureStatusFilter} onValueChange={setFeatureStatusFilter}>
-                      <SelectTrigger className="w-48">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Status</SelectItem>
-                        <SelectItem value="new">New</SelectItem>
-                        <SelectItem value="accepted">Accepted</SelectItem>
-                        <SelectItem value="rejected">Rejected</SelectItem>
-                        <SelectItem value="information_needed">Info Needed</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+          {/* Feature Requests Section - Admin Only */}
+          {isAdmin && (
+            <AccordionItem value="feature-requests" className="border border-gray-200 rounded-lg bg-white shadow-sm">
+              <AccordionTrigger className="text-lg font-semibold px-6 py-4 hover:bg-gray-50 transition-colors">
+                <div className="flex items-center gap-2">
+                  <Lightbulb size={20} />
+                  Feature Requests
                 </div>
-              )}
+              </AccordionTrigger>
+              <AccordionContent className="px-6 pb-6">
+              <div className="flex justify-between items-center mb-4 mt-2">
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium">Filter by Status:</label>
+                  <Select value={featureStatusFilter} onValueChange={setFeatureStatusFilter}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="new">New</SelectItem>
+                      <SelectItem value="accepted">Accepted</SelectItem>
+                      <SelectItem value="rejected">Rejected</SelectItem>
+                      <SelectItem value="information_needed">Info Needed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
 
               <div className="mt-4">
                 {featureLoading ? (
@@ -558,9 +565,6 @@ export default function Profile() {
                   <div className="text-center py-8 text-muted-foreground">
                     <Lightbulb className="h-12 w-12 mx-auto mb-4 opacity-50" />
                     <p>No feature requests found</p>
-                    {!isAdmin && (
-                      <p className="text-sm mt-2">Submit your first feature request using the "Request Feature" button</p>
-                    )}
                   </div>
                 ) : (
                   <Table>
@@ -568,7 +572,7 @@ export default function Profile() {
                       <TableRow>
                         <TableHead className="w-[20%]">Title</TableHead>
                         <TableHead className="w-[35%]">Description</TableHead>
-                        {isAdmin && <TableHead className="w-[15%]">User</TableHead>}
+                        <TableHead className="w-[15%]">User</TableHead>
                         <TableHead className="w-[15%]">Status</TableHead>
                         <TableHead className="text-right w-[15%]">
                           <div className="flex items-center justify-end gap-1">
@@ -598,33 +602,27 @@ export default function Profile() {
                               </Tooltip>
                             </TooltipProvider>
                           </TableCell>
-                          {isAdmin && (
-                            <TableCell className="text-sm text-muted-foreground">
-                              <div>
-                                <div className="font-medium">{feature.userName}</div>
-                                <div className="text-xs text-gray-500">{feature.userEmail}</div>
-                              </div>
-                            </TableCell>
-                          )}
+                          <TableCell className="text-sm text-muted-foreground">
+                            <div>
+                              <div className="font-medium">{feature.userName}</div>
+                              <div className="text-xs text-gray-500">{feature.userEmail}</div>
+                            </div>
+                          </TableCell>
                           <TableCell>
-                            {isAdmin ? (
-                              <Select
-                                value={feature.status}
-                                onValueChange={(value) => handleFeatureStatusChange(feature._id, value)}
-                              >
-                                <SelectTrigger className="w-40">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="new">New</SelectItem>
-                                  <SelectItem value="accepted">Accepted</SelectItem>
-                                  <SelectItem value="rejected">Rejected</SelectItem>
-                                  <SelectItem value="information_needed">Info Needed</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            ) : (
-                              getFeatureStatusBadge(feature.status)
-                            )}
+                            <Select
+                              value={feature.status}
+                              onValueChange={(value) => handleFeatureStatusChange(feature._id, value)}
+                            >
+                              <SelectTrigger className="w-40">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="new">New</SelectItem>
+                                <SelectItem value="accepted">Accepted</SelectItem>
+                                <SelectItem value="rejected">Rejected</SelectItem>
+                                <SelectItem value="information_needed">Info Needed</SelectItem>
+                              </SelectContent>
+                            </Select>
                           </TableCell>
                           <TableCell className="text-right text-muted-foreground">
                             {formatDate(feature.createdAt)}
@@ -637,6 +635,7 @@ export default function Profile() {
               </div>
             </AccordionContent>
           </AccordionItem>
+          )}
         </Accordion>
       </div>
 
