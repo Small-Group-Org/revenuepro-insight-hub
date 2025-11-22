@@ -75,6 +75,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
             description: "Please request permission from the administrator to access this resource - tushar.mangla1120@gmail.com",
             variant: "destructive",
           });
+          setIsVerifying(false);
           navigate("/login");
           return;
         }
@@ -86,6 +87,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
             setSelectedUserId(response.data.user._id);
           }
           login();
+          setIsVerifying(false);
           return;
         }
 
@@ -95,6 +97,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
           description: "Please login again",
           variant: "destructive",
         });
+        setIsVerifying(false);
         navigate("/login");
        
       } catch (error) {
@@ -104,9 +107,11 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
           description: "Authentication failed. Please login again.",
           variant: "destructive",
         });
+        setIsVerifying(false);
         navigate("/login");
       }
     } else {
+      setIsVerifying(false);
       navigate("/login");
     }
   };

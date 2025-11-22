@@ -11,12 +11,19 @@ import { reportingFields } from '@/utils/constant';
 import { calculateReportingFields } from '@/utils/page-utils/actualDataUtils';
 import { handleInputDisable } from '@/utils/page-utils/compareUtils';
 import { processTargetData } from '@/utils/page-utils/targetUtils';
-import { getWeekInfo } from '@/utils/weekLogic';
+import { getWeekInfo, getCurrentWeek } from '@/utils/weekLogic';
 import { useUserStore } from '@/stores/userStore';
 import { useRoleAccess } from '@/hooks/useRoleAccess';
 import { FullScreenLoader } from '@/components/ui/full-screen-loader';
 import { useCombinedLoading } from '@/hooks/useCombinedLoading';
 import DailyBudgetManager from '@/components/DailyBudgetManager';
+import { useGhlClientStore } from '@/stores/ghlClientStore';
+import { triggerOpportunitySync, triggerLeadSheetSync } from '@/service/ghlClientService';
+import { doPOST } from '@/utils/HttpUtils';
+import { API_ENDPOINTS } from '@/utils/constant';
+
+// TEMPORARY: Specific user ID for opportunity sync feature
+const OPPORTUNITY_SYNC_USER_ID = '68c82dfdac1491efe19d5df0';
 
 export const AddActualData = () => {
   const { reportingData, targetData, getReportingData, upsertReportingData, error } = useReportingDataStore();
@@ -24,12 +31,15 @@ export const AddActualData = () => {
   const { toast } = useToast();
   const { selectedUserId } = useUserStore();
   const { userRole } = useRoleAccess();
+  const { getClientByRevenueProId, getActiveClients } = useGhlClientStore();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [period, setPeriod] = useState<PeriodType>('weekly');
+  const [isOpportunitySyncing, setIsOpportunitySyncing] = useState(false);
 
   const [fieldValues, setFieldValues] = useState<FieldValue>({});
   const [lastChanged, setLastChanged] = useState<string | null>(null);
   const [prevValues, setPrevValues] = useState<FieldValue>({});
+
 
   // Use processed target data from store (single API)
   const processedTargetData = useMemo(() => {
@@ -90,16 +100,29 @@ React.useEffect(() => {
 
     setFieldValues(newValues);
     setLastChanged(null);
-    setPrevValues(newValues);
+    // Update prevValues with calculated values to track changes properly
+    const combinedValues = {
+      ...newValues,
+      com: processedTargetData?.com || 0,
+      targetRevenue: processedTargetData?.revenue || 0,
+    };
+    const calculatedNewValues = calculateReportingFields(combinedValues);
+    setPrevValues(calculatedNewValues);
     
   } else {
     // If no data, set to defaults
     const defaults = getReportingDefaultValues();
     setFieldValues(defaults);
     setLastChanged(null);
-    setPrevValues(defaults);
+    const combinedDefaults = {
+      ...defaults,
+      com: processedTargetData?.com || 0,
+      targetRevenue: processedTargetData?.revenue || 0,
+    };
+    const calculatedDefaults = calculateReportingFields(combinedDefaults);
+    setPrevValues(calculatedDefaults);
   }
-}, [reportingData]);
+}, [reportingData, processedTargetData]);
 
 
   const calculatedValues = useMemo(() => {
@@ -133,6 +156,17 @@ React.useEffect(() => {
     return inputNames;
   }, []);
 
+  // Check if there are any changes by comparing calculatedValues with prevValues
+  const hasChanges = useMemo(() => {
+    const inputFieldNames = getInputFieldNames();
+    return inputFieldNames.some((fieldName) => {
+      const currentValue = calculatedValues[fieldName] ?? 0;
+      const prevValue = prevValues[fieldName] ?? 0;
+      // Use a small epsilon for floating point comparison
+      return Math.abs(currentValue - prevValue) > 0.01;
+    });
+  }, [calculatedValues, prevValues, getInputFieldNames]);
+
   const handleInputChange = useCallback((fieldName: string, value: number) => {
     if (value === undefined || value === null || isNaN(value)) {
       value = 0;
@@ -141,13 +175,12 @@ React.useEffect(() => {
     const validatedValue = Math.max(0, value);
     
     setLastChanged(fieldName);
-    setPrevValues(calculatedValues);
     
     setFieldValues(prev => ({
       ...prev,
       [fieldName]: validatedValue
     }));
-  }, [calculatedValues]);
+  }, []);
 
   const handleSave = useCallback(async () => {
     const weekInfo = getWeekInfo(selectedDate);
@@ -199,6 +232,12 @@ React.useEffect(() => {
       // Refetch reporting data to get complete data from API
       await getReportingData(startDate, endDate, 'weekly', period);
       
+      // Update prevValues after successful save to reset change detection
+      // The useEffect will update prevValues when reportingData changes
+      // But we also update it here to ensure immediate reset
+      setPrevValues(calculatedValues);
+      setLastChanged(null);
+      
       toast({
         title: "✅ Data Saved Successfully!",
         description: `Week of ${format(new Date(startDate), 'MMM dd, yyyy')} has been updated.`,
@@ -227,9 +266,122 @@ React.useEffect(() => {
     return true;
   }, []);
 
+
+  // Check if opportunity sync button should be shown (only for specific user and current week)
+  const isCurrentWeek = useMemo(() => {
+    if (period !== 'weekly') return false;
+    const currentWeek = getCurrentWeek();
+    const selectedWeek = getWeekInfo(selectedDate);
+    // Compare week start dates to determine if it's the current week
+    return format(currentWeek.weekStart, 'yyyy-MM-dd') === format(selectedWeek.weekStart, 'yyyy-MM-dd');
+  }, [period, selectedDate]);
+
+  
+
   const getSectionFields = useCallback((sectionKey: keyof typeof reportingFields) => {
     return reportingFields[sectionKey];
   }, []);
+
+  // Check if opportunity sync button should be shown
+  // Show button if: weekly period, user has an active GHL client configured
+  const shouldShowOpportunitySync = useMemo(() => {
+    if (period !== 'weekly' || !selectedUserId) return false;
+    const client = getClientByRevenueProId(selectedUserId);
+    return client?.status === 'active';
+  }, [period, selectedUserId, getClientByRevenueProId]);
+
+  // Handle opportunity sync trigger
+  const handleOpportunitySync = useCallback(async () => {
+    if (!selectedUserId) return;
+
+    setIsOpportunitySyncing(true);
+
+    try {
+      // Get active GHL clients for the current user
+      const client = getClientByRevenueProId(selectedUserId);
+      
+      if (!client || client.status !== 'active') {
+        toast({
+          title: "❌ No Active GHL Client",
+          description: 'No active GHL client configuration found for this user',
+          variant: 'destructive',
+        });
+        setIsOpportunitySyncing(false);
+        return;
+      }
+
+      // Step 1: Start opportunity sync for this client's location
+      toast({
+        title: "🔄 Starting Opportunity Sync",
+        description: 'Opportunity sync has been triggered...',
+      });
+
+      const opportunityResponse = await triggerOpportunitySync([client.locationId]);
+
+      if (opportunityResponse.error) {
+        toast({
+          title: "❌ Opportunity Sync Failed",
+          description: opportunityResponse.message || 'Failed to sync opportunities',
+          variant: 'destructive',
+        });
+        setIsOpportunitySyncing(false);
+        return;
+      }
+
+      toast({
+        title: "✅ Opportunity Sync Completed",
+        description: 'Opportunity sync has been completed successfully',
+      });
+
+      // Step 2: After successful opportunity sync, refresh the data for current week
+      const weekInfo = getWeekInfo(selectedDate);
+      const startDate = format(weekInfo.weekStart, 'yyyy-MM-dd');
+      const endDate = format(weekInfo.weekEnd, 'yyyy-MM-dd');
+
+      // Refresh the reporting data
+      await getReportingData(startDate, endDate, 'weekly', period);
+
+      // Step 3: Start leadsheet sync (runs in background)
+      toast({
+        title: "🔄 Starting Lead Sheet Sync",
+        description: 'Lead sheet sync has been triggered and will continue in background...',
+      });
+
+      // Trigger leadsheet sync (don't await - let it run in background)
+      triggerLeadSheetSync()
+        .then((leadSheetResponse) => {
+          if (leadSheetResponse.error) {
+            toast({
+              title: "❌ Lead Sheet Sync Failed",
+              description: leadSheetResponse.message || 'Failed to sync lead sheets',
+              variant: 'destructive',
+            });
+          } else {
+            toast({
+              title: "✅ Lead Sheet Sync Completed",
+              description: 'Lead sheet sync has been completed successfully',
+            });
+          }
+        })
+        .catch((error) => {
+          toast({
+            title: "❌ Lead Sheet Sync Error",
+            description: error instanceof Error ? error.message : 'An error occurred while syncing lead sheets',
+            variant: 'destructive',
+          });
+        });
+
+      // Reset loading state (leadsheet sync continues in background)
+      setIsOpportunitySyncing(false);
+    } catch (error) {
+      toast({
+        title: "❌ Sync Error",
+        description: error instanceof Error ? error.message : 'An error occurred while syncing',
+        variant: 'destructive',
+      });
+      setIsOpportunitySyncing(false);
+    }
+  }, [toast, selectedDate, period, selectedUserId, getReportingData, getClientByRevenueProId]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -257,7 +409,10 @@ React.useEffect(() => {
             onChange={handleDatePeriodChange}
             buttonText="Save Report"
             onButtonClick={handleSave}
-            disableLogic={disableLogic}
+            disableLogic={{
+              ...disableLogic,
+              isButtonDisabled: disableLogic.isButtonDisabled || !hasChanges,
+            }}
             onNavigationAttempt={handleNavigationAttempt}
           />
         </div>
@@ -316,6 +471,9 @@ React.useEffect(() => {
             disabledMessage={disabledMessage}
             targetValues={processedTargetData}
             showTarget={true}
+            showOpportunitySyncButton={shouldShowOpportunitySync}
+            onOpportunitySyncClick={handleOpportunitySync}
+            isOpportunitySyncing={isOpportunitySyncing}
           />
         </div>
 

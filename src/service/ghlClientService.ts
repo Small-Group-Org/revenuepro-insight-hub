@@ -90,3 +90,25 @@ export const updateGhlClient = async (
   return { error: true, message: response.message || "Failed to update GHL client" };
 };
 
+// Trigger Opportunity Sync for specific clients
+export const triggerOpportunitySync = async (
+  locationIds: string[]
+): Promise<{ error: boolean; message?: string }> => {
+  const response = await doPOST(API_ENDPOINTS.ADMIN_OPPORTUNITY_SYNC_TRIGGER, {
+    locationIds,
+  });
+  if (!response.error) {
+    return { error: false };
+  }
+  return { error: true, message: response.message || "Failed to trigger opportunity sync" };
+};
+
+// Trigger Lead Sheet Sync (runs in background)
+export const triggerLeadSheetSync = async (): Promise<{ error: boolean; message?: string }> => {
+  const response = await doPOST(API_ENDPOINTS.ADMIN_LEAD_SHEET_SYNC_TRIGGER, {});
+  if (!response.error) {
+    return { error: false };
+  }
+  return { error: true, message: response.message || "Failed to trigger lead sheet sync" };
+};
+

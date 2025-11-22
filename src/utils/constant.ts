@@ -62,6 +62,11 @@ export const API_ENDPOINTS = {
 
   // GHL Clients
   GHL_CLIENTS: "/ghl-clients", // append /:locationId when needed
+
+  // Admin - Multi-Client Opportunity Sync
+  ADMIN_OPPORTUNITY_SYNC_TRIGGER: "/admin/multi-client-opportunity-sync/trigger",
+  // Admin - Lead Sheet Sync
+  ADMIN_LEAD_SHEET_SYNC_TRIGGER: "/admin/lead-sheets-sync/trigger",
 } as const;
 
 export const menuItems = [
@@ -316,7 +321,7 @@ export const reportingFields: ReportingFieldsConfig = {
       value: "weeklyBudget",
       fieldType: "calculated",
       formula: "targetRevenue * (com / 100)",
-      description: "Target Revenue × CoM%",
+  
       unit: "$",
     },
     {

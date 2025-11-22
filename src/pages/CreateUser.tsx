@@ -24,7 +24,7 @@ import { useUserStore } from "@/stores/userStore";
 import CreateUserModal from "@/components/CreateUserModal";
 import ResetPasswordModal from "@/components/ResetPasswordModal";
 import GhlClientModal from "@/components/GhlClientModal";
-import { getAllGhlClients, GhlClient } from "@/service/ghlClientService";
+import { useGhlClientStore } from "@/stores/ghlClientStore";
 import {
   UserPlus,
   Pencil,
@@ -61,7 +61,7 @@ const CreateUser = () => {
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [roleFilter, setRoleFilter] = useState<string>("all");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("active");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
@@ -82,32 +82,20 @@ const CreateUser = () => {
   const [isGhlModalOpen, setIsGhlModalOpen] = useState(false);
   const [ghlClientUserId, setGhlClientUserId] = useState<string | null>(null);
   const [ghlClientUserName, setGhlClientUserName] = useState<string>("");
-  const [ghlClients, setGhlClients] = useState<GhlClient[]>([]);
-  const [fetchingGhlClients, setFetchingGhlClients] = useState(false);
+  const { clients: ghlClients, fetchClients: fetchGhlClients } = useGhlClientStore();
 
   // Fetch users and GHL clients when role filter changes
+  // Only fetch GHL clients if they haven't been loaded yet (to avoid unnecessary API calls)
   useEffect(() => {
     if (loggedInUser?.role === "ADMIN") {
       fetchUsers(roleFilter);
-      fetchGhlClients();
+      // Only fetch GHL clients if store is empty (they're already loaded in AppLayout on login)
+      if (ghlClients.length === 0) {
+        fetchGhlClients();
+      }
       setCurrentPage(1); // Reset to first page when filter changes
     }
-  }, [roleFilter, loggedInUser?.role, fetchUsers]);
-
-  // Fetch GHL clients
-  const fetchGhlClients = async () => {
-    setFetchingGhlClients(true);
-    try {
-      const response = await getAllGhlClients();
-      if (!response.error && response.data) {
-        setGhlClients(response.data);
-      }
-    } catch (error) {
-      console.error("Error fetching GHL clients:", error);
-    } finally {
-      setFetchingGhlClients(false);
-    }
-  };
+  }, [roleFilter, loggedInUser?.role, fetchUsers, fetchGhlClients, ghlClients.length]);
 
   // Helper function to check if GHL client exists for a user
   const hasGhlClient = (userId: string): boolean => {
@@ -469,12 +457,7 @@ const CreateUser = () => {
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-2">
-                    <label
-                      htmlFor="role-filter"
-                      className="text-sm font-medium text-muted-foreground"
-                    >
-                      Filter by Role:
-                    </label>
+                  
                     <Select value={roleFilter} onValueChange={setRoleFilter}>
                       <SelectTrigger className="w-32">
                         <SelectValue placeholder="All roles" />
@@ -488,12 +471,7 @@ const CreateUser = () => {
                   </div>
                   <div></div>
                   <div className="flex items-center gap-2">
-                    <label
-                      htmlFor="status-filter"
-                      className="text-sm font-medium text-muted-foreground"
-                    >
-                      Filter by Status:
-                    </label>
+                   
                     <Select
                       value={statusFilter}
                       onValueChange={setStatusFilter}
@@ -608,7 +586,7 @@ const CreateUser = () => {
                             {user.role === "ADMIN" ? "ADMIN" : "CLIENT"}
                           </span>
                         </TableCell>
-                        <TableCell className="text-right flex flex-wrap justify-end gap-1">
+                        <TableCell className="text-right flex flex-wrap justify-end">
                           <Button
                             variant="ghost"
                             size="sm"
