@@ -17,6 +17,8 @@ import { useRoleAccess } from '@/hooks/useRoleAccess';
 import { FullScreenLoader } from '@/components/ui/full-screen-loader';
 import { useCombinedLoading } from '@/hooks/useCombinedLoading';
 import DailyBudgetManager from '@/components/DailyBudgetManager';
+import { useGhlClientStore } from '@/stores/ghlClientStore';
+import { triggerOpportunitySync, triggerLeadSheetSync } from '@/service/ghlClientService';
 import { doPOST } from '@/utils/HttpUtils';
 import { API_ENDPOINTS } from '@/utils/constant';
 
@@ -29,6 +31,7 @@ export const AddActualData = () => {
   const { toast } = useToast();
   const { selectedUserId } = useUserStore();
   const { userRole } = useRoleAccess();
+  const { getClientByRevenueProId, getActiveClients } = useGhlClientStore();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [period, setPeriod] = useState<PeriodType>('weekly');
   const [isOpportunitySyncing, setIsOpportunitySyncing] = useState(false);
@@ -36,6 +39,7 @@ export const AddActualData = () => {
   const [fieldValues, setFieldValues] = useState<FieldValue>({});
   const [lastChanged, setLastChanged] = useState<string | null>(null);
   const [prevValues, setPrevValues] = useState<FieldValue>({});
+
 
   // Use processed target data from store (single API)
   const processedTargetData = useMemo(() => {
@@ -262,19 +266,58 @@ React.useEffect(() => {
     return true;
   }, []);
 
-  // TEMPORARY: Handle opportunity sync trigger and leadsheet sync trigger
+
+  // Check if opportunity sync button should be shown (only for specific user and current week)
+  const isCurrentWeek = useMemo(() => {
+    if (period !== 'weekly') return false;
+    const currentWeek = getCurrentWeek();
+    const selectedWeek = getWeekInfo(selectedDate);
+    // Compare week start dates to determine if it's the current week
+    return format(currentWeek.weekStart, 'yyyy-MM-dd') === format(selectedWeek.weekStart, 'yyyy-MM-dd');
+  }, [period, selectedDate]);
+
+  
+
+  const getSectionFields = useCallback((sectionKey: keyof typeof reportingFields) => {
+    return reportingFields[sectionKey];
+  }, []);
+
+  // Check if opportunity sync button should be shown
+  // Show button if: weekly period, user has an active GHL client configured
+  const shouldShowOpportunitySync = useMemo(() => {
+    if (period !== 'weekly' || !selectedUserId) return false;
+    const client = getClientByRevenueProId(selectedUserId);
+    return client?.status === 'active';
+  }, [period, selectedUserId, getClientByRevenueProId]);
+
+  // Handle opportunity sync trigger
   const handleOpportunitySync = useCallback(async () => {
+    if (!selectedUserId) return;
+
     setIsOpportunitySyncing(true);
-    
+
     try {
-      // Step 1: Start opportunity sync
+      // Get active GHL clients for the current user
+      const client = getClientByRevenueProId(selectedUserId);
+      
+      if (!client || client.status !== 'active') {
+        toast({
+          title: "❌ No Active GHL Client",
+          description: 'No active GHL client configuration found for this user',
+          variant: 'destructive',
+        });
+        setIsOpportunitySyncing(false);
+        return;
+      }
+
+      // Step 1: Start opportunity sync for this client's location
       toast({
         title: "🔄 Starting Opportunity Sync",
         description: 'Opportunity sync has been triggered...',
       });
 
-      const opportunityResponse = await doPOST(API_ENDPOINTS.ADMIN_OPPORTUNITY_SYNC_TRIGGER, {});
-      
+      const opportunityResponse = await triggerOpportunitySync([client.locationId]);
+
       if (opportunityResponse.error) {
         toast({
           title: "❌ Opportunity Sync Failed",
@@ -285,28 +328,27 @@ React.useEffect(() => {
         return;
       }
 
-      // Step 2: Opportunity sync completed successfully
       toast({
         title: "✅ Opportunity Sync Completed",
         description: 'Opportunity sync has been completed successfully',
       });
 
-      // Step 3: After successful opportunity sync, refresh the data for current week (GET call)
+      // Step 2: After successful opportunity sync, refresh the data for current week
       const weekInfo = getWeekInfo(selectedDate);
       const startDate = format(weekInfo.weekStart, 'yyyy-MM-dd');
       const endDate = format(weekInfo.weekEnd, 'yyyy-MM-dd');
-      
+
       // Refresh the reporting data
       await getReportingData(startDate, endDate, 'weekly', period);
 
-      // Step 4: Start leadsheet sync (runs in background)
+      // Step 3: Start leadsheet sync (runs in background)
       toast({
         title: "🔄 Starting Lead Sheet Sync",
         description: 'Lead sheet sync has been triggered and will continue in background...',
       });
 
       // Trigger leadsheet sync (don't await - let it run in background)
-      doPOST(API_ENDPOINTS.ADMIN_LEAD_SHEET_SYNC_TRIGGER, {})
+      triggerLeadSheetSync()
         .then((leadSheetResponse) => {
           if (leadSheetResponse.error) {
             toast({
@@ -339,22 +381,7 @@ React.useEffect(() => {
       });
       setIsOpportunitySyncing(false);
     }
-  }, [toast, selectedDate, period, getReportingData]);
-
-  // Check if opportunity sync button should be shown (only for specific user and current week)
-  const isCurrentWeek = useMemo(() => {
-    if (period !== 'weekly') return false;
-    const currentWeek = getCurrentWeek();
-    const selectedWeek = getWeekInfo(selectedDate);
-    // Compare week start dates to determine if it's the current week
-    return format(currentWeek.weekStart, 'yyyy-MM-dd') === format(selectedWeek.weekStart, 'yyyy-MM-dd');
-  }, [period, selectedDate]);
-
-  const shouldShowOpportunitySync = selectedUserId === OPPORTUNITY_SYNC_USER_ID && isCurrentWeek;
-
-  const getSectionFields = useCallback((sectionKey: keyof typeof reportingFields) => {
-    return reportingFields[sectionKey];
-  }, []);
+  }, [toast, selectedDate, period, selectedUserId, getReportingData, getClientByRevenueProId]);
 
   return (
     <div className="min-h-screen bg-background">

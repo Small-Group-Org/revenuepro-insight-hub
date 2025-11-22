@@ -42,9 +42,7 @@ interface TargetSectionProps {
   showTarget?: boolean;
   shouldDisableNonRevenueFields?: boolean; // New prop to disable all fields except revenue
   targetValues?: FieldValue; // New prop for target values
-  /** 
-   * TEMPORARY: Show opportunity sync refresh button (only for specific user)
-   */
+  
   showOpportunitySyncButton?: boolean;
   onOpportunitySyncClick?: () => void;
   isOpportunitySyncing?: boolean;
