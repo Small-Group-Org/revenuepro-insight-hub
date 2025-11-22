@@ -1,5 +1,6 @@
 import React from 'react';
-import { Calendar, Star, Download, Trash2, Search, X } from 'lucide-react';
+import { Calendar, Star, Download, Trash2, Search, X, RefreshCw, Loader2 } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -42,6 +43,9 @@ interface LeadFiltersAndControlsProps {
   handleClearFilters: () => void;
   exportToExcel: (type: 'current' | 'all') => void;
   handleBulkDelete: () => void;
+  onRefresh: () => void;
+  isRefreshing: boolean;
+  isCurrentWeek: boolean;
 }
 
 export const LeadFiltersAndControls = React.memo(({
@@ -60,7 +64,10 @@ export const LeadFiltersAndControls = React.memo(({
   setCurrentPage,
   handleClearFilters,
   exportToExcel,
-  handleBulkDelete
+  handleBulkDelete,
+  onRefresh,
+  isRefreshing,
+  isCurrentWeek
 }: LeadFiltersAndControlsProps) => (
   <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 shadow-lg p-4">
     {/* Filters Section - Appears Above When Toggled */}
@@ -343,11 +350,36 @@ export const LeadFiltersAndControls = React.memo(({
           </button>
         )}
         
+        {/* Refresh Button - Only show for current week */}
+        {isCurrentWeek && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={onRefresh}
+                  disabled={isRefreshing}
+                  className="h-8 w-8 rounded-lg hover:bg-blue-50 transition-colors duration-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed group border border-gray-200 bg-white"
+                  type="button"
+                >
+                  {isRefreshing ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4 text-gray-600 group-hover:text-blue-600 transition-colors duration-200" />
+                  )}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Sync Lead Sheets</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+        
         {/* Export Dropdown */}
         <Select onValueChange={(value) => exportToExcel(value as 'current' | 'all')}>
           <SelectTrigger 
             disabled={processedLeads.length === 0}
-            className="flex items-center gap-1 px-2 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all text-xs font-medium shadow-sm border-0 w-auto min-w-0"
+            className="h-8 flex items-center gap-1 px-2 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all text-xs font-medium shadow-sm border-0 w-auto min-w-0"
           >
             <Download className="w-3 h-3" />
             Export
