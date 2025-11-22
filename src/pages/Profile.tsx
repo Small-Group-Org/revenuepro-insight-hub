@@ -10,6 +10,7 @@ import useAuthStore from "@/stores/authStore";
 import { useUserContext } from "@/utils/UserContext";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { useTicketStore } from "@/stores/ticketStore";
+import { useFeatureRequestStore } from "@/stores/featureRequestStore";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -42,8 +43,10 @@ export default function Profile() {
   const { user } = useUserContext();
   const { userRole } = useRoleAccess();
   const { tickets, loading, error, fetchTickets, updateTicketData } = useTicketStore();
+  const { featureRequests, loading: featureLoading, error: featureError, fetchFeatureRequests, updateFeatureRequestStatus } = useFeatureRequestStore();
   const { toast } = useToast();
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [featureStatusFilter, setFeatureStatusFilter] = useState<string>("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [ticketForm, setTicketForm] = useState({
     title: "",
@@ -62,10 +65,17 @@ export default function Profile() {
     navigate("/login");
   };
 
-  // Fetch tickets on component mount
+  // Fetch tickets and feature requests on component mount
   useEffect(() => {
     fetchTickets();
   }, [fetchTickets]);
+
+  // Only fetch feature requests for admin
+  useEffect(() => {
+    if (isAdmin) {
+      fetchFeatureRequests();
+    }
+  }, [isAdmin, fetchFeatureRequests]);
 
   // Filter tickets for regular users (only their own tickets)
   let filteredTickets = isAdmin ? tickets : tickets.filter(ticket => ticket.userId._id === user?._id);
@@ -121,6 +131,21 @@ export default function Profile() {
         return <Badge className="bg-gray-300 hover:bg-gray-400 text-gray-800">Low</Badge>;
       default:
         return <Badge variant="outline">{priority}</Badge>;
+    }
+  };
+
+  const getFeatureStatusBadge = (status: string) => {
+    switch (status) {
+      case 'new':
+        return <Badge className="bg-blue-500 hover:bg-blue-600 text-white">New</Badge>;
+      case 'accepted':
+        return <Badge className="bg-green-500 hover:bg-green-600 text-white">Accepted</Badge>;
+      case 'rejected':
+        return <Badge className="bg-red-500 hover:bg-red-600 text-white">Rejected</Badge>;
+      case 'information_needed':
+        return <Badge className="bg-yellow-500 hover:bg-yellow-600 text-white">Info Needed</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
     }
   };
 
@@ -269,6 +294,42 @@ export default function Profile() {
     }));
   };
 
+  const handleFeatureStatusChange = async (featureId: string, status: string) => {
+    const result = await updateFeatureRequestStatus({
+      _id: featureId,
+      status: status as 'new' | 'accepted' | 'rejected' | 'information_needed',
+    });
+
+    if (result.error) {
+      toast({
+        title: "Error",
+        description: result.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: "Feature request status updated successfully",
+      });
+    }
+  };
+
+  // Admin only: Filter and sort feature requests
+  let sortedFeatureRequests: any[] = [];
+  if (isAdmin) {
+    let filteredFeatureRequests = featureRequests;
+    
+    // Apply status filter
+    if (featureStatusFilter !== "all") {
+      filteredFeatureRequests = filteredFeatureRequests.filter(fr => fr.status === featureStatusFilter);
+    }
+    
+    // Sort by creation time (newest first)
+    sortedFeatureRequests = filteredFeatureRequests.sort((a, b) => {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+  }
+
   return (
     <div className="h-full w-full flex flex-col">
       {/* Simple header without background color */}
@@ -286,15 +347,17 @@ export default function Profile() {
             <div className="text-sm text-muted-foreground">{user?.email || "email@domain.com"}</div>
           </div>
           <div className="ml-auto flex items-center gap-3">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setIsFeatureModalOpen(true)}
-              className="gap-2"
-            >
-              <Lightbulb size={16} />
-              Request Feature
-            </Button>
+            {!isAdmin && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setIsFeatureModalOpen(true)}
+                className="gap-2"
+              >
+                <Lightbulb size={16} />
+                Request Feature
+              </Button>
+            )}
             <button onClick={handleLogout} className="inline-flex h-9 items-center gap-2 justify-center rounded-md bg-destructive px-4 text-sm font-medium text-destructive-foreground shadow transition-colors hover:opacity-90">
               <LogOut size={18} />
               Logout
@@ -459,6 +522,120 @@ export default function Profile() {
               </div>
             </AccordionContent>
           </AccordionItem>
+
+          {/* Feature Requests Section - Admin Only */}
+          {isAdmin && (
+            <AccordionItem value="feature-requests" className="border border-gray-200 rounded-lg bg-white shadow-sm">
+              <AccordionTrigger className="text-lg font-semibold px-6 py-4 hover:bg-gray-50 transition-colors">
+                <div className="flex items-center gap-2">
+                  <Lightbulb size={20} />
+                  Feature Requests
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-6 pb-6">
+              <div className="flex justify-between items-center mb-4 mt-2">
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium">Filter by Status:</label>
+                  <Select value={featureStatusFilter} onValueChange={setFeatureStatusFilter}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="new">New</SelectItem>
+                      <SelectItem value="accepted">Accepted</SelectItem>
+                      <SelectItem value="rejected">Rejected</SelectItem>
+                      <SelectItem value="information_needed">Info Needed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="mt-4">
+                {featureLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                    <span className="ml-2">Loading feature requests...</span>
+                  </div>
+                ) : featureError ? (
+                  <div className="text-center py-8 text-red-600">
+                    <p>Error loading feature requests: {featureError}</p>
+                  </div>
+                ) : sortedFeatureRequests.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Lightbulb className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>No feature requests found</p>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[20%]">Title</TableHead>
+                        <TableHead className="w-[35%]">Description</TableHead>
+                        <TableHead className="w-[15%]">User</TableHead>
+                        <TableHead className="w-[15%]">Status</TableHead>
+                        <TableHead className="text-right w-[15%]">
+                          <div className="flex items-center justify-end gap-1">
+                            Created
+                            <ArrowDown className="h-3 w-3 text-muted-foreground" />
+                          </div>
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {sortedFeatureRequests.map((feature, index) => (
+                        <TableRow key={feature._id} className={index % 2 === 0 ? "bg-white" : "bg-gray-100"}>
+                          <TableCell className="font-medium">{feature.title}</TableCell>
+                          <TableCell>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="cursor-help">
+                                    <span className="text-sm text-muted-foreground">
+                                      {truncateText(feature.description, 80)}
+                                    </span>
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-xs">
+                                  <p className="text-sm">{feature.description}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            <div>
+                              <div className="font-medium">{feature.userName}</div>
+                              <div className="text-xs text-gray-500">{feature.userEmail}</div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Select
+                              value={feature.status}
+                              onValueChange={(value) => handleFeatureStatusChange(feature._id, value)}
+                            >
+                              <SelectTrigger className="w-40">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="new">New</SelectItem>
+                                <SelectItem value="accepted">Accepted</SelectItem>
+                                <SelectItem value="rejected">Rejected</SelectItem>
+                                <SelectItem value="information_needed">Info Needed</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell className="text-right text-muted-foreground">
+                            {formatDate(feature.createdAt)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+          )}
         </Accordion>
       </div>
 

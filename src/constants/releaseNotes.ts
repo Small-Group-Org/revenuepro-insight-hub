@@ -3,10 +3,17 @@ export interface ReleaseNote {
   items: string[];
 }
 
-export const CURRENT_PATCH_VERSION = "2025.10.28"; // Update this with each new release
-export const LAST_UPDATED = "OCTOBER 28, 2025";
+export const CURRENT_PATCH_VERSION = "2025.11.22"; // Update this with each new release
+export const LAST_UPDATED = "NOVEMBER 22, 2025";
 
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    date: "November 22, 2025",
+    items: [
+      "Feature request system now available on profile page - Submit your ideas and suggestions directly to our team. <a href='https://www.loom.com/share/fcc94167a21a43fcb2392f2ef4a6833c' target='_blank' rel='noopener noreferrer' class='text-blue-600 underline hover:text-blue-800'>Watch demo</a>",
+      "Admin dashboard for managing feature requests with status tracking (New, Accepted, Rejected, Information Needed)",
+    ],
+  },
   {
     date: "October 28, 2025",
     items: [
