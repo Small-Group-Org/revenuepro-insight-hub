@@ -10,8 +10,7 @@ export const RELEASE_NOTES: ReleaseNote[] = [
   {
     date: "November 22, 2025",
     items: [
-      "Feature request system now available on profile page - Submit your ideas and suggestions directly to our team. <a href='https://www.loom.com/share/fcc94167a21a43fcb2392f2ef4a6833c' target='_blank' rel='noopener noreferrer' class='text-blue-600 underline hover:text-blue-800'>Watch demo</a>",
-      "Admin dashboard for managing feature requests with status tracking (New, Accepted, Rejected, Information Needed)",
+      "Profile: Feature Request system is now available. Submit your ideas and suggestions directly to our team. <a href='https://www.loom.com/share/fcc94167a21a43fcb2392f2ef4a6833c' target='_blank' rel='noopener noreferrer' class='text-blue-600 underline hover:text-blue-800'>Watch Video</a>",
     ],
   },
   {
