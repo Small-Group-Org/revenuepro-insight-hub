@@ -48,9 +48,12 @@ interface MetricsLineChartsProps {
   periodType?: "monthly" | "yearly";
   selectedDate?: Date;
   onComparisonChange?: (selectedPeriod: string) => void;
+  hideTitle?: boolean;
+  hideBorder?: boolean;
   comparisonData?: any;
   isComparisonEnabled?: boolean;
   comparisonPeriod?: string;
+  hideTargets?: boolean;
 }
 
 // Format value helper
@@ -77,6 +80,7 @@ const CustomTooltip = ({
   selectedDate,
   periodType,
   formattedComparisonPeriod,
+  hideTargets = false,
 }: any) => {
   if (active && payload && payload.length) {
     const actualValue = payload.find((p) => p.dataKey === "actual")?.value || 0;
@@ -139,7 +143,7 @@ const CustomTooltip = ({
             </span>
           </div>
 
-          {!isComparisonEnabled ? (
+          {!isComparisonEnabled && !hideTargets ? (
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div
@@ -157,7 +161,7 @@ const CustomTooltip = ({
                 {formatValue(targetValue, format)}
               </span>
             </div>
-          ) : (
+          ) : !isComparisonEnabled ? null : (
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div
@@ -180,7 +184,7 @@ const CustomTooltip = ({
           )}
 
           {/* Performance metrics */}
-          {((!isComparisonEnabled && targetValue > 0) ||
+          {((!isComparisonEnabled && !hideTargets && targetValue > 0) ||
             (isComparisonEnabled && comparisonValue > 0)) && (
             <div className="mt-3 pt-3 border-t border-border space-y-3">
               {!isComparisonEnabled ? (
@@ -309,6 +313,9 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
   comparisonData,
   isComparisonEnabled = false,
   comparisonPeriod,
+  hideTitle = false,
+  hideBorder = false,
+  hideTargets = false,
 }) => {
   const [comparisonOptions, setComparisonOptions] = useState<
     Array<{ value: string; label: string }>
@@ -400,15 +407,20 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
     return config.format === "currency" || config.format === "number";
   };
 
+  const cardClassName = hideBorder
+    ? "p-6"
+    : "p-6 bg-gradient-to-br from-background via-muted/15 to-primary/3 shadow-lg border border-border hover:shadow-2xl hover:border-primary/10 transition-all duration-300 group backdrop-blur-sm";
+
   return (
-    <Card className="p-6 bg-gradient-to-br from-background via-muted/15 to-primary/3 shadow-lg border border-border hover:shadow-2xl hover:border-primary/10 transition-all duration-300 group backdrop-blur-sm">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <div className="flex items-center gap-2">
-          {icon}
-          <h3 className="text-[20px] font-semibold text-card-foreground">
-            {title}
-          </h3>
-        </div>
+    <Card className={cardClassName}>
+      {!hideTitle && (
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div className="flex items-center gap-2">
+            {icon}
+            <h3 className="text-[20px] font-semibold text-card-foreground">
+              {title}
+            </h3>
+          </div>
 
         {/* Comparison dropdown for all chart sections */}
         {isFunnelMetrics && (
@@ -452,7 +464,8 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
             </Select>
           </div>
         )}
-      </div>
+        </div>
+      )}
 
       <div className={`grid ${gridCols} gap-8`}>
         {chartConfigs.map((config) => {
@@ -552,6 +565,7 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
                           selectedDate={selectedDate}
                           periodType={periodType}
                           formattedComparisonPeriod={formattedComparisonPeriod}
+                          hideTargets={hideTargets}
                         />
                       }
                       cursor={{ strokeDasharray: "3 3", stroke: "#e2e8f0" }}
@@ -612,8 +626,8 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
                       activeDot={{ r: 4, stroke: "#396bbd", strokeWidth: 2 }}
                     />
 
-                    {/* Show target line only when comparison is not enabled */}
-                    {!isComparisonEnabled && (
+                    {/* Show target line only when comparison is not enabled and targets are not hidden */}
+                    {!isComparisonEnabled && !hideTargets && (
                       <Line
                         type="monotone"
                         dataKey="target"
@@ -664,56 +678,58 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
                     </span>
                   </div>
 
-                  <div className="flex items-center">
-                    <div
-                      className="w-1 h-0.5 border"
-                      style={{
-                        backgroundColor: config.targetColor,
-                        borderColor: config.targetColor,
-                      }}
-                    ></div>
-                    <div
-                      className="w-1 h-0.5 border"
-                      style={{
-                        backgroundColor: isComparisonEnabled
-                          ? config.targetColor
-                          : "#fff",
-                        borderColor: isComparisonEnabled
-                          ? config.targetColor
-                          : "#fff",
-                      }}
-                    ></div>
-                    <div
-                      className="w-1 h-0.5 border"
-                      style={{
-                        backgroundColor: config.targetColor,
-                        borderColor: config.targetColor,
-                      }}
-                    ></div>
-                    <div
-                      className="w-1 h-0.5 border"
-                      style={{
-                        backgroundColor: isComparisonEnabled
-                          ? config.targetColor
-                          : "#fff",
-                        borderColor: isComparisonEnabled
-                          ? config.targetColor
-                          : "#fff",
-                      }}
-                    ></div>
-                    <div
-                      className="w-1 h-0.5 border"
-                      style={{
-                        backgroundColor: config.targetColor,
-                        borderColor: config.targetColor,
-                      }}
-                    ></div>
-                    <span className="text-xs text-muted-foreground ml-1">
-                      {isComparisonEnabled
-                        ? formattedComparisonPeriod
-                        : "Target"}
-                    </span>
-                  </div>
+                  {!hideTargets && (
+                    <div className="flex items-center">
+                      <div
+                        className="w-1 h-0.5 border"
+                        style={{
+                          backgroundColor: config.targetColor,
+                          borderColor: config.targetColor,
+                        }}
+                      ></div>
+                      <div
+                        className="w-1 h-0.5 border"
+                        style={{
+                          backgroundColor: isComparisonEnabled
+                            ? config.targetColor
+                            : "#fff",
+                          borderColor: isComparisonEnabled
+                            ? config.targetColor
+                            : "#fff",
+                        }}
+                      ></div>
+                      <div
+                        className="w-1 h-0.5 border"
+                        style={{
+                          backgroundColor: config.targetColor,
+                          borderColor: config.targetColor,
+                        }}
+                      ></div>
+                      <div
+                        className="w-1 h-0.5 border"
+                        style={{
+                          backgroundColor: isComparisonEnabled
+                            ? config.targetColor
+                            : "#fff",
+                          borderColor: isComparisonEnabled
+                            ? config.targetColor
+                            : "#fff",
+                        }}
+                      ></div>
+                      <div
+                        className="w-1 h-0.5 border"
+                        style={{
+                          backgroundColor: config.targetColor,
+                          borderColor: config.targetColor,
+                        }}
+                      ></div>
+                      <span className="text-xs text-muted-foreground ml-1">
+                        {isComparisonEnabled
+                          ? formattedComparisonPeriod
+                          : "Target"}
+                      </span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

@@ -8,7 +8,7 @@ import { DatePeriodSelector } from '@/components/DatePeriodSelector';
 import { TargetSection } from '@/components/TargetSection';
 import { PeriodType, FieldValue } from '@/types';
 import { reportingFields } from '@/utils/constant';
-import { calculateReportingFields } from '@/utils/page-utils/actualDataUtils';
+import { calculateReportingFields, calculatePerformanceMetrics } from '@/utils/page-utils/actualDataUtils';
 import { handleInputDisable } from '@/utils/page-utils/compareUtils';
 import { processTargetData } from '@/utils/page-utils/targetUtils';
 import { getWeekInfo, getCurrentWeek } from '@/utils/weekLogic';
@@ -21,6 +21,11 @@ import { useGhlClientStore } from '@/stores/ghlClientStore';
 import { triggerOpportunitySync } from '@/service/ghlClientService';
 import { doPOST } from '@/utils/HttpUtils';
 import { API_ENDPOINTS } from '@/utils/constant';
+import CampaignAccordion from '@/components/CampaignAccordion';
+import { processCampaignData } from '@/utils/campaignDataProcessor';
+import { dummyCampaignData } from '@/utils/campaignData';
+import { formatPercent, formatCurrency } from '@/utils/page-utils/commonUtils';
+import { Card } from '@/components/ui/card';
 
 // TEMPORARY: Specific user ID for opportunity sync feature
 const OPPORTUNITY_SYNC_USER_ID = '68c82dfdac1491efe19d5df0';
@@ -134,6 +139,17 @@ React.useEffect(() => {
     
     return calculateReportingFields(combinedValues);
   }, [fieldValues, processedTargetData]);
+
+  // Calculate performance metrics
+  const performanceMetrics = useMemo(() => {
+    if (!processedTargetData) return null;
+    try {
+      return calculatePerformanceMetrics(calculatedValues, processedTargetData);
+    } catch (error) {
+      console.error('Error calculating performance metrics:', error);
+      return null;
+    }
+  }, [calculatedValues, processedTargetData]);
 
   // Calculate disable logic for AddActualData page with role-based restrictions
   const disableLogic = useMemo(() => 
@@ -388,65 +404,142 @@ React.useEffect(() => {
           />
         </div>
 
-        {/* Reporting Sections */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-8">
-          <TargetSection
-            sectionKey="targets"
-            title="Performance"
-            icon={<TrendingUp className="h-5 w-5 text-primary" />}
-            gradientClass="bg-gradient-primary/10"
-            fields={getSectionFields('targets')}
-            fieldValues={fieldValues}
-            calculatedValues={calculatedValues}
-            onInputChange={handleInputChange}
-            isHighlighted={isHighlighted}
-            period={period}
-            selectedDate={selectedDate}
-            isDisabled={isDisabled}
-            disabledMessage={disabledMessage}
-            targetValues={processedTargetData}
-            showTarget={true}
-          />
+        {/* Reporting Sections - Grid Layout: Campaign Spend (2/3) + Target Report (1/3) */}
+        {period === 'weekly' ? (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            {/* Campaign Spend Accordion - Takes 2/3 of the space */}
+            <div className="lg:col-span-2">
+              <div className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col max-h-[785px]">
+                <div className="p-4 border-b border-gray-200 flex-shrink-0">
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="h-5 w-5 text-blue-600" />
+                    <h2 className="text-xl font-semibold text-gray-800">Campaign Spend</h2>
+                  </div>
+                </div>
+                <div className="p-0 overflow-y-auto flex-1 min-h-0">
+                  <CampaignAccordion data={processCampaignData(dummyCampaignData.data)} />
+                </div>
+              </div>
+            </div>
 
-          <TargetSection
-            sectionKey="budgetReport"
-            title="Budget Report"
-            icon={<DollarSign className="h-5 w-5 text-primary" />}
-            gradientClass="bg-gradient-secondary/10"
-            fields={getSectionFields('budgetReport')}
-            fieldValues={fieldValues}
-            calculatedValues={calculatedValues}
-            onInputChange={handleInputChange}
-            isHighlighted={isHighlighted}
-            period={period}
-            selectedDate={selectedDate}
-            isDisabled={isDisabled}
-            disabledMessage={disabledMessage}
-            targetValues={processedTargetData}
-            showTarget={true}
-          />
-
-          <TargetSection
-            sectionKey="targetReport"
-            title="Target Report"
-            icon={<TrendingUp className="h-5 w-5 text-accent" />}
-            gradientClass="bg-gradient-accent/10"
-            fields={getSectionFields('targetReport')}
-            fieldValues={fieldValues}
-            calculatedValues={calculatedValues}
-            onInputChange={handleInputChange}
-            isHighlighted={isHighlighted}
-            period={period}
-            selectedDate={selectedDate}
-            isDisabled={isDisabled}
-            disabledMessage={disabledMessage}
-            targetValues={processedTargetData}
-            showTarget={true}
-            showOpportunitySyncButton={shouldShowOpportunitySync}
-            onOpportunitySyncClick={handleOpportunitySync}
-            isOpportunitySyncing={isOpportunitySyncing}
-          />
-        </div>
+            {/* Target Report - Takes 1/3 of the space */}
+            <div className="lg:col-span-1 space-y-4">
+              {/* Performance Section - Horizontal Cards */}
+              {period === 'weekly' && (
+                <Card className="bg-card/90 backdrop-blur-sm border border-border/20 shadow-xl">
+                  <div className="p-6 border-b border-border/50 bg-gradient-accent/10">
+                    <div className="flex items-center gap-3">
+                      <TrendingUp className="h-5 w-5 text-accent" />
+                      <h2 className="text-lg font-semibold text-gradient-primary">
+                        Performance
+                      </h2>
+                    </div>
+                  </div>
+                  <div className="p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      {/* Over/Under Budget */}
+                      {(() => {
+                        const field = getSectionFields('targets').find(f => f.value === 'overUnderBudget');
+                        if (!field) return null;
+                        const calculatedField = field.fieldType === 'calculated' ? field as { description?: string } : null;
+                        return (
+                          <div className="bg-card/80 backdrop-blur-sm hover:shadow-md p-1 rounded-xl border border-border/40">
+                            <div className="flex flex-col">
+                              <div className="text-sm font-medium text-card-foreground mb-1">
+                                {field.name}
+                              </div>
+                             
+                              <div className="text-base font-semibold text-card-foreground">
+                                {formatCurrency(calculatedValues?.overUnderBudget || 0)}
+                              </div>
+                               {calculatedField?.description && (
+                                <div className="text-[10px] text-muted-foreground mb-2">
+                                  {calculatedField.description}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                      
+                      {/* Weekly Budget */}
+                      {getSectionFields('targets').find(f => f.value === 'weeklyBudget') && (
+                        <div className="bg-card/80 backdrop-blur-sm hover:shadow-md p-3 rounded-xl border border-border/40">
+                          <div className="flex flex-col">
+                            <div className="text-sm font-medium text-card-foreground mb-1">
+                              Weekly Budget
+                            </div>
+                            <div className="text-base font-semibold text-card-foreground">
+                              {formatCurrency(calculatedValues?.weeklyBudget || 0)}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Budget Spent */}
+                      {getSectionFields('targets').find(f => f.value === 'budgetSpent') && (
+                        <div className="bg-card/80 backdrop-blur-sm hover:shadow-md p-3 rounded-xl border border-border/40">
+                          <div className="flex flex-col">
+                            <div className="text-sm font-medium text-card-foreground mb-1">
+                              Budget Spent
+                            </div>
+                            <div className="text-base font-semibold text-card-foreground">
+                              {formatCurrency(calculatedValues?.budgetSpent || 0)}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              )}
+              
+              <TargetSection
+                sectionKey="targetReport"
+                title="Target Report"
+                icon={<TrendingUp className="h-5 w-5 text-accent" />}
+                gradientClass="bg-gradient-accent/10"
+                fields={getSectionFields('targetReport')}
+                fieldValues={fieldValues}
+                calculatedValues={calculatedValues}
+                onInputChange={handleInputChange}
+                isHighlighted={isHighlighted}
+                period={period}
+                selectedDate={selectedDate}
+                isDisabled={isDisabled}
+                disabledMessage={disabledMessage}
+                targetValues={processedTargetData}
+                showTarget={true}
+                showOpportunitySyncButton={shouldShowOpportunitySync}
+                onOpportunitySyncClick={handleOpportunitySync}
+                isOpportunitySyncing={isOpportunitySyncing}
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 xl:grid-cols-1 gap-8 mb-8">
+            <TargetSection
+              sectionKey="targetReport"
+              title="Target Report"
+              icon={<TrendingUp className="h-5 w-5 text-accent" />}
+              gradientClass="bg-gradient-accent/10"
+              fields={getSectionFields('targetReport')}
+              fieldValues={fieldValues}
+              calculatedValues={calculatedValues}
+              onInputChange={handleInputChange}
+              isHighlighted={isHighlighted}
+              period={period}
+              selectedDate={selectedDate}
+              isDisabled={isDisabled}
+              disabledMessage={disabledMessage}
+              targetValues={processedTargetData}
+              showTarget={true}
+              showOpportunitySyncButton={shouldShowOpportunitySync}
+              onOpportunitySyncClick={handleOpportunitySync}
+              isOpportunitySyncing={isOpportunitySyncing}
+            />
+          </div>
+        )}
 
         {/* Daily Budget + Ad Names Amount (Weekly only) placed below sections */}
         {period === 'weekly' && (

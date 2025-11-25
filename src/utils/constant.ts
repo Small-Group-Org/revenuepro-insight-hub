@@ -48,6 +48,9 @@ export const API_ENDPOINTS = {
   // Actual
   ACTUAL_GET: "/actual/get",
   ACTUAL_UPSERT: "/actual/upsert",
+  
+  // Aggregate
+  AGGREGATE_REPORT: "/aggregate/report",
 
   // IP Tracking
   IP_TRACK: "/ip-tracking/track",
@@ -562,6 +565,66 @@ export const generalMetricsChartConfigs = [
     key: "avgJobSize",
     title: "Average Job Size",
     description: "Revenue / sales",
+    actualColor: "#0b3d8e",
+    targetColor: "#649cf7",
+    format: "currency",
+  },
+];
+
+// Admin View Metrics - Aggregate data for all clients
+export const adminViewChartConfigs = [
+  {
+    key: "cpl",
+    title: "Average Cost Per Lead",
+    description: "Total budget spent / total leads",
+    actualColor: "#0b3d8e",
+    targetColor: "#649cf7",
+    format: "currency",
+  },
+  {
+    key: "cpEstimateSet",
+    title: "Average Cost Per Estimate Set",
+    description: "Total budget spent / total estimates set",
+    actualColor: "#0b3d8e",
+    targetColor: "#649cf7",
+    format: "currency",
+  },
+  {
+    key: "com",
+    title: "Average Cost of Marketing % On Ad Spend",
+    description: "(Budget spent / revenue) × 100",
+    actualColor: "#0b3d8e",
+    targetColor: "#649cf7",
+    format: "percent",
+  },
+  {
+    key: "totalCom",
+    title: "Average Total Cost of Marketing %",
+    description: "((Management cost + budget spent) / revenue) × 100",
+    actualColor: "#0b3d8e",
+    targetColor: "#649cf7",
+    format: "percent",
+  },
+  {
+    key: "appointmentRate",
+    title: "Average Estimate Set Rate %",
+    description: "(Estimates set / leads) × 100",
+    actualColor: "#0b3d8e",
+    targetColor: "#649cf7",
+    format: "percent",
+  },
+  {
+    key: "budgetSpent",
+    title: "Total Amount Spent",
+    description: "Total budget spent across all clients",
+    actualColor: "#0b3d8e",
+    targetColor: "#649cf7",
+    format: "currency",
+  },
+  {
+    key: "revenue",
+    title: "Total Revenue Generated",
+    description: "Total revenue across all clients",
     actualColor: "#0b3d8e",
     targetColor: "#649cf7",
     format: "currency",
