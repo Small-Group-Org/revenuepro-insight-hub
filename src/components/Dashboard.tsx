@@ -11,12 +11,14 @@ import {
 import { MetricsLineCharts } from './MetricsLineCharts';
 import { DualMetricChart } from './DualMetricChart';
 import { DashboardTopCards } from './DashboardTopCards';
+import { RevenuePerAccountTable } from './RevenuePerAccountTable';
 import { useUserStore } from '@/stores/userStore';
 import { TrendingUp, DollarSign, Filter, Users, Calendar, BarChart3 } from 'lucide-react';
 import { 
   revenueMetricsChartConfigs, 
   funnelMetricsChartConfigs, 
-  performanceMetricsChartConfigs 
+  performanceMetricsChartConfigs,
+  adminViewChartConfigs
 } from '@/utils/constant';
 import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
 import { FullScreenLoader } from '@/components/ui/full-screen-loader';
@@ -25,10 +27,13 @@ import { ReleaseNotesModal } from './ReleaseNotesModal';
 import { useUserContext } from '@/utils/UserContext';
 import { markUpdateAsSeen } from '@/service/userService';
 import { useToast } from '@/hooks/use-toast';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { getAggregateReport } from '@/service/reportingServices';
 
 
 export const Dashboard = () => {
-  const { reportingData, getReportingData, getComparisonData, clearComparisonData } = useReportingDataStore();
+  const { reportingData, getReportingData, getComparisonData, clearComparisonData, getAggregateData, usersBudgetAndRevenue } = useReportingDataStore();
   const { selectedUserId } = useUserStore();
   const { user, setUser } = useUserContext();
   const { toast } = useToast();
@@ -41,7 +46,8 @@ export const Dashboard = () => {
     processedTargetData, 
     dualMetricConfigs,
     dualMetricChartsData,
-    processedComparisonData
+    processedComparisonData,
+    adminViewChartData
   } = useDashboardMetrics();
   
   const { isLoading } = useCombinedLoading();
@@ -52,6 +58,10 @@ export const Dashboard = () => {
   
   // State for release notes modal
   const [showReleaseNotesModal, setShowReleaseNotesModal] = useState<boolean>(false);
+  
+  // State for admin view toggle
+  const [isAdminView, setIsAdminView] = useState<boolean>(false);
+  const isAdmin = user?.role === 'ADMIN';
 
   // Check if user needs to see release notes
   useEffect(() => {
@@ -76,8 +86,13 @@ export const Dashboard = () => {
       endDate = format(endOfYear(selectedDate), "yyyy-MM-dd");
       queryType = "yearly";
     }
-    getReportingData(startDate, endDate, queryType, period);
-  }, [selectedDate, period, selectedUserId, getReportingData]);
+    
+    if (isAdminView && isAdmin) {
+      getAggregateData(startDate, endDate, queryType, period);
+    } else {
+      getReportingData(startDate, endDate, queryType, period);
+    }
+  }, [selectedDate, period, selectedUserId, getReportingData, isAdminView, isAdmin, getAggregateData]);
 
   // Reset comparison state when period or selectedDate changes
   useEffect(() => {
@@ -184,9 +199,23 @@ export const Dashboard = () => {
             onChange={handleDatePeriodChange}
             allowedPeriods={["monthly", "yearly", "ytd"]}
           />
+          {isAdmin && (
+            <div className="flex justify-end mt-4">
+              <div className="flex items-center gap-3 px-4 py-2 bg-card rounded-lg border border-border w-fit">
+                <Switch
+                  id="admin-view"
+                  checked={isAdminView}
+                  onCheckedChange={setIsAdminView}
+                />
+                <Label htmlFor="admin-view" className="cursor-pointer font-medium">
+                  Admin View (All Clients)
+                </Label>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Top Cards */}
+        {/* Top Cards - Shown in both regular and admin view */}
         <div className="max-w-7xl mx-auto">
           <DashboardTopCards 
             reportingData={reportingData || []}
@@ -195,66 +224,132 @@ export const Dashboard = () => {
           />
         </div>
 
-        {/* Revenue Metrics Charts */}
-        <div className="max-w-7xl mx-auto mb-8">
-          <MetricsLineCharts 
-            chartData={comprehensiveChartData} 
-            chartConfigs={revenueMetricsChartConfigs}
-            title="Revenue Metrics"
-            icon={<DollarSign className="h-5 w-5 text-green-600" />}
-            periodType={period === "ytd" ? "yearly" : period === "weekly" ? "monthly" : period}
-            selectedDate={selectedDate}
-          />
-        </div>
+        {/* Regular Dashboard - Only shown when Admin View is OFF */}
+        {!isAdminView && (
+          <>
 
-                 {/* Funnel Metrics Charts */}
-         <div className="max-w-7xl mx-auto mb-8">
-           <MetricsLineCharts 
-             chartData={comprehensiveChartData} 
-             chartConfigs={funnelMetricsChartConfigs}
-             title="Funnel Metrics"
-             icon={<Filter className="h-5 w-5 text-purple-600" />}
-             periodType={period === "ytd" ? "yearly" : period === "weekly" ? "monthly" : period}
-             selectedDate={selectedDate}
-             onComparisonChange={handleComparisonChange}
-             comparisonData={processedComparisonData}
-             isComparisonEnabled={isComparisonEnabled}
-             comparisonPeriod={comparisonPeriod}
-           />
-         </div>
-
-        {/* Dual Metric Charts - Optimized */}
-        <div className="max-w-7xl mx-auto mb-6 p-6 bg-gradient-to-br rounded-lg from-background via-muted/15 to-primary/3 shadow-lg border border-border hover:shadow-2xl hover:border-primary/10 transition-all duration-300 group backdrop-blur-sm">
-          <div className="flex items-center gap-2 mb-2">
-            <DollarSign className="h-5 w-5 text-green-600" />
-            <h3 className="text-[20px] font-semibold text-card-foreground">Cost Metrics</h3>
-          </div>
-            <div className="grid grid-cols-2 lg:grid-cols-2 gap-8">
-              {dualMetricConfigs.map((config) => (
-                <DualMetricChart
-                  key={config.key}
-                  chartData={dualMetricChartsData[config.key] || []}
-                  title={config.title}
-                  metric1Config={config.metric1Config}
-                  metric2Config={config.metric2Config}
-                  icon={getDualMetricIcon(config.key)}
-                />
-              ))}
+            {/* Revenue Metrics Charts */}
+            <div className="max-w-7xl mx-auto mb-8">
+              <MetricsLineCharts 
+                chartData={comprehensiveChartData} 
+                chartConfigs={revenueMetricsChartConfigs}
+                title="Revenue Metrics"
+                icon={<DollarSign className="h-5 w-5 text-green-600" />}
+                periodType={period === "ytd" ? "yearly" : period === "weekly" ? "monthly" : period}
+                selectedDate={selectedDate}
+              />
             </div>
-        </div>
 
-        {/* Performance Metrics Charts */}
-        <div className="max-w-7xl mx-auto mb-8">
-          <MetricsLineCharts 
-            chartData={comprehensiveChartData} 
-            chartConfigs={performanceMetricsChartConfigs}
-            title="Performance Metrics"
-            icon={<TrendingUp className="h-5 w-5 text-blue-600" />}
-            gridCols="grid-cols-1 lg:grid-cols-2 xl:grid-cols-3"
-            periodType={period === "ytd" ? "yearly" : period === "weekly" ? "monthly" : period}
-            selectedDate={selectedDate}
-          />
-        </div>
+            {/* Funnel Metrics Charts */}
+            <div className="max-w-7xl mx-auto mb-8">
+              <MetricsLineCharts 
+                chartData={comprehensiveChartData} 
+                chartConfigs={funnelMetricsChartConfigs}
+                title="Funnel Metrics"
+                icon={<Filter className="h-5 w-5 text-purple-600" />}
+                periodType={period === "ytd" ? "yearly" : period === "weekly" ? "monthly" : period}
+                selectedDate={selectedDate}
+                onComparisonChange={handleComparisonChange}
+                comparisonData={processedComparisonData}
+                isComparisonEnabled={isComparisonEnabled}
+                comparisonPeriod={comparisonPeriod}
+              />
+            </div>
+
+            {/* Dual Metric Charts - Optimized */}
+            <div className="max-w-7xl mx-auto mb-6 p-6 bg-gradient-to-br rounded-lg from-background via-muted/15 to-primary/3 shadow-lg border border-border hover:shadow-2xl hover:border-primary/10 transition-all duration-300 group backdrop-blur-sm">
+              <div className="flex items-center gap-2 mb-2">
+                <DollarSign className="h-5 w-5 text-green-600" />
+                <h3 className="text-[20px] font-semibold text-card-foreground">Cost Metrics</h3>
+              </div>
+              <div className="grid grid-cols-2 lg:grid-cols-2 gap-8">
+                {dualMetricConfigs.map((config) => (
+                  <DualMetricChart
+                    key={config.key}
+                    chartData={dualMetricChartsData[config.key] || []}
+                    title={config.title}
+                    metric1Config={config.metric1Config}
+                    metric2Config={config.metric2Config}
+                    icon={getDualMetricIcon(config.key)}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Performance Metrics Charts */}
+            <div className="max-w-7xl mx-auto mb-8">
+              <MetricsLineCharts 
+                chartData={comprehensiveChartData} 
+                chartConfigs={performanceMetricsChartConfigs}
+                title="Performance Metrics"
+                icon={<TrendingUp className="h-5 w-5 text-blue-600" />}
+                gridCols="grid-cols-1 lg:grid-cols-2 xl:grid-cols-3"
+                periodType={period === "ytd" ? "yearly" : period === "weekly" ? "monthly" : period}
+                selectedDate={selectedDate}
+              />
+            </div>
+          </>
+        )}
+
+        {/* Admin View Charts - Only shown when Admin View toggle is on */}
+        {isAdminView && isAdmin && (
+          <>
+            {/* First Block: Financial Overview - 2x2 Grid */}
+            <div className="max-w-7xl mx-auto mb-8">
+              <div className="mb-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <DollarSign className="h-5 w-5 text-green-600" />
+                  <h3 className="text-[20px] font-semibold text-card-foreground">Financial Overview</h3>
+                </div>
+ 
+                <MetricsLineCharts 
+                  chartData={adminViewChartData} 
+                  chartConfigs={adminViewChartConfigs.filter(config => 
+                    ['budgetSpent', 'revenue', 'com', 'totalCom'].includes(config.key)
+                  )}
+                  title=""
+                  icon={<DollarSign className="h-5 w-5 text-green-600" />}
+                  gridCols="grid-cols-1 lg:grid-cols-2"
+                  periodType={period === "ytd" ? "yearly" : period === "weekly" ? "monthly" : period}
+                  selectedDate={selectedDate}
+                  hideTitle={true}
+                  hideBorder={true}
+                  hideTargets={true}
+                />
+              </div>
+            </div>
+
+            {/* Second Block: Performance Metrics - 3x1 Grid */}
+            <div className="max-w-7xl mx-auto mb-8">
+              <div className="mb-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <TrendingUp className="h-5 w-5 text-blue-600" />
+                  <h3 className="text-[20px] font-semibold text-card-foreground">Performance Metrics</h3>
+                </div>
+ 
+                <MetricsLineCharts 
+                  chartData={adminViewChartData} 
+                  chartConfigs={adminViewChartConfigs.filter(config => 
+                    ['cpl', 'cpEstimateSet', 'appointmentRate'].includes(config.key)
+                  )}
+                  title=""
+                  icon={<TrendingUp className="h-5 w-5 text-blue-600" />}
+                  gridCols="grid-cols-1 lg:grid-cols-3"
+                  periodType={period === "ytd" ? "yearly" : period === "weekly" ? "monthly" : period}
+                  selectedDate={selectedDate}
+                  hideTitle={true}
+                  hideBorder={true}
+                  hideTargets={true}
+                />
+              </div>
+            </div>
+
+            {/* Revenue Per Account Table - Below admin view charts */}
+            <div className="max-w-7xl mx-auto mb-8">
+              <RevenuePerAccountTable usersBudgetAndRevenue={usersBudgetAndRevenue} />
+            </div>
+          </>
+        )}
       </div>
       
       {/* Release Notes Modal */}

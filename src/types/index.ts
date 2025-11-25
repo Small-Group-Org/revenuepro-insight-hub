@@ -83,3 +83,57 @@ export interface Lead {
     zip: number;
   };
 }
+
+// Campaign Spend Types
+export interface CampaignDataItem {
+  impressions: string;
+  ad_id: string;
+  ad_name: string;
+  adset_name: string;
+  adset_id: string;
+  spend: string;
+  clicks: string;
+  cpp: string;
+  cpm: string;
+  cpc: string;
+  ctr: string;
+  full_view_impressions: string;
+  full_view_reach: string;
+  instagram_profile_visits: string;
+  reach: string;
+  social_spend: string;
+  website_ctr: Array<{
+    action_type: string;
+    value: string;
+  }>;
+  date_start: string;
+  date_stop: string;
+}
+
+export interface CampaignDataResponse {
+  data: CampaignDataItem[];
+  paging: {
+    cursors: {
+      before: string;
+      after: string;
+    };
+  };
+}
+
+export interface Ad {
+  id: string;
+  name: string;
+  spend: number;
+}
+
+export interface AdSet {
+  id: string;
+  name: string;
+  totalSpend: number;
+  ads: Ad[];
+}
+
+export interface ProcessedCampaignData {
+  campaignTotal: number;
+  adsets: AdSet[];
+}

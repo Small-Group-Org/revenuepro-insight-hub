@@ -18,7 +18,7 @@ export const useDashboardMetrics = () => {
   const [period, setPeriod] = useState<"weekly" | "monthly" | "yearly" | "ytd">(
     "ytd"
   );
-  const { reportingData, targetData, comparisonData } = useReportingDataStore();
+  const { reportingData, targetData, comparisonData, usersBudgetAndRevenue } = useReportingDataStore();
 
   // Shared function to process data based on period
   const processDataByPeriod = useCallback((
@@ -46,7 +46,7 @@ export const useDashboardMetrics = () => {
     return fallbackFunction();
   }, [period, selectedDate]);
 
-  const processDataPoint = (dataPoint: any, index: number) => {
+  const processDataPoint = (dataPoint: any, index: number, targetPoint?: any) => {
     const metrics: FieldValue = {};
 
     metrics.revenue = dataPoint.revenue || 0;
@@ -93,40 +93,118 @@ export const useDashboardMetrics = () => {
 
     metrics.budget = metrics.budgetSpent || 0;
 
-    // Calculate totalCom if we have target data
-    if (metrics.revenue > 0 && processedTargetData) {
-      const managementCost = calculateManagementCost(metrics.budget);
+    // Calculate com (Cost of Marketing % On Ad Spend)
+    if (metrics.revenue > 0) {
+      metrics.com = (metrics.budgetSpent / metrics.revenue) * 100;
+    }
 
-      metrics.totalCom =
-        ((managementCost + metrics.budget) / metrics.revenue) * 100;
+    // Calculate totalCom - use managementCost from target if available, otherwise calculate it
+    if (metrics.revenue > 0) {
+      let managementCost = 0;
+      if (targetPoint && targetPoint.managementCost !== undefined) {
+        managementCost = targetPoint.managementCost;
+      } else {
+        managementCost = calculateManagementCost(metrics.budget);
+      }
+      metrics.totalCom = ((managementCost + metrics.budget) / metrics.revenue) * 100;
     }
 
     return metrics;
   };
 
   const processedTargetData = useMemo(() => {
-    return processDataByPeriod(
+    const isAdminView = usersBudgetAndRevenue !== null && usersBudgetAndRevenue !== undefined;
+    
+    const processed = processDataByPeriod(
       targetData,
       (item) => {
         const targetData = processTargetData([item]);
-        return calculateFields(targetData, period === "monthly" ? "weekly" : "monthly", period === "monthly" ? 7 : 30);
+        const calculated = calculateFields(targetData, period === "monthly" ? "weekly" : "monthly", period === "monthly" ? 7 : 30);
+        
+        // For admin view, ensure cost metrics are recalculated from aggregated budget and leads
+        // This ensures we're using the correct aggregated values, not individual client calculations
+        if (isAdminView && calculated.budget !== undefined) {
+          // Recalculate CPL from aggregated budget and leads for this period
+          if (calculated.leads !== undefined && calculated.leads > 0) {
+            calculated.cpl = calculated.budget / calculated.leads;
+          } else {
+            calculated.cpl = 0;
+          }
+          if (calculated.estimatesSet !== undefined && calculated.estimatesSet > 0) {
+            calculated.cpEstimateSet = calculated.budget / calculated.estimatesSet;
+          } else {
+            calculated.cpEstimateSet = 0;
+          }
+          if (calculated.estimatesRan !== undefined && calculated.estimatesRan > 0) {
+            calculated.cpEstimate = calculated.budget / calculated.estimatesRan;
+          } else {
+            calculated.cpEstimate = 0;
+          }
+          if (calculated.sales !== undefined && calculated.sales > 0) {
+            calculated.cpJobBooked = calculated.budget / calculated.sales;
+          } else {
+            calculated.cpJobBooked = 0;
+          }
+        }
+        
+        return calculated;
       },
       () => {
         const baseTargetData = processTargetData(
           Array.isArray(targetData) ? targetData : [targetData]
         );
-        return calculateFields(baseTargetData, period, period === "weekly" ? 7 : 30);
+        const calculated = calculateFields(baseTargetData, period, period === "weekly" ? 7 : 30);
+        
+        // For admin view, ensure cost metrics are recalculated from aggregated budget and leads
+        if (isAdminView && calculated.budget !== undefined) {
+          // Recalculate CPL from aggregated budget and leads
+          if (calculated.leads !== undefined && calculated.leads > 0) {
+            calculated.cpl = calculated.budget / calculated.leads;
+          } else {
+            calculated.cpl = 0;
+          }
+          if (calculated.estimatesSet !== undefined && calculated.estimatesSet > 0) {
+            calculated.cpEstimateSet = calculated.budget / calculated.estimatesSet;
+          } else {
+            calculated.cpEstimateSet = 0;
+          }
+          if (calculated.estimatesRan !== undefined && calculated.estimatesRan > 0) {
+            calculated.cpEstimate = calculated.budget / calculated.estimatesRan;
+          } else {
+            calculated.cpEstimate = 0;
+          }
+          if (calculated.sales !== undefined && calculated.sales > 0) {
+            calculated.cpJobBooked = calculated.budget / calculated.sales;
+          } else {
+            calculated.cpJobBooked = 0;
+          }
+        }
+        
+        return calculated;
       }
     );
-  }, [targetData, period, processDataByPeriod]);
+    
+    return processed;
+  }, [targetData, period, processDataByPeriod, usersBudgetAndRevenue]);
 
   const processedActualData = useMemo(() => {
     return processDataByPeriod(
       reportingData,
-      (item, index) => processDataPoint(item, index),
-      () => processDataPoint(reportingData[0], 0)
+      (item, index) => {
+        // Get corresponding target data point if available
+        const targetPoint = processedTargetData && Array.isArray(processedTargetData) 
+          ? processedTargetData[index] || processedTargetData[0]
+          : processedTargetData;
+        return processDataPoint(item, index, targetPoint);
+      },
+      () => {
+        const targetPoint = processedTargetData && Array.isArray(processedTargetData)
+          ? processedTargetData[0]
+          : processedTargetData;
+        return processDataPoint(reportingData[0], 0, targetPoint);
+      }
     );
-  }, [reportingData, period, processDataByPeriod]);
+  }, [reportingData, period, processDataByPeriod, processedTargetData]);
 
   const preProcessedComparisonData = useMemo(() => {
     return processDataByPeriod(
@@ -260,6 +338,14 @@ export const useDashboardMetrics = () => {
     return chartData;
   }, [comparisonData, period, selectedDate, getValueFromProcessedData]);
 
+  // Admin view chart data - uses same processing as comprehensiveChartData
+  // but can be filtered to show only admin-specific metrics
+  const adminViewChartData = useMemo(() => {
+    // For admin view, we use the same comprehensiveChartData
+    // but will filter it in the Dashboard component based on adminViewChartConfigs
+    return comprehensiveChartData;
+  }, [comprehensiveChartData]);
+
   return {
     comprehensiveChartData,
     period,
@@ -273,5 +359,6 @@ export const useDashboardMetrics = () => {
     getValueFromProcessedData,
     getXAxisLabels,
     processedComparisonData,
+    adminViewChartData,
   };
 };
