@@ -39,8 +39,14 @@ export const RevenuePerAccountTable: React.FC<RevenuePerAccountTableProps> = ({
   const processedData = useMemo(() => {
     if (!usersBudgetAndRevenue || usersBudgetAndRevenue.length === 0) return [];
 
-    // Filter by search query
+    // Filter out "Unknown User" entries
     let filtered = usersBudgetAndRevenue.filter((user) => {
+      const userName = user.userName?.trim() || '';
+      return userName.toLowerCase() !== 'unknown user';
+    });
+
+    // Filter by search query
+    filtered = filtered.filter((user) => {
       const searchLower = searchQuery.toLowerCase();
       return (
         user.userName?.toLowerCase().includes(searchLower)
@@ -155,7 +161,7 @@ export const RevenuePerAccountTable: React.FC<RevenuePerAccountTableProps> = ({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 -ml-3 hover:bg-transparent"
+                    className="h-8 -ml-3 hover:bg-transparent  hover:text-black "
                     onClick={() => handleSort('userName')}
                   >
                     Account Name
@@ -167,7 +173,7 @@ export const RevenuePerAccountTable: React.FC<RevenuePerAccountTableProps> = ({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 hover:bg-transparent"
+                      className="h-8 -ml-3 hover:bg-transparent  hover:text-black"
                       onClick={() => handleSort('totalBudgetSpent')}
                     >
                       Total Budget Spent
@@ -180,7 +186,7 @@ export const RevenuePerAccountTable: React.FC<RevenuePerAccountTableProps> = ({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 hover:bg-transparent"
+                      className="h-8 -ml-3 hover:bg-transparent  hover:text-black"
                       onClick={() => handleSort('totalRevenue')}
                     >
                       Total Revenue
@@ -193,7 +199,7 @@ export const RevenuePerAccountTable: React.FC<RevenuePerAccountTableProps> = ({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 hover:bg-transparent"
+                      className="h-8 -ml-3 hover:bg-transparent  hover:text-black"
                       onClick={() => handleSort('costOfMarketingPercent')}
                     >
                       Cost of Marketing %
@@ -221,7 +227,9 @@ export const RevenuePerAccountTable: React.FC<RevenuePerAccountTableProps> = ({
                       <TableCell className="text-muted-foreground">
                         {startIndex + index + 1}
                       </TableCell>
-                      <TableCell className="font-medium">{user.userName}</TableCell>
+                      <TableCell className="font-medium">
+                        {user.userName || user.userEmail || 'Unknown User'}
+                      </TableCell>
                       <TableCell className="text-right font-semibold">
                         <div className=" pr-10">
                             {formatCurrency(user.totalBudgetSpent || 0)}</div>

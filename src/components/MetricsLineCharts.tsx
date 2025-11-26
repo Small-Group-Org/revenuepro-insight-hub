@@ -115,183 +115,74 @@ const CustomTooltip = ({
     const differencePercent =
       targetValue > 0 ? (difference / targetValue) * 100 : 0;
 
-    return (
-      <div className="bg-card border border-border rounded-lg shadow-lg p-4 min-w-[240px]">
-        <div className="mb-3">
-          <p className="text-sm font-semibold text-card-foreground mb-1">
-            {label}
-          </p>
-          <div className="w-full h-0.5 bg-gradient-primary rounded"></div>
+    // Compact tooltip for admin view (hideTargets = true)
+    if (hideTargets) {
+      return (
+        <div className="bg-card border border-border rounded-md shadow-md px-3 py-2">
+          <div className="text-xs text-muted-foreground mb-1">{label}</div>
+          <div className="text-sm font-bold" style={{ color: actualColor }}>
+            {formatValue(actualValue, format)}
+          </div>
         </div>
+      );
+    }
 
-        <div className="space-y-3">
-          {/* Current Period (Actual) */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+    // Full tooltip for regular view
+    return (
+      <div className="bg-card border border-border rounded-lg shadow-lg p-3">
+        <div className="text-xs text-muted-foreground mb-2">{label}</div>
+        
+        <div className="space-y-2">
+          {/* Actual Value */}
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-1.5">
               <div
-                className="w-3 h-3 rounded-full"
+                className="w-2 h-2 rounded-full"
                 style={{ backgroundColor: actualColor }}
               ></div>
-              <span className="text-sm font-medium text-card-foreground">
+              <span className="text-xs text-muted-foreground">
                 {isComparisonEnabled
                   ? formatSelectedDate(selectedDate)
                   : "Actual"}
               </span>
             </div>
-            <span className="text-sm font-bold" style={{ color: actualColor }}>
+            <span className="text-sm font-semibold" style={{ color: actualColor }}>
               {formatValue(actualValue, format)}
             </span>
           </div>
 
-          {!isComparisonEnabled && !hideTargets ? (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+          {/* Target or Comparison Value */}
+          {!isComparisonEnabled && !hideTargets && (
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-1.5">
                 <div
-                  className="w-3 h-3 rounded-full"
+                  className="w-2 h-2 rounded-full"
                   style={{ backgroundColor: targetColor }}
                 ></div>
-                <span className="text-sm font-medium text-card-foreground">
-                  Target
-                </span>
+                <span className="text-xs text-muted-foreground">Target</span>
               </div>
-              <span
-                className="text-sm font-bold"
-                style={{ color: targetColor }}
-              >
+              <span className="text-sm font-semibold" style={{ color: targetColor }}>
                 {formatValue(targetValue, format)}
-              </span>
-            </div>
-          ) : !isComparisonEnabled ? null : (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div
-                  className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: "#649cf7" }}
-                ></div>
-                <span className="text-sm font-medium text-card-foreground">
-                  {periodType === "monthly"
-                    ? formattedComparisonPeriod
-                    : comparisonPeriod}{" "}
-                  <span className="text-xs text-muted-foreground">
-                    (Comparison)
-                  </span>
-                </span>
-              </div>
-              <span className="text-sm font-bold" style={{ color: "#649cf7" }}>
-                {formatValue(comparisonValue, format)}
               </span>
             </div>
           )}
 
-          {/* Performance metrics */}
-          {((!isComparisonEnabled && !hideTargets && targetValue > 0) ||
-            (isComparisonEnabled && comparisonValue > 0)) && (
-            <div className="mt-3 pt-3 border-t border-border space-y-3">
-              {!isComparisonEnabled ? (
-                // Target vs Actual metrics
-                <>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">
-                      Performance
-                    </span>
-                    <span
-                      className={`text-xs font-semibold ${
-                        performancePercent >= 100
-                          ? "text-success"
-                          : "text-destructive"
-                      }`}
-                    >
-                      {performancePercent.toFixed(1)}%
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">
-                      Difference
-                    </span>
-                    <span
-                      className={`text-xs font-semibold ${
-                        difference >= 0 ? "text-success" : "text-destructive"
-                      }`}
-                    >
-                      {difference >= 0 ? "+" : ""}
-                      {formatValue(difference, format)}
-                      <span className="ml-1">
-                        ({differencePercent >= 0 ? "+" : ""}
-                        {differencePercent.toFixed(1)}%)
-                      </span>
-                    </span>
-                  </div>
-
-                  <div className="mt-2 w-full bg-muted rounded-full h-2">
-                    <div
-                      className={`h-2 rounded-full transition-all duration-300 ${
-                        performancePercent >= 100
-                          ? "bg-success"
-                          : "bg-destructive"
-                      }`}
-                      style={{
-                        width: `${Math.min(performancePercent, 100)}%`,
-                      }}
-                    ></div>
-                  </div>
-                </>
-              ) : (
-                // Comparison vs Actual metrics
-                <>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">
-                      Growth
-                    </span>
-                    <span
-                      className={`text-xs font-semibold ${
-                        actualValue >= comparisonValue
-                          ? "text-success"
-                          : "text-destructive"
-                      }`}
-                    >
-                      {actualValue >= comparisonValue ? "+" : ""}
-                      {(
-                        ((actualValue - comparisonValue) / comparisonValue) *
-                        100
-                      ).toFixed(1)}
-                      %
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">
-                      Difference
-                    </span>
-                    <span
-                      className={`text-xs font-semibold ${
-                        actualValue >= comparisonValue
-                          ? "text-success"
-                          : "text-destructive"
-                      }`}
-                    >
-                      {actualValue >= comparisonValue ? "+" : ""}
-                      {formatValue(actualValue - comparisonValue, format)}
-                    </span>
-                  </div>
-
-                  <div className="mt-2 w-full bg-muted rounded-full h-2">
-                    <div
-                      className={`h-2 rounded-full transition-all duration-300 ${
-                        actualValue >= comparisonValue
-                          ? "bg-success"
-                          : "bg-destructive"
-                      }`}
-                      style={{
-                        width: `${Math.min(
-                          100,
-                          Math.max(0, (actualValue / comparisonValue) * 100)
-                        )}%`,
-                      }}
-                    ></div>
-                  </div>
-                </>
-              )}
+          {isComparisonEnabled && (
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-1.5">
+                <div
+                  className="w-2 h-2 rounded-full"
+                  style={{ backgroundColor: "#649cf7" }}
+                ></div>
+                <span className="text-xs text-muted-foreground">
+                  {periodType === "monthly"
+                    ? formattedComparisonPeriod
+                    : comparisonPeriod}
+                </span>
+              </div>
+              <span className="text-sm font-semibold" style={{ color: "#649cf7" }}>
+                {formatValue(comparisonValue, format)}
+              </span>
             </div>
           )}
         </div>
@@ -654,8 +545,8 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
                 </ResponsiveContainer>
               )}
 
-              {/* Individual chart legend - only show if no message */}
-              {!hasMessage && (
+              {/* Individual chart legend - hidden when hideTargets is true (admin view) */}
+              {!hasMessage && !hideTargets && (
                 <div className="flex items-center justify-center gap-4 pt-2">
                   <div className="flex items-center gap-2">
                     <div
@@ -678,58 +569,56 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
                     </span>
                   </div>
 
-                  {!hideTargets && (
-                    <div className="flex items-center">
-                      <div
-                        className="w-1 h-0.5 border"
-                        style={{
-                          backgroundColor: config.targetColor,
-                          borderColor: config.targetColor,
-                        }}
-                      ></div>
-                      <div
-                        className="w-1 h-0.5 border"
-                        style={{
-                          backgroundColor: isComparisonEnabled
-                            ? config.targetColor
-                            : "#fff",
-                          borderColor: isComparisonEnabled
-                            ? config.targetColor
-                            : "#fff",
-                        }}
-                      ></div>
-                      <div
-                        className="w-1 h-0.5 border"
-                        style={{
-                          backgroundColor: config.targetColor,
-                          borderColor: config.targetColor,
-                        }}
-                      ></div>
-                      <div
-                        className="w-1 h-0.5 border"
-                        style={{
-                          backgroundColor: isComparisonEnabled
-                            ? config.targetColor
-                            : "#fff",
-                          borderColor: isComparisonEnabled
-                            ? config.targetColor
-                            : "#fff",
-                        }}
-                      ></div>
-                      <div
-                        className="w-1 h-0.5 border"
-                        style={{
-                          backgroundColor: config.targetColor,
-                          borderColor: config.targetColor,
-                        }}
-                      ></div>
-                      <span className="text-xs text-muted-foreground ml-1">
-                        {isComparisonEnabled
-                          ? formattedComparisonPeriod
-                          : "Target"}
-                      </span>
-                    </div>
-                  )}
+                  <div className="flex items-center">
+                    <div
+                      className="w-1 h-0.5 border"
+                      style={{
+                        backgroundColor: config.targetColor,
+                        borderColor: config.targetColor,
+                      }}
+                    ></div>
+                    <div
+                      className="w-1 h-0.5 border"
+                      style={{
+                        backgroundColor: isComparisonEnabled
+                          ? config.targetColor
+                          : "#fff",
+                        borderColor: isComparisonEnabled
+                          ? config.targetColor
+                          : "#fff",
+                      }}
+                    ></div>
+                    <div
+                      className="w-1 h-0.5 border"
+                      style={{
+                        backgroundColor: config.targetColor,
+                        borderColor: config.targetColor,
+                      }}
+                    ></div>
+                    <div
+                      className="w-1 h-0.5 border"
+                      style={{
+                        backgroundColor: isComparisonEnabled
+                          ? config.targetColor
+                          : "#fff",
+                        borderColor: isComparisonEnabled
+                          ? config.targetColor
+                          : "#fff",
+                      }}
+                    ></div>
+                    <div
+                      className="w-1 h-0.5 border"
+                      style={{
+                        backgroundColor: config.targetColor,
+                        borderColor: config.targetColor,
+                      }}
+                    ></div>
+                    <span className="text-xs text-muted-foreground ml-1">
+                      {isComparisonEnabled
+                        ? formattedComparisonPeriod
+                        : "Target"}
+                    </span>
+                  </div>
                 </div>
               )}
             </div>
