@@ -12,7 +12,7 @@ import { useUserContext } from "@/utils/UserContext";
 // Import components
 import { Dashboard } from "@/components/Dashboard";
 import { SetTargets } from "@/pages/SetTargets";
-import { AddActualData } from "@/pages/AddActualData";
+import { AddActualData } from "@/pages/weekly-reporting/WeeklyReporting";
 import { LeadSheet } from "@/pages/LeadSheet";
 import { LeadAnalytics } from "@/pages/LeadAnalytics";
 import NotFound from "@/pages/NotFound";
