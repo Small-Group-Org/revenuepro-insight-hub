@@ -202,8 +202,19 @@ export const RevenuePerAccountTable: React.FC<RevenuePerAccountTableProps> = ({
                       className="h-8 -ml-3 hover:bg-transparent  hover:text-black"
                       onClick={() => handleSort('costOfMarketingPercent')}
                     >
-                      Cost of Marketing %
+                      CoM %
                       {getSortIcon('costOfMarketingPercent')}
+                    </Button>
+                  </div>
+                </TableHead>
+                <TableHead className="text-right ">
+                  <div className="flex justify-end">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 -ml-3 hover:bg-transparent  hover:text-black"
+                    >
+                      Estimate Set%
                     </Button>
                   </div>
                 </TableHead>
@@ -218,10 +229,13 @@ export const RevenuePerAccountTable: React.FC<RevenuePerAccountTableProps> = ({
                 </TableRow>
               ) : (
                 paginatedData.map((user, index) => {
+                  const { estimateSetCount, disqualifiedLeadsCount, totalRevenue, totalBudgetSpent } = user;
                   const costOfMarketingPercent = calculateCostOfMarketingPercent(
-                    user.totalBudgetSpent || 0,
-                    user.totalRevenue || 0
+                    totalBudgetSpent || 0,
+                    totalRevenue || 0
                   );
+                  const estimateSetPercent = estimateSetCount === 0 ? 0 : (estimateSetCount/(estimateSetCount + disqualifiedLeadsCount)*100).toFixed(2);
+
                   return (
                     <TableRow key={user.userId}>
                       <TableCell className="text-muted-foreground">
@@ -230,19 +244,24 @@ export const RevenuePerAccountTable: React.FC<RevenuePerAccountTableProps> = ({
                       <TableCell className="font-medium">
                         {user.userName || user.userEmail || 'Unknown User'}
                       </TableCell>
-                      <TableCell className="text-right font-semibold">
+                      <TableCell className="text-right">
                         <div className=" pr-10">
-                            {formatCurrency(user.totalBudgetSpent || 0)}</div>
+                            {formatCurrency(totalBudgetSpent || 0)}</div>
                         
                       </TableCell>
-                      <TableCell className="text-right font-semibold">
+                      <TableCell className="text-right">
                         <div className="pr-10">
-                          {formatCurrency(user.totalRevenue)}
+                          {formatCurrency(totalRevenue || 0)}
                         </div>
                       </TableCell>
-                      <TableCell className="text-right font-semibold">
+                      <TableCell className="text-right">
                         <div className="pr-10">
                         {costOfMarketingPercent.toFixed(2)}%
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="pr-10">
+                        {estimateSetPercent}%
                         </div>
                       </TableCell>
                     </TableRow>

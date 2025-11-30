@@ -10,7 +10,7 @@ import { FullScreenLoader } from "@/components/ui/full-screen-loader";
 import { useUserContext } from "@/utils/UserContext";
 
 // Import components
-import { Dashboard } from "@/components/Dashboard";
+import { Dashboard } from "@/pages/dashboard/Dashboard";
 import { SetTargets } from "@/pages/SetTargets";
 import { AddActualData } from "@/pages/AddActualData";
 import { LeadSheet } from "@/pages/LeadSheet";
