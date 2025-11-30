@@ -81,14 +81,8 @@ export const TargetReport: React.FC<TargetReportProps> = ({
     const value = fieldValues[field.value] || 0;
     const displayValue = displayValues[field.value] || value.toString();
 
-    // Determine if this field should be disabled
-    const isFieldDisabled = 
-      isDisabled || 
-      (shouldDisableNonRevenueFields && field.value !== 'revenue') || 
-      (period === 'yearly' && field.value === 'managementCost');
-
     return (
-      <div key={field.value} className="">
+      <div key={field.value} className="flex-grow">
         <Label
           htmlFor={field.value}
           className="flex items-baseline gap-1"
@@ -143,12 +137,12 @@ export const TargetReport: React.FC<TargetReportProps> = ({
             }}
             onWheel={(e) => e.currentTarget.blur()}
             className={`appearance-none pr-12 ${
-              isFieldDisabled
+              isDisabled
                 ? "bg-muted text-muted-foreground cursor-not-allowed"
                 : ""
             }`}
             style={{ MozAppearance: "textfield" }}
-            disabled={isLoading || isFieldDisabled}
+            disabled={isLoading || isDisabled}
           />
           {field.unit && (
             <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground text-sm">
@@ -171,7 +165,7 @@ export const TargetReport: React.FC<TargetReportProps> = ({
   }, [filteredFields]);
   
   return (
-    <Card className={`bg-card/90 p-6 pt-4 backdrop-blur-sm border border-border/50 hover:shadow-lg`}>
+    <Card className={`bg-card/90 p-6 pt-4 backdrop-blur-sm border border-border/200 hover:shadow-lg`}>
         <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
             <h2 className="text-xl font-semibold">

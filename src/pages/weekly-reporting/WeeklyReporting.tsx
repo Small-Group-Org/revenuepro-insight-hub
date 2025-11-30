@@ -21,7 +21,7 @@ import { useGhlClientStore } from '@/stores/ghlClientStore';
 import { triggerOpportunitySync } from '@/service/ghlClientService';
 import { doPOST } from '@/utils/HttpUtils';
 import { API_ENDPOINTS } from '@/utils/constant';
-import CampaignAccordion from '@/components/CampaignAccordion';
+import CampaignAccordion from '@/pages/weekly-reporting/components/CampaignAccordion';
 import { processCampaignData } from '@/utils/campaignDataProcessor';
 import { dummyCampaignData } from '@/utils/campaignData';
 import { formatPercent, formatCurrency } from '@/utils/page-utils/commonUtils';
@@ -398,6 +398,32 @@ React.useEffect(() => {
         </div>
 
         <div className="flex flex-col gap-8 mb-8">
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {getStatsCards(calculatedValues).map((card) => (
+              <StatsCards 
+                key={card.title} 
+                title={card.title} 
+                value={card.value} />
+            ))}
+          </div>
+
+          <TargetReport
+            title="Budget Report"
+            icon={<TrendingUp className="h-5 w-5 text-accent" />}
+            fields={reportingFields['budgetReport']}
+            fieldValues={fieldValues}
+            onInputChange={handleInputChange}
+            isLoading={isLoading}
+            period={period}
+            isDisabled={isDisabled}
+            disabledMessage={disabledMessage}
+            targetValues={processedTargetData}
+            showOpportunitySyncButton={shouldShowOpportunitySync}
+            onOpportunitySyncClick={handleOpportunitySync}
+            isOpportunitySyncing={isOpportunitySyncing}
+          />
+
           <TargetReport
             title="Target Report"
             icon={<TrendingUp className="h-5 w-5 text-accent" />}
@@ -413,15 +439,6 @@ React.useEffect(() => {
             onOpportunitySyncClick={handleOpportunitySync}
             isOpportunitySyncing={isOpportunitySyncing}
           />
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {getStatsCards(calculatedValues).map((card) => (
-              <StatsCards 
-                key={card.title} 
-                title={card.title} 
-                value={card.value} />
-            ))}
-          </div>
 
           <div className="lg:col-span-2">
             <div className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col max-h-[785px]">
