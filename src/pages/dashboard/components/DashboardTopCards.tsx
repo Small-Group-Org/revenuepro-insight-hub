@@ -1,33 +1,20 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  DollarSign,
-  TrendingUp,
-  Users,
-  Calendar,
-  Target,
-  BarChart3,
-} from "lucide-react";
-import {
   formatCurrencyValue,
-  calculateManagementCost,
 } from "@/utils/page-utils/commonUtils";
+import { AggregatedMetricsType } from "../dashboard.types";
+import { getDashboardCards } from "../utils/utils";
 
 interface TopCardProps {
   title: string;
   icon: React.ReactNode;
   description?: string;
-  trend?: {
-    value: number;
-    isPositive: boolean;
-  };
-  // For cards with multiple metrics
   metrics: Array<{
     label: string;
     value: number;
     format: "currency" | "percent" | "number";
   }>;
-  // New prop for 2-row design for Lead Center
   twoRowDesign?: boolean;
 }
 
@@ -35,7 +22,6 @@ export const TopCard: React.FC<TopCardProps> = ({
   title,
   icon,
   description,
-  trend,
   metrics,
   twoRowDesign = false,
 }) => {
@@ -138,15 +124,18 @@ interface DashboardTopCardsProps {
   reportingData: any[];
   processedTargetData?: any;
   period: string;
+  isAdminView?: boolean;
+  usersBudgetAndRevenue: any[];
 }
 
 export const DashboardTopCards: React.FC<DashboardTopCardsProps> = ({
   reportingData,
   processedTargetData,
   period,
+  isAdminView = false,
+  usersBudgetAndRevenue,
 }) => {
-  // Calculate aggregated metrics from reporting data
-  const aggregatedMetrics = React.useMemo(() => {
+  const aggregatedMetrics: AggregatedMetricsType = React.useMemo(() => {
     if (!reportingData || reportingData.length === 0) {
       return {
         totalRevenue: 0,
@@ -157,6 +146,8 @@ export const DashboardTopCards: React.FC<DashboardTopCardsProps> = ({
         totalAppointmentsSet: 0,
         costPerAppointmentSet: 0,
         estimateSetRate: 0,
+        estimateSetCount: 0,
+        unqualifiedCount: 0,
       };
     }
     const totals = reportingData.reduce(
@@ -183,6 +174,12 @@ export const DashboardTopCards: React.FC<DashboardTopCardsProps> = ({
         managementCost: 0,
       }
     );
+
+    const {estimateSetCount, unqualifiedCount} = usersBudgetAndRevenue.reduce((acc, dataPoint) => {
+      acc.estimateSetCount += dataPoint.estimateSetCount || 0;
+      acc.unqualifiedCount += dataPoint.disqualifiedLeadsCount || 0;
+      return acc;
+    }, {estimateSetCount: 0, unqualifiedCount: 0});
 
     // Calculate derived metrics
     const avgJobSize = totals.sales > 0 ? totals.revenue / totals.sales : 0;
@@ -218,87 +215,14 @@ export const DashboardTopCards: React.FC<DashboardTopCardsProps> = ({
       totalAppointmentsSet: totals.estimatesSet,
       costPerAppointmentSet,
       estimateSetRate,
+      estimateSetCount,
+      unqualifiedCount,
+      costPerEstimateSet: estimateSetCount > 0 ? totals.budgetSpent / estimateSetCount : 0,
     };
-  }, [reportingData, processedTargetData, period]);
+  }, [reportingData, processedTargetData, period, usersBudgetAndRevenue]);
 
-  const cards = [
-    {
-      title: "Revenue",
-      icon: <DollarSign className="h-5 w-5 opacity-50 text-success" />,
-      metrics: [
-        {
-          label: "Total Revenue",
-          value: aggregatedMetrics.totalRevenue,
-          format: "currency" as const,
-        },
-        {
-          label: "Avg. Job Size",
-          value: aggregatedMetrics.avgJobSize,
-          format: "currency" as const,
-        },
-      ],
-      description: "Total revenue generated from all jobs.",
-    },
-    {
-      title: "Total CoM %",
-      icon: <Target className="h-5 w-5 opacity-50 text-primary" />,
-      metrics: [
-        {
-          label: "Total CoM %",
-          value: aggregatedMetrics.totalCom,
-          format: "percent" as const,
-        },
-      ],
-      description: "Total cost of management as a percentage of total revenue.",
-    },
-    {
-      title: "Lead Performance",
-      icon: <Users className="h-5 w-5 opacity-50 text-accent" />,
-      metrics: [
-        {
-          label: "Total Leads",
-          value: aggregatedMetrics.totalLeads,
-          format: "number" as const,
-        },
-        {
-          label: "Cost Per Lead",
-          value: aggregatedMetrics.costPerLead,
-          format: "currency" as const,
-        },
-      ],
-      description: "Total number of leads generated.",
-    },
-    {
-      title: "Appointment Set Metrics",
-      icon: <Calendar className="h-5 w-5 opacity-50 text-primary-light" />,
-      metrics: [
-        {
-          label: "Appointments Set",
-          value: aggregatedMetrics.totalAppointmentsSet,
-          format: "number" as const,
-        },
-        {
-          label: "Cost per Appointment Set",
-          value: aggregatedMetrics.costPerAppointmentSet,
-          format: "currency" as const,
-        },
-      ],
-      description: "Total number of appointments scheduled.",
-    },
-    {
-      title: "Appointment Rate %",
-      icon: <TrendingUp className="h-5 w-5 opacity-50 text-warning" />,
-      metrics: [
-        {
-          label: "Estimate Set Rate %",
-          value: aggregatedMetrics.estimateSetRate,
-          format: "percent" as const,
-        },
-      ],
-      description:
-        "Percentage of Appointment Sets out of (Estimate Sets + Unqualified).",
-    },
-  ];
+  const cards = getDashboardCards(isAdminView, aggregatedMetrics);
+  console.log({aggregatedMetrics, usersBudgetAndRevenue});
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-8">

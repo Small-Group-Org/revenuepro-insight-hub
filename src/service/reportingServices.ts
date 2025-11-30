@@ -15,6 +15,8 @@ export interface IUserRevenue {
   userId: string;
   userName: string;
   userEmail: string;
+  disqualifiedLeadsCount: number;
+  estimateSetCount: number;
 }
 
 export interface IReportingResponse {
