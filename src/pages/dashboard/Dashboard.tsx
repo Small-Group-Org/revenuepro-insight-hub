@@ -8,10 +8,10 @@ import {
   startOfYear,
   endOfYear,
 } from "date-fns";
-import { MetricsLineCharts } from './MetricsLineCharts';
-import { DualMetricChart } from './DualMetricChart';
-import { DashboardTopCards } from './DashboardTopCards';
-import { RevenuePerAccountTable } from './RevenuePerAccountTable';
+import { MetricsLineCharts } from '../../components/MetricsLineCharts';
+import { DualMetricChart } from '../../components/DualMetricChart';
+import { DashboardTopCards } from './components/DashboardTopCards';
+import { RevenuePerAccountTable } from './components/RevenuePerAccountTable';
 import { useUserStore } from '@/stores/userStore';
 import { TrendingUp, DollarSign, Filter, Users, Calendar, BarChart3 } from 'lucide-react';
 import { 
@@ -23,7 +23,7 @@ import {
 import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
 import { FullScreenLoader } from '@/components/ui/full-screen-loader';
 import { useCombinedLoading } from '@/hooks/useCombinedLoading';
-import { ReleaseNotesModal } from './ReleaseNotesModal';
+import { ReleaseNotesModal } from '../../components/ReleaseNotesModal';
 import { useUserContext } from '@/utils/UserContext';
 import { markUpdateAsSeen } from '@/service/userService';
 import { useToast } from '@/hooks/use-toast';
@@ -221,6 +221,8 @@ export const Dashboard = () => {
             reportingData={reportingData || []}
             processedTargetData={processedTargetData}
             period={period}
+            isAdminView={isAdminView}
+            usersBudgetAndRevenue={usersBudgetAndRevenue || []}
           />
         </div>
 
