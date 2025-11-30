@@ -174,7 +174,7 @@ export const TargetReport: React.FC<TargetReportProps> = ({
             </div>
             <div className="flex items-center gap-2">
             {/* TEMPORARY: Opportunity Sync Refresh Button - only shown for weekly period and specific user */}
-            {showOpportunitySyncButton && period === "weekly" && (
+            {showOpportunitySyncButton && title === "Target Report" && period === "weekly" && (
                 <TooltipProvider>
                 <Tooltip>
                     <TooltipTrigger asChild>
