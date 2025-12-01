@@ -24,6 +24,7 @@ import { useUserStore } from "@/stores/userStore";
 import CreateUserModal from "@/components/CreateUserModal";
 import ResetPasswordModal from "@/components/ResetPasswordModal";
 import GhlClientModal from "@/components/GhlClientModal";
+import ClientIntegrationsModal from "@/components/ClientIntegrationsModal";
 import { useGhlClientStore } from "@/stores/ghlClientStore";
 import {
   UserPlus,
@@ -82,6 +83,9 @@ const CreateUser = () => {
   const [isGhlModalOpen, setIsGhlModalOpen] = useState(false);
   const [ghlClientUserId, setGhlClientUserId] = useState<string | null>(null);
   const [ghlClientUserName, setGhlClientUserName] = useState<string>("");
+  const [isIntegrationsModalOpen, setIsIntegrationsModalOpen] = useState(false);
+  const [integrationsClientUserId, setIntegrationsClientUserId] = useState<string | null>(null);
+  const [integrationsClientUserName, setIntegrationsClientUserName] = useState<string>("");
   const { clients: ghlClients, fetchClients: fetchGhlClients } = useGhlClientStore();
 
   // Fetch users and GHL clients when role filter changes
@@ -264,6 +268,12 @@ const CreateUser = () => {
     setIsGhlModalOpen(true);
   };
 
+  const handleIntegrationsClick = (userId: string, userName: string) => {
+    setIntegrationsClientUserId(userId);
+    setIntegrationsClientUserName(userName);
+    setIsIntegrationsModalOpen(true);
+  };
+
   const handlePasswordReset = async (userId: string, newPassword: string) => {
     setLoading(true);
     const res = await updatePassword({ userId, newPassword });
@@ -359,6 +369,15 @@ const CreateUser = () => {
         onOpenChange={setIsGhlModalOpen}
         revenueProClientId={ghlClientUserId || ""}
         userName={ghlClientUserName}
+        ghlClients={ghlClients}
+        onRefresh={fetchGhlClients}
+      />
+
+      <ClientIntegrationsModal
+        isOpen={isIntegrationsModalOpen}
+        onOpenChange={setIsIntegrationsModalOpen}
+        revenueProClientId={integrationsClientUserId || ""}
+        userName={integrationsClientUserName}
         ghlClients={ghlClients}
         onRefresh={fetchGhlClients}
       />
@@ -546,20 +565,34 @@ const CreateUser = () => {
                               user.status === "inactive" ? "min-w-0" : ""
                             }`}
                           >
-                            <span
-                              className={
+                            <button
+                              onClick={() =>
+                                user.role !== "ADMIN" &&
+                                handleIntegrationsClick(
+                                  user.id,
+                                  user.name || user.email
+                                )
+                              }
+                              className={`${
                                 user.status === "inactive"
                                   ? "truncate max-w-[200px]"
                                   : ""
-                              }
+                              } ${
+                                user.role !== "ADMIN"
+                                  ? "hover:text-primary hover:underline cursor-pointer"
+                                  : "cursor-default"
+                              } text-left`}
                               title={
                                 user.status === "inactive"
                                   ? user.name || "-"
+                                  : user.role !== "ADMIN"
+                                  ? "Click to manage integrations"
                                   : undefined
                               }
+                              disabled={user.role === "ADMIN"}
                             >
                               {user.name || "-"}
-                            </span>
+                            </button>
                             {user.status === "inactive" && (
                               <span className="inline-block px-1.5 py-0.5 rounded text-xs font-semibold bg-red-100 text-red-800 flex-shrink-0">
                                 INACTIVE

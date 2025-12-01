@@ -14,6 +14,7 @@ import { processTargetData } from '@/utils/page-utils/targetUtils';
 import { getWeekInfo, getCurrentWeek } from '@/utils/weekLogic';
 import { useUserStore } from '@/stores/userStore';
 import { useRoleAccess } from '@/hooks/useRoleAccess';
+import { useUserContext } from '@/utils/UserContext';
 import { FullScreenLoader } from '@/components/ui/full-screen-loader';
 import { useCombinedLoading } from '@/hooks/useCombinedLoading';
 import DailyBudgetManager from '@/pages/weekly-reporting/components/DailyBudgetManager';
@@ -29,6 +30,9 @@ import { Card } from '@/components/ui/card';
 import { TargetReport } from './components/TargetReport';
 import StatsCards from './components/StatsCards';
 import { getStatsCards } from './utils/utils';
+import { getEnrichedAds } from '@/service/facebookEnrichedAdsService';
+import { getUserProfile } from '@/service/metaAdAccountService';
+import { transformEnrichedAdsToCampaignData } from '@/utils/facebookAdsTransformer';
 
 // TEMPORARY: Specific user ID for opportunity sync feature
 const OPPORTUNITY_SYNC_USER_ID = '68c82dfdac1491efe19d5df0';
@@ -39,6 +43,7 @@ export const AddActualData = () => {
   const { toast } = useToast();
   const { selectedUserId } = useUserStore();
   const { userRole } = useRoleAccess();
+  const { user: loggedInUser } = useUserContext();
   const { getClientByRevenueProId, getActiveClients } = useGhlClientStore();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [period, setPeriod] = useState<PeriodType>('weekly');
@@ -47,6 +52,9 @@ export const AddActualData = () => {
   const [fieldValues, setFieldValues] = useState<FieldValue>({});
   const [lastChanged, setLastChanged] = useState<string | null>(null);
   const [prevValues, setPrevValues] = useState<FieldValue>({});
+  const [campaignData, setCampaignData] = useState<any[]>([]);
+  const [isLoadingCampaignData, setIsLoadingCampaignData] = useState(false);
+  const [clientHasFbAccount, setClientHasFbAccount] = useState(false);
 
 
   // Use processed target data from store (single API)
@@ -89,6 +97,99 @@ export const AddActualData = () => {
     }
     getReportingData(startDate, endDate, queryType, period);
   }, [selectedDate, period, selectedUserId, getReportingData]);
+
+  // Fetch Facebook enriched ads data for campaign section
+  React.useEffect(() => {
+    const fetchCampaignData = async () => {
+      // Only fetch for weekly period and if we have a selected user and logged-in user
+      if (period !== 'weekly' || !selectedUserId || !loggedInUser?._id) {
+        setClientHasFbAccount(false);
+        setCampaignData([]);
+        return;
+      }
+
+      setIsLoadingCampaignData(true);
+      try {
+        // Step 1: Get the logged-in user's (admin) profile to get metaAccessToken
+        const adminProfileResponse = await getUserProfile(loggedInUser._id);
+
+        if (adminProfileResponse.error || !adminProfileResponse.data) {
+          setClientHasFbAccount(false);
+          setCampaignData([]);
+          setIsLoadingCampaignData(false);
+          return;
+        }
+
+        const adminMetaAccessToken = adminProfileResponse.data.metaAccessToken;
+
+        // Step 2: Get the selected client's profile to get fbAdAccountId
+        const clientProfileResponse = await getUserProfile(selectedUserId);
+
+        if (clientProfileResponse.error || !clientProfileResponse.data) {
+          setClientHasFbAccount(false);
+          setCampaignData([]);
+          setIsLoadingCampaignData(false);
+          return;
+        }
+
+        const clientFbAdAccountId = clientProfileResponse.data.fbAdAccountId;
+
+        // Only proceed if client has fbAdAccountId
+        if (!clientFbAdAccountId) {
+          setClientHasFbAccount(false);
+          setCampaignData([]);
+          setIsLoadingCampaignData(false);
+          return;
+        }
+
+        // Also check if admin has metaAccessToken (though API will handle auth)
+        if (!adminMetaAccessToken) {
+          setClientHasFbAccount(false);
+          setCampaignData([]);
+          setIsLoadingCampaignData(false);
+          return;
+        }
+
+        setClientHasFbAccount(true);
+
+        // Get date range for the selected week
+        const weekInfo = getWeekInfo(selectedDate);
+        const startDate = format(weekInfo.weekStart, 'yyyy-MM-dd');
+        const endDate = format(weekInfo.weekEnd, 'yyyy-MM-dd');
+
+        // Fetch enriched ads data using client's fbAdAccountId
+        // The API will use the admin's metaAccessToken from headers
+        const enrichedAdsResponse = await getEnrichedAds({
+          adAccountId: clientFbAdAccountId,
+          startDate,
+          endDate,
+          queryType: 'weekly',
+        });
+
+        if (enrichedAdsResponse.error || !enrichedAdsResponse.data) {
+          // If error, set empty data (don't show error message, just don't display)
+          setCampaignData([]);
+          setIsLoadingCampaignData(false);
+          return;
+        }
+
+        // Transform the enriched ads data to match CampaignDataItem format
+        const transformedData = transformEnrichedAdsToCampaignData(
+          enrichedAdsResponse.data as any[]
+        );
+
+        setCampaignData(transformedData);
+      } catch (error) {
+        // Silently fail - don't show campaign section if there's an error
+        setCampaignData([]);
+        setClientHasFbAccount(false);
+      } finally {
+        setIsLoadingCampaignData(false);
+      }
+    };
+
+    fetchCampaignData();
+  }, [selectedDate, period, selectedUserId, loggedInUser?._id]);
 
 React.useEffect(() => {
   if (reportingData && Array.isArray(reportingData)) {
@@ -440,19 +541,35 @@ React.useEffect(() => {
             isOpportunitySyncing={isOpportunitySyncing}
           />
 
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col max-h-[785px]">
-              <div className="p-4 border-b border-gray-200 flex-shrink-0">
-                <div className="flex items-center gap-2">
-                  <DollarSign className="h-5 w-5 text-blue-600" />
-                  <h2 className="text-xl font-semibold text-gray-800">Campaign Spend</h2>
+          {/* Only show campaign section if client has fbAdAccountId */}
+          {clientHasFbAccount && (
+            <div className="lg:col-span-2">
+              <div className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col max-h-[785px]">
+                <div className="p-4 border-b border-gray-200 flex-shrink-0">
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="h-5 w-5 text-blue-600" />
+                    <h2 className="text-xl font-semibold text-gray-800">Campaign Spend</h2>
+                    {isLoadingCampaignData && (
+                      <span className="text-sm text-muted-foreground ml-2">Loading...</span>
+                    )}
+                  </div>
+                </div>
+                <div className="p-0 overflow-y-auto flex-1 min-h-0">
+                  {isLoadingCampaignData ? (
+                    <div className="flex items-center justify-center py-8">
+                      <p className="text-muted-foreground">Loading campaign data...</p>
+                    </div>
+                  ) : campaignData.length > 0 ? (
+                    <CampaignAccordion data={processCampaignData(campaignData)} />
+                  ) : (
+                    <div className="flex items-center justify-center py-8">
+                      <p className="text-muted-foreground">No campaign data available for this period</p>
+                    </div>
+                  )}
                 </div>
               </div>
-              <div className="p-0 overflow-y-auto flex-1 min-h-0">
-                <CampaignAccordion data={processCampaignData(dummyCampaignData.data)} />
-              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Daily Budget + Ad Names Amount (Weekly only) placed below sections */}
