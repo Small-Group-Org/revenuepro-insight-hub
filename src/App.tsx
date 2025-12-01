@@ -38,13 +38,14 @@ const AppRoutes = () => {
           <Route path="/release-notes" element={<ReleaseNotes />} />
           <Route element={<AppLayout />}>
             <Route path="/" element={<Dashboard />} />
+            <Route path="/global-dashboard" element={<Dashboard />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/targets" element={<SetTargets />} />
             <Route path="/actuals" element={<AddActualData />} />
             <Route path="/compare" element={<CompareResults />} />
             <Route path="/leads" element={<LeadSheet />} />
             <Route path="/lead-analytics" element={<LeadAnalytics />} />
-            <Route path="/user-managment" element={<CreateUser />} />
+            <Route path="/user-management" element={<CreateUser />} />
             <Route path="/profile" element={<Profile />} />
           </Route>
           <Route path="*" element={<NotFound />} />
