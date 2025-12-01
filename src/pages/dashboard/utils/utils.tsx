@@ -8,9 +8,20 @@ import {
 } from "lucide-react";
 import { AggregatedMetricsType } from "../dashboard.types";
 
-export const getDashboardCards = (isAdminView: boolean, aggregatedMetrics: AggregatedMetricsType) => {
+type DashboardCard = {
+  title: string;
+  icon: React.ReactNode;
+  description: string;
+  metrics: Array<{
+    label: string;
+    value: number;
+    format: "currency" | "percent" | "number";
+  }>;
+};
+
+export const getDashboardCards = (isAdminView: boolean, aggregatedMetrics: AggregatedMetricsType): DashboardCard[] => {
     const {estimateSetCount, unqualifiedCount, totalAppointmentsSet, costPerEstimateSet, costPerAppointmentSet, estimateSetRate, totalRevenue, avgJobSize, totalCom, totalLeads, costPerLead, } = aggregatedMetrics;
-    const cards = [
+    const cards: DashboardCard[] = [
         {
           title: "Revenue",
           icon: <DollarSign className="h-5 w-5 opacity-50 text-success" />,
@@ -38,7 +49,7 @@ export const getDashboardCards = (isAdminView: boolean, aggregatedMetrics: Aggre
               format: "percent" as const,
             },
           ],
-          description: "Total cost of management as a percentage of total revenue.",
+          description: "Total cost of marketing as a percentage of total revenue.",
         },
         {
           title: "Lead Performance",
@@ -58,7 +69,7 @@ export const getDashboardCards = (isAdminView: boolean, aggregatedMetrics: Aggre
           description: "Total number of leads generated.",
         },
         {
-          title: "Appointment Set Metrics",
+          title: "Appt. Set Metrics",
           icon: <Calendar className="h-5 w-5 opacity-50 text-primary-light" />,
           metrics: [
             {
@@ -67,7 +78,7 @@ export const getDashboardCards = (isAdminView: boolean, aggregatedMetrics: Aggre
               format: "number" as const,
             },
             {
-              label: "Cost per Appointment Set",
+              label: "Cost per Appt. Set",
               value: costPerAppointmentSet,
               format: "currency" as const,
             },
@@ -90,25 +101,25 @@ export const getDashboardCards = (isAdminView: boolean, aggregatedMetrics: Aggre
       ];
 
 
-    // if(isAdminView) {
-    //     cards.push({
-    //         title: "Estimate Set%",
-    //         icon: <Calendar className="h-5 w-5 opacity-50 text-primary-light" />,
-    //         metrics: [
-    //           {
-    //             label: "Estimate Set%",
-    //             value: parseFloat(((estimateSetCount/(estimateSetCount + unqualifiedCount))*100).toFixed(2)),
-    //             format: "percent" as const,
-    //           },
-    //           {
-    //             label: "Cost per Estimate Set",
-    //             value: costPerEstimateSet,
-    //             format: "currency" as const,
-    //           },
-    //         ],
-    //         description: "Total number of estimate sets and percentage of estimate sets that are qualified.",
-    //       });
-    // }
+    if(isAdminView) {
+        cards.push({
+            title: "Estimate Set%",
+            icon: <Calendar className="h-5 w-5 opacity-50 text-primary-light" />,
+            metrics: [
+              {
+                label: "Estimate Set%",
+                value: parseFloat(((estimateSetCount/(estimateSetCount + unqualifiedCount))*100).toFixed(2)),
+                format: "percent" as const,
+              },
+              {
+                label: "Cost per Estimate Set",
+                value: costPerEstimateSet,
+                format: "currency" as const,
+              },
+            ],
+            description: "Total number of estimate sets and percentage of estimate sets that are qualified.",
+          });
+    }
     return cards;
 }
 

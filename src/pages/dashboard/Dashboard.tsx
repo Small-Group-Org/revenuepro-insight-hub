@@ -26,17 +26,12 @@ import { useCombinedLoading } from '@/hooks/useCombinedLoading';
 import { ReleaseNotesModal } from '../../components/ReleaseNotesModal';
 import { useUserContext } from '@/utils/UserContext';
 import { markUpdateAsSeen } from '@/service/userService';
-import { useToast } from '@/hooks/use-toast';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { getAggregateReport } from '@/service/reportingServices';
 
 
 export const Dashboard = () => {
   const { reportingData, getReportingData, getComparisonData, clearComparisonData, getAggregateData, usersBudgetAndRevenue } = useReportingDataStore();
-  const { selectedUserId } = useUserStore();
+  const { selectedUserId, isAdminView, setIsAdminView } = useUserStore();
   const { user, setUser } = useUserContext();
-  const { toast } = useToast();
   const { 
     comprehensiveChartData, 
     period, 
@@ -59,18 +54,22 @@ export const Dashboard = () => {
   // State for release notes modal
   const [showReleaseNotesModal, setShowReleaseNotesModal] = useState<boolean>(false);
   
-  // State for admin view toggle
-  const [isAdminView, setIsAdminView] = useState<boolean>(false);
   const isAdmin = user?.role === 'ADMIN';
 
-  // Check if user needs to see release notes
   useEffect(() => {
     if (user && user.hasSeenLatestUpdate === false) {
       setShowReleaseNotesModal(true);
     }
   }, [user]);
 
-  // Main data fetching effect - only fetch main data
+  useEffect(() => {
+    if(location.pathname === "/global-dashboard") {
+      setIsAdminView(true);
+    } else {
+      setIsAdminView(false);
+    }
+  }, [location.pathname]);
+
   useEffect(() => {
     let startDate: string, endDate: string, queryType: string;
     if (period === "monthly") {
@@ -199,20 +198,6 @@ export const Dashboard = () => {
             onChange={handleDatePeriodChange}
             allowedPeriods={["monthly", "yearly", "ytd"]}
           />
-          {isAdmin && (
-            <div className="flex justify-end mt-4">
-              <div className="flex items-center gap-3 px-4 py-2 bg-card rounded-lg border border-border w-fit">
-                <Switch
-                  id="admin-view"
-                  checked={isAdminView}
-                  onCheckedChange={setIsAdminView}
-                />
-                <Label htmlFor="admin-view" className="cursor-pointer font-medium">
-                  Admin View (All Clients)
-                </Label>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Top Cards - Shown in both regular and admin view */}

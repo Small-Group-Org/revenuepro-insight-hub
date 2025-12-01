@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { DataProvider } from '@/contexts/DataContext';
-import { Sidebar } from '@/components/Sidebar';
+import { Sidebar } from '@/components/layout/Sidebar';
 import { Dashboard } from '@/pages/dashboard/Dashboard';
 
 const Index = () => {
