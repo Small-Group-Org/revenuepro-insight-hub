@@ -25,7 +25,6 @@ import { TargetReport } from './components/TargetReport';
 import StatsCards from './components/StatsCards';
 import { getStatsCards } from './utils/utils';
 import { getEnrichedAds } from '@/service/facebookEnrichedAdsService';
-import { getUserProfile } from '@/service/metaAdAccountService';
 import { transformEnrichedAdsToCampaignData } from '@/utils/facebookAdsTransformer';
 
 export const AddActualData = () => {
@@ -92,74 +91,35 @@ export const AddActualData = () => {
   // Fetch Facebook enriched ads data for campaign section
   React.useEffect(() => {
     const fetchCampaignData = async () => {
-      // Only fetch for weekly period and if we have a selected user and logged-in user
-      if (period !== 'weekly' || !selectedUserId || !loggedInUser?._id) {
+      // Only fetch for weekly period and if we have a selected user
+      if (period !== 'weekly' || !selectedUserId) {
         setClientHasFbAccount(false);
         setCampaignData([]);
         return;
       }
 
+      // Show campaign section with loader while data is being fetched
+      setClientHasFbAccount(true);
       setIsLoadingCampaignData(true);
       try {
-        // Step 1: Get the logged-in user's (admin) profile to get metaAccessToken
-        const adminProfileResponse = await getUserProfile(loggedInUser._id);
-
-        if (adminProfileResponse.error || !adminProfileResponse.data) {
-          setClientHasFbAccount(false);
-          setCampaignData([]);
-          setIsLoadingCampaignData(false);
-          return;
-        }
-
-        const adminMetaAccessToken = adminProfileResponse.data.metaAccessToken;
-
-        // Step 2: Get the selected client's profile to get fbAdAccountId
-        const clientProfileResponse = await getUserProfile(selectedUserId);
-
-        if (clientProfileResponse.error || !clientProfileResponse.data) {
-          setClientHasFbAccount(false);
-          setCampaignData([]);
-          setIsLoadingCampaignData(false);
-          return;
-        }
-
-        const clientFbAdAccountId = clientProfileResponse.data.fbAdAccountId;
-
-        // Only proceed if client has fbAdAccountId
-        if (!clientFbAdAccountId) {
-          setClientHasFbAccount(false);
-          setCampaignData([]);
-          setIsLoadingCampaignData(false);
-          return;
-        }
-
-        // Also check if admin has metaAccessToken (though API will handle auth)
-        if (!adminMetaAccessToken) {
-          setClientHasFbAccount(false);
-          setCampaignData([]);
-          setIsLoadingCampaignData(false);
-          return;
-        }
-
-        setClientHasFbAccount(true);
-
         // Get date range for the selected week
         const weekInfo = getWeekInfo(selectedDate);
         const startDate = format(weekInfo.weekStart, 'yyyy-MM-dd');
         const endDate = format(weekInfo.weekEnd, 'yyyy-MM-dd');
 
-        // Fetch enriched ads data using client's fbAdAccountId
-        // The API will use the admin's metaAccessToken from headers
+        // Fetch enriched ads data using clientId
+        // The backend will resolve the correct ad account & meta token
         const enrichedAdsResponse = await getEnrichedAds({
-          adAccountId: clientFbAdAccountId,
+          clientId: selectedUserId,
           startDate,
           endDate,
           queryType: 'weekly',
         });
 
         if (enrichedAdsResponse.error || !enrichedAdsResponse.data) {
-          // If error, set empty data (don't show error message, just don't display)
+          // If error, set empty data and hide section
           setCampaignData([]);
+          setClientHasFbAccount(false);
           setIsLoadingCampaignData(false);
           return;
         }
@@ -169,6 +129,7 @@ export const AddActualData = () => {
           enrichedAdsResponse.data as any[]
         );
 
+        setClientHasFbAccount(true);
         setCampaignData(transformedData);
       } catch (error) {
         // Silently fail - don't show campaign section if there's an error
@@ -180,7 +141,7 @@ export const AddActualData = () => {
     };
 
     fetchCampaignData();
-  }, [selectedDate, period, selectedUserId, loggedInUser?._id]);
+  }, [selectedDate, period, selectedUserId]);
 
 React.useEffect(() => {
   if (reportingData && Array.isArray(reportingData)) {

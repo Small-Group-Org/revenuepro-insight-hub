@@ -2,7 +2,7 @@ import { doGET } from "@/utils/HttpUtils";
 import { API_ENDPOINTS } from "@/utils/constant";
 
 export interface EnrichedAdsParams {
-  adAccountId: string; // Can be numeric or act_XXXXX format
+  clientId: string; // RevenuePro client user id
   startDate: string; // YYYY-MM-DD
   endDate: string; // YYYY-MM-DD
   queryType: "weekly" | "monthly" | "yearly";
@@ -72,10 +72,10 @@ export const getEnrichedAds = async (
   count?: number;
 }> => {
   // Validate required parameters
-  if (!params.adAccountId || !params.startDate || !params.endDate || !params.queryType) {
+  if (!params.clientId || !params.startDate || !params.endDate || !params.queryType) {
     return {
       error: true,
-      message: "adAccountId, startDate, endDate, and queryType are required",
+      message: "clientId, startDate, endDate, and queryType are required",
     };
   }
 
@@ -88,24 +88,9 @@ export const getEnrichedAds = async (
     };
   }
 
-  // Validate queryType
-  const validQueryTypes = ["weekly", "monthly", "yearly"];
-  if (!validQueryTypes.includes(params.queryType)) {
-    return {
-      error: true,
-      message: "queryType must be one of: weekly, monthly, yearly",
-    };
-  }
-
-  // Normalize adAccountId (ensure it has act_ prefix if it's numeric)
-  let normalizedAdAccountId = params.adAccountId;
-  if (!normalizedAdAccountId.startsWith("act_")) {
-    normalizedAdAccountId = `act_${normalizedAdAccountId}`;
-  }
-
   // Build query string
   const queryParams = new URLSearchParams({
-    adAccountId: normalizedAdAccountId,
+    clientId: params.clientId,
     startDate: params.startDate,
     endDate: params.endDate,
     queryType: params.queryType,
