@@ -1,5 +1,6 @@
 import { Outlet, useLocation } from "react-router-dom";
-import { Sidebar } from "@/components/Sidebar";
+import { Sidebar } from "@/components/layout/Sidebar";
+import { TopBar } from "@/components/layout/TopBar";
 import { useUserContext } from "@/utils/UserContext";
 import { useState, useEffect } from "react";
 import useAuthStore from "@/stores/authStore";
@@ -36,11 +37,14 @@ export default function AppLayout() {
           onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
           onLogout={handleLogout}
         />
-        <main className="flex-1 overflow-auto">
-          <ErrorBoundary>
-            <Outlet />
-          </ErrorBoundary>
-        </main>
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <main className="flex-1 overflow-auto">
+            <ErrorBoundary>
+              <TopBar />
+              <Outlet />
+            </ErrorBoundary>
+          </main>
+        </div>
       </div>
   );
 }

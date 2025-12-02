@@ -7,8 +7,10 @@ interface UserStoreState {
   loading: boolean;
   error?: string;
   selectedUserId?: string;
+  isAdminView: boolean;
   fetchUsers: (role?: string) => Promise<void>;
   setSelectedUserId: (id: string) => void;
+  setIsAdminView: (value: boolean) => void;
   createUser: (payload: CreateUserPayload) => Promise<{ error: boolean; message?: string }>;
   updateUser: (payload: UpdateUserPayload) => Promise<{ error: boolean; message?: string }>;
   deleteUser: (userId: string) => Promise<{ error: boolean; message?: string }>;
@@ -20,6 +22,7 @@ export const useUserStore = create<UserStoreState>((set, get) => ({
   loading: false,
   error: undefined,
   selectedUserId: getValue(STORAGE_KEYS.SELECTED_USER_ID) || undefined,
+  isAdminView: false,
   fetchUsers: async (role?: string) => {
     set({ loading: true, error: undefined });
     const res = await getAllUsers(role);
@@ -38,6 +41,9 @@ export const useUserStore = create<UserStoreState>((set, get) => ({
   setSelectedUserId: (id: string) => {
     setValue(STORAGE_KEYS.SELECTED_USER_ID, id);
     set({ selectedUserId: id });
+  },
+  setIsAdminView: (value: boolean) => {
+    set({ isAdminView: value });
   },
   createUser: async (payload) => {
     set({ loading: true, error: undefined });

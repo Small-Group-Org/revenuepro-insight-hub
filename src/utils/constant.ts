@@ -78,7 +78,7 @@ export const API_ENDPOINTS = {
   FACEBOOK_ENRICHED_ADS: "/facebook/enriched-ads",
 } as const;
 
-export const menuItems = [
+export const userRoutes = [
   { id: "dashboard", label: "Dashboard", icon: BarChart3, path: "/" },
   { id: "settargets", label: "Set Targets", icon: Target, path: "/targets" },
   { id: "actuals", label: "Weekly Reporting", icon: Plus, path: "/actuals" },
@@ -95,6 +95,11 @@ export const menuItems = [
     icon: BarChart3,
     path: "/lead-analytics",
   },
+];
+
+export const adminRoutes = [
+  { id: "global-dashboard", label: "Global Dashboard", icon: BarChart3, path: "/global-dashboard" },
+  { id: "user-management", label: "User Management", icon: Users, path: "/user-management" },
 ];
 
 export const months = [

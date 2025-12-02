@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { SortSwitch } from "@/components/ui/sort-switch";
-import { TopCard } from "@/components/DashboardTopCards";
+import { TopCard } from "@/pages/dashboard/components/DashboardTopCards";
 import {
   getAnalyticsSummary,
   getAnalyticsTable,

@@ -1,13 +1,16 @@
 import {  Menu, X, UserPlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigate, useLocation } from "react-router-dom";
-import { useUserContext } from "../utils/UserContext";
-import UserSelect from './UserSelect';
-import { menuItems, API_URL } from '@/utils/constant';
+import { useUserContext } from "../../utils/UserContext";
+import UserSelect from '../UserSelect';
+import { API_URL, userRoutes } from '@/utils/constant';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useTicketStore } from '@/stores/ticketStore';
 import { updateLastAccess } from '@/service/userService';
+import { useUserStore } from '@/stores/userStore';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -30,6 +33,7 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }: SidebarProp
   const userWithRole = user as UserWithRole | null;
   const isAdmin = userWithRole && (userWithRole.role === 'ADMIN');
   const { tickets, fetchTickets } = useTicketStore();
+  const { isAdminView, setIsAdminView } = useUserStore();
   
   // Notification states
   const [notificationCount, setNotificationCount] = useState<number>(0);
@@ -50,12 +54,14 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }: SidebarProp
     return value || (first || 'U').toUpperCase();
   })();
 
-  // Fetch tickets on component mount
   useEffect(() => {
     fetchTickets();
   }, [fetchTickets]);
 
-  // Calculate notifications and status indicators based on lastAccessAt
+  useEffect(() => {
+    // navigate('/');
+  }, [isAdminView])
+
   const { newTicketsCount, newTicketsStatus } = useMemo(() => {
     if (!(user as any)?.lastAccessAt || hasCheckedNotifications) {
       return { newTicketsCount: 0, newTicketsStatus: null };
@@ -78,7 +84,6 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }: SidebarProp
     }
   }, [(user as any)?.lastAccessAt, tickets, isAdmin, user?._id, hasCheckedNotifications]);
 
-  // Update notification states
   useEffect(() => {
     if (isAdmin) {
       setNotificationCount(newTicketsCount);
@@ -87,19 +92,15 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }: SidebarProp
     }
   }, [newTicketsCount, newTicketsStatus, isAdmin]);
 
-  // Handle profile click - update last access and clear notifications
   const handleProfileClick = useCallback(async () => {
     try {
       await updateLastAccess();
       setHasCheckedNotifications(true);
       setNotificationCount(0);
       setStatusIndicator(null);
-      
-      // Navigate to profile page
       navigate('/profile');
     } catch (error) {
       console.error("Error updating last access:", error);
-      // Still navigate to profile even if API call fails
       navigate('/profile');
     }
   }, [user, navigate]);
@@ -116,7 +117,7 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }: SidebarProp
         return 'bg-gray-300';
     }
   };
-  
+
   return (
     <div className={cn(
       "bg-sidebar text-sidebar-foreground transition-all duration-300 flex flex-col relative",
@@ -125,11 +126,11 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }: SidebarProp
       {/* Header */}
       <div className="p-2 border-b border-sidebar-border">
         <div className={cn(
-          "flex items-center py-2",
+          "flex items-center py-1",
           isCollapsed ? "justify-center" : "justify-between"
         )}>
           {!isCollapsed && (
-            <img src="/logo.png" alt="logo" className="w-[75%]" />
+            <img src="/logo.png" alt="logo" className="w-[65%]" />
           )}
           <button
             onClick={onToggleCollapse}
@@ -141,7 +142,7 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }: SidebarProp
       </div>
 
       {/* User Select for Admin */}
-      {isAdmin && location.pathname !== "/user-managment" && (
+      {isAdmin && location.pathname !== "/user-management" && location.pathname !== "/global-dashboard" && (
         <div className={`p-2 border-b border-slate-700 ${isCollapsed ? "p-0" : "px-2 py-4"}`}>
           <UserSelect isCollapsed={isCollapsed} />
         </div>
@@ -150,7 +151,7 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }: SidebarProp
       {/* Navigation */}
       <nav className="flex-1 p-2">
         <div className="space-y-2">
-          {menuItems.map(({ id, label, icon: Icon, path }) => (
+          {userRoutes.map(({ id, label, icon: Icon, path }) => (
             <button
               key={id}
               onClick={() => navigate(path)}
@@ -168,32 +169,13 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }: SidebarProp
               )}
             </button>
           ))}
-          {/* Admin Section */}
-          {isAdmin && (
-            <button
-              onClick={() => navigate('/user-managment')}
-                          className={cn(
-              "w-full flex items-center gap-3 p-3 rounded-lg transition-all duration-200",
-              "hover:bg-sidebar-accent",
-              location.pathname === '/user-managment'
-                ? "bg-gradient-accent shadow-md"
-                : "text-sidebar-foreground"
-            )}
-            >
-              <UserPlus size={isCollapsed ? 24 : 20} />
-              {!isCollapsed && (
-                <span className="font-medium">User Management</span>
-              )}
-            </button>
-          )}
         </div>
       </nav>
 
-      {isDev && (
+      {isDev && !isCollapsed && (
         <div
           className={cn(
-            "absolute left-2 right-2",
-            isCollapsed ? "bottom-20" : "bottom-24"
+            "absolute bottom-[24px] right-[6px] left-[6px]",
           )}
         >
           <div
@@ -208,8 +190,34 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }: SidebarProp
         </div>
       )}
 
+      {/* Admin View Toggle */}
+      {/* {isAdmin && (
+        <div className={cn("px-2 border-t border-slate-700", isCollapsed && "px-1")}>
+          <div className={cn(
+            "flex items-center gap-3 p-3 rounded-lg transition-all duration-200",
+            isCollapsed && "justify-center"
+          )}>
+            <Switch
+              id="admin-view"
+              checked={isAdminView}
+              onCheckedChange={setIsAdminView}
+              className={cn(
+                "flex-shrink-0",
+                "data-[state=checked]:bg-white data-[state=unchecked]:bg-white",
+                "[&>span]:!bg-primary"
+              )}
+            />
+            {!isCollapsed && (
+              <Label htmlFor="admin-view" className="cursor-pointer font-medium text-sm">
+                Admin View
+              </Label>
+            )}
+          </div>
+        </div>
+      )} */}
+
       {/* Footer - User Section */}
-      <div className="p-2 border-t border-slate-700">
+      {/* <div className="p-2 border-t border-slate-700">
         <button
           onClick={handleProfileClick}
           className={cn(
@@ -223,13 +231,11 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }: SidebarProp
                 {initials}
               </AvatarFallback>
             </Avatar>
-            {/* Notification badge for both admin and client */}
             {isAdmin && notificationCount > 0 && (
               <div className="absolute -top-1 -right-1 bg-purple-500 text-white text-xs font-bold rounded-full h-4 w-4 flex items-center justify-center shadow-lg">
                 {notificationCount}
               </div>
             )}
-            {/* Client status indicator - also in upper right */}
             {!isAdmin && statusIndicator && (
               <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-sidebar shadow-lg ${getStatusColor(statusIndicator)}`}></div>
             )}
@@ -243,7 +249,7 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }: SidebarProp
             </div>
           )}
         </button>
-      </div>
+      </div> */}
     </div>
   );
 };
