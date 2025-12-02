@@ -415,14 +415,7 @@ const ClientIntegrationsModal: React.FC<ClientIntegrationsModalProps> = ({
                   className="w-full bg-gradient-primary hover:bg-gradient-accent text-primary-foreground"
                   disabled={metaLoading}
                 >
-                  {metaLoading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    "Save Ad Account"
-                  )}
+                    Save Ad Account
                 </Button>
               </div>
             </form>
