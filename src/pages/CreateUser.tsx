@@ -21,10 +21,10 @@ import { useToast } from "@/hooks/use-toast";
 import { User as ServiceUser } from "@/service/userService";
 import { useUserContext } from "@/utils/UserContext";
 import { useUserStore } from "@/stores/userStore";
-import CreateUserModal from "@/components/CreateUserModal";
-import ResetPasswordModal from "@/components/ResetPasswordModal";
-import GhlClientModal from "@/components/GhlClientModal";
-import ClientIntegrationsModal from "@/components/ClientIntegrationsModal";
+import CreateUserModal from "@/pages/profile/components/CreateUserModal";
+import ResetPasswordModal from "@/pages/profile/components/ResetPasswordModal";
+import GhlClientModal from "@/pages/profile/components/GhlClientModal";
+import ClientIntegrationsModal from "@/pages/profile/components/ClientIntegrationsModal";
 import { useGhlClientStore } from "@/stores/ghlClientStore";
 import {
   UserPlus,
@@ -567,7 +567,6 @@ const CreateUser = () => {
                           >
                             <button
                               onClick={() =>
-                                user.role !== "ADMIN" &&
                                 handleIntegrationsClick(
                                   user.id,
                                   user.name || user.email
@@ -654,7 +653,7 @@ const CreateUser = () => {
                                 : "text-gray-400 hover:bg-gray-100 hover:text-gray-500"
                             }`}
                             onClick={() =>
-                              handleGhlClientClick(
+                              handleIntegrationsClick(
                                 user.id,
                                 user.name || user.email
                               )

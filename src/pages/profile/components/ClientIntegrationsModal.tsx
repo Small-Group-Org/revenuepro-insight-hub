@@ -348,7 +348,7 @@ const ClientIntegrationsModal: React.FC<ClientIntegrationsModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Client Integrations - {userName}</DialogTitle>
           <DialogDescription>
@@ -430,37 +430,26 @@ const ClientIntegrationsModal: React.FC<ClientIntegrationsModalProps> = ({
 
           {/* GHL Tab */}
           <TabsContent value="ghl" className="space-y-4 mt-4">
-            <form onSubmit={handleGhlSubmit} className="space-y-4">
+            <form onSubmit={handleGhlSubmit} className="">
               {existingGhlClient && (
-                <div className="p-4 bg-muted rounded-lg space-y-2">
-                  <h4 className="font-semibold text-sm">Current Configuration</h4>
-                  <div className="text-sm space-y-1">
-                    <p>
-                      <span className="font-medium">Sub Account ID:</span>{" "}
-                      {existingGhlClient.locationId}
-                    </p>
-                    <p>
-                      <span className="font-medium">Total Job Booked Amount:</span>{" "}
-                      {existingGhlClient.queryValue}
-                    </p>
-                    <p>
-                      <span className="font-medium">Status:</span>{" "}
-                      <span
-                        className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${
-                          existingGhlClient.status === "active"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-orange-100 text-orange-800"
-                        }`}
-                      >
-                        {existingGhlClient.status.toUpperCase()}
-                      </span>
-                    </p>
-                  </div>
+                <div className="rounded-lg space-y-2">
+                  <p className="flex justify-end items-center gap-2">
+                    <span className="font-medium">Status:</span>{" "}
+                    <span
+                      className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${
+                        existingGhlClient.status === "active"
+                          ? "bg-green-100 text-green-800"
+                          : "bg-orange-100 text-orange-800"
+                      }`}
+                    >
+                      {existingGhlClient.status.toUpperCase()}
+                    </span>
+                  </p>
                 </div>
               )}
 
               {/* Horizontal layout for inputs */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <div>
                   <div className="flex items-center justify-between">
                     <Label htmlFor="locationId" className="text-card-foreground">
@@ -529,9 +518,7 @@ const ClientIntegrationsModal: React.FC<ClientIntegrationsModalProps> = ({
                     </p>
                   )}
                 </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="queryValue" className="text-card-foreground">
                     Total Job Booked Amount <span className="text-red-500">*</span>
@@ -570,13 +557,10 @@ const ClientIntegrationsModal: React.FC<ClientIntegrationsModalProps> = ({
                       <SelectItem value="inactive">Inactive</SelectItem>
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Active clients will be included in automated sync jobs
-                  </p>
                 </div>
               </div>
 
-              <div className="pt-2">
+              <div className="pt-2 mt-4">
                 <Button
                   type="submit"
                   className="w-full bg-gradient-primary hover:bg-gradient-accent text-primary-foreground"

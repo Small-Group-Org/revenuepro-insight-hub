@@ -499,32 +499,6 @@ React.useEffect(() => {
         </div>
 
         <div className="flex flex-col gap-8 mb-8">
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {getStatsCards(calculatedValues).map((card) => (
-              <StatsCards 
-                key={card.title} 
-                title={card.title} 
-                value={card.value} />
-            ))}
-          </div>
-
-          <TargetReport
-            title="Budget Report"
-            icon={<TrendingUp className="h-5 w-5 text-accent" />}
-            fields={reportingFields['budgetReport']}
-            fieldValues={fieldValues}
-            onInputChange={handleInputChange}
-            isLoading={isLoading}
-            period={period}
-            isDisabled={isDisabled}
-            disabledMessage={disabledMessage}
-            targetValues={processedTargetData}
-            showOpportunitySyncButton={shouldShowOpportunitySync}
-            onOpportunitySyncClick={handleOpportunitySync}
-            isOpportunitySyncing={isOpportunitySyncing}
-          />
-
           <TargetReport
             title="Target Report"
             icon={<TrendingUp className="h-5 w-5 text-accent" />}
@@ -540,6 +514,16 @@ React.useEffect(() => {
             onOpportunitySyncClick={handleOpportunitySync}
             isOpportunitySyncing={isOpportunitySyncing}
           />
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {getStatsCards(calculatedValues).map((card) => (
+              <StatsCards 
+                key={card.title} 
+                title={card.title} 
+                value={card.value} />
+            ))}
+          </div>
+         
 
           {/* Only show campaign section if client has fbAdAccountId */}
           {clientHasFbAccount && (

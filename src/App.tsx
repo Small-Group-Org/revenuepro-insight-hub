@@ -21,7 +21,7 @@ import { UserProvider } from "./utils/UserContext";
 import { CompareResults } from "@/pages/CompareResults";
 import CreateUser from "./pages/CreateUser";
 import { DataProvider } from "@/contexts/DataContext";
-import Profile from "@/pages/Profile";
+import Profile from "@/pages/profile/Profile";
 import ReleaseNotes from "@/pages/ReleaseNotes";
 import OAuthCallbackHandler from "@/components/OAuthCallbackHandler";
 
