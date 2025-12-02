@@ -124,63 +124,8 @@ const ClientIntegrationsModal: React.FC<ClientIntegrationsModalProps> = ({
 
     setMetaLoading(true);
     try {
-      // Get admin profile to get fbAdAccountId (used as businessId)
-      const adminProfileResponse = await getUserProfile(loggedInUser._id);
-
-      if (adminProfileResponse.error || !adminProfileResponse.data) {
-        toast({
-          title: "Error",
-          description:
-            adminProfileResponse.message ||
-            "Failed to fetch admin profile. Please ensure your Meta account is connected.",
-          variant: "destructive",
-        });
-        setMetaLoading(false);
-        return;
-      }
-
-      const businessId = adminProfileResponse.data.fbAdAccountId;
-
-      if (!businessId) {
-        toast({
-          title: "Setup Required",
-          description:
-            "Please set your Facebook Business ID (fbAdAccountId) in your profile settings.",
-          variant: "destructive",
-        });
-        setMetaLoading(false);
-        return;
-      }
-
-      setAdminBusinessId(businessId);
-
-      // Fetch ad accounts using businessId
-      const accountsResponse = await getAdAccounts(businessId);
-
-      if (accountsResponse.error || !accountsResponse.data) {
-        toast({
-          title: "Error",
-          description:
-            accountsResponse.message ||
-            "Failed to fetch ad accounts. Please check your Meta connection.",
-          variant: "destructive",
-        });
-        setMetaLoading(false);
-        return;
-      }
-
-      // Use only the client array (not owned)
-      const clientAdAccounts = accountsResponse.data.client || [];
-
-      // Set client ad accounts (empty if none exist)
-      setAdAccounts(clientAdAccounts);
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description:
-          error.message || "An unexpected error occurred while fetching ad accounts",
-        variant: "destructive",
-      });
+      const accountsResponse = await getAdAccounts();
+      setAdAccounts(accountsResponse.data || []);
     } finally {
       setMetaLoading(false);
     }
@@ -392,11 +337,10 @@ const ClientIntegrationsModal: React.FC<ClientIntegrationsModalProps> = ({
                       <SelectTrigger className="mt-1 border-border focus:ring-primary">
                         <SelectValue placeholder="Select an ad account" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent side="bottom" className="max-h-64">
                         {adAccounts.map((account) => (
                           <SelectItem key={account.id} value={account.id}>
-                            {/* Using account.id (with act_ prefix) not account.account_id */}
-                            {account.name} ({account.account_id}) - {account.currency}
+                            {account.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -545,7 +489,7 @@ const ClientIntegrationsModal: React.FC<ClientIntegrationsModalProps> = ({
                     <SelectTrigger className="mt-1 border-border focus:ring-primary">
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent side="bottom" className="max-h-48">
                       <SelectItem value="active">Active</SelectItem>
                       <SelectItem value="inactive">Inactive</SelectItem>
                     </SelectContent>

@@ -9,11 +9,8 @@ export function transformEnrichedAdsToCampaignData(
   enrichedAds: EnrichedAdItem[]
 ): CampaignDataItem[] {
   return enrichedAds.map((item) => {
-    const insights = item.insights;
-    const ad = item.ad;
-    const adset = item.adset;
+    const { ad_name, adset_name, ad_id, adset_id, campaign_name, campaign_id, insights } = item;
 
-    // Calculate metrics
     const impressions = insights.impressions || 0;
     const clicks = insights.clicks || 0;
     const spend = insights.spend || 0;
@@ -48,10 +45,12 @@ export function transformEnrichedAdsToCampaignData(
 
     return {
       impressions: impressions.toString(),
-      ad_id: ad?.id || "",
-      ad_name: ad?.name || "Unknown Ad",
-      adset_name: adset?.name || "Unknown Adset",
-      adset_id: adset?.id || "",
+      ad_name,
+      adset_name,
+      ad_id,
+      adset_id,
+      campaign_name,
+      campaign_id,
       spend: spend.toFixed(2),
       clicks: clicks.toString(),
       cpp: cpp.toFixed(6),

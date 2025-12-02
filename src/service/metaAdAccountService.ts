@@ -13,11 +13,7 @@ export interface AdAccount {
 
 export interface AdAccountsResponse {
   success: boolean;
-  data: {
-    owned: AdAccount[];
-    client: AdAccount[];
-    total: number;
-  };
+  data: AdAccount[];
   error?: string;
 }
 
@@ -41,15 +37,8 @@ export interface AssignAdAccountResponse {
  * @returns Ad accounts response with owned and client arrays
  */
 export const getAdAccounts = async (
-  businessId: string
 ): Promise<{ error: boolean; message?: string; data?: AdAccountsResponse["data"] }> => {
-  if (!businessId) {
-    return { error: true, message: "businessId is required" };
-  }
-
-  const response = await doGET(
-    `${API_ENDPOINTS.FACEBOOK_AD_ACCOUNTS}?businessId=${encodeURIComponent(businessId)}`
-  );
+  const response = await doGET(`${API_ENDPOINTS.FACEBOOK_AD_ACCOUNTS}`);
 
   if (!response.error && response.data?.success) {
     return { error: false, data: response.data.data };

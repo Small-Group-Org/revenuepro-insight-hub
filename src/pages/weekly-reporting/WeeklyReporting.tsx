@@ -5,7 +5,6 @@ import { useToast } from '@/hooks/use-toast';
 import { DollarSign, Plus, TrendingUp } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { DatePeriodSelector } from '@/components/DatePeriodSelector';
-import { TargetSection } from '@/components/TargetSection';
 import { PeriodType, FieldValue } from '@/types';
 import { reportingFields } from '@/utils/constant';
 import { calculateReportingFields, calculatePerformanceMetrics } from '@/utils/page-utils/actualDataUtils';
@@ -20,22 +19,14 @@ import { useCombinedLoading } from '@/hooks/useCombinedLoading';
 import DailyBudgetManager from '@/pages/weekly-reporting/components/DailyBudgetManager';
 import { useGhlClientStore } from '@/stores/ghlClientStore';
 import { triggerOpportunitySync } from '@/service/ghlClientService';
-import { doPOST } from '@/utils/HttpUtils';
-import { API_ENDPOINTS } from '@/utils/constant';
 import CampaignAccordion from '@/pages/weekly-reporting/components/CampaignAccordion';
 import { processCampaignData } from '@/utils/campaignDataProcessor';
-import { dummyCampaignData } from '@/utils/campaignData';
-import { formatPercent, formatCurrency } from '@/utils/page-utils/commonUtils';
-import { Card } from '@/components/ui/card';
 import { TargetReport } from './components/TargetReport';
 import StatsCards from './components/StatsCards';
 import { getStatsCards } from './utils/utils';
 import { getEnrichedAds } from '@/service/facebookEnrichedAdsService';
 import { getUserProfile } from '@/service/metaAdAccountService';
 import { transformEnrichedAdsToCampaignData } from '@/utils/facebookAdsTransformer';
-
-// TEMPORARY: Specific user ID for opportunity sync feature
-const OPPORTUNITY_SYNC_USER_ID = '68c82dfdac1491efe19d5df0';
 
 export const AddActualData = () => {
   const { reportingData, targetData, getReportingData, upsertReportingData, error } = useReportingDataStore();

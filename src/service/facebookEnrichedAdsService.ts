@@ -9,18 +9,12 @@ export interface EnrichedAdsParams {
 }
 
 export interface EnrichedAdItem {
-  campaign?: {
-    id: string;
-    name: string;
-  };
-  adset?: {
-    id: string;
-    name: string;
-  };
-  ad?: {
-    id: string;
-    name: string;
-  };
+  ad_name: string;
+  adset_name: string;
+  campaign_name: string;
+  ad_id: string;
+  adset_id: string;
+  campaign_id: string;
   creative?: {
     id: string;
     name: string;
