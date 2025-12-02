@@ -235,17 +235,6 @@ React.useEffect(() => {
     return calculateReportingFields(combinedValues);
   }, [fieldValues, processedTargetData]);
 
-  // Calculate performance metrics
-  const performanceMetrics = useMemo(() => {
-    if (!processedTargetData) return null;
-    try {
-      return calculatePerformanceMetrics(calculatedValues, processedTargetData);
-    } catch (error) {
-      console.error('Error calculating performance metrics:', error);
-      return null;
-    }
-  }, [calculatedValues, processedTargetData]);
-
   // Calculate disable logic for AddActualData page with role-based restrictions
   const disableLogic = useMemo(() => 
     handleInputDisable(period, selectedDate, null, 'addActualData'), 
@@ -361,11 +350,6 @@ React.useEffect(() => {
       });
     }
   }, [selectedDate, fieldValues, reportingData, period, upsertReportingData, getReportingData, toast, getInputFieldNames, error]);
-
-  const isHighlighted = useCallback((fieldName: string) => {
-    if (!lastChanged) return false;
-    return prevValues[fieldName] !== calculatedValues[fieldName];
-  }, [lastChanged, prevValues, calculatedValues]);
 
   const handleDatePeriodChange = useCallback((date: Date, period: PeriodType) => {
     setSelectedDate(date);
