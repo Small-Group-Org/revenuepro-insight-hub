@@ -5,6 +5,7 @@ export interface CreateGhlClientRequest {
   locationId: string;
   ghlApiToken: string;
   queryValue: string;
+  queryValue2?: string;
   revenueProClientId: string;
   status: 'active' | 'inactive';
 }
@@ -14,6 +15,8 @@ export interface GhlClient {
   locationId: string;
   queryValue: string;
   customFieldId?: string;
+  queryValue2?: string | null;
+  customFieldId2?: string | null;
   revenueProClientId: string;
   status: 'active' | 'inactive';
   createdAt: string;
@@ -28,6 +31,7 @@ export interface UpdateGhlClientRequest {
   locationId?: string;
   ghlApiToken?: string;
   queryValue?: string;
+  queryValue2?: string | null;
   status?: 'active' | 'inactive';
 }
 

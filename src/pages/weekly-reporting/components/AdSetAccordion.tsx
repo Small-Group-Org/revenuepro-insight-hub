@@ -21,15 +21,15 @@ export default function AdSetAccordion({ adset }: AdSetAccordionProps) {
       >
         <div className="flex items-start flex-1 min-w-0">
           <ChevronRight
-            className={`w-5 h-5 text-gray-600 mr-3 transition-transform flex-shrink-0 mt-0.5 ${
+            className={`w-3 h-3 text-gray-600 mr-3 transition-transform flex-shrink-0 mt-0.5 ${
               isOpen ? 'rotate-90' : ''
             }`}
           />
-          <span className="text-base font-medium text-gray-800 break-words">
+          <span className="text-sm font-medium text-gray-600 break-words">
             {adset.name}
           </span>
         </div>
-        <span className="font-semibold text-blue-600 flex-shrink-0 ml-2">
+        <span className="text-sm font-semibold text-blue-600 flex-shrink-0 ml-2">
           {formatCurrency(adset.totalSpend)}
         </span>
       </button>

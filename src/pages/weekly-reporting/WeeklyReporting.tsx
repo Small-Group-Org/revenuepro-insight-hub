@@ -5,7 +5,6 @@ import { useToast } from '@/hooks/use-toast';
 import { DollarSign, Plus, TrendingUp } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { DatePeriodSelector } from '@/components/DatePeriodSelector';
-import { TargetSection } from '@/components/TargetSection';
 import { PeriodType, FieldValue } from '@/types';
 import { reportingFields } from '@/utils/constant';
 import { calculateReportingFields, calculatePerformanceMetrics } from '@/utils/page-utils/actualDataUtils';
@@ -14,21 +13,19 @@ import { processTargetData } from '@/utils/page-utils/targetUtils';
 import { getWeekInfo, getCurrentWeek } from '@/utils/weekLogic';
 import { useUserStore } from '@/stores/userStore';
 import { useRoleAccess } from '@/hooks/useRoleAccess';
+import { useUserContext } from '@/utils/UserContext';
 import { FullScreenLoader } from '@/components/ui/full-screen-loader';
 import { useCombinedLoading } from '@/hooks/useCombinedLoading';
-import DailyBudgetManager from '@/components/DailyBudgetManager';
+import DailyBudgetManager from '@/pages/weekly-reporting/components/DailyBudgetManager';
 import { useGhlClientStore } from '@/stores/ghlClientStore';
 import { triggerOpportunitySync } from '@/service/ghlClientService';
-import { doPOST } from '@/utils/HttpUtils';
-import { API_ENDPOINTS } from '@/utils/constant';
-import CampaignAccordion from '@/components/CampaignAccordion';
+import CampaignAccordion from '@/pages/weekly-reporting/components/CampaignAccordion';
 import { processCampaignData } from '@/utils/campaignDataProcessor';
-import { dummyCampaignData } from '@/utils/campaignData';
-import { formatPercent, formatCurrency } from '@/utils/page-utils/commonUtils';
-import { Card } from '@/components/ui/card';
-
-// TEMPORARY: Specific user ID for opportunity sync feature
-const OPPORTUNITY_SYNC_USER_ID = '68c82dfdac1491efe19d5df0';
+import { TargetReport } from './components/TargetReport';
+import StatsCards from './components/StatsCards';
+import { getStatsCards } from './utils/utils';
+import { getEnrichedAds } from '@/service/facebookEnrichedAdsService';
+import { transformEnrichedAdsToCampaignData } from '@/utils/facebookAdsTransformer';
 
 export const AddActualData = () => {
   const { reportingData, targetData, getReportingData, upsertReportingData, error } = useReportingDataStore();
@@ -36,6 +33,7 @@ export const AddActualData = () => {
   const { toast } = useToast();
   const { selectedUserId } = useUserStore();
   const { userRole } = useRoleAccess();
+  const { user: loggedInUser } = useUserContext();
   const { getClientByRevenueProId, getActiveClients } = useGhlClientStore();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [period, setPeriod] = useState<PeriodType>('weekly');
@@ -44,6 +42,9 @@ export const AddActualData = () => {
   const [fieldValues, setFieldValues] = useState<FieldValue>({});
   const [lastChanged, setLastChanged] = useState<string | null>(null);
   const [prevValues, setPrevValues] = useState<FieldValue>({});
+  const [campaignData, setCampaignData] = useState<any[]>([]);
+  const [isLoadingCampaignData, setIsLoadingCampaignData] = useState(false);
+  const [clientHasFbAccount, setClientHasFbAccount] = useState(false);
 
 
   // Use processed target data from store (single API)
@@ -86,6 +87,61 @@ export const AddActualData = () => {
     }
     getReportingData(startDate, endDate, queryType, period);
   }, [selectedDate, period, selectedUserId, getReportingData]);
+
+  // Fetch Facebook enriched ads data for campaign section
+  React.useEffect(() => {
+    const fetchCampaignData = async () => {
+      // Only fetch for weekly period and if we have a selected user
+      if (period !== 'weekly' || !selectedUserId) {
+        setClientHasFbAccount(false);
+        setCampaignData([]);
+        return;
+      }
+
+      // Show campaign section with loader while data is being fetched
+      setClientHasFbAccount(true);
+      setIsLoadingCampaignData(true);
+      try {
+        // Get date range for the selected week
+        const weekInfo = getWeekInfo(selectedDate);
+        const startDate = format(weekInfo.weekStart, 'yyyy-MM-dd');
+        const endDate = format(weekInfo.weekEnd, 'yyyy-MM-dd');
+
+        // Fetch enriched ads data using clientId
+        // The backend will resolve the correct ad account & meta token
+        const enrichedAdsResponse = await getEnrichedAds({
+          clientId: selectedUserId,
+          startDate,
+          endDate,
+          queryType: 'weekly',
+        });
+
+        if (enrichedAdsResponse.error || !enrichedAdsResponse.data) {
+          // If error, set empty data and hide section
+          setCampaignData([]);
+          setClientHasFbAccount(false);
+          setIsLoadingCampaignData(false);
+          return;
+        }
+
+        // Transform the enriched ads data to match CampaignDataItem format
+        const transformedData = transformEnrichedAdsToCampaignData(
+          enrichedAdsResponse.data as any[]
+        );
+
+        setClientHasFbAccount(true);
+        setCampaignData(transformedData);
+      } catch (error) {
+        // Silently fail - don't show campaign section if there's an error
+        setCampaignData([]);
+        setClientHasFbAccount(false);
+      } finally {
+        setIsLoadingCampaignData(false);
+      }
+    };
+
+    fetchCampaignData();
+  }, [selectedDate, period, selectedUserId]);
 
 React.useEffect(() => {
   if (reportingData && Array.isArray(reportingData)) {
@@ -139,17 +195,6 @@ React.useEffect(() => {
     
     return calculateReportingFields(combinedValues);
   }, [fieldValues, processedTargetData]);
-
-  // Calculate performance metrics
-  const performanceMetrics = useMemo(() => {
-    if (!processedTargetData) return null;
-    try {
-      return calculatePerformanceMetrics(calculatedValues, processedTargetData);
-    } catch (error) {
-      console.error('Error calculating performance metrics:', error);
-      return null;
-    }
-  }, [calculatedValues, processedTargetData]);
 
   // Calculate disable logic for AddActualData page with role-based restrictions
   const disableLogic = useMemo(() => 
@@ -267,21 +312,10 @@ React.useEffect(() => {
     }
   }, [selectedDate, fieldValues, reportingData, period, upsertReportingData, getReportingData, toast, getInputFieldNames, error]);
 
-  const isHighlighted = useCallback((fieldName: string) => {
-    if (!lastChanged) return false;
-    return prevValues[fieldName] !== calculatedValues[fieldName];
-  }, [lastChanged, prevValues, calculatedValues]);
-
   const handleDatePeriodChange = useCallback((date: Date, period: PeriodType) => {
     setSelectedDate(date);
     setPeriod(period);
   }, []);
-
-  const handleNavigationAttempt = useCallback((newDate: Date, newPeriod: PeriodType) => {
-    // Always allow navigation since we removed the unsaved changes modal
-    return true;
-  }, []);
-
 
   // Check if opportunity sync button should be shown (only for specific user and current week)
   const isCurrentWeek = useMemo(() => {
@@ -291,12 +325,6 @@ React.useEffect(() => {
     // Compare week start dates to determine if it's the current week
     return format(currentWeek.weekStart, 'yyyy-MM-dd') === format(selectedWeek.weekStart, 'yyyy-MM-dd');
   }, [period, selectedDate]);
-
-  
-
-  const getSectionFields = useCallback((sectionKey: keyof typeof reportingFields) => {
-    return reportingFields[sectionKey];
-  }, []);
 
   // Check if opportunity sync button should be shown
   // Show button if: weekly period, current week, user has an active GHL client configured
@@ -368,7 +396,7 @@ React.useEffect(() => {
       });
       setIsOpportunitySyncing(false);
     }
-  }, [toast, selectedDate, period, selectedUserId, getReportingData, getClientByRevenueProId]);
+  }, [toast, selectedDate, period, selectedUserId, getReportingData, getClientByRevenueProId])
 
   return (
     <div className="min-h-screen bg-background">
@@ -400,146 +428,69 @@ React.useEffect(() => {
               ...disableLogic,
               isButtonDisabled: disableLogic.isButtonDisabled || !hasChanges,
             }}
-            onNavigationAttempt={handleNavigationAttempt}
+            onNavigationAttempt={(_: Date, __: PeriodType) => {
+              return true;
+            }}
           />
         </div>
 
-        {/* Reporting Sections - Grid Layout: Campaign Spend (2/3) + Target Report (1/3) */}
-        {period === 'weekly' ? (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-            {/* Campaign Spend Accordion - Takes 2/3 of the space */}
+        <div className="flex flex-col gap-8 mb-8">
+          <TargetReport
+            title="Target Report"
+            icon={<TrendingUp className="h-5 w-5 text-accent" />}
+            fields={reportingFields['targetReport']}
+            fieldValues={fieldValues}
+            onInputChange={handleInputChange}
+            isLoading={isLoading}
+            period={period}
+            isDisabled={isDisabled}
+            disabledMessage={disabledMessage}
+            targetValues={processedTargetData}
+            showOpportunitySyncButton={shouldShowOpportunitySync}
+            onOpportunitySyncClick={handleOpportunitySync}
+            isOpportunitySyncing={isOpportunitySyncing}
+          />
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {getStatsCards(calculatedValues).map((card) => (
+              <StatsCards 
+                key={card.title} 
+                title={card.title} 
+                value={card.value} />
+            ))}
+          </div>
+         
+
+          {/* Only show campaign section if client has fbAdAccountId */}
+          {clientHasFbAccount && (
             <div className="lg:col-span-2">
               <div className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col max-h-[785px]">
                 <div className="p-4 border-b border-gray-200 flex-shrink-0">
                   <div className="flex items-center gap-2">
                     <DollarSign className="h-5 w-5 text-blue-600" />
                     <h2 className="text-xl font-semibold text-gray-800">Campaign Spend</h2>
+                    {isLoadingCampaignData && (
+                      <span className="text-sm text-muted-foreground ml-2">Loading...</span>
+                    )}
                   </div>
                 </div>
                 <div className="p-0 overflow-y-auto flex-1 min-h-0">
-                  <CampaignAccordion data={processCampaignData(dummyCampaignData.data)} />
+                  {isLoadingCampaignData ? (
+                    <div className="flex items-center justify-center py-8">
+                      <p className="text-muted-foreground">Loading campaign data...</p>
+                    </div>
+                  ) : campaignData.length > 0 ? (
+                    <CampaignAccordion data={processCampaignData(campaignData)} />
+                  ) : (
+                    <div className="flex items-center justify-center py-8">
+                      <p className="text-muted-foreground">No campaign data available for this period</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
-
-            {/* Target Report - Takes 1/3 of the space */}
-            <div className="lg:col-span-1 space-y-4">
-              {/* Performance Section - Horizontal Cards */}
-              {period === 'weekly' && (
-                <Card className="bg-card/90 backdrop-blur-sm border border-border/20 shadow-xl">
-                  <div className="p-6 border-b border-border/50 bg-gradient-accent/10">
-                    <div className="flex items-center gap-3">
-                      <TrendingUp className="h-5 w-5 text-accent" />
-                      <h2 className="text-lg font-semibold text-gradient-primary">
-                        Performance
-                      </h2>
-                    </div>
-                  </div>
-                  <div className="p-6">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      {/* Over/Under Budget */}
-                      {(() => {
-                        const field = getSectionFields('targets').find(f => f.value === 'overUnderBudget');
-                        if (!field) return null;
-                        const calculatedField = field.fieldType === 'calculated' ? field as { description?: string } : null;
-                        return (
-                          <div className="bg-card/80 backdrop-blur-sm hover:shadow-md p-1 rounded-xl border border-border/40">
-                            <div className="flex flex-col">
-                              <div className="text-sm font-medium text-card-foreground mb-1">
-                                {field.name}
-                              </div>
-                             
-                              <div className="text-base font-semibold text-card-foreground">
-                                {formatCurrency(calculatedValues?.overUnderBudget || 0)}
-                              </div>
-                               {calculatedField?.description && (
-                                <div className="text-[10px] text-muted-foreground mb-2">
-                                  {calculatedField.description}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })()}
-                      
-                      {/* Weekly Budget */}
-                      {getSectionFields('targets').find(f => f.value === 'weeklyBudget') && (
-                        <div className="bg-card/80 backdrop-blur-sm hover:shadow-md p-3 rounded-xl border border-border/40">
-                          <div className="flex flex-col">
-                            <div className="text-sm font-medium text-card-foreground mb-1">
-                              Weekly Budget
-                            </div>
-                            <div className="text-base font-semibold text-card-foreground">
-                              {formatCurrency(calculatedValues?.weeklyBudget || 0)}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                      
-                      {/* Budget Spent */}
-                      {getSectionFields('targets').find(f => f.value === 'budgetSpent') && (
-                        <div className="bg-card/80 backdrop-blur-sm hover:shadow-md p-3 rounded-xl border border-border/40">
-                          <div className="flex flex-col">
-                            <div className="text-sm font-medium text-card-foreground mb-1">
-                              Budget Spent
-                            </div>
-                            <div className="text-base font-semibold text-card-foreground">
-                              {formatCurrency(calculatedValues?.budgetSpent || 0)}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </Card>
-              )}
-              
-              <TargetSection
-                sectionKey="targetReport"
-                title="Target Report"
-                icon={<TrendingUp className="h-5 w-5 text-accent" />}
-                gradientClass="bg-gradient-accent/10"
-                fields={getSectionFields('targetReport')}
-                fieldValues={fieldValues}
-                calculatedValues={calculatedValues}
-                onInputChange={handleInputChange}
-                isHighlighted={isHighlighted}
-                period={period}
-                selectedDate={selectedDate}
-                isDisabled={isDisabled}
-                disabledMessage={disabledMessage}
-                targetValues={processedTargetData}
-                showTarget={true}
-                showOpportunitySyncButton={shouldShowOpportunitySync}
-                onOpportunitySyncClick={handleOpportunitySync}
-                isOpportunitySyncing={isOpportunitySyncing}
-              />
-            </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 xl:grid-cols-1 gap-8 mb-8">
-            <TargetSection
-              sectionKey="targetReport"
-              title="Target Report"
-              icon={<TrendingUp className="h-5 w-5 text-accent" />}
-              gradientClass="bg-gradient-accent/10"
-              fields={getSectionFields('targetReport')}
-              fieldValues={fieldValues}
-              calculatedValues={calculatedValues}
-              onInputChange={handleInputChange}
-              isHighlighted={isHighlighted}
-              period={period}
-              selectedDate={selectedDate}
-              isDisabled={isDisabled}
-              disabledMessage={disabledMessage}
-              targetValues={processedTargetData}
-              showTarget={true}
-              showOpportunitySyncButton={shouldShowOpportunitySync}
-              onOpportunitySyncClick={handleOpportunitySync}
-              isOpportunitySyncing={isOpportunitySyncing}
-            />
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Daily Budget + Ad Names Amount (Weekly only) placed below sections */}
         {period === 'weekly' && (
