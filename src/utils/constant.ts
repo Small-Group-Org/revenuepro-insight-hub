@@ -70,6 +70,12 @@ export const API_ENDPOINTS = {
   ADMIN_OPPORTUNITY_SYNC_TRIGGER: "/admin/multi-client-opportunity-sync/trigger",
   // Admin - Lead Sheet Sync
   ADMIN_LEAD_SHEET_SYNC_TRIGGER: "/admin/lead-sheets-sync/trigger",
+
+  // Meta/Facebook Ad Accounts
+  FACEBOOK_AD_ACCOUNTS: "/facebook/ad-accounts",
+  USER_FB_AD_ACCOUNT: "/users/fb-ad-account", // append /:clientId when needed
+  USER_GET_BY_ID: "/users/get", // append /:id/ when needed
+  FACEBOOK_ENRICHED_ADS: "/facebook/enriched-ads",
 } as const;
 
 export const userRoutes = [

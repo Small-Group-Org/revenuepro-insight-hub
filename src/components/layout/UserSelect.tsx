@@ -5,8 +5,8 @@ import {
   SelectContent,
   SelectItem,
   SelectValue,
-} from "../components/ui/select";
-import { useUserStore } from "../stores/userStore";
+} from "@/components/ui/select";
+import { useUserStore } from "@/stores/userStore";
 import { Users } from "lucide-react";
 import { getInitials } from "@/utils/utils";
 

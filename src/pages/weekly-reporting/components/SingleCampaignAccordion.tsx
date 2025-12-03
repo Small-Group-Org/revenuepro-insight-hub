@@ -1,16 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { ProcessedCampaignData } from '@/types';
+import { Campaign } from '@/types';
 import { formatCurrency } from '@/lib/utils';
 import AdSetAccordion from './AdSetAccordion.tsx';
 import { ChevronRight } from 'lucide-react';
 
-interface CampaignAccordionProps {
-  data: ProcessedCampaignData;
+interface SingleCampaignAccordionProps {
+  campaign: Campaign;
 }
 
-export default function CampaignAccordion({ data }: CampaignAccordionProps) {
+export default function SingleCampaignAccordion({ campaign }: SingleCampaignAccordionProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -21,19 +21,19 @@ export default function CampaignAccordion({ data }: CampaignAccordionProps) {
       >
         <div className="flex items-center flex-1">
           <ChevronRight
-            className={`w-5 h-5 text-gray-600 mr-3 transition-transform ${
+            className={`w-4 h-4 text-gray-800 mr-3 transition-transform ${
               isOpen ? 'rotate-90' : ''
             }`}
           />
-          <span className="text-lg font-semibold text-gray-800">Campaign</span>
+          <span className="text-[15px] font-semibold text-gray-800">{campaign.name}</span>
         </div>
         <span className="font-semibold text-blue-600">
-          {formatCurrency(data.campaignTotal)}
+          {formatCurrency(campaign.totalSpend)}
         </span>
       </button>
       {isOpen && (
         <div className="bg-gray-50 pl-5">
-          {data.adsets.map((adset) => (
+          {campaign.adsets.map((adset) => (
             <AdSetAccordion key={adset.id} adset={adset} />
           ))}
         </div>

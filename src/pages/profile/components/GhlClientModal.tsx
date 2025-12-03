@@ -48,6 +48,7 @@ const GhlClientModal: React.FC<GhlClientModalProps> = ({
     locationId: "",
     ghlApiToken: "",
     queryValue: "1st - Total Job Amount",
+    queryValue2: "Last Date Tag Changed",
     status: "active" as "active" | "inactive",
   });
 
@@ -65,6 +66,7 @@ const GhlClientModal: React.FC<GhlClientModalProps> = ({
           locationId: client.locationId,
           ghlApiToken: "", // Token is never displayed, only updated if provided
           queryValue: client.queryValue,
+          queryValue2: "Last Date Tag Changed", // Always use default value
           status: client.status,
         });
       } else {
@@ -74,6 +76,7 @@ const GhlClientModal: React.FC<GhlClientModalProps> = ({
           locationId: "",
           ghlApiToken: "",
           queryValue: "1st - Total Job Amount",
+          queryValue2: "Last Date Tag Changed",
           status: "active",
         });
       }
@@ -83,6 +86,7 @@ const GhlClientModal: React.FC<GhlClientModalProps> = ({
         locationId: "",
         ghlApiToken: "",
         queryValue: "1st - Total Job Amount",
+        queryValue2: "Last Date Tag Changed",
         status: "active",
       });
       setExistingClient(null);
@@ -121,9 +125,11 @@ const GhlClientModal: React.FC<GhlClientModalProps> = ({
           locationId?: string;
           ghlApiToken?: string;
           queryValue?: string;
+          queryValue2?: string | null;
           status?: 'active' | 'inactive';
         } = {
           queryValue: formData.queryValue,
+          queryValue2: "Last Date Tag Changed", // Always send default value
           status: formData.status,
         };
 
@@ -161,6 +167,7 @@ const GhlClientModal: React.FC<GhlClientModalProps> = ({
           locationId: formData.locationId,
           ghlApiToken: formData.ghlApiToken,
           queryValue: formData.queryValue,
+          queryValue2: "Last Date Tag Changed", // Always send default value
           revenueProClientId: revenueProClientId,
           status: formData.status,
         });

@@ -12,7 +12,7 @@ import { useUserContext } from "@/utils/UserContext";
 // Import components
 import { Dashboard } from "@/pages/dashboard/Dashboard";
 import { SetTargets } from "@/pages/SetTargets";
-import { AddActualData } from "@/pages/AddActualData";
+import { AddActualData } from "@/pages/weekly-reporting/WeeklyReporting";
 import { LeadSheet } from "@/pages/LeadSheet";
 import { LeadAnalytics } from "@/pages/LeadAnalytics";
 import NotFound from "@/pages/NotFound";
@@ -21,7 +21,7 @@ import { UserProvider } from "./utils/UserContext";
 import { CompareResults } from "@/pages/CompareResults";
 import CreateUser from "./pages/CreateUser";
 import { DataProvider } from "@/contexts/DataContext";
-import Profile from "@/pages/Profile";
+import Profile from "@/pages/profile/Profile";
 import ReleaseNotes from "@/pages/ReleaseNotes";
 import OAuthCallbackHandler from "@/components/OAuthCallbackHandler";
 

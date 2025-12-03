@@ -91,6 +91,8 @@ export interface CampaignDataItem {
   ad_name: string;
   adset_name: string;
   adset_id: string;
+  campaign_name?: string;
+  campaign_id?: string;
   spend: string;
   clicks: string;
   cpp: string;
@@ -133,7 +135,14 @@ export interface AdSet {
   ads: Ad[];
 }
 
+export interface Campaign {
+  id: string;
+  name: string;
+  totalSpend: number;
+  adsets: AdSet[];
+}
+
 export interface ProcessedCampaignData {
   campaignTotal: number;
-  adsets: AdSet[];
+  campaigns: Campaign[];
 }
