@@ -350,7 +350,7 @@ export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
         <Card className="bg-card/90 backdrop-blur-sm border border-border/20 shadow-xl h-full min-h-[360px]">
           <div className="p-6 border-b border-border/50 bg-gradient-secondary/10">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gradient-primary">Campaign Costs</h2>
+              <h2 className="text-lg font-semibold text-gradient-primary">Campaign Budget Planner</h2>
               <div className="flex gap-2">
                 <Button 
                   variant="outline" 

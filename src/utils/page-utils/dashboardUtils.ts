@@ -122,6 +122,8 @@ export const getXAxisLabels = (period: PeriodType, selectedDate: Date, dataLengt
     "estimatesRan",
     "sales",
     "leadToSale",
+    "com",
+    "budgetSpent",
   ];
 
 export const processYTDData = (

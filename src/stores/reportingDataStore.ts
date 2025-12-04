@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { IReportingData, IReportingResponse, getReportingData as fetchReportingData, upsertReportingData as saveReportingData } from '../service/reportingServices';
+import { IReportingData, IReportingResponse, getReportingData as fetchReportingData, upsertReportingData as saveReportingData, getAggregateReport } from '../service/reportingServices';
 import { IWeeklyTarget } from '../service/targetService';
 import useAuthStore from './authStore';
 import { useUserStore } from './userStore';
@@ -9,13 +9,16 @@ interface ReportingDataState {
   reportingData: IReportingData[] | null;
   targetData: IWeeklyTarget[] | null;
   comparisonData: IReportingData[] | null;
+  usersBudgetAndRevenue: IReportingResponse['usersBudgetAndRevenue'] | null;
   isLoading: boolean;
   error: string | null;
   setReportingData: (data: IReportingData[] | null) => void;
   setTargetData: (data: IWeeklyTarget[] | null) => void;
   setComparisonData: (data: IReportingData[] | null) => void;
+  setUsersBudgetAndRevenue: (data: IReportingResponse['usersBudgetAndRevenue'] | null) => void;
   getReportingData: (startDate: string, endDate: string, queryType: string, period: string) => Promise<void>;
   getComparisonData: (startDate: string, endDate: string, queryType: string) => Promise<void>;
+  getAggregateData: (startDate: string, endDate: string, queryType: string, period: string) => Promise<void>;
   upsertReportingData: (data: IReportingData) => Promise<void>;
   clearError: () => void;
   clearComparisonData: () => void;
@@ -25,11 +28,13 @@ export const useReportingDataStore = create<ReportingDataState>((set, get) => ({
   reportingData: null,
   targetData: null,
   comparisonData: null,
+  usersBudgetAndRevenue: null,
   isLoading: false,
   error: null,
   setReportingData: (data) => set({ reportingData: data }),
   setTargetData: (data) => set({ targetData: data }),
   setComparisonData: (data) => set({ comparisonData: data }),
+  setUsersBudgetAndRevenue: (data) => set({ usersBudgetAndRevenue: data }),
 
   getReportingData: async (startDate, endDate, queryType, period) => {
     set({ isLoading: true, error: null });
@@ -98,6 +103,38 @@ export const useReportingDataStore = create<ReportingDataState>((set, get) => ({
       }
     } catch (error) {
       set({ comparisonData: null, error: error instanceof Error ? error.message : 'An error occurred while fetching comparison data' });
+    }
+  },
+
+  getAggregateData: async (startDate, endDate, queryType, period) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await getAggregateReport(startDate, endDate, queryType);
+      if (!response.error && response.data) {
+        const aggregateResponse = response.data.data as IReportingResponse;
+        const actualData = Array.isArray(aggregateResponse.actual) ? aggregateResponse.actual : [aggregateResponse.actual];
+        const targetRaw = Array.isArray(aggregateResponse.target) ? aggregateResponse.target : [aggregateResponse.target];
+        const targetData = Array.isArray(targetRaw) ? targetRaw : (targetRaw ? [targetRaw] : []);
+        const usersBudgetAndRevenue = aggregateResponse.usersBudgetAndRevenue || null;
+
+        if(period === "ytd"){
+          const ytdResult = processYTDData(actualData, targetData);
+          if (ytdResult.success && ytdResult.data) {
+            set({ reportingData: ytdResult.data, targetData, usersBudgetAndRevenue, isLoading: false });
+            return;
+          } else {
+            console.warn(`[YTD] ${ytdResult.message}, falling back to original actualData`);
+            set({ reportingData: actualData, targetData, usersBudgetAndRevenue, isLoading: false });
+            return;
+          }
+        }
+
+        set({ reportingData: actualData, targetData, usersBudgetAndRevenue, isLoading: false });
+      } else {
+        set({ reportingData: null, targetData: null, usersBudgetAndRevenue: null, error: response.message || 'Failed to fetch aggregate data', isLoading: false });
+      }
+    } catch (error) {
+      set({ reportingData: null, targetData: null, usersBudgetAndRevenue: null, error: error instanceof Error ? error.message : 'An error occurred while fetching aggregate data', isLoading: false });
     }
   },
 

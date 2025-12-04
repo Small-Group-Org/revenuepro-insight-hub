@@ -8,6 +8,7 @@ export interface User {
   role: string;
   leadSheetUrl?: string;
   status?: string;
+  fbAdAccountId?: string;
 }
 
 export interface CreateUserPayload {

@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Users } from "lucide-react";
-import { startOfYear } from "date-fns";
+import { startOfYear, format } from "date-fns";
+import { triggerLeadSheetSync } from "@/service/ghlClientService";
+import { getCurrentWeek, getWeekInfo } from "@/utils/weekLogic";
 import LeadDateTimeSelector from "@/components/LeadDateTimeSelector";
 import { PeriodType } from "@/types";
 import { useLeadStore } from "@/stores/leadStore";
@@ -75,6 +77,7 @@ export const LeadSheet = () => {
   const [showFilters, setShowFilters] = useState<boolean>(false);
   const [leadToDelete, setLeadToDelete] = useState<string[]>([]);
   const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const {
@@ -635,6 +638,69 @@ export const LeadSheet = () => {
     setCurrentPage(1); // Reset to first page when clearing filters
   }, [clearFilters]);
 
+  // Handle leadsheet refresh/sync
+  const handleLeadSheetRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    
+    toast({
+      title: "🔄 Starting Lead Sheet Sync",
+      description: 'Lead sheet sync has been triggered...',
+    });
+
+    try {
+      const leadSheetResponse = await triggerLeadSheetSync();
+      
+      if (leadSheetResponse.error) {
+        toast({
+          title: "❌ Lead Sheet Sync Failed",
+          description: leadSheetResponse.message || 'Failed to sync lead sheets',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: "✅ Lead Sheet Sync Completed",
+          description: 'Lead sheet sync has been completed successfully',
+        });
+        
+        // Refresh the leads data after successful sync
+        const { startDate, endDate } =
+          period === "custom" && customRange
+            ? customRange
+            : getDateRange(selectedDate, period as any);
+        
+        if (selectedUserId) {
+          await fetchPaginatedLeads({
+            clientId: selectedUserId,
+            startDate,
+            endDate,
+            page: currentPage,
+            pageSize,
+            sortBy: currentSorting.sortBy,
+            sortOrder: currentSorting.sortOrder,
+            ...currentFilters,
+          });
+        }
+      }
+    } catch (error) {
+      toast({
+        title: "❌ Lead Sheet Sync Error",
+        description: error instanceof Error ? error.message : 'An error occurred while syncing lead sheets',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [toast, period, customRange, selectedDate, selectedUserId, currentPage, pageSize, currentSorting, currentFilters, fetchPaginatedLeads]);
+
+  // Check if it's the current week (only for weekly period)
+  const isCurrentWeek = useMemo(() => {
+    if (period !== 'weekly') return false;
+    const currentWeek = getCurrentWeek();
+    const selectedWeek = getWeekInfo(selectedDate);
+    // Compare week start dates to determine if it's the current week
+    return format(currentWeek.weekStart, 'yyyy-MM-dd') === format(selectedWeek.weekStart, 'yyyy-MM-dd');
+  }, [period, selectedDate]);
+
   // Process leads data using utility function
   const processedLeads = useMemo(() => processLeadsData(leads), [leads]);
 
@@ -711,6 +777,9 @@ export const LeadSheet = () => {
                   handleClearFilters={handleClearFilters}
                   exportToExcel={exportToExcel}
                   handleBulkDelete={handleBulkDelete}
+                  onRefresh={handleLeadSheetRefresh}
+                  isRefreshing={isRefreshing}
+                  isCurrentWeek={isCurrentWeek}
                 />
 
                 {/* No Results Message */}

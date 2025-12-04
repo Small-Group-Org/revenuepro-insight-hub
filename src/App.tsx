@@ -10,9 +10,9 @@ import { FullScreenLoader } from "@/components/ui/full-screen-loader";
 import { useUserContext } from "@/utils/UserContext";
 
 // Import components
-import { Dashboard } from "@/components/Dashboard";
+import { Dashboard } from "@/pages/dashboard/Dashboard";
 import { SetTargets } from "@/pages/SetTargets";
-import { AddActualData } from "@/pages/AddActualData";
+import { AddActualData } from "@/pages/weekly-reporting/WeeklyReporting";
 import { LeadSheet } from "@/pages/LeadSheet";
 import { LeadAnalytics } from "@/pages/LeadAnalytics";
 import AdPerformanceBoard from "@/pages/AdPerformanceBoard";
@@ -22,8 +22,9 @@ import { UserProvider } from "./utils/UserContext";
 import { CompareResults } from "@/pages/CompareResults";
 import CreateUser from "./pages/CreateUser";
 import { DataProvider } from "@/contexts/DataContext";
-import Profile from "@/pages/Profile";
+import Profile from "@/pages/profile/Profile";
 import ReleaseNotes from "@/pages/ReleaseNotes";
+import OAuthCallbackHandler from "@/components/OAuthCallbackHandler";
 
 const AppRoutes = () => {
   const { isVerifying } = useUserContext();
@@ -31,18 +32,21 @@ const AppRoutes = () => {
   return (
     <>
       <FullScreenLoader isLoading={isVerifying} message="Verifying authentication..." />
+      <OAuthCallbackHandler />
       <DataProvider>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/release-notes" element={<ReleaseNotes />} />
           <Route element={<AppLayout />}>
             <Route path="/" element={<Dashboard />} />
+            <Route path="/global-dashboard" element={<Dashboard />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/targets" element={<SetTargets />} />
             <Route path="/actuals" element={<AddActualData />} />
             <Route path="/compare" element={<CompareResults />} />
             <Route path="/leads" element={<LeadSheet />} />
             <Route path="/lead-analytics" element={<LeadAnalytics />} />
+            <Route path="/user-management" element={<CreateUser />} />
             <Route path="/ad-performance" element={<AdPerformanceBoard />} />
             <Route path="/user-managment" element={<CreateUser />} />
             <Route path="/profile" element={<Profile />} />
