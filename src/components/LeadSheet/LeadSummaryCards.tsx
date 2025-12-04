@@ -1,6 +1,6 @@
 import React from 'react';
 import { Users } from 'lucide-react';
-import { TopCard } from '@/components/DashboardTopCards';
+import { TopCard } from '@/pages/dashboard/components/DashboardTopCards';
 
 interface StatusCounts {
   new: number;

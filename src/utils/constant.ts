@@ -48,6 +48,9 @@ export const API_ENDPOINTS = {
   // Actual
   ACTUAL_GET: "/actual/get",
   ACTUAL_UPSERT: "/actual/upsert",
+  
+  // Aggregate
+  AGGREGATE_REPORT: "/aggregate/report",
 
   // IP Tracking
   IP_TRACK: "/ip-tracking/track",
@@ -67,9 +70,15 @@ export const API_ENDPOINTS = {
   ADMIN_OPPORTUNITY_SYNC_TRIGGER: "/admin/multi-client-opportunity-sync/trigger",
   // Admin - Lead Sheet Sync
   ADMIN_LEAD_SHEET_SYNC_TRIGGER: "/admin/lead-sheets-sync/trigger",
+
+  // Meta/Facebook Ad Accounts
+  FACEBOOK_AD_ACCOUNTS: "/facebook/ad-accounts",
+  USER_FB_AD_ACCOUNT: "/users/fb-ad-account", // append /:clientId when needed
+  USER_GET_BY_ID: "/users/get", // append /:id/ when needed
+  FACEBOOK_ENRICHED_ADS: "/facebook/enriched-ads",
 } as const;
 
-export const menuItems = [
+export const userRoutes = [
   { id: "dashboard", label: "Dashboard", icon: BarChart3, path: "/" },
   { id: "settargets", label: "Set Targets", icon: Target, path: "/targets" },
   { id: "actuals", label: "Weekly Reporting", icon: Plus, path: "/actuals" },
@@ -86,6 +95,11 @@ export const menuItems = [
     icon: BarChart3,
     path: "/lead-analytics",
   },
+];
+
+export const adminRoutes = [
+  { id: "global-dashboard", label: "Global Dashboard", icon: BarChart3, path: "/global-dashboard" },
+  { id: "user-management", label: "User Management", icon: Users, path: "/user-management" },
 ];
 
 export const months = [
@@ -562,6 +576,66 @@ export const generalMetricsChartConfigs = [
     key: "avgJobSize",
     title: "Average Job Size",
     description: "Revenue / sales",
+    actualColor: "#0b3d8e",
+    targetColor: "#649cf7",
+    format: "currency",
+  },
+];
+
+// Admin View Metrics - Aggregate data for all clients
+export const adminViewChartConfigs = [
+  {
+    key: "cpl",
+    title: "Average Cost Per Lead",
+    description: "Total budget spent / total leads",
+    actualColor: "#0b3d8e",
+    targetColor: "#649cf7",
+    format: "currency",
+  },
+  {
+    key: "cpEstimateSet",
+    title: "Average Cost Per Estimate Set",
+    description: "Total budget spent / total estimates set",
+    actualColor: "#0b3d8e",
+    targetColor: "#649cf7",
+    format: "currency",
+  },
+  {
+    key: "com",
+    title: "Average Cost of Marketing % On Ad Spend",
+    description: "(Budget spent / revenue) × 100",
+    actualColor: "#0b3d8e",
+    targetColor: "#649cf7",
+    format: "percent",
+  },
+  {
+    key: "totalCom",
+    title: "Average Total Cost of Marketing %",
+    description: "((Management cost + budget spent) / revenue) × 100",
+    actualColor: "#0b3d8e",
+    targetColor: "#649cf7",
+    format: "percent",
+  },
+  {
+    key: "appointmentRate",
+    title: "Average Estimate Set Rate %",
+    description: "(Estimates set / leads) × 100",
+    actualColor: "#0b3d8e",
+    targetColor: "#649cf7",
+    format: "percent",
+  },
+  {
+    key: "budgetSpent",
+    title: "Total Amount Spent",
+    description: "Total budget spent across all clients",
+    actualColor: "#0b3d8e",
+    targetColor: "#649cf7",
+    format: "currency",
+  },
+  {
+    key: "revenue",
+    title: "Total Revenue Generated",
+    description: "Total revenue across all clients",
     actualColor: "#0b3d8e",
     targetColor: "#649cf7",
     format: "currency",

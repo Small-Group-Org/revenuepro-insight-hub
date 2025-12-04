@@ -48,9 +48,12 @@ interface MetricsLineChartsProps {
   periodType?: "monthly" | "yearly";
   selectedDate?: Date;
   onComparisonChange?: (selectedPeriod: string) => void;
+  hideTitle?: boolean;
+  hideBorder?: boolean;
   comparisonData?: any;
   isComparisonEnabled?: boolean;
   comparisonPeriod?: string;
+  hideTargets?: boolean;
 }
 
 // Format value helper
@@ -77,6 +80,7 @@ const CustomTooltip = ({
   selectedDate,
   periodType,
   formattedComparisonPeriod,
+  hideTargets = false,
 }: any) => {
   if (active && payload && payload.length) {
     const actualValue = payload.find((p) => p.dataKey === "actual")?.value || 0;
@@ -111,183 +115,74 @@ const CustomTooltip = ({
     const differencePercent =
       targetValue > 0 ? (difference / targetValue) * 100 : 0;
 
-    return (
-      <div className="bg-card border border-border rounded-lg shadow-lg p-4 min-w-[240px]">
-        <div className="mb-3">
-          <p className="text-sm font-semibold text-card-foreground mb-1">
-            {label}
-          </p>
-          <div className="w-full h-0.5 bg-gradient-primary rounded"></div>
+    // Compact tooltip for admin view (hideTargets = true)
+    if (hideTargets) {
+      return (
+        <div className="bg-card border border-border rounded-md shadow-md px-3 py-2">
+          <div className="text-xs text-muted-foreground mb-1">{label}</div>
+          <div className="text-sm font-bold" style={{ color: actualColor }}>
+            {formatValue(actualValue, format)}
+          </div>
         </div>
+      );
+    }
 
-        <div className="space-y-3">
-          {/* Current Period (Actual) */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+    // Full tooltip for regular view
+    return (
+      <div className="bg-card border border-border rounded-lg shadow-lg p-3">
+        <div className="text-xs text-muted-foreground mb-2">{label}</div>
+        
+        <div className="space-y-2">
+          {/* Actual Value */}
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-1.5">
               <div
-                className="w-3 h-3 rounded-full"
+                className="w-2 h-2 rounded-full"
                 style={{ backgroundColor: actualColor }}
               ></div>
-              <span className="text-sm font-medium text-card-foreground">
+              <span className="text-xs text-muted-foreground">
                 {isComparisonEnabled
                   ? formatSelectedDate(selectedDate)
                   : "Actual"}
               </span>
             </div>
-            <span className="text-sm font-bold" style={{ color: actualColor }}>
+            <span className="text-sm font-semibold" style={{ color: actualColor }}>
               {formatValue(actualValue, format)}
             </span>
           </div>
 
-          {!isComparisonEnabled ? (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+          {/* Target or Comparison Value */}
+          {!isComparisonEnabled && !hideTargets && (
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-1.5">
                 <div
-                  className="w-3 h-3 rounded-full"
+                  className="w-2 h-2 rounded-full"
                   style={{ backgroundColor: targetColor }}
                 ></div>
-                <span className="text-sm font-medium text-card-foreground">
-                  Target
-                </span>
+                <span className="text-xs text-muted-foreground">Target</span>
               </div>
-              <span
-                className="text-sm font-bold"
-                style={{ color: targetColor }}
-              >
+              <span className="text-sm font-semibold" style={{ color: targetColor }}>
                 {formatValue(targetValue, format)}
-              </span>
-            </div>
-          ) : (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div
-                  className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: "#649cf7" }}
-                ></div>
-                <span className="text-sm font-medium text-card-foreground">
-                  {periodType === "monthly"
-                    ? formattedComparisonPeriod
-                    : comparisonPeriod}{" "}
-                  <span className="text-xs text-muted-foreground">
-                    (Comparison)
-                  </span>
-                </span>
-              </div>
-              <span className="text-sm font-bold" style={{ color: "#649cf7" }}>
-                {formatValue(comparisonValue, format)}
               </span>
             </div>
           )}
 
-          {/* Performance metrics */}
-          {((!isComparisonEnabled && targetValue > 0) ||
-            (isComparisonEnabled && comparisonValue > 0)) && (
-            <div className="mt-3 pt-3 border-t border-border space-y-3">
-              {!isComparisonEnabled ? (
-                // Target vs Actual metrics
-                <>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">
-                      Performance
-                    </span>
-                    <span
-                      className={`text-xs font-semibold ${
-                        performancePercent >= 100
-                          ? "text-success"
-                          : "text-destructive"
-                      }`}
-                    >
-                      {performancePercent.toFixed(1)}%
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">
-                      Difference
-                    </span>
-                    <span
-                      className={`text-xs font-semibold ${
-                        difference >= 0 ? "text-success" : "text-destructive"
-                      }`}
-                    >
-                      {difference >= 0 ? "+" : ""}
-                      {formatValue(difference, format)}
-                      <span className="ml-1">
-                        ({differencePercent >= 0 ? "+" : ""}
-                        {differencePercent.toFixed(1)}%)
-                      </span>
-                    </span>
-                  </div>
-
-                  <div className="mt-2 w-full bg-muted rounded-full h-2">
-                    <div
-                      className={`h-2 rounded-full transition-all duration-300 ${
-                        performancePercent >= 100
-                          ? "bg-success"
-                          : "bg-destructive"
-                      }`}
-                      style={{
-                        width: `${Math.min(performancePercent, 100)}%`,
-                      }}
-                    ></div>
-                  </div>
-                </>
-              ) : (
-                // Comparison vs Actual metrics
-                <>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">
-                      Growth
-                    </span>
-                    <span
-                      className={`text-xs font-semibold ${
-                        actualValue >= comparisonValue
-                          ? "text-success"
-                          : "text-destructive"
-                      }`}
-                    >
-                      {actualValue >= comparisonValue ? "+" : ""}
-                      {(
-                        ((actualValue - comparisonValue) / comparisonValue) *
-                        100
-                      ).toFixed(1)}
-                      %
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">
-                      Difference
-                    </span>
-                    <span
-                      className={`text-xs font-semibold ${
-                        actualValue >= comparisonValue
-                          ? "text-success"
-                          : "text-destructive"
-                      }`}
-                    >
-                      {actualValue >= comparisonValue ? "+" : ""}
-                      {formatValue(actualValue - comparisonValue, format)}
-                    </span>
-                  </div>
-
-                  <div className="mt-2 w-full bg-muted rounded-full h-2">
-                    <div
-                      className={`h-2 rounded-full transition-all duration-300 ${
-                        actualValue >= comparisonValue
-                          ? "bg-success"
-                          : "bg-destructive"
-                      }`}
-                      style={{
-                        width: `${Math.min(
-                          100,
-                          Math.max(0, (actualValue / comparisonValue) * 100)
-                        )}%`,
-                      }}
-                    ></div>
-                  </div>
-                </>
-              )}
+          {isComparisonEnabled && (
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-1.5">
+                <div
+                  className="w-2 h-2 rounded-full"
+                  style={{ backgroundColor: "#649cf7" }}
+                ></div>
+                <span className="text-xs text-muted-foreground">
+                  {periodType === "monthly"
+                    ? formattedComparisonPeriod
+                    : comparisonPeriod}
+                </span>
+              </div>
+              <span className="text-sm font-semibold" style={{ color: "#649cf7" }}>
+                {formatValue(comparisonValue, format)}
+              </span>
             </div>
           )}
         </div>
@@ -309,6 +204,9 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
   comparisonData,
   isComparisonEnabled = false,
   comparisonPeriod,
+  hideTitle = false,
+  hideBorder = false,
+  hideTargets = false,
 }) => {
   const [comparisonOptions, setComparisonOptions] = useState<
     Array<{ value: string; label: string }>
@@ -400,15 +298,20 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
     return config.format === "currency" || config.format === "number";
   };
 
+  const cardClassName = hideBorder
+    ? "p-6"
+    : "p-6 bg-gradient-to-br from-background via-muted/15 to-primary/3 shadow-lg border border-border hover:shadow-2xl hover:border-primary/10 transition-all duration-300 group backdrop-blur-sm";
+
   return (
-    <Card className="p-6 bg-gradient-to-br from-background via-muted/15 to-primary/3 shadow-lg border border-border hover:shadow-2xl hover:border-primary/10 transition-all duration-300 group backdrop-blur-sm">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <div className="flex items-center gap-2">
-          {icon}
-          <h3 className="text-[20px] font-semibold text-card-foreground">
-            {title}
-          </h3>
-        </div>
+    <Card className={cardClassName}>
+      {!hideTitle && (
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div className="flex items-center gap-2">
+            {icon}
+            <h3 className="text-[20px] font-semibold text-card-foreground">
+              {title}
+            </h3>
+          </div>
 
         {/* Comparison dropdown for all chart sections */}
         {isFunnelMetrics && (
@@ -452,7 +355,8 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
             </Select>
           </div>
         )}
-      </div>
+        </div>
+      )}
 
       <div className={`grid ${gridCols} gap-8`}>
         {chartConfigs.map((config) => {
@@ -552,6 +456,7 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
                           selectedDate={selectedDate}
                           periodType={periodType}
                           formattedComparisonPeriod={formattedComparisonPeriod}
+                          hideTargets={hideTargets}
                         />
                       }
                       cursor={{ strokeDasharray: "3 3", stroke: "#e2e8f0" }}
@@ -612,8 +517,8 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
                       activeDot={{ r: 4, stroke: "#396bbd", strokeWidth: 2 }}
                     />
 
-                    {/* Show target line only when comparison is not enabled */}
-                    {!isComparisonEnabled && (
+                    {/* Show target line only when comparison is not enabled and targets are not hidden */}
+                    {!isComparisonEnabled && !hideTargets && (
                       <Line
                         type="monotone"
                         dataKey="target"
@@ -640,8 +545,8 @@ export const MetricsLineCharts: React.FC<MetricsLineChartsProps> = ({
                 </ResponsiveContainer>
               )}
 
-              {/* Individual chart legend - only show if no message */}
-              {!hasMessage && (
+              {/* Individual chart legend - hidden when hideTargets is true (admin view) */}
+              {!hasMessage && !hideTargets && (
                 <div className="flex items-center justify-center gap-4 pt-2">
                   <div className="flex items-center gap-2">
                     <div

@@ -5,33 +5,44 @@ import { useToast } from '@/hooks/use-toast';
 import { DollarSign, Plus, TrendingUp } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { DatePeriodSelector } from '@/components/DatePeriodSelector';
-import { TargetSection } from '@/components/TargetSection';
 import { PeriodType, FieldValue } from '@/types';
 import { reportingFields } from '@/utils/constant';
-import { calculateReportingFields } from '@/utils/page-utils/actualDataUtils';
+import { calculateReportingFields, calculatePerformanceMetrics } from '@/utils/page-utils/actualDataUtils';
 import { handleInputDisable } from '@/utils/page-utils/compareUtils';
 import { processTargetData } from '@/utils/page-utils/targetUtils';
 import { getWeekInfo, getCurrentWeek } from '@/utils/weekLogic';
 import { useUserStore } from '@/stores/userStore';
-import { useRoleAccess } from '@/hooks/useRoleAccess';
 import { FullScreenLoader } from '@/components/ui/full-screen-loader';
 import { useCombinedLoading } from '@/hooks/useCombinedLoading';
-import DailyBudgetManager from '@/components/DailyBudgetManager';
+import DailyBudgetManager from '@/pages/weekly-reporting/components/DailyBudgetManager';
 import { useGhlClientStore } from '@/stores/ghlClientStore';
 import { triggerOpportunitySync } from '@/service/ghlClientService';
-import { doPOST } from '@/utils/HttpUtils';
-import { API_ENDPOINTS } from '@/utils/constant';
-
-// TEMPORARY: Specific user ID for opportunity sync feature
-const OPPORTUNITY_SYNC_USER_ID = '68c82dfdac1491efe19d5df0';
+import CampaignAccordion from '@/pages/weekly-reporting/components/CampaignAccordion';
+import { processCampaignData } from '@/utils/campaignDataProcessor';
+import { TargetReport } from './components/TargetReport';
+import { BudgetReport } from './components/BudgetReport';
+import StatsCards from './components/StatsCards';
+import { getStatsCards } from './utils/utils';
+import { getEnrichedAds } from '@/service/facebookEnrichedAdsService';
+import { transformEnrichedAdsToCampaignData } from '@/utils/facebookAdsTransformer';
+import { getUserProfile } from '@/service/metaAdAccountService';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 export const AddActualData = () => {
   const { reportingData, targetData, getReportingData, upsertReportingData, error } = useReportingDataStore();
   const { isLoading } = useCombinedLoading();
   const { toast } = useToast();
   const { selectedUserId } = useUserStore();
-  const { userRole } = useRoleAccess();
-  const { getClientByRevenueProId, getActiveClients } = useGhlClientStore();
+  const { getClientByRevenueProId } = useGhlClientStore();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [period, setPeriod] = useState<PeriodType>('weekly');
   const [isOpportunitySyncing, setIsOpportunitySyncing] = useState(false);
@@ -39,6 +50,11 @@ export const AddActualData = () => {
   const [fieldValues, setFieldValues] = useState<FieldValue>({});
   const [lastChanged, setLastChanged] = useState<string | null>(null);
   const [prevValues, setPrevValues] = useState<FieldValue>({});
+  const [campaignData, setCampaignData] = useState<any[]>([]);
+  const [isLoadingCampaignData, setIsLoadingCampaignData] = useState(false);
+  const [clientHasFbAccount, setClientHasFbAccount] = useState(false);
+  const [hasMetaIntegration, setHasMetaIntegration] = useState<boolean | null>(null);
+  const [showSyncConfirmation, setShowSyncConfirmation] = useState(false);
 
 
   // Use processed target data from store (single API)
@@ -47,7 +63,43 @@ export const AddActualData = () => {
     return processTargetData(targetData);
   }, [targetData]);
 
-  const selectedWeek = format(selectedDate, 'yyyy-MM-dd');
+  // Helper function to calculate date range based on period
+  const getDateRange = useCallback((date: Date, periodType: PeriodType): {
+    startDate: string;
+    endDate: string;
+    queryType: string;
+  } => {
+    if (periodType === 'weekly') {
+      const weekInfo = getWeekInfo(date);
+      return {
+        startDate: format(weekInfo.weekStart, 'yyyy-MM-dd'),
+        endDate: format(weekInfo.weekEnd, 'yyyy-MM-dd'),
+        queryType: 'weekly',
+      };
+    } else if (periodType === 'monthly') {
+      return {
+        startDate: format(startOfMonth(date), 'yyyy-MM-dd'),
+        endDate: format(endOfMonth(date), 'yyyy-MM-dd'),
+        queryType: 'monthly',
+      };
+    } else {
+      return {
+        startDate: format(startOfYear(date), 'yyyy-MM-dd'),
+        endDate: format(endOfYear(date), 'yyyy-MM-dd'),
+        queryType: 'yearly',
+      };
+    }
+  }, []);
+
+  // Helper function to get period label
+  const getPeriodLabel = useCallback((periodType: PeriodType): string => {
+    return periodType === 'weekly' ? 'Week' : periodType === 'monthly' ? 'Month' : 'Year';
+  }, []);
+
+  // Metadata fields to exclude when processing data
+  const METADATA_FIELDS = useMemo(() => new Set([
+    'userId', '_id', 'createdAt', 'updatedAt', '__v', 'startDate', 'endDate'
+  ]), []);
 
   // Helper function to get default values for reporting fields
   const getReportingDefaultValues = useCallback((): FieldValue => {
@@ -63,24 +115,88 @@ export const AddActualData = () => {
   }, []);
 
   React.useEffect(() => {
-    let startDate: string, endDate: string, queryType: string;
-
-    if (period === 'weekly') {
-      const weekInfo = getWeekInfo(selectedDate);
-      startDate = format(weekInfo.weekStart, 'yyyy-MM-dd');
-      endDate = format(weekInfo.weekEnd, 'yyyy-MM-dd');
-      queryType = 'weekly';
-    } else if (period === 'monthly') {
-      startDate = format(startOfMonth(selectedDate), 'yyyy-MM-dd');
-      endDate = format(endOfMonth(selectedDate), 'yyyy-MM-dd');
-      queryType = 'monthly';
-    } else {
-      startDate = format(startOfYear(selectedDate), 'yyyy-MM-dd');
-      endDate = format(endOfYear(selectedDate), 'yyyy-MM-dd');
-      queryType = 'yearly';
-    }
+    const { startDate, endDate, queryType } = getDateRange(selectedDate, period);
     getReportingData(startDate, endDate, queryType, period);
-  }, [selectedDate, period, selectedUserId, getReportingData]);
+  }, [selectedDate, period, selectedUserId, getReportingData, getDateRange]);
+
+  // Check if user has meta integration (fbAdAccountId)
+  React.useEffect(() => {
+    const checkMetaIntegration = async () => {
+      if (!selectedUserId) {
+        setHasMetaIntegration(null);
+        return;
+      }
+
+      try {
+        const userProfile = await getUserProfile(selectedUserId);
+        if (!userProfile.error && userProfile.data?.fbAdAccountId) {
+          setHasMetaIntegration(true);
+        } else {
+          setHasMetaIntegration(false);
+        }
+      } catch (error) {
+        // If error checking, assume no integration
+        setHasMetaIntegration(false);
+      }
+    };
+
+    checkMetaIntegration();
+  }, [selectedUserId]);
+
+  // Fetch Facebook enriched ads data for campaign section
+  React.useEffect(() => {
+    const fetchCampaignData = async () => {
+      // Only fetch if we have a selected user and meta integration is confirmed
+      // Don't call API if no integration or still checking (null)
+      if (!selectedUserId || hasMetaIntegration !== true) {
+        setClientHasFbAccount(false);
+        setCampaignData([]);
+        setIsLoadingCampaignData(false);
+        return;
+      }
+
+      // Show campaign section with loader while data is being fetched
+      setClientHasFbAccount(true);
+      setIsLoadingCampaignData(true);
+      try {
+        // Get date range based on selected period
+        const { startDate, endDate, queryType } = getDateRange(selectedDate, period);
+
+        // Fetch enriched ads data using clientId
+        // The backend will resolve the correct ad account & meta token
+        const enrichedAdsResponse = await getEnrichedAds({
+          clientId: selectedUserId,
+          startDate,
+          endDate,
+          queryType: queryType as "weekly" | "monthly" | "yearly",
+        });
+
+        if (enrichedAdsResponse.error || !enrichedAdsResponse.data) {
+          // If error, set empty data and hide section
+          setCampaignData([]);
+          setClientHasFbAccount(false);
+          setIsLoadingCampaignData(false);
+          return;
+        }
+
+        // Transform the enriched ads data to match CampaignDataItem format
+        const transformedData = transformEnrichedAdsToCampaignData(
+          enrichedAdsResponse.data as any[]
+        );
+
+        setClientHasFbAccount(true);
+        setCampaignData(transformedData);
+      } catch (error) {
+        // Silently fail - don't show campaign section if there's an error
+        setCampaignData([]);
+        setClientHasFbAccount(false);
+      } finally {
+        setIsLoadingCampaignData(false);
+      }
+    };
+
+    fetchCampaignData();
+  }, [selectedDate, period, selectedUserId, hasMetaIntegration, getDateRange]);
 
 React.useEffect(() => {
   if (reportingData && Array.isArray(reportingData)) {
@@ -90,9 +206,7 @@ React.useEffect(() => {
       if (!data) return;
       
       Object.keys(data).forEach(key => {
-        if (key !== 'userId' && key !== 'startDate' && key !== 'endDate' && 
-            key !== '_id' && key !== 'createdAt' && key !== 'updatedAt' && key !== '__v') {
-          
+        if (!METADATA_FIELDS.has(key)) {
           newValues[key] = (newValues[key] || 0) + (data[key] || 0);
         }
       });
@@ -122,7 +236,7 @@ React.useEffect(() => {
     const calculatedDefaults = calculateReportingFields(combinedDefaults);
     setPrevValues(calculatedDefaults);
   }
-}, [reportingData, processedTargetData]);
+}, [reportingData, processedTargetData, getReportingDefaultValues, METADATA_FIELDS]);
 
 
   const calculatedValues = useMemo(() => {
@@ -183,9 +297,8 @@ React.useEffect(() => {
   }, []);
 
   const handleSave = useCallback(async () => {
-    const weekInfo = getWeekInfo(selectedDate);
-    const startDate = format(weekInfo.weekStart, 'yyyy-MM-dd');
-    const endDate = format(weekInfo.weekEnd, 'yyyy-MM-dd');
+    // Get date range based on selected period
+    const { startDate, endDate, queryType } = getDateRange(selectedDate, period);
 
     const inputFieldNames = getInputFieldNames();
     const inputData: { [key: string]: number | undefined } = {};
@@ -202,13 +315,7 @@ React.useEffect(() => {
     if (existingData) {
       Object.keys(existingData).forEach(key => {
         // Skip metadata fields
-        if (key !== 'userId' && 
-            key !== '_id' && 
-            key !== 'createdAt' && 
-            key !== 'updatedAt' && 
-            key !== '__v' &&
-            key !== 'startDate' &&
-            key !== 'endDate') {
+        if (!METADATA_FIELDS.has(key)) {
           // Preserve ALL existing fields (including target report input fields and adNamesAmount)
           // Include even if value is 0, null, or undefined to ensure API has all fields
           const value = existingData[key];
@@ -230,7 +337,7 @@ React.useEffect(() => {
       await upsertReportingData(dataToSave);
       
       // Refetch reporting data to get complete data from API
-      await getReportingData(startDate, endDate, 'weekly', period);
+      await getReportingData(startDate, endDate, queryType, period);
       
       // Update prevValues after successful save to reset change detection
       // The useEffect will update prevValues when reportingData changes
@@ -238,9 +345,10 @@ React.useEffect(() => {
       setPrevValues(calculatedValues);
       setLastChanged(null);
       
+      const periodLabel = getPeriodLabel(period);
       toast({
         title: "✅ Data Saved Successfully!",
-        description: `Week of ${format(new Date(startDate), 'MMM dd, yyyy')} has been updated.`,
+        description: `${periodLabel} of ${format(new Date(startDate), 'MMM dd, yyyy')} has been updated.`,
       });
     } catch (e) {
       toast({
@@ -249,23 +357,12 @@ React.useEffect(() => {
         variant: 'destructive',
       });
     }
-  }, [selectedDate, fieldValues, reportingData, period, upsertReportingData, getReportingData, toast, getInputFieldNames, error]);
-
-  const isHighlighted = useCallback((fieldName: string) => {
-    if (!lastChanged) return false;
-    return prevValues[fieldName] !== calculatedValues[fieldName];
-  }, [lastChanged, prevValues, calculatedValues]);
+  }, [selectedDate, period, fieldValues, reportingData, upsertReportingData, getReportingData, toast, getInputFieldNames, calculatedValues, error, getDateRange, getPeriodLabel, METADATA_FIELDS]);
 
   const handleDatePeriodChange = useCallback((date: Date, period: PeriodType) => {
     setSelectedDate(date);
     setPeriod(period);
   }, []);
-
-  const handleNavigationAttempt = useCallback((newDate: Date, newPeriod: PeriodType) => {
-    // Always allow navigation since we removed the unsaved changes modal
-    return true;
-  }, []);
-
 
   // Check if opportunity sync button should be shown (only for specific user and current week)
   const isCurrentWeek = useMemo(() => {
@@ -276,12 +373,6 @@ React.useEffect(() => {
     return format(currentWeek.weekStart, 'yyyy-MM-dd') === format(selectedWeek.weekStart, 'yyyy-MM-dd');
   }, [period, selectedDate]);
 
-  
-
-  const getSectionFields = useCallback((sectionKey: keyof typeof reportingFields) => {
-    return reportingFields[sectionKey];
-  }, []);
-
   // Check if opportunity sync button should be shown
   // Show button if: weekly period, current week, user has an active GHL client configured
   const shouldShowOpportunitySync = useMemo(() => {
@@ -291,10 +382,19 @@ React.useEffect(() => {
     return client?.status === 'active';
   }, [period, selectedUserId, isCurrentWeek, getClientByRevenueProId]);
 
-  // Handle opportunity sync trigger
-  const handleOpportunitySync = useCallback(async () => {
-    if (!selectedUserId) return;
+  // Handle opportunity sync button click - show confirmation modal
+  const handleOpportunitySyncClick = useCallback(() => {
+    setShowSyncConfirmation(true);
+  }, []);
 
+  // Handle opportunity sync trigger after confirmation
+  const handleOpportunitySyncConfirm = useCallback(async () => {
+    if (!selectedUserId) {
+      setShowSyncConfirmation(false);
+      return;
+    }
+
+    setShowSyncConfirmation(false);
     setIsOpportunitySyncing(true);
 
     try {
@@ -314,7 +414,7 @@ React.useEffect(() => {
       // Step 1: Start opportunity sync for this client's location
       toast({
         title: "🔄 Starting Opportunity Sync",
-        description: 'Opportunity sync has been triggered...',
+        description: 'Opportunity sync has been triggered. This may take 2-3 minutes. Please wait...',
       });
 
       const opportunityResponse = await triggerOpportunitySync([client.locationId]);
@@ -335,12 +435,10 @@ React.useEffect(() => {
       });
 
       // Step 2: After successful opportunity sync, refresh the data for current week
-      const weekInfo = getWeekInfo(selectedDate);
-      const startDate = format(weekInfo.weekStart, 'yyyy-MM-dd');
-      const endDate = format(weekInfo.weekEnd, 'yyyy-MM-dd');
+      const { startDate, endDate, queryType } = getDateRange(selectedDate, period);
 
       // Refresh the reporting data
-      await getReportingData(startDate, endDate, 'weekly', period);
+      await getReportingData(startDate, endDate, queryType, period);
 
       // Reset loading state
       setIsOpportunitySyncing(false);
@@ -352,7 +450,7 @@ React.useEffect(() => {
       });
       setIsOpportunitySyncing(false);
     }
-  }, [toast, selectedDate, period, selectedUserId, getReportingData, getClientByRevenueProId]);
+  }, [toast, selectedDate, period, selectedUserId, getReportingData, getClientByRevenueProId, getDateRange])
 
   return (
     <div className="min-h-screen bg-background">
@@ -384,68 +482,81 @@ React.useEffect(() => {
               ...disableLogic,
               isButtonDisabled: disableLogic.isButtonDisabled || !hasChanges,
             }}
-            onNavigationAttempt={handleNavigationAttempt}
+            onNavigationAttempt={(_: Date, __: PeriodType) => {
+              return true;
+            }}
           />
         </div>
 
-        {/* Reporting Sections */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-8">
-          <TargetSection
-            sectionKey="targets"
-            title="Performance"
-            icon={<TrendingUp className="h-5 w-5 text-primary" />}
-            gradientClass="bg-gradient-primary/10"
-            fields={getSectionFields('targets')}
-            fieldValues={fieldValues}
-            calculatedValues={calculatedValues}
-            onInputChange={handleInputChange}
-            isHighlighted={isHighlighted}
-            period={period}
-            selectedDate={selectedDate}
-            isDisabled={isDisabled}
-            disabledMessage={disabledMessage}
-            targetValues={processedTargetData}
-            showTarget={true}
-          />
-
-          <TargetSection
-            sectionKey="budgetReport"
-            title="Budget Report"
-            icon={<DollarSign className="h-5 w-5 text-primary" />}
-            gradientClass="bg-gradient-secondary/10"
-            fields={getSectionFields('budgetReport')}
-            fieldValues={fieldValues}
-            calculatedValues={calculatedValues}
-            onInputChange={handleInputChange}
-            isHighlighted={isHighlighted}
-            period={period}
-            selectedDate={selectedDate}
-            isDisabled={isDisabled}
-            disabledMessage={disabledMessage}
-            targetValues={processedTargetData}
-            showTarget={true}
-          />
-
-          <TargetSection
-            sectionKey="targetReport"
+        <div className="flex flex-col gap-8 mb-8">
+          <TargetReport
             title="Target Report"
             icon={<TrendingUp className="h-5 w-5 text-accent" />}
-            gradientClass="bg-gradient-accent/10"
-            fields={getSectionFields('targetReport')}
+            fields={reportingFields['targetReport']}
             fieldValues={fieldValues}
-            calculatedValues={calculatedValues}
             onInputChange={handleInputChange}
-            isHighlighted={isHighlighted}
+            isLoading={isLoading}
             period={period}
-            selectedDate={selectedDate}
             isDisabled={isDisabled}
             disabledMessage={disabledMessage}
             targetValues={processedTargetData}
-            showTarget={true}
             showOpportunitySyncButton={shouldShowOpportunitySync}
-            onOpportunitySyncClick={handleOpportunitySync}
+            onOpportunitySyncClick={handleOpportunitySyncClick}
             isOpportunitySyncing={isOpportunitySyncing}
           />
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {getStatsCards(calculatedValues).map((card) => (
+              <StatsCards 
+                key={card.title} 
+                title={card.title} 
+                value={card.value} />
+            ))}
+          </div>
+         
+          {/* Show Campaign Spend if client has meta integration and period is not yearly */}
+          {hasMetaIntegration === true && clientHasFbAccount && period !== 'yearly' && (
+            <div className="lg:col-span-2">
+              <div className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col max-h-[785px]">
+                <div className="p-4 border-b border-gray-200 flex-shrink-0">
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="h-5 w-5 text-blue-600" />
+                    <h2 className="text-xl font-semibold text-gray-800">Campaign Spend</h2>
+                    {isLoadingCampaignData && (
+                      <span className="text-sm text-muted-foreground ml-2">Loading...</span>
+                    )}
+                  </div>
+                </div>
+                <div className="p-0 overflow-y-auto flex-1 min-h-0">
+                  {isLoadingCampaignData ? (
+                    <div className="flex items-center justify-center py-8">
+                      <p className="text-muted-foreground">Loading campaign data...</p>
+                    </div>
+                  ) : campaignData.length > 0 ? (
+                    <CampaignAccordion data={processCampaignData(campaignData)} />
+                  ) : (
+                    <div className="flex items-center justify-center py-8">
+                      <p className="text-muted-foreground">No campaign data available for this period</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Show Budget Report if client does not have meta integration OR period is yearly */}
+          {(hasMetaIntegration === false || period === 'yearly') && (
+            <BudgetReport
+              title="Budget Report"
+              fields={reportingFields['budgetReport']}
+              fieldValues={fieldValues}
+              onInputChange={handleInputChange}
+              isLoading={isLoading}
+              period={period}
+              isDisabled={isDisabled}
+              disabledMessage={disabledMessage}
+            />
+          )}
         </div>
 
         {/* Daily Budget + Ad Names Amount (Weekly only) placed below sections */}
@@ -459,6 +570,33 @@ React.useEffect(() => {
           </div>
         )}
       </div>
+      
+      {/* Opportunity Sync Confirmation Modal */}
+      <AlertDialog open={showSyncConfirmation} onOpenChange={setShowSyncConfirmation}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Opportunity Sync</AlertDialogTitle>
+            <AlertDialogDescription>
+              This operation will sync opportunities from GHL and may take 2-3 minutes to complete. 
+              Please do not close this page or navigate away while the sync is in progress.
+              <br /><br />
+              Are you sure you want to proceed?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isOpportunitySyncing}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleOpportunitySyncConfirm}
+              disabled={isOpportunitySyncing}
+              className="bg-gradient-primary hover:opacity-90 hover:shadow-lg text-primary-foreground transition-all duration-200"
+            >
+              {isOpportunitySyncing ? 'Syncing...' : 'Yes, Start Sync'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       
       {/* Full Screen Loader */}
       <FullScreenLoader isLoading={isLoading} message="Loading reporting data..." />

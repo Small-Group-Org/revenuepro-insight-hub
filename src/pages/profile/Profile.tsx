@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { LogOut, TicketPlus, Ticket, Loader2, ArrowDown, Lightbulb, X, Plus } from "lucide-react";
+import { LogOut, TicketPlus, Ticket, Loader2, ArrowDown, Lightbulb, X, Plus, Facebook } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { useEffect } from "react";
@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useState } from "react";
 import { createFeatureRequest } from "@/service/featureRequestService";
+import { initiateMetaOAuth } from "@/service/metaAuthService";
 import {
   Table,
   TableBody,
@@ -59,6 +60,15 @@ export default function Profile() {
   });
 
   const isAdmin = userRole === 'ADMIN';
+
+  // Allowed client IDs for Meta OAuth connection
+  const ALLOWED_META_CLIENT_IDS = [
+    '683acb7561f26ee98f5d2d51',
+    '68ac6ebce46631727500499b'
+  ];
+
+  // Check if current user can connect Meta
+  const canConnectMeta = user?._id && ALLOWED_META_CLIENT_IDS.includes(user._id);
 
   const handleLogout = () => {
     logout();
@@ -347,6 +357,17 @@ export default function Profile() {
             <div className="text-sm text-muted-foreground">{user?.email || "email@domain.com"}</div>
           </div>
           <div className="ml-auto flex items-center gap-3">
+            {canConnectMeta && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={initiateMetaOAuth}
+                className="gap-2"
+              >
+                <Facebook size={16} />
+                Connect Meta
+              </Button>
+            )}
             {!isAdmin && (
               <Button
                 size="sm"
