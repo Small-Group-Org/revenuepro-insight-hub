@@ -15,6 +15,7 @@ import { SetTargets } from "@/pages/SetTargets";
 import { AddActualData } from "@/pages/AddActualData";
 import { LeadSheet } from "@/pages/LeadSheet";
 import { LeadAnalytics } from "@/pages/LeadAnalytics";
+import AdPerformanceBoard from "@/pages/AdPerformanceBoard";
 import NotFound from "@/pages/NotFound";
 import Login from "./pages/Login";
 import { UserProvider } from "./utils/UserContext";
@@ -42,6 +43,7 @@ const AppRoutes = () => {
             <Route path="/compare" element={<CompareResults />} />
             <Route path="/leads" element={<LeadSheet />} />
             <Route path="/lead-analytics" element={<LeadAnalytics />} />
+            <Route path="/ad-performance" element={<AdPerformanceBoard />} />
             <Route path="/user-managment" element={<CreateUser />} />
             <Route path="/profile" element={<Profile />} />
           </Route>

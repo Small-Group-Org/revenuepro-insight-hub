@@ -1,6 +1,5 @@
 import { TargetFieldsConfig, ReportingFieldsConfig } from "@/types";
-import { Plus, Users, Target, TrendingUp } from "lucide-react";
-import { BarChart3 } from "lucide-react";
+import { Plus, Users, Target, TrendingUp, BarChart3, TrendingUpIcon } from "lucide-react";
 
 export const API_METHODS = {
   GET: "GET",
@@ -85,6 +84,12 @@ export const menuItems = [
     label: "Lead Analytics",
     icon: BarChart3,
     path: "/lead-analytics",
+  },
+  {
+    id: "adPerformance",
+    label: "Ad Performance",
+    icon: TrendingUpIcon,
+    path: "/ad-performance",
   },
 ];
 
