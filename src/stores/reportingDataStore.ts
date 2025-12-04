@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { IReportingData, IReportingResponse, getReportingData as fetchReportingData, upsertReportingData as saveReportingData, getAggregateReport } from '../service/reportingServices';
+import { IReportingData, IReportingResponse, getReportingData as fetchReportingData, upsertReportingData as saveReportingData, getAggregateReport, ILeadAnalytics } from '../service/reportingServices';
 import { IWeeklyTarget } from '../service/targetService';
 import useAuthStore from './authStore';
 import { useUserStore } from './userStore';
@@ -10,6 +10,7 @@ interface ReportingDataState {
   targetData: IWeeklyTarget[] | null;
   comparisonData: IReportingData[] | null;
   usersBudgetAndRevenue: IReportingResponse['usersBudgetAndRevenue'] | null;
+  leadAnalytics: ILeadAnalytics | null;
   isLoading: boolean;
   error: string | null;
   setReportingData: (data: IReportingData[] | null) => void;
@@ -31,6 +32,7 @@ export const useReportingDataStore = create<ReportingDataState>((set, get) => ({
   usersBudgetAndRevenue: null,
   isLoading: false,
   error: null,
+  leadAnalytics: null,
   setReportingData: (data) => set({ reportingData: data }),
   setTargetData: (data) => set({ targetData: data }),
   setComparisonData: (data) => set({ comparisonData: data }),
@@ -116,25 +118,26 @@ export const useReportingDataStore = create<ReportingDataState>((set, get) => ({
         const targetRaw = Array.isArray(aggregateResponse.target) ? aggregateResponse.target : [aggregateResponse.target];
         const targetData = Array.isArray(targetRaw) ? targetRaw : (targetRaw ? [targetRaw] : []);
         const usersBudgetAndRevenue = aggregateResponse.usersBudgetAndRevenue || null;
+        const leadAnalytics = aggregateResponse.leadAnalytics || null;
 
         if(period === "ytd"){
           const ytdResult = processYTDData(actualData, targetData);
           if (ytdResult.success && ytdResult.data) {
-            set({ reportingData: ytdResult.data, targetData, usersBudgetAndRevenue, isLoading: false });
+            set({ reportingData: ytdResult.data, targetData, usersBudgetAndRevenue, leadAnalytics, isLoading: false });
             return;
           } else {
             console.warn(`[YTD] ${ytdResult.message}, falling back to original actualData`);
-            set({ reportingData: actualData, targetData, usersBudgetAndRevenue, isLoading: false });
+            set({ reportingData: actualData, targetData, usersBudgetAndRevenue, leadAnalytics, isLoading: false });
             return;
           }
         }
 
-        set({ reportingData: actualData, targetData, usersBudgetAndRevenue, isLoading: false });
+        set({ reportingData: actualData, targetData, usersBudgetAndRevenue, leadAnalytics, isLoading: false });
       } else {
-        set({ reportingData: null, targetData: null, usersBudgetAndRevenue: null, error: response.message || 'Failed to fetch aggregate data', isLoading: false });
+        set({ reportingData: null, targetData: null, usersBudgetAndRevenue: null, leadAnalytics: null, error: response.message || 'Failed to fetch aggregate data', isLoading: false });
       }
     } catch (error) {
-      set({ reportingData: null, targetData: null, usersBudgetAndRevenue: null, error: error instanceof Error ? error.message : 'An error occurred while fetching aggregate data', isLoading: false });
+      set({ reportingData: null, targetData: null, usersBudgetAndRevenue: null, leadAnalytics: null, error: error instanceof Error ? error.message : 'An error occurred while fetching aggregate data', isLoading: false });
     }
   },
 
