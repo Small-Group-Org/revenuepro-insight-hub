@@ -214,7 +214,6 @@ export const Dashboard = () => {
         {/* Regular Dashboard - Only shown when Admin View is OFF */}
         {!isAdminView && (
           <>
-
             {/* Revenue Metrics Charts */}
             <div className="max-w-7xl mx-auto mb-8">
               <MetricsLineCharts 
