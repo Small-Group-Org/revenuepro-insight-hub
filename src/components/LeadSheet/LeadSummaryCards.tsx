@@ -1,6 +1,6 @@
 import React from 'react';
 import { Users } from 'lucide-react';
-import { TopCard } from '@/pages/dashboard/components/DashboardTopCards';
+import { TopCard } from '../common-ui/TopCards';
 
 interface StatusCounts {
   new: number;
@@ -27,7 +27,6 @@ export const LeadSummaryCards = React.memo(({ statusCounts }: LeadSummaryCardsPr
         }
       ]}
       description="Leads that are newly received and not yet processed."
-      twoRowDesign={true}
     />
     <TopCard
       title="In Progress Leads"
@@ -40,7 +39,6 @@ export const LeadSummaryCards = React.memo(({ statusCounts }: LeadSummaryCardsPr
         }
       ]}
       description="Leads currently being worked on by the team."
-      twoRowDesign={true}
     />
     <TopCard
       title="Estimate Set Leads"
@@ -53,7 +51,6 @@ export const LeadSummaryCards = React.memo(({ statusCounts }: LeadSummaryCardsPr
         }
       ]}
       description="Leads where estimates have been provided to customers."
-      twoRowDesign={true}
     />
     <TopCard
       title="Unqualified Leads"
@@ -66,7 +63,6 @@ export const LeadSummaryCards = React.memo(({ statusCounts }: LeadSummaryCardsPr
         }
       ]}
       description="Leads that don't meet qualification criteria."
-      twoRowDesign={true}
     />
   </div>
 ));

@@ -1,6 +1,7 @@
 import { doGET, doPOST } from "../utils/HttpUtils";
 import { API_ENDPOINTS } from "@/utils/constant";
 import { IWeeklyTarget } from "./targetService";
+import { DayOfWeekAnalyticsDataPoint, UnqualifiedReasonAnalyticsDataPoint } from "./leadService";
 
 export interface IReportingData {
   userId?: string;
@@ -17,12 +18,20 @@ export interface IUserRevenue {
   userEmail: string;
   disqualifiedLeadsCount: number;
   estimateSetCount: number;
+  actualLeads: number;
+  actualEstimateSet: number;
 }
 
 export interface IReportingResponse {
   actual: IReportingData[];
   target: IWeeklyTarget | IWeeklyTarget[]; // Target data structure - same as getTarget response
   usersBudgetAndRevenue?: IUserRevenue[]; // Revenue and budget per account (for admin view)
+  leadAnalytics?: ILeadAnalytics;
+}
+
+export interface ILeadAnalytics {
+  dayOfWeekData: DayOfWeekAnalyticsDataPoint[];
+  unqualifiedReasons: UnqualifiedReasonAnalyticsDataPoint[];
 }
 
 export const getReportingData = async (

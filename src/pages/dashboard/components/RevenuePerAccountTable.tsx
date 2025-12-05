@@ -12,12 +12,12 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { formatCurrency } from '@/utils/page-utils/commonUtils';
+import { REVENUE_TABLE_HEADERS, SortField } from '../dashboard.constant';
 
 interface RevenuePerAccountTableProps {
   usersBudgetAndRevenue: IUserRevenue[] | null;
 }
 
-type SortField = 'userName' | 'totalRevenue' | 'totalBudgetSpent' | 'costOfMarketingPercent';
 type SortDirection = 'asc' | 'desc';
 
 export const RevenuePerAccountTable: React.FC<RevenuePerAccountTableProps> = ({
@@ -31,7 +31,14 @@ export const RevenuePerAccountTable: React.FC<RevenuePerAccountTableProps> = ({
 
   // Calculate Cost of Marketing % for a user
   const calculateCostOfMarketingPercent = (budgetSpent: number, revenue: number): number => {
-    if (!revenue || revenue === 0) return 0;
+    if (
+      !Number.isFinite(revenue) ||
+      !Number.isFinite(budgetSpent) ||
+      revenue <= 0 ||
+      budgetSpent <= 0
+    ) {
+      return 0;
+    }
     return (budgetSpent / revenue) * 100;
   };
 
@@ -156,68 +163,44 @@ export const RevenuePerAccountTable: React.FC<RevenuePerAccountTableProps> = ({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-12">#</TableHead>
-                <TableHead>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 -ml-3 hover:bg-transparent  hover:text-black "
-                    onClick={() => handleSort('userName')}
-                  >
-                    Account Name
-                    {getSortIcon('userName')}
-                  </Button>
-                </TableHead>
-                <TableHead className="text-right">
-                  <div className="flex justify-end">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 -ml-3 hover:bg-transparent  hover:text-black"
-                      onClick={() => handleSort('totalBudgetSpent')}
+                {REVENUE_TABLE_HEADERS.map((header, index) => {
+                  const isRightAligned = header.align === 'right';
+                  const isSortable = !!header.sortField;
+                  const buttonClassName = 'h-8 -ml-3 hover:bg-transparent hover:text-black';
+
+                  return (
+                    <TableHead
+                      key={index}
+                      className={`${header.className || ''} ${isRightAligned ? 'text-right' : ''}`}
                     >
-                      Total Budget Spent
-                      {getSortIcon('totalBudgetSpent')}
-                    </Button>
-                  </div>
-                </TableHead>
-                <TableHead className="text-right">
-                  <div className="flex justify-end">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 -ml-3 hover:bg-transparent  hover:text-black"
-                      onClick={() => handleSort('totalRevenue')}
-                    >
-                      Total Revenue
-                      {getSortIcon('totalRevenue')}
-                    </Button>
-                  </div>
-                </TableHead>
-                <TableHead className="text-right ">
-                  <div className="flex justify-end">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 -ml-3 hover:bg-transparent  hover:text-black"
-                      onClick={() => handleSort('costOfMarketingPercent')}
-                    >
-                      CoM %
-                      {getSortIcon('costOfMarketingPercent')}
-                    </Button>
-                  </div>
-                </TableHead>
-                <TableHead className="text-right ">
-                  <div className="flex justify-end">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 -ml-3 hover:bg-transparent  hover:text-black"
-                    >
-                      Estimate Set%
-                    </Button>
-                  </div>
-                </TableHead>
+                      {header.isSpecial ? (
+                        header.label
+                      ) : isSortable ? (
+                        <div className={isRightAligned ? 'flex justify-end' : ''}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={buttonClassName}
+                            onClick={() => header.sortField && handleSort(header.sortField)}
+                          >
+                            {header.label}
+                            {getSortIcon(header.sortField!)}
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className={isRightAligned ? 'flex justify-end' : ''}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={buttonClassName}
+                          >
+                            {header.label}
+                          </Button>
+                        </div>
+                      )}
+                    </TableHead>
+                  );
+                })}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -229,7 +212,8 @@ export const RevenuePerAccountTable: React.FC<RevenuePerAccountTableProps> = ({
                 </TableRow>
               ) : (
                 paginatedData.map((user, index) => {
-                  const { estimateSetCount, disqualifiedLeadsCount, totalRevenue, totalBudgetSpent } = user;
+                  const { estimateSetCount, disqualifiedLeadsCount, totalRevenue, totalBudgetSpent, actualLeads } = user;
+                  const costPerLead = actualLeads > 0 ? totalBudgetSpent / actualLeads : 0;
                   const costOfMarketingPercent = calculateCostOfMarketingPercent(
                     totalBudgetSpent || 0,
                     totalRevenue || 0
@@ -262,6 +246,11 @@ export const RevenuePerAccountTable: React.FC<RevenuePerAccountTableProps> = ({
                       <TableCell className="text-right">
                         <div className="pr-10">
                         {estimateSetPercent}%
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-left">
+                        <div className="px-5">
+                        ${costPerLead.toFixed(2)}
                         </div>
                       </TableCell>
                     </TableRow>
