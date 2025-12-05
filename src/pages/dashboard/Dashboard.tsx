@@ -12,6 +12,7 @@ import { MetricsLineCharts } from '../../components/MetricsLineCharts';
 import { DualMetricChart } from '../../components/DualMetricChart';
 import { DashboardTopCards } from './components/DashboardTopCards';
 import { RevenuePerAccountTable } from './components/RevenuePerAccountTable';
+import { LeadAnalyticsCharts } from './components/LeadAnalyticsCharts';
 import { useUserStore } from '@/stores/userStore';
 import { TrendingUp, DollarSign, Filter, Users, Calendar, BarChart3 } from 'lucide-react';
 import { 
@@ -27,9 +28,8 @@ import { ReleaseNotesModal } from '../../components/ReleaseNotesModal';
 import { useUserContext } from '@/utils/UserContext';
 import { markUpdateAsSeen } from '@/service/userService';
 
-
 export const Dashboard = () => {
-  const { reportingData, getReportingData, getComparisonData, clearComparisonData, getAggregateData, usersBudgetAndRevenue } = useReportingDataStore();
+  const { reportingData, getReportingData, getComparisonData, clearComparisonData, getAggregateData, usersBudgetAndRevenue, leadAnalytics } = useReportingDataStore();
   const { selectedUserId, isAdminView, setIsAdminView } = useUserStore();
   const { user, setUser } = useUserContext();
   const { 
@@ -214,7 +214,6 @@ export const Dashboard = () => {
         {/* Regular Dashboard - Only shown when Admin View is OFF */}
         {!isAdminView && (
           <>
-
             {/* Revenue Metrics Charts */}
             <div className="max-w-7xl mx-auto mb-8">
               <MetricsLineCharts 
@@ -329,6 +328,11 @@ export const Dashboard = () => {
                   hideTargets={true}
                 />
               </div>
+            </div>
+
+            {/* Lead Analytics Charts */}
+            <div className="max-w-7xl mx-auto">
+              <LeadAnalyticsCharts leadAnalytics={leadAnalytics} />
             </div>
 
             {/* Revenue Per Account Table - Below admin view charts */}

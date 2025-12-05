@@ -30,7 +30,6 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { SortSwitch } from "@/components/ui/sort-switch";
-import { TopCard } from "@/pages/dashboard/components/DashboardTopCards";
 import {
   getAnalyticsSummary,
   getAnalyticsTable,
@@ -51,6 +50,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { TopCard } from "@/components/common-ui/TopCards";
 
 // Chart colors
 const COLORS = ["#1f1c13", "#9ca3af", "#306BC8", "#2A388F", "#396F9C"];
@@ -394,7 +394,7 @@ export const LeadAnalytics = () => {
       : 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 overflow-x-hidden">
+    <div className="min-h-screen overflow-x-hidden">
       <div className="relative z-10 pt-4 pb-12 px-4">
         <div className="max-w-7xl mx-auto space-y-10 w-full">
           {/* Header */}
@@ -608,6 +608,7 @@ export const LeadAnalytics = () => {
               {/* Overview Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <TopCard
+                  variant="large"
                   title="Total Leads"
                   icon={<Users className="h-5 w-5 opacity-50 text-accent" />}
                   metrics={[
@@ -634,6 +635,7 @@ export const LeadAnalytics = () => {
                 />
 
                 <TopCard
+                  variant="large"
                   title="Estimates Set"
                   icon={
                     <CheckCircle className="h-5 w-5 opacity-50 text-green-600" />
@@ -654,6 +656,7 @@ export const LeadAnalytics = () => {
                 />
 
                 <TopCard
+                  variant="large"
                   title="Unqualified"
                   icon={<XCircle className="h-5 w-5 opacity-50 text-red-600" />}
                   metrics={[
@@ -672,6 +675,7 @@ export const LeadAnalytics = () => {
                 />
 
                 <TopCard
+                  variant="large"
                   title="Estimate Set Rate"
                   icon={
                     <TrendingUp className="h-5 w-5 opacity-50 text-blue-600" />

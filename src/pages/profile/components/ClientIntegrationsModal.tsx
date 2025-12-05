@@ -96,6 +96,7 @@ const ClientIntegrationsModal: React.FC<ClientIntegrationsModalProps> = ({
           status: "active",
         });
       }
+
     } else {
       // Reset form when modal closes
       setGhlFormData({
@@ -126,6 +127,24 @@ const ClientIntegrationsModal: React.FC<ClientIntegrationsModalProps> = ({
     try {
       const accountsResponse = await getAdAccounts();
       setAdAccounts(accountsResponse.data || []);
+      
+      // After ad accounts are loaded, fetch and set client's current fbAdAccountId if it exists
+      if (revenueProClientId) {
+        try {
+          const userProfile = await getUserProfile(revenueProClientId);
+          if (!userProfile.error && userProfile.data?.fbAdAccountId) {
+            // Set the client's current fbAdAccountId in the dropdown
+            // This will pre-select it if it exists in the available ad accounts list
+            setSelectedAdAccount(userProfile.data.fbAdAccountId);
+          } else {
+            // If no fbAdAccountId exists, leave selection empty for user to select
+            setSelectedAdAccount("");
+          }
+        } catch (error) {
+          // If error fetching client profile, leave selection empty
+          console.error("Error fetching client profile:", error);
+        }
+      }
     } finally {
       setMetaLoading(false);
     }
