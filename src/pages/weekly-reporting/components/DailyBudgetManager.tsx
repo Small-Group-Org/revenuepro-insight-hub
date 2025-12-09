@@ -78,6 +78,13 @@ export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
     return ALLOWED_EDIT_USER_IDS.includes(user._id);
   }, [user]);
 
+  const persistDraftRows = (nextRows: AdNameAmount[]) => {
+    setIsDirty(true);
+    try {
+      if (getDraftKey) sessionStorage.setItem(getDraftKey, JSON.stringify({ rows: nextRows }));
+    } catch {}
+  };
+
   // Note: Do not sync rows from props after mount.
   // Rows are sourced from the component's local fetch to avoid clobbering unsaved or just-saved data.
 
@@ -165,16 +172,17 @@ export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
             }
           : r
       );
-      setIsDirty(true);
-      try {
-        if (getDraftKey) sessionStorage.setItem(getDraftKey, JSON.stringify({ rows: next }));
-      } catch {}
+      persistDraftRows(next);
       return next;
     });
   };
 
   const addRow = () => {
-    setRows(prev => Array.isArray(prev) ? [...prev, { adName: '', budget: 0 }] : [{ adName: '', budget: 0 }]);
+    setRows(prev => {
+      const next = Array.isArray(prev) ? [...prev, { adName: '', budget: 0 }] : [{ adName: '', budget: 0 }];
+      persistDraftRows(next);
+      return next;
+    });
   };
 
   const removeRow = (index: number) => {
@@ -182,7 +190,12 @@ export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
     const rowToDelete = rows[index];
     if (rowToDelete) {
       setDeletedRows(prev => [...prev, rowToDelete]);
-      setRows(prev => Array.isArray(prev) ? prev.filter((_, i) => i !== index) : []);
+      setRows(prev => {
+        if (!Array.isArray(prev)) return [];
+        const next = prev.filter((_, i) => i !== index);
+        persistDraftRows(next);
+        return next;
+      });
     }
   };
 
@@ -190,7 +203,11 @@ export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
     if (deletedRows.length > 0) {
       const rowToRestore = deletedRows[deletedRows.length - 1];
       setDeletedRows(prev => Array.isArray(prev) ? prev.slice(0, -1) : []);
-      setRows(prev => Array.isArray(prev) ? [...prev, rowToRestore] : [rowToRestore]);
+      setRows(prev => {
+        const next = Array.isArray(prev) ? [...prev, rowToRestore] : [rowToRestore];
+        persistDraftRows(next);
+        return next;
+      });
       toast({
         title: "Undone",
         description: "Deleted row restored",
