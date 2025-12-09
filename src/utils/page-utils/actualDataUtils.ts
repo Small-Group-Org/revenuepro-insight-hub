@@ -13,14 +13,22 @@ import {
 
 /**
  * Calculates reporting fields for actual data entry
+ * @param inputValues - The field values to calculate from
+ * @param campaignSpend - Optional total campaign spend from meta integration (overrides manual budget entries)
  */
-export function calculateReportingFields(inputValues: FieldValue): FieldValue {
+export function calculateReportingFields(inputValues: FieldValue, campaignSpend?: number): FieldValue {
   const allValues = { ...inputValues };
   
   // Calculate total budget spent
-  const budgetSpent = (allValues.testingBudgetSpent || 0) + 
-                     (allValues.awarenessBrandingBudgetSpent || 0) + 
-                     (allValues.leadGenerationBudgetSpent || 0);
+  // If campaignSpend is provided (from meta integration), use it instead of manual budget entries
+  let budgetSpent: number;
+  if (campaignSpend !== undefined && campaignSpend !== null) {
+    budgetSpent = campaignSpend;
+  } else {
+    budgetSpent = (allValues.testingBudgetSpent || 0) + 
+                  (allValues.awarenessBrandingBudgetSpent || 0) + 
+                  (allValues.leadGenerationBudgetSpent || 0);
+  }
   allValues.budgetSpent = budgetSpent;
 
   // Calculate budget fields if target revenue and com are available
