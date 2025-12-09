@@ -198,6 +198,15 @@ export const AddActualData = () => {
     fetchCampaignData();
   }, [selectedDate, period, selectedUserId, hasMetaIntegration, getDateRange]);
 
+  // Calculate total campaign spend from meta integration
+  const totalCampaignSpend = useMemo(() => {
+    if (!campaignData || campaignData.length === 0) return undefined;
+    return campaignData.reduce((sum, item) => {
+      const spend = parseFloat(item.spend) || 0;
+      return sum + spend;
+    }, 0);
+  }, [campaignData]);
+
 React.useEffect(() => {
   if (reportingData && Array.isArray(reportingData)) {
     const newValues = { ...getReportingDefaultValues() };
@@ -220,7 +229,7 @@ React.useEffect(() => {
       com: processedTargetData?.com || 0,
       targetRevenue: processedTargetData?.revenue || 0,
     };
-    const calculatedNewValues = calculateReportingFields(combinedValues);
+    const calculatedNewValues = calculateReportingFields(combinedValues, hasMetaIntegration === true ? totalCampaignSpend : undefined);
     setPrevValues(calculatedNewValues);
     
   } else {
@@ -233,11 +242,10 @@ React.useEffect(() => {
       com: processedTargetData?.com || 0,
       targetRevenue: processedTargetData?.revenue || 0,
     };
-    const calculatedDefaults = calculateReportingFields(combinedDefaults);
+    const calculatedDefaults = calculateReportingFields(combinedDefaults, hasMetaIntegration === true ? totalCampaignSpend : undefined);
     setPrevValues(calculatedDefaults);
   }
-}, [reportingData, processedTargetData, getReportingDefaultValues, METADATA_FIELDS]);
-
+}, [reportingData, processedTargetData, getReportingDefaultValues, METADATA_FIELDS, hasMetaIntegration, totalCampaignSpend]);
 
   const calculatedValues = useMemo(() => {
     const combinedValues = {
@@ -246,8 +254,10 @@ React.useEffect(() => {
       targetRevenue: processedTargetData?.revenue || 0,
     };
     
-    return calculateReportingFields(combinedValues);
-  }, [fieldValues, processedTargetData]);
+    // Pass totalCampaignSpend when meta integration is active
+    // This will override the manual budget entries (testingBudgetSpent, etc.)
+    return calculateReportingFields(combinedValues, hasMetaIntegration === true ? totalCampaignSpend : undefined);
+  }, [fieldValues, processedTargetData, hasMetaIntegration, totalCampaignSpend]);
 
   // Calculate disable logic for AddActualData page with role-based restrictions
   const disableLogic = useMemo(() => 
@@ -506,7 +516,7 @@ React.useEffect(() => {
           />
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {getStatsCards(calculatedValues).map((card) => (
+            {getStatsCards(calculatedValues, isLoadingCampaignData, hasMetaIntegration === true).map((card) => (
               <StatsCards 
                 key={card.title} 
                 title={card.title} 
