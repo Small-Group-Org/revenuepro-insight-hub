@@ -20,14 +20,27 @@ export function calculateReportingFields(inputValues: FieldValue, campaignSpend?
   const allValues = { ...inputValues };
   
   // Calculate total budget spent
-  // If campaignSpend is provided (from meta integration), use it instead of manual budget entries
+  // Priority order:
+  // 1. If campaignSpend parameter is provided (from meta integration), use it (highest priority)
+  // 2. If metaBudgetSpent exists in data AND all three manual budget fields are zero, use metaBudgetSpent
+  // 3. Otherwise, use the sum of the three manual budget fields
   let budgetSpent: number;
   if (campaignSpend !== undefined && campaignSpend !== null) {
     budgetSpent = campaignSpend;
   } else {
-    budgetSpent = (allValues.testingBudgetSpent || 0) + 
-                  (allValues.awarenessBrandingBudgetSpent || 0) + 
-                  (allValues.leadGenerationBudgetSpent || 0);
+    const testingBudgetSpent = allValues.testingBudgetSpent || 0;
+    const awarenessBrandingBudgetSpent = allValues.awarenessBrandingBudgetSpent || 0;
+    const leadGenerationBudgetSpent = allValues.leadGenerationBudgetSpent || 0;
+    const manualBudgetSum = testingBudgetSpent + awarenessBrandingBudgetSpent + leadGenerationBudgetSpent;
+    
+    // If all three manual budget fields are zero and metaBudgetSpent exists, use metaBudgetSpent
+    if (manualBudgetSum === 0 && 
+        allValues.metaBudgetSpent !== undefined && 
+        allValues.metaBudgetSpent !== null) {
+      budgetSpent = allValues.metaBudgetSpent;
+    } else {
+      budgetSpent = manualBudgetSum;
+    }
   }
   allValues.budgetSpent = budgetSpent;
 
@@ -266,6 +279,7 @@ export function calculateAverageMetrics(weeklyData: FieldValue[]): FieldValue {
     'testingBudgetSpent',
     'awarenessBrandingBudgetSpent',
     'leadGenerationBudgetSpent',
+    'metaBudgetSpent',
   ];
 
   sumMetrics.forEach(metric => {
