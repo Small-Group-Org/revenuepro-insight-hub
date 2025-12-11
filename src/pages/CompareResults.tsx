@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DatePeriodSelector } from "@/components/DatePeriodSelector";
@@ -27,6 +27,7 @@ import { exportToExcel, ExportData } from "@/utils/excelExport";
 import { useUserStore } from "@/stores/userStore";
 import { FullScreenLoader } from "@/components/ui/full-screen-loader";
 import { useCombinedLoading } from "@/hooks/useCombinedLoading";
+import { useMetaBudgetSpent } from "@/hooks/useMetaBudgetSpent";
 
 export const CompareResults = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -34,9 +35,16 @@ export const CompareResults = () => {
     "monthly"
   );
 
-  const { reportingData, targetData, getReportingData } = useReportingDataStore();
+  const { reportingData, targetData, getReportingData, upsertReportingData } = useReportingDataStore();
   const { isLoading } = useCombinedLoading();
   const { selectedUserId } = useUserStore();
+  
+  // Use meta budget spent hook
+  const {
+    hasMetaIntegration,
+    upsertMetaBudgetSpentForEntry,
+  } = useMetaBudgetSpent(selectedUserId);
+
   // Fetch actual+target data from single API
   useEffect(() => {
     let startDate: string, endDate: string, queryType: string;
@@ -91,6 +99,65 @@ export const CompareResults = () => {
     // Apply reporting field calculations
     return calculateReportingFields(actualWithTargets);
   }, [reportingData, processedTargetData]);
+
+  // Helper function to get date range
+  const getDateRange = useCallback((date: Date, periodType: "weekly" | "monthly" | "yearly"): {
+    startDate: string;
+    endDate: string;
+    queryType: string;
+  } => {
+    if (periodType === "weekly") {
+      const weekInfo = getWeekInfo(date);
+      return {
+        startDate: format(weekInfo.weekStart, "yyyy-MM-dd"),
+        endDate: format(weekInfo.weekEnd, "yyyy-MM-dd"),
+        queryType: "weekly",
+      };
+    } else if (periodType === "monthly") {
+      return {
+        startDate: format(startOfMonth(date), "yyyy-MM-dd"),
+        endDate: format(endOfMonth(date), "yyyy-MM-dd"),
+        queryType: "monthly",
+      };
+    } else {
+      return {
+        startDate: format(startOfYear(date), "yyyy-MM-dd"),
+        endDate: format(endOfYear(date), "yyyy-MM-dd"),
+        queryType: "yearly",
+      };
+    }
+  }, []);
+
+  // Auto-upsert metaBudgetSpent when it's null and meta integration is active
+  useEffect(() => {
+    const upsertMetaBudgetSpentIfNull = async () => {
+      // Only proceed if:
+      // 1. Reporting data has been loaded
+      // 2. User has meta integration enabled
+      if (!reportingData || !Array.isArray(reportingData) || reportingData.length === 0) {
+        return;
+      }
+
+      if (hasMetaIntegration !== true || !selectedUserId) {
+        return;
+      }
+
+      // Check each reporting data entry (works for weekly, monthly, and yearly)
+      for (const dataEntry of reportingData) {
+        await upsertMetaBudgetSpentForEntry(
+          dataEntry,
+          selectedUserId,
+          period,
+          upsertReportingData,
+          getReportingData,
+          getDateRange,
+          selectedDate
+        );
+      }
+    };
+
+    upsertMetaBudgetSpentIfNull();
+  }, [reportingData, hasMetaIntegration, period, selectedUserId, upsertReportingData, getReportingData, selectedDate, upsertMetaBudgetSpentForEntry, getDateRange]);
 
   // Helper function to calculate actual metrics from reporting data
   const calculateActualMetrics = useMemo(() => {
