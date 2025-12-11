@@ -13,14 +13,35 @@ import {
 
 /**
  * Calculates reporting fields for actual data entry
+ * @param inputValues - The field values to calculate from
+ * @param campaignSpend - Optional total campaign spend from meta integration (overrides manual budget entries)
  */
-export function calculateReportingFields(inputValues: FieldValue): FieldValue {
+export function calculateReportingFields(inputValues: FieldValue, campaignSpend?: number): FieldValue {
   const allValues = { ...inputValues };
   
   // Calculate total budget spent
-  const budgetSpent = (allValues.testingBudgetSpent || 0) + 
-                     (allValues.awarenessBrandingBudgetSpent || 0) + 
-                     (allValues.leadGenerationBudgetSpent || 0);
+  // Priority order:
+  // 1. If campaignSpend parameter is provided (from meta integration), use it (highest priority)
+  // 2. If metaBudgetSpent exists in data AND all three manual budget fields are zero, use metaBudgetSpent
+  // 3. Otherwise, use the sum of the three manual budget fields
+  let budgetSpent: number;
+  if (campaignSpend !== undefined && campaignSpend !== null) {
+    budgetSpent = campaignSpend;
+  } else {
+    const testingBudgetSpent = allValues.testingBudgetSpent || 0;
+    const awarenessBrandingBudgetSpent = allValues.awarenessBrandingBudgetSpent || 0;
+    const leadGenerationBudgetSpent = allValues.leadGenerationBudgetSpent || 0;
+    const manualBudgetSum = testingBudgetSpent + awarenessBrandingBudgetSpent + leadGenerationBudgetSpent;
+    
+    // If all three manual budget fields are zero and metaBudgetSpent exists, use metaBudgetSpent
+    if (manualBudgetSum === 0 && 
+        allValues.metaBudgetSpent !== undefined && 
+        allValues.metaBudgetSpent !== null) {
+      budgetSpent = allValues.metaBudgetSpent;
+    } else {
+      budgetSpent = manualBudgetSum;
+    }
+  }
   allValues.budgetSpent = budgetSpent;
 
   // Calculate budget fields if target revenue and com are available
@@ -258,6 +279,7 @@ export function calculateAverageMetrics(weeklyData: FieldValue[]): FieldValue {
     'testingBudgetSpent',
     'awarenessBrandingBudgetSpent',
     'leadGenerationBudgetSpent',
+    'metaBudgetSpent',
   ];
 
   sumMetrics.forEach(metric => {

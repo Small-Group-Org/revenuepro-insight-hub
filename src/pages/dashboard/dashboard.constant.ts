@@ -44,3 +44,19 @@ export const REVENUE_TABLE_HEADERS: TableHeaderConfig[] = [
   },
 ];
 
+// Chart colors
+export const COLORS = ["#1f1c13", "#9ca3af", "#306BC8", "#2A388F", "#396F9C"];
+
+export const CHART_DIMENSIONS = {
+  minWidth: "300px",
+  height: "320px",
+};
+
+export const chartConfig = {
+  count: {
+    label: "Count",
+  },
+  estimateSet: {
+    label: "Estimates Set",
+  },
+};

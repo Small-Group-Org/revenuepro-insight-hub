@@ -23,9 +23,7 @@ import { TargetReport } from './components/TargetReport';
 import { BudgetReport } from './components/BudgetReport';
 import StatsCards from './components/StatsCards';
 import { getStatsCards } from './utils/utils';
-import { getEnrichedAds } from '@/service/facebookEnrichedAdsService';
-import { transformEnrichedAdsToCampaignData } from '@/utils/facebookAdsTransformer';
-import { getUserProfile } from '@/service/metaAdAccountService';
+import { useMetaBudgetSpent } from '@/hooks/useMetaBudgetSpent';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -50,11 +48,18 @@ export const AddActualData = () => {
   const [fieldValues, setFieldValues] = useState<FieldValue>({});
   const [lastChanged, setLastChanged] = useState<string | null>(null);
   const [prevValues, setPrevValues] = useState<FieldValue>({});
-  const [campaignData, setCampaignData] = useState<any[]>([]);
-  const [isLoadingCampaignData, setIsLoadingCampaignData] = useState(false);
   const [clientHasFbAccount, setClientHasFbAccount] = useState(false);
-  const [hasMetaIntegration, setHasMetaIntegration] = useState<boolean | null>(null);
   const [showSyncConfirmation, setShowSyncConfirmation] = useState(false);
+
+  // Use meta budget spent hook
+  const {
+    hasMetaIntegration,
+    campaignData,
+    setCampaignData,
+    isLoadingCampaignData,
+    totalCampaignSpend,
+    fetchCampaignData: fetchCampaignDataFromHook,
+  } = useMetaBudgetSpent(selectedUserId);
 
 
   // Use processed target data from store (single API)
@@ -119,30 +124,6 @@ export const AddActualData = () => {
     getReportingData(startDate, endDate, queryType, period);
   }, [selectedDate, period, selectedUserId, getReportingData, getDateRange]);
 
-  // Check if user has meta integration (fbAdAccountId)
-  React.useEffect(() => {
-    const checkMetaIntegration = async () => {
-      if (!selectedUserId) {
-        setHasMetaIntegration(null);
-        return;
-      }
-
-      try {
-        const userProfile = await getUserProfile(selectedUserId);
-        if (!userProfile.error && userProfile.data?.fbAdAccountId) {
-          setHasMetaIntegration(true);
-        } else {
-          setHasMetaIntegration(false);
-        }
-      } catch (error) {
-        // If error checking, assume no integration
-        setHasMetaIntegration(false);
-      }
-    };
-
-    checkMetaIntegration();
-  }, [selectedUserId]);
-
   // Fetch Facebook enriched ads data for campaign section
   React.useEffect(() => {
     const fetchCampaignData = async () => {
@@ -151,52 +132,37 @@ export const AddActualData = () => {
       if (!selectedUserId || hasMetaIntegration !== true) {
         setClientHasFbAccount(false);
         setCampaignData([]);
-        setIsLoadingCampaignData(false);
         return;
       }
 
       // Show campaign section with loader while data is being fetched
       setClientHasFbAccount(true);
-      setIsLoadingCampaignData(true);
-      try {
-        // Get date range based on selected period
-        const { startDate, endDate, queryType } = getDateRange(selectedDate, period);
+      
+      // Get date range based on selected period
+      const { startDate, endDate, queryType } = getDateRange(selectedDate, period);
 
-        // Fetch enriched ads data using clientId
-        // The backend will resolve the correct ad account & meta token
-        const enrichedAdsResponse = await getEnrichedAds({
-          clientId: selectedUserId,
-          startDate,
-          endDate,
-          queryType: queryType as "weekly" | "monthly" | "yearly",
-        });
+      // Fetch campaign data using the hook
+      const result = await fetchCampaignDataFromHook(
+        selectedUserId,
+        startDate,
+        endDate,
+        queryType as "weekly" | "monthly" | "yearly"
+      );
 
-        if (enrichedAdsResponse.error || !enrichedAdsResponse.data) {
-          // If error, set empty data and hide section
-          setCampaignData([]);
-          setClientHasFbAccount(false);
-          setIsLoadingCampaignData(false);
-          return;
-        }
-
-        // Transform the enriched ads data to match CampaignDataItem format
-        const transformedData = transformEnrichedAdsToCampaignData(
-          enrichedAdsResponse.data as any[]
-        );
-
+      if (result.success && result.data && result.data.length > 0) {
+        setCampaignData(result.data);
         setClientHasFbAccount(true);
-        setCampaignData(transformedData);
-      } catch (error) {
-        // Silently fail - don't show campaign section if there's an error
+      } else {
+        // If error, set empty data and hide section
         setCampaignData([]);
         setClientHasFbAccount(false);
-      } finally {
-        setIsLoadingCampaignData(false);
       }
     };
 
     fetchCampaignData();
-  }, [selectedDate, period, selectedUserId, hasMetaIntegration, getDateRange]);
+  }, [selectedDate, period, selectedUserId, hasMetaIntegration, getDateRange, fetchCampaignDataFromHook]);
+
+  // totalCampaignSpend is now provided by the hook
 
 React.useEffect(() => {
   if (reportingData && Array.isArray(reportingData)) {
@@ -220,7 +186,7 @@ React.useEffect(() => {
       com: processedTargetData?.com || 0,
       targetRevenue: processedTargetData?.revenue || 0,
     };
-    const calculatedNewValues = calculateReportingFields(combinedValues);
+    const calculatedNewValues = calculateReportingFields(combinedValues, hasMetaIntegration === true ? totalCampaignSpend : undefined);
     setPrevValues(calculatedNewValues);
     
   } else {
@@ -233,11 +199,94 @@ React.useEffect(() => {
       com: processedTargetData?.com || 0,
       targetRevenue: processedTargetData?.revenue || 0,
     };
-    const calculatedDefaults = calculateReportingFields(combinedDefaults);
+    const calculatedDefaults = calculateReportingFields(combinedDefaults, hasMetaIntegration === true ? totalCampaignSpend : undefined);
     setPrevValues(calculatedDefaults);
   }
-}, [reportingData, processedTargetData, getReportingDefaultValues, METADATA_FIELDS]);
+}, [reportingData, processedTargetData, getReportingDefaultValues, METADATA_FIELDS, hasMetaIntegration, totalCampaignSpend]);
 
+  // Auto-upsert metaBudgetSpent when all 3 budget spent items are zero and meta integration is active
+  React.useEffect(() => {
+    const upsertMetaBudgetSpent = async () => {
+      // Only proceed if:
+      // 1. Reporting data has been loaded
+      // 2. User has meta integration enabled
+      // 3. Campaign spend data is available
+      // 4. All three budget spent fields are zero
+      if (!reportingData || !Array.isArray(reportingData) || reportingData.length === 0) {
+        return;
+      }
+
+      if (hasMetaIntegration !== true) {
+        return;
+      }
+
+      // Use totalCampaignSpend from hook (0 if undefined/null)
+      const campaignSpend = totalCampaignSpend || 0;
+      if (campaignSpend === 0) {
+        return;
+      }
+
+      // Check if all three budget spent fields are zero
+      const firstData = reportingData[0];
+      if (!firstData) return;
+
+      // Check if metaBudgetSpent already exists and matches - avoid unnecessary upsert
+      const existingMetaBudgetSpent = firstData.metaBudgetSpent;
+      if (existingMetaBudgetSpent !== undefined && existingMetaBudgetSpent !== null) {
+        // If the value is already set and matches (within 0.01 tolerance), skip upsert
+        if (Math.abs(existingMetaBudgetSpent - campaignSpend) < 0.01) {
+          return;
+        }
+      }
+
+      // Check if all three budget spent fields are zero
+      const testingBudgetSpent = firstData.testingBudgetSpent || 0;
+      const awarenessBrandingBudgetSpent = firstData.awarenessBrandingBudgetSpent || 0;
+      const leadGenerationBudgetSpent = firstData.leadGenerationBudgetSpent || 0;
+
+      // If any of the three budget spent fields is non-zero, don't upsert
+      if (testingBudgetSpent !== 0 || awarenessBrandingBudgetSpent !== 0 || leadGenerationBudgetSpent !== 0) {
+        return;
+      }
+
+      // All conditions met - proceed with upsert
+      try {
+        const { startDate, endDate } = getDateRange(selectedDate, period);
+        
+        // Get existing reporting data to preserve all fields
+        const existingData = firstData;
+        
+        // Preserve ALL existing fields except metadata
+        const preservedFields: any = {};
+        Object.keys(existingData).forEach(key => {
+          if (!METADATA_FIELDS.has(key)) {
+            const value = existingData[key];
+            if (value !== undefined) {
+              preservedFields[key] = value !== null ? value : 0;
+            }
+          }
+        });
+
+        const dataToUpsert = {
+          startDate: startDate,
+          endDate: endDate,
+          ...preservedFields,
+          metaBudgetSpent: campaignSpend,
+        };
+
+        await upsertReportingData(dataToUpsert);
+        
+        // Refetch reporting data to get updated data from API
+        const { queryType } = getDateRange(selectedDate, period);
+        await getReportingData(startDate, endDate, queryType, period);
+      } catch (error) {
+        // Silently fail - don't show error toast for auto-upsert
+        console.error('Error auto-upserting metaBudgetSpent:', error);
+      }
+    };
+
+    upsertMetaBudgetSpent();
+  }, [reportingData, hasMetaIntegration, totalCampaignSpend, selectedDate, period, upsertReportingData, getReportingData, getDateRange, METADATA_FIELDS]);
 
   const calculatedValues = useMemo(() => {
     const combinedValues = {
@@ -246,8 +295,11 @@ React.useEffect(() => {
       targetRevenue: processedTargetData?.revenue || 0,
     };
     
-    return calculateReportingFields(combinedValues);
-  }, [fieldValues, processedTargetData]);
+    // Pass totalCampaignSpend when meta integration is active
+    // This will override the manual budget entries (testingBudgetSpent, etc.)
+    const campaignSpend = hasMetaIntegration === true && totalCampaignSpend > 0 ? totalCampaignSpend : undefined;
+    return calculateReportingFields(combinedValues, campaignSpend);
+  }, [fieldValues, processedTargetData, hasMetaIntegration, totalCampaignSpend]);
 
   // Calculate disable logic for AddActualData page with role-based restrictions
   const disableLogic = useMemo(() => 
@@ -506,7 +558,7 @@ React.useEffect(() => {
           />
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {getStatsCards(calculatedValues).map((card) => (
+            {getStatsCards(calculatedValues, isLoadingCampaignData, hasMetaIntegration === true).map((card) => (
               <StatsCards 
                 key={card.title} 
                 title={card.title} 
