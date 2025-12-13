@@ -50,6 +50,7 @@ export const AddActualData = () => {
   const [prevValues, setPrevValues] = useState<FieldValue>({});
   const [clientHasFbAccount, setClientHasFbAccount] = useState(false);
   const [showSyncConfirmation, setShowSyncConfirmation] = useState(false);
+  const autoSaveMetaBudgetKeysRef = React.useRef<Set<string>>(new Set());
 
   // Use meta budget spent hook
   const {
@@ -226,6 +227,14 @@ React.useEffect(() => {
         return;
       }
 
+      const { startDate, endDate, queryType } = getDateRange(selectedDate, period);
+      const periodKey = `${startDate}_${endDate}`;
+
+      // Prevent repeated attempts for the same period during this session
+      if (autoSaveMetaBudgetKeysRef.current.has(periodKey)) {
+        return;
+      }
+
       // Check if all three budget spent fields are zero
       const firstData = reportingData[0];
       if (!firstData) return;
@@ -235,6 +244,7 @@ React.useEffect(() => {
       if (existingMetaBudgetSpent !== undefined && existingMetaBudgetSpent !== null) {
         // If the value is already set and matches (within 0.01 tolerance), skip upsert
         if (Math.abs(existingMetaBudgetSpent - campaignSpend) < 0.01) {
+          autoSaveMetaBudgetKeysRef.current.add(periodKey);
           return;
         }
       }
@@ -246,12 +256,14 @@ React.useEffect(() => {
 
       // If any of the three budget spent fields is non-zero, don't upsert
       if (testingBudgetSpent !== 0 || awarenessBrandingBudgetSpent !== 0 || leadGenerationBudgetSpent !== 0) {
+        autoSaveMetaBudgetKeysRef.current.add(periodKey);
         return;
       }
 
       // All conditions met - proceed with upsert
       try {
-        const { startDate, endDate } = getDateRange(selectedDate, period);
+        // Mark as attempted to avoid recursion even if backend returns unchanged data
+        autoSaveMetaBudgetKeysRef.current.add(periodKey);
         
         // Get existing reporting data to preserve all fields
         const existingData = firstData;
