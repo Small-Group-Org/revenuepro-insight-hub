@@ -141,7 +141,7 @@ export const FiltersBar = ({
   };
 
   return (
-    <Card className="mb-6 border border-slate-200/70 shadow-sm">
+    <Card className="mb-6 border-0 shadow-sm">
       <div className="px-4 py-3 flex flex-wrap items-center gap-4 border-b">
         <div className="flex items-center gap-2 text-slate-700 font-semibold">
           <CalendarRange className="h-4 w-4 text-primary" />
@@ -172,30 +172,30 @@ export const FiltersBar = ({
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 px-4 py-4">
-        <div className="space-y-2">
-          <div className="grid grid-cols-2 gap-2">
+      <div className="flex flex-wrap items-start gap-3 px-4 py-4">
+        <div className="flex-shrink-0">
+          <div className="flex gap-2">
             <Input
               type="date"
               value={filters.startDate}
               onChange={(e) => handleDateInput("startDate", e.target.value)}
-              className="h-10 text-sm pr-10 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:ml-[-15px] [&::-webkit-calendar-picker-indicator]:w-5 [&::-webkit-calendar-picker-indicator]:h-5"
+              className="h-10 text-sm pr-10 w-[150px] min-w-[150px] [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:ml-[-15px] [&::-webkit-calendar-picker-indicator]:w-5 [&::-webkit-calendar-picker-indicator]:h-5"
             />
             <Input
               type="date"
               value={filters.endDate}
               onChange={(e) => handleDateInput("endDate", e.target.value)}
-              className="h-10 text-sm pr-10 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:ml-[-15px] [&::-webkit-calendar-picker-indicator]:w-5 [&::-webkit-calendar-picker-indicator]:h-5"
+              className="h-10 text-sm pr-10 w-[150px] min-w-[150px] [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:ml-[-15px] [&::-webkit-calendar-picker-indicator]:w-5 [&::-webkit-calendar-picker-indicator]:h-5"
             />
           </div>
         </div>
 
-        <div className="space-y-2">
+        <div className="flex-shrink-0">
           <Select
             value={groupBy}
             onValueChange={(value) => onGroupByChange(value as GroupBy)}
           >
-            <SelectTrigger className="h-10">
+            <SelectTrigger className="h-10 w-[110px] min-w-[110px]">
               <SelectValue placeholder="Group by" />
             </SelectTrigger>
             <SelectContent>
@@ -206,7 +206,7 @@ export const FiltersBar = ({
           </Select>
         </div>
 
-        <div className="space-y-2">
+        <div className="flex-shrink-0 min-w-[200px] flex-1 max-w-[300px]">
           <Popover open={zipCodePopoverOpen} onOpenChange={setZipCodePopoverOpen}>
             <PopoverTrigger asChild>
               <Button
@@ -324,7 +324,7 @@ export const FiltersBar = ({
           </Popover>
         </div>
 
-        <div className="space-y-2">
+        <div className="flex-shrink-0 min-w-[200px] flex-1 max-w-[300px]">
           <Popover open={serviceTypePopoverOpen} onOpenChange={setServiceTypePopoverOpen}>
             <PopoverTrigger asChild>
               <Button
