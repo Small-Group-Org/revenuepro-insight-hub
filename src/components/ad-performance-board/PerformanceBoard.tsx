@@ -52,8 +52,6 @@ export const PerformanceBoard = () => {
 
   const [filters, setFilters] = useState<PerformanceBoardFilters>(() => ({
     ...getDefaultDateRange(),
-    estimateSetLeads: true,
-    jobBookedLeads: false,
   }));
   const [appliedFilters, setAppliedFilters] =
     useState<PerformanceBoardFilters>(filters);
@@ -247,19 +245,81 @@ export const PerformanceBoard = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groupBy]); // Reset when groupBy changes
 
+  // Transform filters: if operator is "!=", convert to "=" with remaining zip codes
+  // Remove operator fields as backend doesn't need them (assumes "=" by default)
+  const transformedFilters = useMemo(() => {
+    const filters: any = { ...appliedFilters };
+    
+    // Handle zip code "!=" operator - convert to "=" with remaining zip codes
+    if (filters.zipCode && filters.zipCodeOperator === "!=") {
+      const excludedZipCodes = Array.isArray(filters.zipCode) 
+        ? filters.zipCode 
+        : [filters.zipCode];
+      
+      // Get all available zip codes and exclude the selected ones
+      const remainingZipCodes = availableZipCodes.filter(
+        (zip) => !excludedZipCodes.includes(zip)
+      );
+      
+      if (remainingZipCodes.length > 0) {
+        // Send remaining zip codes (backend assumes "=" by default)
+        filters.zipCode = remainingZipCodes.length === 1 ? remainingZipCodes[0] : remainingZipCodes;
+      } else {
+        // If no remaining zip codes, remove the filter
+        filters.zipCode = undefined;
+      }
+      // Remove operator field as it's not needed
+      delete filters.zipCodeOperator;
+    } else if (filters.zipCodeOperator === "=") {
+      // Remove operator field even for "=" as backend assumes it by default
+      delete filters.zipCodeOperator;
+    }
+    
+    // Handle service type "!=" operator - convert to "=" with remaining service types
+    if (filters.serviceType && filters.serviceTypeOperator === "!=") {
+      const excludedServiceTypes = Array.isArray(filters.serviceType) 
+        ? filters.serviceType 
+        : [filters.serviceType];
+      
+      // Get all available service types and exclude the selected ones
+      const remainingServiceTypes = availableServiceTypes.filter(
+        (service) => !excludedServiceTypes.includes(service)
+      );
+      
+      if (remainingServiceTypes.length > 0) {
+        // Send remaining service types (backend assumes "=" by default)
+        filters.serviceType = remainingServiceTypes.length === 1 ? remainingServiceTypes[0] : remainingServiceTypes;
+      } else {
+        // If no remaining service types, remove the filter
+        filters.serviceType = undefined;
+      }
+      // Remove operator field as it's not needed
+      delete filters.serviceTypeOperator;
+    } else if (filters.serviceTypeOperator === "=") {
+      // Remove operator field even for "=" as backend assumes it by default
+      delete filters.serviceTypeOperator;
+    }
+    
+    // Remove estimateSetLeads and jobBookedLeads as they're removed from FE
+    delete filters.estimateSetLeads;
+    delete filters.jobBookedLeads;
+    
+    return filters;
+  }, [appliedFilters, availableZipCodes, availableServiceTypes]);
+
   const { data, isFetching, refetch } = useQuery<PerformanceRow[]>({
     queryKey: [
       "ad-performance-board",
       clientId,
       groupBy,
-      appliedFilters,
+      transformedFilters,
       columnOrder,
     ],
     queryFn: async () => {
       const response = await fetchAdPerformanceBoard({
         clientId,
         groupBy,
-        filters: appliedFilters,
+        filters: transformedFilters,
         columns: Object.fromEntries(columnOrder.map((id) => [id, true])),
       });
 
@@ -290,29 +350,57 @@ export const PerformanceBoard = () => {
   const sortedData = useMemo(() => {
     if (!data) return [];
     
-    // Filter out rows without zip codes when zip code filter is active with "=" operator
+    // Filter out rows without zip codes when zip code filter is active
     let filteredData = data;
-    if (appliedFilters.zipCode && appliedFilters.zipCodeOperator === "=") {
+    if (appliedFilters.zipCode) {
       const selectedZipCodes = Array.isArray(appliedFilters.zipCode) 
         ? appliedFilters.zipCode 
         : [appliedFilters.zipCode];
-      filteredData = data.filter((row) => {
-        if (!row.zipCode) return false; // Exclude rows without zip codes
-        const rowZipCodes = String(row.zipCode).split(",").map((z) => z.trim());
-        return rowZipCodes.some((zip) => selectedZipCodes.includes(zip));
-      });
+      
+      // Default to "=" if operator is not set (handles initial load case)
+      const operator = appliedFilters.zipCodeOperator || "=";
+      
+      if (operator === "=") {
+        // Include only rows with selected zip codes
+        filteredData = data.filter((row) => {
+          if (!row.zipCode) return false; // Exclude rows without zip codes
+          const rowZipCodes = String(row.zipCode).split(",").map((z) => z.trim());
+          return rowZipCodes.some((zip) => selectedZipCodes.includes(zip));
+        });
+      } else if (operator === "!=") {
+        // Exclude rows with selected zip codes
+        filteredData = data.filter((row) => {
+          if (!row.zipCode) return true; // Include rows without zip codes
+          const rowZipCodes = String(row.zipCode).split(",").map((z) => z.trim());
+          return !rowZipCodes.some((zip) => selectedZipCodes.includes(zip));
+        });
+      }
     }
     
-    // Filter out rows without service types when service type filter is active with "=" operator
-    if (appliedFilters.serviceType && appliedFilters.serviceTypeOperator === "=") {
+    // Filter out rows without service types when service type filter is active
+    if (appliedFilters.serviceType) {
       const selectedServiceTypes = Array.isArray(appliedFilters.serviceType) 
         ? appliedFilters.serviceType 
         : [appliedFilters.serviceType];
-      filteredData = filteredData.filter((row) => {
-        if (!row.service) return false; // Exclude rows without service types
-        const rowServices = String(row.service).split(",").map((s) => s.trim());
-        return rowServices.some((service) => selectedServiceTypes.includes(service));
-      });
+      
+      // Default to "=" if operator is not set (handles initial load case)
+      const operator = appliedFilters.serviceTypeOperator || "=";
+      
+      if (operator === "=") {
+        // Include only rows with selected service types
+        filteredData = filteredData.filter((row) => {
+          if (!row.service) return false; // Exclude rows without service types
+          const rowServices = String(row.service).split(",").map((s) => s.trim());
+          return rowServices.some((service) => selectedServiceTypes.includes(service));
+        });
+      } else if (operator === "!=") {
+        // Exclude rows with selected service types
+        filteredData = filteredData.filter((row) => {
+          if (!row.service) return true; // Include rows without service types
+          const rowServices = String(row.service).split(",").map((s) => s.trim());
+          return !rowServices.some((service) => selectedServiceTypes.includes(service));
+        });
+      }
     }
     
     if (!sortState.length) return filteredData;
@@ -358,8 +446,6 @@ export const PerformanceBoard = () => {
   const handleResetFilters = () => {
     const defaults = {
       ...getDefaultDateRange(),
-      estimateSetLeads: true,
-      jobBookedLeads: false,
     };
     setFilters(defaults);
     setAppliedFilters(defaults);
