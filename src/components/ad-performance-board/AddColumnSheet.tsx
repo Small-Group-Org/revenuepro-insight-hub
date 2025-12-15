@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { ColumnConfig, GroupBy } from "@/types/adPerformanceBoard";
 import { useEffect, useMemo, useState } from "react";
+import { cn } from "@/lib/utils";
 
 interface AddColumnSheetProps {
   open: boolean;
@@ -36,17 +37,38 @@ export const AddColumnSheet = ({
   const [query, setQuery] = useState("");
   const [localSelection, setLocalSelection] =
     useState<string[]>(selectedColumnIds);
+  const [activeTab, setActiveTab] = useState<"meta" | "revenuePro">("meta");
 
   useEffect(() => {
     setLocalSelection(selectedColumnIds);
   }, [selectedColumnIds]);
 
   const filtered = useMemo(() => {
+    const metaCategories = [
+      "Dimensions",
+      "Delivery",
+      "Performance",
+      "Engagement",
+      "Video",
+      "Conversions",
+      "Cost",
+    ];
+    const revenueProCategories = ["Dimensions", "Leads", "Lead KPIs"];
+
+    const byTab = availableColumns.filter((col) => {
+      const category = col.category || "Other";
+      if (activeTab === "meta") {
+        return metaCategories.includes(category) || category === "Other";
+      }
+      // Revenue PRO tab focuses on CRM / lead metrics
+      return revenueProCategories.includes(category);
+    });
+
     const list = query.trim()
-      ? availableColumns.filter((col) =>
+      ? byTab.filter((col) =>
           col.label.toLowerCase().includes(query.toLowerCase())
         )
-      : availableColumns;
+      : byTab;
 
     const grouped = list.reduce<Record<string, ColumnConfig[]>>((acc, col) => {
       const key = col.category || "Other";
@@ -55,7 +77,7 @@ export const AddColumnSheet = ({
     }, {});
 
     return grouped;
-  }, [query, availableColumns]);
+  }, [query, availableColumns, activeTab]);
 
   const toggleSelection = (id: string) => {
     setLocalSelection((prev) =>
@@ -81,12 +103,38 @@ export const AddColumnSheet = ({
         </DialogHeader>
 
         <div className="space-y-3">
+          <div className="inline-flex rounded-full bg-slate-100/80 p-1 text-xs font-medium">
+            <button
+              type="button"
+              className={cn(
+                "px-3 py-1 rounded-full transition-colors",
+                activeTab === "meta"
+                  ? "bg-blue-600 text-white shadow-sm"
+                  : "text-slate-600 hover:text-slate-800"
+              )}
+              onClick={() => setActiveTab("meta")}
+            >
+              Meta
+            </button>
+            <button
+              type="button"
+              className={cn(
+                "px-3 py-1 rounded-full transition-colors",
+                activeTab === "revenuePro"
+                  ? "bg-black text-white shadow-sm"
+                  : "text-slate-600 hover:text-slate-800"
+              )}
+              onClick={() => setActiveTab("revenuePro")}
+            >
+              Revenue PRO
+            </button>
+          </div>
           <Input
             placeholder="Search metrics…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
-          <ScrollArea className="h-[420px] rounded-md border">
+          <ScrollArea className="h-[420px] rounded-md">
             <div className="p-3 space-y-4">
               {Object.keys(filtered).length === 0 ? (
                 <p className="text-sm text-slate-500">

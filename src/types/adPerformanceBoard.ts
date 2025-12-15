@@ -34,6 +34,11 @@ export interface ColumnConfig {
   apiField: string;
   type: ColumnKind;
   description?: string;
+  /**
+   * Optional formula/explanation to show in tooltips, e.g.
+   * "costPerLead = fb_spend / numberOfLeads"
+   */
+  formula?: string;
   sortable?: boolean;
   filterable?: boolean;
   width?: number;
@@ -53,36 +58,37 @@ export interface PerformanceRow {
   adName?: string;
   service?: string;
   zipCode?: string;
-  impressions?: number;
-  unique_clicks?: number;
-  reach?: number;
-  frequency?: number;
-  clicks?: number;
-  ctr?: number;
-  unique_ctr?: number;
-  spend?: number;
-  cpc?: number;
-  cpm?: number;
-  cpr?: number;
-  post_engagements?: number;
-  post_reactions?: number;
-  post_comments?: number;
-  post_shares?: number;
-  post_saves?: number;
-  page_engagements?: number;
-  link_clicks?: number;
-  video_views?: number;
-  video_views_25pct?: number;
-  video_views_50pct?: number;
-  video_views_75pct?: number;
-  video_views_100pct?: number;
-  video_avg_watch_time?: number;
-  video_play_actions?: number;
-  total_conversions?: number;
-  conversion_value?: number;
-  cost_per_conversion?: number;
-  total_leads?: number;
-  cost_per_lead?: number;
+  // Facebook analytics metrics (prefixed with fb_)
+  fb_impressions?: number;
+  fb_unique_clicks?: number;
+  fb_reach?: number;
+  fb_frequency?: number;
+  fb_clicks?: number;
+  fb_ctr?: number;
+  fb_unique_ctr?: number;
+  fb_spend?: number;
+  fb_cpc?: number;
+  fb_cpm?: number;
+  fb_cpr?: number;
+  fb_post_engagements?: number;
+  fb_post_reactions?: number;
+  fb_post_comments?: number;
+  fb_post_shares?: number;
+  fb_post_saves?: number;
+  fb_page_engagements?: number;
+  fb_link_clicks?: number;
+  fb_video_views?: number;
+  fb_video_views_25pct?: number;
+  fb_video_views_50pct?: number;
+  fb_video_views_75pct?: number;
+  fb_video_views_100pct?: number;
+  fb_video_avg_watch_time?: number;
+  fb_video_play_actions?: number;
+  fb_total_conversions?: number;
+  fb_conversion_value?: number;
+  fb_cost_per_conversion?: number;
+  fb_total_leads?: number;
+  fb_cost_per_lead?: number;
   numberOfLeads?: number;
   numberOfEstimateSets?: number;
   numberOfJobsBooked?: number;
@@ -91,6 +97,8 @@ export interface PerformanceRow {
   costPerEstimateSet?: number;
   costPerJobBooked?: number;
   costOfMarketingPercent?: number;
+  estimateSetRate?: number;
+  revenue?: number;
   [key: string]: string | number | undefined;
 }
 
