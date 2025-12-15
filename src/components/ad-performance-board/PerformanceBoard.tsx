@@ -320,7 +320,14 @@ export const PerformanceBoard = () => {
         clientId,
         groupBy,
         filters: transformedFilters,
-        columns: Object.fromEntries(columnOrder.map((id) => [id, true])),
+        // Use apiField names for columns to match backend expectations (fb_* and others)
+        columns: Object.fromEntries(
+          columnOrder.map((id) => {
+            const col = AVAILABLE_COLUMNS.find((c) => c.id === id);
+            const key = col?.apiField ?? id;
+            return [key, true];
+          })
+        ),
       });
 
       if (response.error) {
@@ -715,13 +722,13 @@ export const PerformanceBoard = () => {
                     return (
                       <th
                         key={column.id}
-                        className={`group px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide border-r border-slate-200 last:border-r-0 relative whitespace-nowrap ${
+                        className={`group px-3 py-2 text-left text-[11px] font-semibold tracking-wide border-r border-slate-200 last:border-r-0 relative whitespace-nowrap ${
                           categoryColors ? `${!isFrozen ? categoryColors.bg : ""} ${categoryColors.text}` : "text-slate-700"
                         } ${isFrozen ? "sticky z-20" : ""}`}
                         style={{
-                          minWidth: "200px",
-                          width: "200px",
-                          maxWidth: (isZipCode || isService) ? "200px" : undefined,
+                          minWidth: "250px",
+                          width: "250px",
+                          maxWidth: (isZipCode || isService) ? "250px" : undefined,
                           left: isFrozen ? `${leftOffset}px` : undefined,
                           backgroundColor: isFrozen 
                             ? (categoryColors ? categoryColors.bgColor : "#f8fafc") 
@@ -733,35 +740,60 @@ export const PerformanceBoard = () => {
                         onDrop={handleDrop(column.id)}
                       >
                         <div className="flex items-center justify-between">
-                          <div 
-                            className="flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity"
-                            onClick={() => column.sortable && handleRequestSort(column.id)}
-                          >
-                            <span
-                              draggable={true}
-                              onDragStart={(e) => {
-                                e.stopPropagation();
-                                handleDragStart(column.id)(e);
-                              }}
-                              className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              <GripVertical className="h-3 w-3 text-slate-400" />
-                            </span>
-                            <span>{column.label}</span>
-                            {column.sortable && (
-                              <div className="flex items-center ml-1">
-                                {sortDirection === "asc" ? (
-                                  <ArrowUp className={`h-3 w-3 ${categoryColors ? categoryColors.text : "text-slate-600"}`} />
-                                ) : sortDirection === "desc" ? (
-                                  <ArrowDown className={`h-3 w-3 ${categoryColors ? categoryColors.text : "text-slate-600"}`} />
-                                ) : (
-                                  <div className="h-3 w-3 flex items-center justify-center">
-                                    <ArrowUp className={`h-2 w-2 ${categoryColors ? categoryColors.text : "text-slate-400"} opacity-50`} />
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div 
+                                  className="flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity max-w-full"
+                                  onClick={() => column.sortable && handleRequestSort(column.id)}
+                                >
+                                  <span
+                                    draggable={true}
+                                    onDragStart={(e) => {
+                                      e.stopPropagation();
+                                      handleDragStart(column.id)(e);
+                                    }}
+                                    className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity"
+                                  >
+                                    <GripVertical className="h-3 w-3 text-slate-400" />
+                                  </span>
+                                  <span className="text-[11px] leading-tight whitespace-nowrap truncate max-w-[220px]">
+                                    {column.label}
+                                  </span>
+                                  {column.sortable && (
+                                    <div className="flex items-center ml-1">
+                                      {sortDirection === "asc" ? (
+                                        <ArrowUp className={`h-3 w-3 ${categoryColors ? categoryColors.text : "text-slate-600"}`} />
+                                      ) : sortDirection === "desc" ? (
+                                        <ArrowDown className={`h-3 w-3 ${categoryColors ? categoryColors.text : "text-slate-600"}`} />
+                                      ) : (
+                                        <div className="h-3 w-3 flex items-center justify-center">
+                                          <ArrowUp className={`h-2 w-2 ${categoryColors ? categoryColors.text : "text-slate-400"} opacity-50`} />
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <div className="max-w-xs space-y-1">
+                                  <p className="text-xs font-semibold text-slate-900">
+                                    {column.label}
+                                  </p>
+                                  {column.description && (
+                                    <p className="text-xs text-slate-600 whitespace-normal break-words">
+                                      {column.description}
+                                    </p>
+                                  )}
+                                  {column.formula && (
+                                    <pre className="mt-1 text-[11px] font-mono bg-slate-900 text-slate-50 px-2 py-1 rounded-md whitespace-pre-wrap break-words">
+                                      {column.formula}
+                                    </pre>
+                                  )}
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <Button
                               size="icon"
