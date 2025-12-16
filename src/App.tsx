@@ -18,7 +18,6 @@ import { LeadAnalytics } from "@/pages/LeadAnalytics";
 import AdPerformanceBoard from "@/pages/AdPerformanceBoard";
 import NotFound from "@/pages/NotFound";
 import Login from "./pages/Login";
-import AdPerformanceBoard from "@/pages/AdPerformanceBoard";
 import { UserProvider } from "./utils/UserContext";
 import { CompareResults } from "@/pages/CompareResults";
 import CreateUser from "./pages/CreateUser";
