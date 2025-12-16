@@ -206,7 +206,7 @@ export const FiltersBar = ({
           </Select>
         </div>
 
-        <div className="flex-shrink-0 min-w-[200px] flex-1 max-w-[220px]">
+        <div className="flex-shrink-0 min-w-[230px] flex-1 max-w-[230px]">
           <Popover open={zipCodePopoverOpen} onOpenChange={setZipCodePopoverOpen}>
             <PopoverTrigger asChild>
               <Button
@@ -242,7 +242,7 @@ export const FiltersBar = ({
                       }}
                     >
                       <SelectTrigger 
-                        className="h-full w-10 px-0 border-0 bg-transparent shadow-none rounded-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 data-[state=open]:ring-0 data-[state=open]:ring-offset-0 text-slate-700 hover:bg-transparent text-[11px] focus:h-[34.5px] focus:w-[37px]"
+                        className="h-full w-10 px-0 border-0 bg-transparent shadow-none rounded-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 data-[state=open]:ring-0 data-[state=open]:ring-offset-0 text-slate-700 hover:bg-transparent text-[11px] focus:h-[34.5px] focus:w-[37px] m-1"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <span className="w-full text-center inline-block">
@@ -330,7 +330,7 @@ export const FiltersBar = ({
           </Popover>
         </div>
 
-        <div className="flex-shrink-0 min-w-[200px] flex-1 max-w-[250px]">
+        <div className="flex-shrink-0 min-w-[255px] flex-1 max-w-[255px]">
           <Popover open={serviceTypePopoverOpen} onOpenChange={setServiceTypePopoverOpen}>
             <PopoverTrigger asChild>
               <Button
@@ -366,7 +366,7 @@ export const FiltersBar = ({
                       }}
                     >
                       <SelectTrigger 
-                        className="h-full w-10 px-0 border-0 bg-transparent shadow-none rounded-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 data-[state=open]:ring-0 data-[state=open]:ring-offset-0 text-slate-700 hover:bg-transparent text-[11px] focus:h-[34.5px] focus:w-[37px]"
+                        className="h-full w-10 px-0 border-0 bg-transparent shadow-none rounded-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 data-[state=open]:ring-0 data-[state=open]:ring-offset-0 text-slate-700 hover:bg-transparent text-[11px] focus:h-[34.5px] focus:w-[37px] m-1"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <span className="w-full text-center inline-block">
