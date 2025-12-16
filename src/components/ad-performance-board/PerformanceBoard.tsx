@@ -722,7 +722,7 @@ export const PerformanceBoard = () => {
                     return (
                       <th
                         key={column.id}
-                        className={`group px-3 py-2 text-left text-base font-semibold tracking-wide border-r border-slate-200 last:border-r-0 relative whitespace-nowrap ${
+                        className={`group px-3 py-2 text-left text-sm font-semibold tracking-wide border-r border-slate-200 last:border-r-0 relative whitespace-nowrap ${
                           categoryColors ? `${!isFrozen ? categoryColors.bg : ""} ${categoryColors.text}` : "text-slate-700"
                         } ${isFrozen ? "sticky z-20" : ""}`}
                         style={{
@@ -757,7 +757,7 @@ export const PerformanceBoard = () => {
                                   >
                                     <GripVertical className="h-3 w-3 text-slate-400" />
                                   </span>
-                                  <span className="text-base leading-tight whitespace-nowrap truncate max-w-[220px]">
+                                  <span className="text-sm leading-tight whitespace-nowrap truncate max-w-[220px]">
                                     {column.label}
                                   </span>
                                   {column.sortable && (
@@ -857,7 +857,7 @@ export const PerformanceBoard = () => {
                         return (
                           <td
                             key={column.id}
-                            className={`px-3 py-2 text-sm border-r border-slate-100 last:border-r-0 overflow-hidden ${
+                            className={`py-2 pr-3 pl-6 text-sm border-r border-slate-100 last:border-r-0 overflow-hidden ${
                               categoryColors && !isFrozen ? categoryColors.cellBg : ""
                             } ${isFrozen ? "sticky z-20" : ""}`}
                             style={{
@@ -970,7 +970,7 @@ export const PerformanceBoard = () => {
                       return (
                         <td
                           key={column.id}
-                          className={`px-3 py-2 text-sm text-slate-700 border-r border-slate-200 last:border-r-0 whitespace-nowrap ${
+                          className={`py-2 pr-3 pl-6 text-sm text-slate-700 border-r border-slate-200 last:border-r-0 whitespace-nowrap ${
                             categoryColors && !isFrozen ? categoryColors.cellBg : ""
                           } ${isFrozen ? "sticky z-20" : ""}`}
                           style={{
