@@ -206,7 +206,7 @@ export const FiltersBar = ({
           </Select>
         </div>
 
-        <div className="flex-shrink-0 min-w-[200px] flex-1 max-w-[300px]">
+        <div className="flex-shrink-0 min-w-[200px] flex-1 max-w-[220px]">
           <Popover open={zipCodePopoverOpen} onOpenChange={setZipCodePopoverOpen}>
             <PopoverTrigger asChild>
               <Button
@@ -227,7 +227,7 @@ export const FiltersBar = ({
                   e.currentTarget.style.backgroundColor = 'rgb(248 250 252 / 0.5)';
                 }}
               >
-                <div className="flex items-center h-full flex-1 min-w-0">
+                <div className="flex items-center   h-full flex-1 min-w-0">
                   <span className="text-sm font-medium text-slate-700 hover:text-slate-700 flex-shrink-0 px-3 py-2 border-r border-slate-300 h-full flex items-center">Zip code(s)</span>
                   <div onClick={(e) => e.stopPropagation()} className="h-full flex items-center border-r border-slate-300">
                     <Select
@@ -242,32 +242,38 @@ export const FiltersBar = ({
                       }}
                     >
                       <SelectTrigger 
-                        className="h-full w-12 px-1 border-0 bg-transparent shadow-none focus:ring-0 text-slate-700 data-[state=open]:text-slate-700 hover:bg-transparent"
+                        className="h-full w-10 px-0 border-0 bg-transparent shadow-none rounded-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 data-[state=open]:ring-0 data-[state=open]:ring-offset-0 text-slate-700 hover:bg-transparent text-[11px] focus:h-[34.5px] focus:w-[37px]"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <SelectValue />
+                        <span className="w-full text-center inline-block">
+                          {filters.zipCodeOperator || "="}
+                        </span>
                       </SelectTrigger>
                       <SelectContent className="text-slate-700">
-                        <SelectItem value="=" className="text-slate-700">=</SelectItem>
-                        <SelectItem value="!=" className="text-slate-700">!=</SelectItem>
+                        <SelectItem value="=" className="text-slate-700 text-xs">
+                          = (equals)
+                        </SelectItem>
+                        <SelectItem value="!=" className="text-slate-700 text-xs">
+                          != (not equals)
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  <span className="flex items-center gap-1 min-w-0 flex-1 justify-end px-3 py-2 h-full">
+                   <span className="flex   justify-center items-center gap-1 min-w-0 flex-1  px-2 py-1 h-full">
                     {(() => {
                       const selected = getSelectedArray(filters.zipCode);
                       if (selected.length === 0) {
-                        return <span className="text-muted-foreground text-sm hover:text-muted-foreground">Select</span>;
+                         return <span className="text-muted-foreground  text-s hover:text-muted-foreground">Select</span>;
                       }
                       if (selected.length === 1) {
-                        return <span className="truncate text-sm text-slate-700 hover:text-slate-700">{selected[0]}</span>;
+                         return <span className="truncate text-xs text-slate-700 hover:text-slate-700">{selected[0]}</span>;
                       }
                       const first = selected[0];
-                      return <span className="truncate text-sm text-slate-700 hover:text-slate-700">{first}</span>;
+                       return <span className="truncate text-xs text-slate-700 hover:text-slate-700">{first}</span>;
                     })()}
                   </span>
                 </div>
-                <div className="flex items-center gap-1 mr-3">
+                <div className="flex items-center gap-1 mr-2">
                   {(() => {
                     const selected = getSelectedArray(filters.zipCode);
                     const remaining = selected.length > 1 ? selected.length - 1 : 0;
@@ -281,7 +287,7 @@ export const FiltersBar = ({
                 </div>
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[300px] p-0" align="start">
+            <PopoverContent className="w-250px] p-0" align="start">
               <div className="flex items-center justify-between border-b px-3 py-2">
                 <span className="text-sm font-medium">Zip Codes</span>
                 {filters.zipCode && (
@@ -324,7 +330,7 @@ export const FiltersBar = ({
           </Popover>
         </div>
 
-        <div className="flex-shrink-0 min-w-[200px] flex-1 max-w-[300px]">
+        <div className="flex-shrink-0 min-w-[200px] flex-1 max-w-[250px]">
           <Popover open={serviceTypePopoverOpen} onOpenChange={setServiceTypePopoverOpen}>
             <PopoverTrigger asChild>
               <Button
@@ -360,32 +366,38 @@ export const FiltersBar = ({
                       }}
                     >
                       <SelectTrigger 
-                        className="h-full w-12 px-1 border-0 bg-transparent shadow-none focus:ring-0 text-slate-700 data-[state=open]:text-slate-700 hover:bg-transparent"
+                        className="h-full w-10 px-0 border-0 bg-transparent shadow-none rounded-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 data-[state=open]:ring-0 data-[state=open]:ring-offset-0 text-slate-700 hover:bg-transparent text-[11px] focus:h-[34.5px] focus:w-[37px]"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <SelectValue />
+                        <span className="w-full text-center inline-block">
+                          {filters.serviceTypeOperator || "="}
+                        </span>
                       </SelectTrigger>
                       <SelectContent className="text-slate-700">
-                        <SelectItem value="=" className="text-slate-700">=</SelectItem>
-                        <SelectItem value="!=" className="text-slate-700">!=</SelectItem>
+                        <SelectItem value="=" className="text-slate-700 text-xs">
+                          = (equals)
+                        </SelectItem>
+                        <SelectItem value="!=" className="text-slate-700 text-xs">
+                          != (not equals)
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  <span className="flex items-center gap-1 min-w-0 flex-1 justify-end px-3 py-2 h-full">
+                   <span className="flex items-center gap-1 min-w-0 flex-1 justify-end px-2 py-1 h-full">
                     {(() => {
                       const selected = getSelectedArray(filters.serviceType);
                       if (selected.length === 0) {
-                        return <span className="text-muted-foreground text-sm hover:text-muted-foreground">Select</span>;
+                         return <span className="text-muted-foreground text-s hover:text-muted-foreground">Select</span>;
                       }
                       if (selected.length === 1) {
-                        return <span className="truncate text-sm text-slate-700 hover:text-slate-700">{selected[0]}</span>;
+                         return <span className="truncate text-xs text-slate-700 hover:text-slate-700">{selected[0]}</span>;
                       }
                       const first = selected[0];
-                      return <span className="truncate text-sm text-slate-700 hover:text-slate-700">{first}</span>;
+                       return <span className="truncate text-xs text-slate-700 hover:text-slate-700">{first}</span>;
                     })()}
                   </span>
                 </div>
-                <div className="flex items-center gap-1 mr-3">
+                <div className="flex items-center gap-1 mr-2">
                   {(() => {
                     const selected = getSelectedArray(filters.serviceType);
                     const remaining = selected.length > 1 ? selected.length - 1 : 0;

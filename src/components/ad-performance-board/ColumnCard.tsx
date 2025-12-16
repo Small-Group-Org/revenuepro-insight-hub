@@ -88,8 +88,11 @@ export const ColumnCard = ({
       </div>
 
       {column.aggregate && column.aggregate !== "none" && (
-        <div className="px-3 py-2 border-t bg-slate-50 text-sm font-semibold text-slate-700">
-          Σ {getAggregateValue(column, data)}
+        <div className="px-3 py-1.5 border-t bg-slate-50 text-[11px] font-semibold text-slate-700 flex items-center gap-2">
+          <span className="uppercase tracking-wide">
+            {column.aggregate === "avg" ? "AVG" : column.aggregate === "min" ? "MIN" : column.aggregate === "max" ? "MAX" : "SUM"}
+          </span>
+          <span>{getAggregateValue(column, data)}</span>
         </div>
       )}
     </Card>

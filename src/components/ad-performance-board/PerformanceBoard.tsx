@@ -671,7 +671,7 @@ export const PerformanceBoard = () => {
               onChange={(e) => {
                 setSearchInputValue(e.target.value);
               }}
-              className="w-64"
+              className="w-[260px]"
             />
           </div>
           <Button
@@ -722,7 +722,7 @@ export const PerformanceBoard = () => {
                     return (
                       <th
                         key={column.id}
-                        className={`group px-3 py-2 text-left text-[11px] font-semibold tracking-wide border-r border-slate-200 last:border-r-0 relative whitespace-nowrap ${
+                        className={`group px-3 py-2 text-left text-base font-semibold tracking-wide border-r border-slate-200 last:border-r-0 relative whitespace-nowrap ${
                           categoryColors ? `${!isFrozen ? categoryColors.bg : ""} ${categoryColors.text}` : "text-slate-700"
                         } ${isFrozen ? "sticky z-20" : ""}`}
                         style={{
@@ -757,7 +757,7 @@ export const PerformanceBoard = () => {
                                   >
                                     <GripVertical className="h-3 w-3 text-slate-400" />
                                   </span>
-                                  <span className="text-[11px] leading-tight whitespace-nowrap truncate max-w-[220px]">
+                                  <span className="text-base leading-tight whitespace-nowrap truncate max-w-[220px]">
                                     {column.label}
                                   </span>
                                   {column.sortable && (
@@ -856,7 +856,7 @@ export const PerformanceBoard = () => {
                         
                         return (
                           <td
-                key={column.id}
+                            key={column.id}
                             className={`px-3 py-2 text-sm border-r border-slate-100 last:border-r-0 overflow-hidden ${
                               categoryColors && !isFrozen ? categoryColors.cellBg : ""
                             } ${isFrozen ? "sticky z-20" : ""}`}
@@ -963,17 +963,6 @@ export const PerformanceBoard = () => {
                       const categoryColors = getCategoryColors(column.category);
                       const hasAggregate = column.aggregate && column.aggregate !== "none";
                       const aggregateValue = hasAggregate ? getAggregateValue(column, sortedData) : null;
-                      const aggregateInfo = hasAggregate 
-                        ? column.aggregate === "sum" 
-                          ? { label: "Sum", icon: Sigma }
-                          : column.aggregate === "avg" 
-                          ? { label: "Average", icon: BarChart3 }
-                          : column.aggregate === "min"
-                          ? { label: "Minimum", icon: TrendingDown }
-                          : column.aggregate === "max"
-                          ? { label: "Maximum", icon: TrendingUp }
-                          : { label: "Total", icon: Sigma }
-                        : null;
                       const isFrozen = frozenColumns.includes(column.id);
                       const frozenIndex = frozenColumns.indexOf(column.id);
                       const leftOffset = isFrozen ? frozenIndex * 200 : 0;
@@ -995,27 +984,27 @@ export const PerformanceBoard = () => {
                             boxShadow: isFrozen ? "2px 0 4px rgba(0, 0, 0, 0.05)" : undefined,
                             position: isFrozen ? "sticky" : undefined,
                           }}
-                        >
-                          {hasAggregate && aggregateValue && aggregateInfo ? (
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <span className="flex items-center gap-1.5 cursor-help">
-                                    <aggregateInfo.icon className="h-3.5 w-3.5 text-slate-500" />
-                                    <span>{aggregateValue}</span>
-                                  </span>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p className="font-medium">
-                                    {aggregateInfo.label}: {aggregateValue}
-                                  </p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          ) : (
-                            "—"
-                          )}
-                        </td>
+                          >
+                            {hasAggregate && aggregateValue ? (
+                              <span className="flex items-center gap-1.5 text-sm text-slate-700">
+                                <span className="uppercase tracking-wide text-[11px] font-semibold">
+                                  {column.aggregate === "avg"
+                                    ? "AVG"
+                                    : column.aggregate === "min"
+                                    ? "MIN"
+                                    : column.aggregate === "max"
+                                    ? "MAX"
+                                    : "SUM"}
+                                  :
+                                </span>
+                                <span className="font-semibold">
+                                  {aggregateValue}
+                                </span>
+                              </span>
+                            ) : (
+                              "—"
+                            )}
+                          </td>
                       );
                     })}
                   </tr>

@@ -129,11 +129,14 @@ export const AddColumnSheet = ({
               Revenue PRO
             </button>
           </div>
-          <Input
-            placeholder="Search metrics…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
+          <div className="flex items-center">
+            <Input
+              placeholder="Search metrics…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="w-[200px]"
+            />
+          </div>
           <ScrollArea className="h-[420px] rounded-md">
             <div className="p-3 space-y-4">
               {Object.keys(filtered).length === 0 ? (
