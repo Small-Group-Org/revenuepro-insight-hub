@@ -1,5 +1,6 @@
 import { TargetFieldsConfig, ReportingFieldsConfig } from "@/types";
-import { Plus, Users, Target, TrendingUp, BarChart3, TrendingUpIcon } from "lucide-react";
+import { Plus, Users, Target, TrendingUp } from "lucide-react";
+import { BarChart3, LayoutPanelTop } from "lucide-react";
 
 export const API_METHODS = {
   GET: "GET",
@@ -75,6 +76,7 @@ export const API_ENDPOINTS = {
   USER_FB_AD_ACCOUNT: "/users/fb-ad-account", // append /:clientId when needed
   USER_GET_BY_ID: "/users/get", // append /:id/ when needed
   FACEBOOK_ENRICHED_ADS: "/facebook/enriched-ads",
+  FACEBOOK_AD_PERFORMANCE_BOARD: "/facebook/ad-performance-board",
 } as const;
 
 export const userRoutes = [
@@ -95,10 +97,10 @@ export const userRoutes = [
     path: "/lead-analytics",
   },
   {
-    id: "adPerformance",
+    id: "ad-performance-board",
     label: "Ad Performance",
-    icon: TrendingUpIcon,
-    path: "/ad-performance",
+    icon: LayoutPanelTop,
+    path: "/ad-performance-board",
   },
 ];
 

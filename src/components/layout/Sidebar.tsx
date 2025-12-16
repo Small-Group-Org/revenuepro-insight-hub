@@ -28,7 +28,7 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }: SidebarProp
 
   const isDev = (() => {
     const url = API_URL?.trim() || '';
-    return url.includes('localhost') || url.includes('127.0.0.1') || url.includes('dev-revenue-pro-backend');
+    return url.includes('localhost') || url.includes('127.0.0.1') || url.includes('dev');
   })();
 
   return (
