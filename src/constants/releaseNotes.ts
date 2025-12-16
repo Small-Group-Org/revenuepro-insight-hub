@@ -10,7 +10,7 @@ export const RELEASE_NOTES: ReleaseNote[] = [
   {
     date: "December 16, 2025",
     items: [
-      "Ad Performance Board is now available! Track and analyze your Facebook ad campaigns with comprehensive performance metrics and lead tracking",
+      "Ad Performance Board is now available! Track and analyze your Facebook ad campaigns with comprehensive performance metrics and lead tracking. <a href='https://www.loom.com/share/2c8a2214bcee452790be70534b0f6404' target='_blank' rel='noopener noreferrer' class='text-blue-600 underline hover:text-blue-800'>Watch Video</a>",
       "Filter ads by service type with new dynamic dropdown options",
       "View service and zip code details for each campaign/ad to see lead distribution",
     ],

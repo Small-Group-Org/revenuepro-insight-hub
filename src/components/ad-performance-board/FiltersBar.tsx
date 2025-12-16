@@ -13,7 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { PerformanceBoardFilters } from "@/types/adPerformanceBoard";
 import { CalendarRange, RotateCw, ChevronDown } from "lucide-react";
-import { format, subDays } from "date-fns";
+import { format, subDays, parseISO, differenceInDays } from "date-fns";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -149,7 +149,11 @@ export const FiltersBar = ({
               key={range.label}
               size="sm"
               variant="ghost"
-              className="text-xs"
+              className={cn(
+                "text-xs",
+                range.days > 60 && "opacity-50 cursor-not-allowed"
+              )}
+              disabled={range.days > 60}
               onClick={() => applyQuickRange(range.days)}
             >
               {range.label}
@@ -170,19 +174,42 @@ export const FiltersBar = ({
 
       <div className="flex flex-wrap items-start gap-3 px-4 py-4">
         <div className="flex-shrink-0">
-          <div className="flex gap-2">
-            <Input
-              type="date"
-              value={filters.startDate}
-              onChange={(e) => handleDateInput("startDate", e.target.value)}
-              className="h-10 text-sm pr-10 w-[150px] min-w-[150px] [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:ml-[-15px] [&::-webkit-calendar-picker-indicator]:w-5 [&::-webkit-calendar-picker-indicator]:h-5"
-            />
-            <Input
-              type="date"
-              value={filters.endDate}
-              onChange={(e) => handleDateInput("endDate", e.target.value)}
-              className="h-10 text-sm pr-10 w-[150px] min-w-[150px] [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:ml-[-15px] [&::-webkit-calendar-picker-indicator]:w-5 [&::-webkit-calendar-picker-indicator]:h-5"
-            />
+          <div className="flex flex-col gap-1">
+            <div className="flex gap-2">
+              <Input
+                type="date"
+                value={filters.startDate}
+                onChange={(e) => handleDateInput("startDate", e.target.value)}
+                max={filters.endDate || format(new Date(), "yyyy-MM-dd")}
+                className="h-10 text-sm pr-10 w-[140px] min-w-[140px] [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:ml-[5px] [&::-webkit-calendar-picker-indicator]:w-5 [&::-webkit-calendar-picker-indicator]:h-5"
+              />
+              <Input
+                type="date"
+                value={filters.endDate}
+                onChange={(e) => handleDateInput("endDate", e.target.value)}
+                min={filters.startDate}
+                max={format(new Date(), "yyyy-MM-dd")}
+                className="h-10 text-sm pr-10 w-[140px] min-w-[140px] [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:ml-[5px] [&::-webkit-calendar-picker-indicator]:w-5 [&::-webkit-calendar-picker-indicator]:h-5"
+              />
+            </div>
+            {filters.startDate && (() => {
+              try {
+                const startDate = parseISO(filters.startDate);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const daysFromToday = differenceInDays(today, startDate);
+                if (daysFromToday > 60) {
+                  return (
+                    <p className="text-xs text-red-600 mt-1">
+                      Data only available for last 60 days
+                    </p>
+                  );
+                }
+              } catch {
+                return null;
+              }
+              return null;
+            })()}
           </div>
         </div>
 
