@@ -986,21 +986,23 @@ export const PerformanceBoard = () => {
                           }}
                           >
                             {hasAggregate && aggregateValue ? (
-                              <span className="flex items-center gap-1.5 text-sm text-slate-700">
-                                <span className="uppercase tracking-wide text-[11px] font-semibold">
-                                  {column.aggregate === "avg"
-                                    ? "AVG"
-                                    : column.aggregate === "min"
-                                    ? "MIN"
-                                    : column.aggregate === "max"
-                                    ? "MAX"
-                                    : "SUM"}
-                                  :
+                              column.aggregate === "avg" ? (
+                                <span />
+                              ) : (
+                                <span className="flex items-center gap-1.5 text-sm text-slate-700">
+                                  <span className="uppercase tracking-wide text-[11px] font-semibold">
+                                    {column.aggregate === "min"
+                                      ? "MIN"
+                                      : column.aggregate === "max"
+                                      ? "MAX"
+                                      : "SUM"}
+                                    :
+                                  </span>
+                                  <span className="font-semibold">
+                                    {aggregateValue}
+                                  </span>
                                 </span>
-                                <span className="font-semibold">
-                                  {aggregateValue}
-                                </span>
-                              </span>
+                              )
                             ) : (
                               "—"
                             )}

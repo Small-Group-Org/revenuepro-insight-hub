@@ -311,7 +311,7 @@ export const AVAILABLE_COLUMNS: ColumnConfig[] = [
   },
   {
     id: "cost_per_conversion",
-    label: "Cost / Conversion",
+    label: "Cost Per Conversion",
     category: "Conversions",
     apiField: "fb_cost_per_conversion",
     type: "currency",
@@ -398,11 +398,11 @@ export const AVAILABLE_COLUMNS: ColumnConfig[] = [
     sortable: true,
     aggregate: "avg",
     description: "Average marketing cost to acquire each CRM lead",
-    formula: "RB Spend / Number Of Leads",
+    formula: "FB Spend / Number Of Leads",
   },
   {
     id: "costPerEstimateSet",
-    label: "Cost / Estimate Set",
+    label: "Cost Per Estimate Set",
     category: "Lead KPIs",
     apiField: "costPerEstimateSet",
     type: "currency",
@@ -414,7 +414,7 @@ export const AVAILABLE_COLUMNS: ColumnConfig[] = [
   },
   {
     id: "costPerJobBooked",
-    label: "Cost / Job Booked",
+    label: "Cost Per Job Booked",
     category: "Lead KPIs",
     apiField: "costPerJobBooked",
     type: "currency",
