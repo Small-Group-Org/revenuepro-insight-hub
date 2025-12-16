@@ -15,9 +15,9 @@ import { SetTargets } from "@/pages/SetTargets";
 import { AddActualData } from "@/pages/weekly-reporting/WeeklyReporting";
 import { LeadSheet } from "@/pages/LeadSheet";
 import { LeadAnalytics } from "@/pages/LeadAnalytics";
+import AdPerformanceBoard from "@/pages/AdPerformanceBoard";
 import NotFound from "@/pages/NotFound";
 import Login from "./pages/Login";
-import AdPerformanceBoard from "@/pages/AdPerformanceBoard";
 import { UserProvider } from "./utils/UserContext";
 import { CompareResults } from "@/pages/CompareResults";
 import CreateUser from "./pages/CreateUser";
@@ -48,6 +48,8 @@ const AppRoutes = () => {
             <Route path="/lead-analytics" element={<LeadAnalytics />} />
             <Route path="/ad-performance-board" element={<AdPerformanceBoard />} />
             <Route path="/user-management" element={<CreateUser />} />
+            <Route path="/ad-performance" element={<AdPerformanceBoard />} />
+            <Route path="/user-managment" element={<CreateUser />} />
             <Route path="/profile" element={<Profile />} />
           </Route>
           <Route path="*" element={<NotFound />} />
