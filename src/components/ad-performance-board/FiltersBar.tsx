@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { GroupBy, PerformanceBoardFilters } from "@/types/adPerformanceBoard";
+import { PerformanceBoardFilters } from "@/types/adPerformanceBoard";
 import { CalendarRange, RotateCw, ChevronDown } from "lucide-react";
 import { format, subDays } from "date-fns";
 import { useEffect, useState } from "react";
@@ -20,9 +20,7 @@ import { cn } from "@/lib/utils";
 
 interface FiltersBarProps {
   filters: PerformanceBoardFilters;
-  groupBy: GroupBy;
   onFiltersChange: (filters: PerformanceBoardFilters) => void;
-  onGroupByChange: (value: GroupBy) => void;
   onApply: (nextFilters?: PerformanceBoardFilters) => void;
   onQuickApply: (nextFilters: PerformanceBoardFilters) => void;
   onReset: () => void;
@@ -38,9 +36,7 @@ const quickRanges = [
 
 export const FiltersBar = ({
   filters,
-  groupBy,
   onFiltersChange,
-  onGroupByChange,
   onApply,
   onQuickApply,
   onReset,
@@ -188,22 +184,6 @@ export const FiltersBar = ({
               className="h-10 text-sm pr-10 w-[150px] min-w-[150px] [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:ml-[-15px] [&::-webkit-calendar-picker-indicator]:w-5 [&::-webkit-calendar-picker-indicator]:h-5"
             />
           </div>
-        </div>
-
-        <div className="flex-shrink-0">
-          <Select
-            value={groupBy}
-            onValueChange={(value) => onGroupByChange(value as GroupBy)}
-          >
-            <SelectTrigger className="h-10 w-[110px] min-w-[110px]">
-              <SelectValue placeholder="Group by" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="campaign">Campaign</SelectItem>
-              <SelectItem value="adset">Ad set</SelectItem>
-              <SelectItem value="ad">Ad</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
 
         <div className="flex-shrink-0 w-[240px] max-w-[240px] flex-1">
