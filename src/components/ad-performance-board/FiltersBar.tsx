@@ -206,7 +206,7 @@ export const FiltersBar = ({
           </Select>
         </div>
 
-        <div className="flex-shrink-0 min-w-[230px] flex-1 max-w-[230px]">
+        <div className="flex-shrink-0 w-[240px] max-w-[240px] flex-1">
           <Popover open={zipCodePopoverOpen} onOpenChange={setZipCodePopoverOpen}>
             <PopoverTrigger asChild>
               <Button
@@ -259,7 +259,7 @@ export const FiltersBar = ({
                       </SelectContent>
                     </Select>
                   </div>
-                   <span className="flex   justify-center items-center gap-1 min-w-0 flex-1  px-2 py-1 h-full">
+                 <span className="flex items-center gap-1 min-w-[80px] justify-start flex-1 px-2 py-1 h-full">
                     {(() => {
                       const selected = getSelectedArray(filters.zipCode);
                       if (selected.length === 0) {
@@ -330,7 +330,7 @@ export const FiltersBar = ({
           </Popover>
         </div>
 
-        <div className="flex-shrink-0 min-w-[255px] flex-1 max-w-[255px]">
+        <div className="flex-shrink-0 w-[265px] max-w-[265px] flex-1">
           <Popover open={serviceTypePopoverOpen} onOpenChange={setServiceTypePopoverOpen}>
             <PopoverTrigger asChild>
               <Button
@@ -383,7 +383,7 @@ export const FiltersBar = ({
                       </SelectContent>
                     </Select>
                   </div>
-                   <span className="flex items-center gap-1 min-w-0 flex-1 justify-end px-2 py-1 h-full">
+                 <span className="flex items-center gap-1 flex-1 min-w-[80px] px-2 py-1 h-full">
                     {(() => {
                       const selected = getSelectedArray(filters.serviceType);
                       if (selected.length === 0) {
