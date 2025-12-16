@@ -4,7 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
-import { Loader2, Plus, X, GripVertical, ArrowUp, ArrowDown, Sigma, BarChart3, TrendingDown, TrendingUp, Pin } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Loader2, Plus, X, GripVertical, ArrowUp, ArrowDown, Sigma, BarChart3, TrendingDown, TrendingUp, Pin, Settings } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { FiltersBar } from "./FiltersBar";
 import { ColumnCard } from "./ColumnCard";
@@ -647,9 +654,7 @@ export const PerformanceBoard = () => {
 
       <FiltersBar
         filters={filters}
-        groupBy={groupBy}
         onFiltersChange={setFilters}
-        onGroupByChange={setGroupBy}
         onApply={handleApplyFilters}
         onQuickApply={handleApplyFilters}
         onReset={handleResetFilters}
@@ -661,18 +666,35 @@ export const PerformanceBoard = () => {
 
       <Card className="p-3 border border-slate-200/70 overflow-hidden">
         <div className="flex items-center justify-between mb-3 gap-3">
-          <div className="flex items-center gap-3">
-          <div className="text-sm font-semibold text-slate-800">
-            Columns
+          <div className="flex items-end gap-4">
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-medium text-slate-500">
+                Group by
+              </span>
+              <Select
+                value={groupBy}
+                onValueChange={(value) => setGroupBy(value as GroupBy)}
+              >
+                <SelectTrigger className="h-10 w-[140px] min-w-[140px]">
+                  <SelectValue placeholder="Group by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="campaign">Campaign</SelectItem>
+                  <SelectItem value="adset">Ad set</SelectItem>
+                  <SelectItem value="ad">Ad</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <Input
-              placeholder="Search Campaign / Ad set / Ad name..."
-              value={searchInputValue}
-              onChange={(e) => {
-                setSearchInputValue(e.target.value);
-              }}
-              className="w-[260px]"
-            />
+            <div className="flex flex-col gap-1">
+              <Input
+                placeholder="Search Campaign / Ad set / Ad name..."
+                value={searchInputValue}
+                onChange={(e) => {
+                  setSearchInputValue(e.target.value);
+                }}
+                className="w-[260px]"
+              />
+            </div>
           </div>
           <Button
             variant="outline"
@@ -680,8 +702,8 @@ export const PerformanceBoard = () => {
             className="gap-2"
             onClick={() => setIsAddOpen(true)}
           >
-            <Plus className="h-4 w-4" />
-            Add column
+            <Settings className="h-4 w-4" />
+            Configure columns
           </Button>
         </div>
 

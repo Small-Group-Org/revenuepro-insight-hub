@@ -130,12 +130,12 @@ export const AddColumnSheet = ({
             </button>
           </div>
           <div className="flex items-center">
-            <Input
-              placeholder="Search metrics…"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
+          <Input
+            placeholder="Search metrics…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
               className="w-[200px]"
-            />
+          />
           </div>
           <ScrollArea className="h-[420px] rounded-md">
             <div className="p-3 space-y-4">
