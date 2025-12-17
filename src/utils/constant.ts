@@ -13,7 +13,7 @@ export const API_METHODS = {
 export const tabs = ["basic", "templates", "target"];
 // temp cmnt
 export const API_URL =
-  import.meta.env.VITE_API_URL || "https://prod-revenue-pro-backend-1057029383450.asia-southeast1.run.app/api/v1";
+  import.meta.env.VITE_API_URL || "https://api.revenue-pro.ai/api/v1";
 
 // Centralized API endpoints to avoid hardcoded strings across the app
 export const API_ENDPOINTS = {
