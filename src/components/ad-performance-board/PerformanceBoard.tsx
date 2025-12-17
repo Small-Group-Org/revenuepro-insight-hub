@@ -726,13 +726,13 @@ export const PerformanceBoard = () => {
           style={{ maxHeight: "calc(100vh - 220px)" }}
         >
           <div className="inline-block border border-slate-200 rounded-md">
-            <table className="border-collapse" style={{ minWidth: `${visibleColumns.length * 200}px` }}>
-              <thead>
+            <table className="border-collapse" style={{ minWidth: `${visibleColumns.length * 250}px` }}>
+              <thead className="sticky top-0 z-30">
                 <tr className="bg-slate-50 border-b border-slate-200">
                   {visibleColumns.map((column, colIndex) => {
                     const isFrozen = frozenColumns.includes(column.id);
                     const frozenIndex = frozenColumns.indexOf(column.id);
-                    const leftOffset = isFrozen ? frozenIndex * 200 : 0;
+                    const leftOffset = isFrozen ? frozenIndex * 250 : 0;
                     const dimensionIds = ["campaignName", "adSetName", "adName"];
                     const isDimension = dimensionIds.includes(column.id);
                     const isZipCode = column.id === "zipCode";
@@ -746,17 +746,16 @@ export const PerformanceBoard = () => {
                         key={column.id}
                         className={`group px-3 py-2 text-left text-sm font-semibold tracking-wide border-r border-slate-200 last:border-r-0 relative whitespace-nowrap ${
                           categoryColors ? `${!isFrozen ? categoryColors.bg : ""} ${categoryColors.text}` : "text-slate-700"
-                        } ${isFrozen ? "sticky z-20" : ""}`}
+                        } ${isFrozen ? "sticky z-40" : ""}`}
                         style={{
                           minWidth: "250px",
                           width: "250px",
                           maxWidth: (isZipCode || isService) ? "250px" : undefined,
+                          top: 0,
                           left: isFrozen ? `${leftOffset}px` : undefined,
-                          backgroundColor: isFrozen 
-                            ? (categoryColors ? categoryColors.bgColor : "#f8fafc") 
-                            : undefined,
+                          backgroundColor: categoryColors ? categoryColors.bgColor : "#f8fafc",
                           boxShadow: isFrozen ? "2px 0 4px rgba(0, 0, 0, 0.05)" : undefined,
-                          position: isFrozen ? "sticky" : undefined,
+                          position: "sticky",
                         }}
                         onDragOver={handleDragOver}
                         onDrop={handleDrop(column.id)}
@@ -874,7 +873,7 @@ export const PerformanceBoard = () => {
                         const categoryColors = getCategoryColors(column.category);
                         const isFrozen = frozenColumns.includes(column.id);
                         const frozenIndex = frozenColumns.indexOf(column.id);
-                        const leftOffset = isFrozen ? frozenIndex * 200 : 0;
+                        const leftOffset = isFrozen ? frozenIndex * 250 : 0;
                         
                         return (
                           <td
@@ -883,9 +882,9 @@ export const PerformanceBoard = () => {
                               categoryColors && !isFrozen ? categoryColors.cellBg : ""
                             } ${isFrozen ? "sticky z-20" : ""}`}
                             style={{
-                              minWidth: "200px",
-                              width: (isZipCode || isService) ? "200px" : "200px",
-                              maxWidth: (isZipCode || isService) ? "200px" : undefined,
+                              minWidth: "250px",
+                              width: "250px",
+                              maxWidth: (isZipCode || isService) ? "250px" : undefined,
                               left: isFrozen ? `${leftOffset}px` : undefined,
                               backgroundColor: isFrozen 
                                 ? (categoryColors ? categoryColors.bgColor : "#ffffff") 
@@ -978,7 +977,7 @@ export const PerformanceBoard = () => {
                   ))
                 )}
                 {visibleColumns.some((col) => col.aggregate && col.aggregate !== "none") && sortedData.length > 0 && (
-                  <tr className="bg-slate-50 border-t-2 border-slate-300 font-semibold">
+                  <tr className="bg-slate-50 border-t-2 border-slate-300 font-semibold sticky bottom-0 z-30">
                     {visibleColumns.map((column, colIndex) => {
                       const isZipCode = column.id === "zipCode";
                       const isService = column.id === "service";
@@ -987,29 +986,35 @@ export const PerformanceBoard = () => {
                       const aggregateValue = hasAggregate ? getAggregateValue(column, sortedData) : null;
                       const isFrozen = frozenColumns.includes(column.id);
                       const frozenIndex = frozenColumns.indexOf(column.id);
-                      const leftOffset = isFrozen ? frozenIndex * 200 : 0;
+                      const leftOffset = isFrozen ? frozenIndex * 250 : 0;
                       
                       return (
                         <td
                           key={column.id}
                           className={`py-2 pr-3 pl-6 text-sm text-slate-700 border-r border-slate-200 last:border-r-0 whitespace-nowrap ${
                             categoryColors && !isFrozen ? categoryColors.cellBg : ""
-                          } ${isFrozen ? "sticky z-20" : ""}`}
+                          } ${isFrozen ? "sticky z-40" : ""}`}
                           style={{
-                            minWidth: "200px",
-                            width: "200px",
-                            maxWidth: (isZipCode || isService) ? "200px" : undefined,
+                            minWidth: "250px",
+                            width: "250px",
+                            maxWidth: (isZipCode || isService) ? "250px" : undefined,
+                            bottom: 0,
                             left: isFrozen ? `${leftOffset}px` : undefined,
-                            backgroundColor: isFrozen 
-                              ? (categoryColors ? categoryColors.bgColor : "#f8fafc") 
-                              : undefined,
+                            backgroundColor: categoryColors ? categoryColors.bgColor : "#f8fafc",
                             boxShadow: isFrozen ? "2px 0 4px rgba(0, 0, 0, 0.05)" : undefined,
-                            position: isFrozen ? "sticky" : undefined,
+                            position: "sticky",
                           }}
                           >
                             {hasAggregate && aggregateValue ? (
                               column.aggregate === "avg" ? (
-                                <span />
+                                <span className="flex items-center gap-1.5 text-sm text-slate-700">
+                                  <span className="uppercase tracking-wide text-[11px] font-semibold">
+                                    AVG:
+                                  </span>
+                                  <span className="font-semibold">
+                                    {aggregateValue}
+                                  </span>
+                                </span>
                               ) : (
                                 <span className="flex items-center gap-1.5 text-sm text-slate-700">
                                   <span className="uppercase tracking-wide text-[11px] font-semibold">
