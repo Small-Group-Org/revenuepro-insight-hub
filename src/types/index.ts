@@ -67,7 +67,7 @@ export interface Lead {
   service: string;
   adSetName: string;
   adName: string;
-  status: 'new' | 'in_progress' | 'estimate_set' | 'unqualified';
+  status: 'new' | 'in_progress' | 'estimate_set' | 'virtual_quote' | 'estimate_canceled' | 'proposal_presented' | 'job_booked' | 'job_lost' | 'unqualified';
   clientId: string;
   unqualifiedLeadReason?: string;
   updatedAt?: string;
@@ -75,6 +75,10 @@ export interface Lead {
   jobBookedAmount?: number;
   proposalAmount?: number;
   notes?: string;
+  statusHistory?: Array<{
+    status: string;
+    timestamp: string;
+  }>;
   conversionRates?: {
     service: number;
     adSetName: number;

@@ -37,9 +37,29 @@ export const getStatusInfo = (status: string) => {
       return { color: 'bg-yellow-100 text-yellow-800 border-yellow-200', label: 'In Progress' };
     case 'estimate_set':
       return { color: 'bg-green-100 text-green-800 border-green-200', label: 'Estimate Set' };
+    case 'virtual_quote':
+      return { color: 'bg-purple-100 text-purple-800 border-purple-200', label: 'Virtual Quote' };
+    case 'estimate_canceled':
+      return { color: 'bg-orange-100 text-orange-800 border-orange-200', label: 'Estimate Canceled' };
+    case 'proposal_presented':
+      return { color: 'bg-teal-100 text-teal-800 border-teal-200', label: 'Proposal Presented' };
+    case 'job_booked':
+      return { color: 'bg-green-100 text-green-800 border-green-200', label: 'Job Booked' };
+    case 'job_lost':
+      return { color: 'bg-red-100 text-red-800 border-red-200', label: 'Job Lost' };
     case 'unqualified':
       return { color: 'bg-red-100 text-red-800 border-red-200', label: 'Unqualified' };
     default:
       return { color: 'bg-gray-100 text-gray-800 border-gray-200', label: 'Unknown' };
   }
+};
+
+// Helper function to check if proposal amount is allowed for a status
+export const canSetProposalAmount = (status: string): boolean => {
+  return ['estimate_set', 'virtual_quote', 'proposal_presented', 'job_lost'].includes(status);
+};
+
+// Helper function to check if job booked amount is allowed for a status
+export const canSetJobBookedAmount = (status: string): boolean => {
+  return status === 'job_booked';
 };

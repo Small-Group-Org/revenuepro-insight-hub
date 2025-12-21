@@ -44,6 +44,11 @@ export interface ColumnConfig {
   width?: number;
   minWidth?: number;
   aggregate?: "sum" | "avg" | "min" | "max" | "none";
+  /**
+   * Optional formula for calculating aggregate from sums, e.g.
+   * "fb_spend / numberOfLeads" will calculate SUM(fb_spend) / SUM(numberOfLeads)
+   */
+  aggregateFormula?: string;
   decimals?: number;
   prefix?: string;
   suffix?: string;

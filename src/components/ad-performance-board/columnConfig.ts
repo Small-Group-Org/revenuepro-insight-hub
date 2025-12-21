@@ -68,6 +68,7 @@ export const AVAILABLE_COLUMNS: ColumnConfig[] = [
     decimals: 2,
     sortable: true,
     aggregate: "avg",
+    aggregateFormula: "fb_impressions / fb_reach",
     description: "Average number of times each person saw the ads",
   },
   {
@@ -100,6 +101,7 @@ export const AVAILABLE_COLUMNS: ColumnConfig[] = [
     decimals: 2,
     sortable: true,
     aggregate: "avg",
+    aggregateFormula: "(fb_clicks / fb_impressions) * 100",
     isDefault: true,
     description: "Average click-through rate across weeks",
   },
@@ -112,6 +114,7 @@ export const AVAILABLE_COLUMNS: ColumnConfig[] = [
     decimals: 2,
     sortable: true,
     aggregate: "avg",
+    aggregateFormula: "(fb_unique_clicks / fb_impressions) * 100",
     description: "Average unique click-through rate across weeks",
   },
   {
@@ -123,6 +126,7 @@ export const AVAILABLE_COLUMNS: ColumnConfig[] = [
     decimals: 2,
     sortable: true,
     aggregate: "avg",
+    aggregateFormula: "fb_spend / fb_clicks",
     description: "Average cost per click",
   },
   {
@@ -134,6 +138,7 @@ export const AVAILABLE_COLUMNS: ColumnConfig[] = [
     decimals: 2,
     sortable: true,
     aggregate: "avg",
+    aggregateFormula: "(fb_spend / fb_impressions) * 1000",
     description: "Average cost per 1,000 impressions",
   },
   {
@@ -145,6 +150,7 @@ export const AVAILABLE_COLUMNS: ColumnConfig[] = [
     decimals: 2,
     sortable: true,
     aggregate: "avg",
+    aggregateFormula: "(fb_spend / fb_reach) * 1000",
     description: "Average cost per 1,000 reach",
   },
   {
@@ -318,6 +324,7 @@ export const AVAILABLE_COLUMNS: ColumnConfig[] = [
     decimals: 2,
     sortable: true,
     aggregate: "avg",
+    aggregateFormula: "fb_spend / fb_total_conversions",
     description: "Average cost per conversion",
   },
   {
@@ -340,6 +347,7 @@ export const AVAILABLE_COLUMNS: ColumnConfig[] = [
     decimals: 2,
     sortable: true,
     aggregate: "avg",
+    aggregateFormula: "fb_spend / fb_total_leads",
     isDefault: true,
     description: "Average cost per lead reported by Facebook",
     formula: "FB Spend / FB Leads",
@@ -397,6 +405,7 @@ export const AVAILABLE_COLUMNS: ColumnConfig[] = [
     decimals: 2,
     sortable: true,
     aggregate: "avg",
+    aggregateFormula: "fb_spend / numberOfLeads",
     description: "Average marketing cost to acquire each CRM lead",
     formula: "FB Spend / Number Of Leads",
   },
@@ -409,6 +418,7 @@ export const AVAILABLE_COLUMNS: ColumnConfig[] = [
     decimals: 2,
     sortable: true,
     aggregate: "avg",
+    aggregateFormula: "fb_spend / numberOfEstimateSets",
     description: "Average marketing cost to generate each Estimate Set",
     formula: "FB Spend / Number Of Estimate Sets",
   },
@@ -421,6 +431,7 @@ export const AVAILABLE_COLUMNS: ColumnConfig[] = [
     decimals: 2,
     sortable: true,
     aggregate: "avg",
+    aggregateFormula: "fb_spend / numberOfJobsBooked",
     description: "Average marketing cost to book each job",
     formula: "FB Spend / Number Of Jobs Booked",
   },
@@ -433,6 +444,7 @@ export const AVAILABLE_COLUMNS: ColumnConfig[] = [
     decimals: 2,
     sortable: true,
     aggregate: "avg",
+    aggregateFormula: "(fb_spend / revenue) * 100",
     description: "Marketing cost expressed as a percentage of total revenue",
     formula: "(FB Spend / Revenue) × 100",
   },
@@ -445,6 +457,7 @@ export const AVAILABLE_COLUMNS: ColumnConfig[] = [
     decimals: 2,
     sortable: true,
     aggregate: "avg",
+    aggregateFormula: "(numberOfEstimateSets / (numberOfEstimateSets + numberOfUnqualifiedLeads)) * 100",
     description: "Percentage of qualified leads that resulted in estimate sets",
     formula:
       "(Number Of Estimate Sets / (Number Of Estimate Sets + Number Of Unqualified Leads)) × 100",
@@ -522,6 +535,48 @@ export const getAggregateValue = (
   data: PerformanceRow[]
 ) => {
   if (!column.aggregate || column.aggregate === "none") return null;
+
+  // If there's an aggregateFormula, calculate from sums
+  if (column.aggregateFormula && column.aggregate === "avg") {
+    // Parse the formula and calculate sums for each field
+    const formula = column.aggregateFormula;
+
+    // Extract field names from the formula (e.g., "fb_spend", "numberOfLeads")
+    const fieldMatches = formula.match(/[a-zA-Z_][a-zA-Z0-9_]*/g) || [];
+
+    // Calculate sums for each field
+    const sums: Record<string, number> = {};
+    fieldMatches.forEach(field => {
+      const values = data
+        .map((row) => row[field])
+        .filter((v): v is number => typeof v === "number");
+      sums[field] = values.reduce((acc, curr) => acc + curr, 0);
+    });
+
+    // Replace field names in formula with their sums and evaluate
+    let evaluableFormula = formula;
+    Object.keys(sums).forEach(field => {
+      const regex = new RegExp(`\\b${field}\\b`, 'g');
+      evaluableFormula = evaluableFormula.replace(regex, String(sums[field]));
+    });
+
+    try {
+      // Evaluate the formula safely
+      const aggregateValue = eval(evaluableFormula);
+
+      // Handle division by zero or invalid results
+      if (!isFinite(aggregateValue) || isNaN(aggregateValue)) {
+        return null;
+      }
+
+      return formatCellValue(column, aggregateValue);
+    } catch (error) {
+      console.error('Error evaluating formula:', formula, error);
+      return null;
+    }
+  }
+
+  // Original logic for non-formula aggregates
   const values = data
     .map((row) => row[column.apiField])
     .filter((v): v is number => typeof v === "number");
