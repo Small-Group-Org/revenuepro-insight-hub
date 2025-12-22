@@ -1007,7 +1007,7 @@ export const PerformanceBoard = () => {
                           >
                             {hasAggregate && aggregateValue ? (
                               column.aggregate === "avg" ? (
-                                <span className="hidden items-center gap-1.5 text-sm text-slate-700">
+                                <span className="flex items-center gap-1.5 text-sm text-slate-700">
                                   <span className="uppercase tracking-wide text-[11px] font-semibold">
                                     AVG:
                                   </span>
