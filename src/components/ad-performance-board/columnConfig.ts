@@ -1,4 +1,4 @@
-import { ColumnConfig, PerformanceRow } from "@/types/adPerformanceBoard";
+import { ColumnConfig, PerformanceRow, PerformanceBoardAverages } from "@/types/adPerformanceBoard";
 
 export const AVAILABLE_COLUMNS: ColumnConfig[] = [
   {
@@ -532,10 +532,24 @@ export const formatCellValue = (column: ColumnConfig, value: any) => {
 
 export const getAggregateValue = (
   column: ColumnConfig,
-  data: PerformanceRow[]
+  data: PerformanceRow[],
+  apiAverages?: PerformanceBoardAverages | null
 ) => {
   if (!column.aggregate || column.aggregate === "none") return null;
 
+  // If API averages are provided, use them directly
+  if (apiAverages && column.apiField in apiAverages) {
+    const apiValue = apiAverages[column.apiField];
+
+    // Handle null or undefined values from API
+    if (apiValue === null || apiValue === undefined) {
+      return null;
+    }
+
+    return formatCellValue(column, apiValue);
+  }
+
+  // Fallback to client-side calculation if API averages are not available
   // If there's an aggregateFormula, calculate from sums
   if (column.aggregateFormula && column.aggregate === "avg") {
     // Parse the formula and calculate sums for each field

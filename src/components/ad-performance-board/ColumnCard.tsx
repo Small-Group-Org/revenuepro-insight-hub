@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { ColumnConfig, PerformanceRow } from "@/types/adPerformanceBoard";
+import { ColumnConfig, PerformanceRow, PerformanceBoardAverages } from "@/types/adPerformanceBoard";
 import {
   formatCellValue,
   getAggregateValue,
@@ -16,6 +16,7 @@ import { type DragEvent } from "react";
 interface ColumnCardProps {
   column: ColumnConfig;
   data: PerformanceRow[];
+  apiAverages?: PerformanceBoardAverages | null;
   isDragging?: boolean;
   onRemove: (id: string) => void;
   onOpenSettings: (column: ColumnConfig) => void;
@@ -30,6 +31,7 @@ interface ColumnCardProps {
 export const ColumnCard = ({
   column,
   data,
+  apiAverages,
   isDragging,
   onRemove,
   onOpenSettings,
@@ -92,7 +94,7 @@ export const ColumnCard = ({
           <span className="uppercase tracking-wide">
             {column.aggregate === "avg" ? "AVG" : column.aggregate === "min" ? "MIN" : column.aggregate === "max" ? "MAX" : "SUM"}
           </span>
-          <span>{getAggregateValue(column, data)}</span>
+          <span>{getAggregateValue(column, data, apiAverages)}</span>
         </div>
       )}
     </Card>
