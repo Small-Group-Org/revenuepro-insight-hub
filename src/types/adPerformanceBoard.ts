@@ -107,3 +107,7 @@ export interface PerformanceRow {
   [key: string]: string | number | undefined;
 }
 
+export interface PerformanceBoardAverages {
+  [key: string]: number | null | undefined;
+}
+
