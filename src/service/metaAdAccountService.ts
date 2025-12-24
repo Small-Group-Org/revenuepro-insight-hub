@@ -19,6 +19,8 @@ export interface AdAccountsResponse {
 
 export interface AssignAdAccountPayload {
   fbAdAccountId: string; // e.g., "act_3115069758672562"
+  fbPixelId?: string; // Facebook Pixel ID (numeric)
+  fbPixelToken?: string; // Facebook Pixel Access Token
 }
 
 export interface AssignAdAccountResponse {
@@ -54,11 +56,15 @@ export const getAdAccounts = async (
  * Assign a Facebook ad account to a client user
  * @param clientId - The client user ID
  * @param fbAdAccountId - The ad account ID (with act_ prefix)
+ * @param fbPixelId - Optional Facebook Pixel ID (numeric)
+ * @param fbPixelToken - Optional Facebook Pixel Access Token
  * @returns Assignment response
  */
 export const assignAdAccountToClient = async (
   clientId: string,
-  fbAdAccountId: string
+  fbAdAccountId: string,
+  fbPixelId?: string,
+  fbPixelToken?: string
 ): Promise<{ error: boolean; message?: string; data?: AssignAdAccountResponse["data"] }> => {
   if (!clientId) {
     return { error: true, message: "clientId is required" };
@@ -68,9 +74,20 @@ export const assignAdAccountToClient = async (
     return { error: true, message: "fbAdAccountId is required" };
   }
 
+  const payload: AssignAdAccountPayload = { fbAdAccountId };
+
+  // Add pixel credentials if provided
+  if (fbPixelId) {
+    payload.fbPixelId = fbPixelId;
+  }
+
+  if (fbPixelToken) {
+    payload.fbPixelToken = fbPixelToken;
+  }
+
   const response = await doPUT(
     `${API_ENDPOINTS.USER_FB_AD_ACCOUNT}/${clientId}`,
-    { fbAdAccountId }
+    payload
   );
 
   if (!response.error && response.data?.success) {
@@ -84,7 +101,7 @@ export const assignAdAccountToClient = async (
 };
 
 /**
- * Get user profile by ID (includes fbAdAccountId and metaAccessToken for admin)
+ * Get user profile by ID (includes fbAdAccountId, fbPixelId, and metaAccessToken for admin)
  * @param userId - The user ID
  * @returns User profile response
  */
@@ -99,6 +116,7 @@ export const getUserProfile = async (
     name?: string;
     role: string;
     fbAdAccountId?: string;
+    fbPixelId?: string;
     metaAccessToken?: string;
     [key: string]: unknown;
   };
