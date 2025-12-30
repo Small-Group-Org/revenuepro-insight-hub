@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { getEnrichedAds } from '@/service/facebookEnrichedAdsService';
 import { transformEnrichedAdsToCampaignData } from '@/utils/facebookAdsTransformer';
 import { getUserProfile } from '@/service/metaAdAccountService';
@@ -56,10 +56,15 @@ export const useMetaBudgetSpent = (selectedUserId: string | null) => {
   const [hasMetaIntegration, setHasMetaIntegration] = useState<boolean | null>(null);
   const [campaignData, setCampaignData] = useState<CampaignDataItem[]>([]);
   const [isLoadingCampaignData, setIsLoadingCampaignData] = useState(false);
+  const [isUpserting, setIsUpserting] = useState(false);
+
+  // Track processed entries to prevent recursion
+  const processedEntriesRef = useRef<Set<string>>(new Set());
 
   // Check if user has meta integration (fbAdAccountId)
   useEffect(() => {
     const checkMetaIntegration = async () => {
+
       if (!selectedUserId) {
         setHasMetaIntegration(null);
         return;
@@ -67,6 +72,7 @@ export const useMetaBudgetSpent = (selectedUserId: string | null) => {
 
       try {
         const userProfile = await getUserProfile(selectedUserId);
+
         if (!userProfile.error && userProfile.data?.fbAdAccountId) {
           setHasMetaIntegration(true);
         } else {
@@ -149,15 +155,9 @@ export const useMetaBudgetSpent = (selectedUserId: string | null) => {
   ): Promise<boolean> => {
     if (!dataEntry) return false;
 
-    // Check if metaBudgetSpent already exists
-    const existingMetaBudgetSpent = dataEntry.metaBudgetSpent;
-    if (existingMetaBudgetSpent !== undefined && existingMetaBudgetSpent !== null) {
-      return false; // Already has metaBudgetSpent, skip
-    }
-
-    // Check if all three budget spent fields are zero
-    if (!areAllManualBudgetsZero(dataEntry)) {
-      return false; // Manual budgets exist, don't upsert
+    // Prevent concurrent upsert operations
+    if (isUpserting) {
+      return false; // Already processing, skip
     }
 
     const startDate = dataEntry.startDate;
@@ -167,7 +167,23 @@ export const useMetaBudgetSpent = (selectedUserId: string | null) => {
       return false; // Skip if dates are missing
     }
 
+    // Create unique key for this entry
+    const entryKey = `${startDate}_${endDate}`;
+
+    // Check if this entry has already been processed in this session
+    if (processedEntriesRef.current.has(entryKey)) {
+      return false; // Already processed, skip to prevent recursion
+    }
+
+    // Check if all three budget spent fields are zero
+    if (!areAllManualBudgetsZero(dataEntry)) {
+      processedEntriesRef.current.add(entryKey); // Mark as processed
+      return false; // Manual budgets exist, don't upsert
+    }
+
     try {
+      setIsUpserting(true);
+
       // For individual entries, always use weekly queryType regardless of period
       // This ensures we get the correct data for the specific date range
       const queryType = "weekly" as const;
@@ -176,6 +192,7 @@ export const useMetaBudgetSpent = (selectedUserId: string | null) => {
       const result = await fetchCampaignData(clientId, startDate, endDate, queryType);
 
       if (!result.success || !result.data || result.data.length === 0) {
+        processedEntriesRef.current.add(entryKey); // Mark as processed even if failed
         return false; // No campaign data available
       }
 
@@ -183,6 +200,16 @@ export const useMetaBudgetSpent = (selectedUserId: string | null) => {
 
       // Only upsert if we have campaign spend data
       if (totalCampaignSpend > 0) {
+        // Check if metaBudgetSpent already exists and matches - avoid unnecessary upsert
+        const existingMetaBudgetSpent = dataEntry.metaBudgetSpent;
+        if (existingMetaBudgetSpent !== undefined && existingMetaBudgetSpent !== null) {
+          // If the value is already set and matches (within 0.01 tolerance), skip upsert
+          if (Math.abs(existingMetaBudgetSpent - totalCampaignSpend) < 0.01) {
+            processedEntriesRef.current.add(entryKey); // Mark as processed
+            return false; // Already up-to-date, skip
+          }
+        }
+
         const preservedFields = preserveReportingFields(dataEntry);
 
         const dataToUpsert = {
@@ -194,24 +221,33 @@ export const useMetaBudgetSpent = (selectedUserId: string | null) => {
 
         await upsertReportingData(dataToUpsert);
 
+        // Mark as processed BEFORE refetch to prevent recursion
+        processedEntriesRef.current.add(entryKey);
+
         // Refetch reporting data to get updated data from API
         const { startDate: queryStartDate, endDate: queryEndDate, queryType: refetchQueryType } = getDateRange(selectedDate, period);
         await getReportingData(queryStartDate, queryEndDate, refetchQueryType, period);
 
         return true; // Successfully upserted
+      } else {
+        processedEntriesRef.current.add(entryKey); // Mark as processed
       }
     } catch (error) {
       console.error('Error auto-upserting metaBudgetSpent:', error);
+      processedEntriesRef.current.add(entryKey); // Mark as processed even if error
+    } finally {
+      setIsUpserting(false);
     }
 
     return false;
-  }, [fetchCampaignData]);
+  }, [fetchCampaignData, isUpserting]);
 
   return {
     hasMetaIntegration,
     campaignData,
     setCampaignData,
     isLoadingCampaignData,
+    isUpserting,
     totalCampaignSpend,
     fetchCampaignData,
     upsertMetaBudgetSpentForEntry,
