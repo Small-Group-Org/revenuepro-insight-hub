@@ -69,6 +69,8 @@ const ClientIntegrationsModal: React.FC<ClientIntegrationsModalProps> = ({
   const [adAccounts, setAdAccounts] = useState<AdAccount[]>([]);
   const [selectedAdAccount, setSelectedAdAccount] = useState<string>("");
   const [adminBusinessId, setAdminBusinessId] = useState<string>("");
+  const [fbPixelId, setFbPixelId] = useState<string>("");
+  const [fbPixelToken, setFbPixelToken] = useState<string>("");
 
   // Find existing GHL client when modal opens
   useEffect(() => {
@@ -110,6 +112,8 @@ const ClientIntegrationsModal: React.FC<ClientIntegrationsModalProps> = ({
       setSelectedAdAccount("");
       setAdAccounts([]);
       setAdminBusinessId("");
+      setFbPixelId("");
+      setFbPixelToken("");
     }
   }, [isOpen, revenueProClientId, ghlClients]);
 
@@ -132,10 +136,19 @@ const ClientIntegrationsModal: React.FC<ClientIntegrationsModalProps> = ({
       if (revenueProClientId) {
         try {
           const userProfile = await getUserProfile(revenueProClientId);
-          if (!userProfile.error && userProfile.data?.fbAdAccountId) {
+          if (!userProfile.error && userProfile.data) {
             // Set the client's current fbAdAccountId in the dropdown
-            // This will pre-select it if it exists in the available ad accounts list
-            setSelectedAdAccount(userProfile.data.fbAdAccountId);
+            if (userProfile.data.fbAdAccountId) {
+              setSelectedAdAccount(userProfile.data.fbAdAccountId);
+            } else {
+              setSelectedAdAccount("");
+            }
+
+            // Set pixel credentials if they exist
+            if (userProfile.data.fbPixelId) {
+              setFbPixelId(userProfile.data.fbPixelId);
+            }
+            // Note: fbPixelToken is never returned for security, so it stays empty
           } else {
             // If no fbAdAccountId exists, leave selection empty for user to select
             setSelectedAdAccount("");
@@ -269,25 +282,39 @@ const ClientIntegrationsModal: React.FC<ClientIntegrationsModalProps> = ({
       return;
     }
 
+    // Validate Pixel ID if provided (should be numeric only)
+    if (fbPixelId && !/^\d+$/.test(fbPixelId)) {
+      toast({
+        title: "Validation Error",
+        description: "Facebook Pixel ID must contain only numbers",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setMetaLoading(true);
     try {
       // selectedAdAccount contains the account.id (with act_ prefix), not account.account_id
       const response = await assignAdAccountToClient(
         revenueProClientId,
-        selectedAdAccount // This is account.id (e.g., "act_3115069758672562")
+        selectedAdAccount, // This is account.id (e.g., "act_3115069758672562")
+        fbPixelId || undefined,
+        fbPixelToken || undefined
       );
 
       if (!response.error) {
         toast({
           title: "Success",
-          description: response.message || "Ad account assigned successfully!",
+          description: response.message || "Meta configuration saved successfully!",
         });
         // Optionally refresh user data
         onRefresh();
+        // Clear the pixel token field after successful save
+        setFbPixelToken("");
       } else {
         toast({
           title: "Error",
-          description: response.message || "Failed to assign ad account",
+          description: response.message || "Failed to save Meta configuration",
           variant: "destructive",
         });
       }
@@ -372,13 +399,51 @@ const ClientIntegrationsModal: React.FC<ClientIntegrationsModalProps> = ({
                 )}
               </div>
 
+              <div>
+                <Label htmlFor="fbPixelId" className="text-card-foreground">
+                  Facebook Pixel ID
+                </Label>
+                <Input
+                  id="fbPixelId"
+                  type="text"
+                  value={fbPixelId}
+                  onChange={(e) => setFbPixelId(e.target.value)}
+                  disabled={metaLoading}
+                  placeholder="Enter Facebook Pixel ID (numeric only)"
+                  className="mt-1 border-border focus:ring-primary"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Optional: The numeric ID of your Facebook Pixel
+                </p>
+              </div>
+
+              <div>
+                <Label htmlFor="fbPixelToken" className="text-card-foreground">
+                  Facebook Pixel Access Token
+                </Label>
+                <Input
+                  id="fbPixelToken"
+                  type="password"
+                  value={fbPixelToken}
+                  onChange={(e) => setFbPixelToken(e.target.value)}
+                  disabled={metaLoading}
+                  placeholder={fbPixelId ? "Leave empty to keep current token" : "Enter Facebook Pixel Access Token"}
+                  className="mt-1 border-border focus:ring-primary"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  {fbPixelId
+                    ? "Token is encrypted and cannot be viewed. Enter a new token to update it."
+                    : "Optional: The access token for your Facebook Pixel"}
+                </p>
+              </div>
+
               <div className="pt-2">
                 <Button
                   type="submit"
                   className="w-full bg-gradient-primary hover:bg-gradient-accent text-primary-foreground"
                   disabled={metaLoading}
                 >
-                    Save Ad Account
+                    Save Meta Configuration
                 </Button>
               </div>
             </form>

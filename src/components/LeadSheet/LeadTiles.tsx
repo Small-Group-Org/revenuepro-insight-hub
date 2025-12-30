@@ -2,6 +2,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Calendar, Mail, Phone, Tag, Target, Users, Save, FileEdit, X } from "lucide-react";
 import React, { useState, useRef, useEffect } from "react";
+import { canSetProposalAmount, canSetJobBookedAmount } from "@/utils/leads/leadProcessing";
 
 // Memoized component for lead tiles to optimize re-renders
 export const LeadTiles = React.memo(({ 
@@ -66,7 +67,7 @@ export const LeadTiles = React.memo(({
     ULR_OPTIONS: string[];
     selectedLeads: Set<string>;
     userRole: string;
-    handleLeadStatusChange: (leadId: string, value: 'new' | 'in_progress' | 'estimate_set' | 'unqualified') => Promise<void>;
+    handleLeadStatusChange: (leadId: string, value: 'new' | 'in_progress' | 'estimate_set' | 'virtual_quote' | 'estimate_canceled' | 'proposal_presented' | 'job_booked' | 'job_lost' | 'unqualified') => Promise<void>;
     handleULRChange: (leadId: string, value: string) => Promise<void>;
     handleCustomULRSubmit: (leadId: string) => Promise<void>;
     handleAmountUpdate: (leadId: string, jobBookedAmount: number, proposalAmount: number) => Promise<void>;
@@ -133,12 +134,10 @@ export const LeadTiles = React.memo(({
     React.useEffect(() => {
       const newAmountInputs: {[leadId: string]: {jobBookedAmount: number, proposalAmount: number}} = {};
       leads.forEach(lead => {
-        if (lead.status === 'estimate_set') {
-          newAmountInputs[lead.id] = {
-            jobBookedAmount: lead.jobBookedAmount || 0,
-            proposalAmount: lead.proposalAmount || 0
-          };
-        }
+        newAmountInputs[lead.id] = {
+          jobBookedAmount: lead.jobBookedAmount || 0,
+          proposalAmount: lead.proposalAmount || 0
+        };
       });
       setAmountInputs(newAmountInputs);
     }, [leads]);
@@ -511,7 +510,7 @@ export const LeadTiles = React.memo(({
                 <div className="w-full">
                   <Select
                     value={lead.status}
-                    onValueChange={(value) => !isDisabled ? handleLeadStatusChange(lead.id, value as 'new' | 'in_progress' | 'estimate_set' | 'unqualified') : undefined}
+                    onValueChange={(value) => !isDisabled ? handleLeadStatusChange(lead.id, value as 'new' | 'in_progress' | 'estimate_set' | 'virtual_quote' | 'estimate_canceled' | 'proposal_presented' | 'job_booked' | 'job_lost' | 'unqualified') : undefined}
                     disabled={isDisabled}
                   >
                     <SelectTrigger 
@@ -544,6 +543,36 @@ export const LeadTiles = React.memo(({
                         <span className="inline-flex items-center gap-2">
                           <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                           Estimate Set
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="virtual_quote" className="text-sm">
+                        <span className="inline-flex items-center gap-2">
+                          <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                          Virtual Quote
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="estimate_canceled" className="text-sm">
+                        <span className="inline-flex items-center gap-2">
+                          <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                          Estimate Canceled
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="proposal_presented" className="text-sm">
+                        <span className="inline-flex items-center gap-2">
+                          <div className="w-2 h-2 bg-teal-500 rounded-full"></div>
+                          Proposal Presented
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="job_booked" className="text-sm">
+                        <span className="inline-flex items-center gap-2">
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          Job Booked
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="job_lost" className="text-sm">
+                        <span className="inline-flex items-center gap-2">
+                          <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                          Job Lost
                         </span>
                       </SelectItem>
                       <SelectItem value="unqualified" className="text-sm">
@@ -624,114 +653,120 @@ export const LeadTiles = React.memo(({
                     </div>
                   )}
 
-                  {/* Amount Fields - Only show when status is estimate_set */}
-                  {lead.status === 'estimate_set' && (
-                    <div className="mt-2 space-y-2 flex items-center  ">
-                      <div className="flex items-start flex-wrap gap-1 justify-around  w-full">
+                  {/* Amount Fields - Show for all statuses, but disable when not allowed */}
+                  <div className="mt-2 space-y-2 flex items-center  ">
+                    <div className="flex items-start flex-wrap gap-1 justify-around  w-full">
 
-                       {/* Proposal Amount */}
-                        <div className={`flex flex-col items-center gap-1`}>
-                          {editingLeadId === lead.id ? (
-                            <>
-                              <input
-                                type="number"
-                                value={amountInputs[lead.id]?.proposalAmount || ''}
-                                onChange={(e) => {
-                                  const value = parseFloat(e.target.value) || 0;
-                                  setAmountInputs(prev => ({
-                                    ...prev,
-                                    [lead.id]: {
-                                      ...prev[lead.id],
-                                      proposalAmount: value
-                                    }
-                                  }));
-                                }}
-                                placeholder="0"
-                                className="w-20 px-2 py-1 text-xs text-center border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
-                                disabled={isDisabled}
-                                min="0"
-                                step="0.01"
-                              />
-                            </>
-                          ) : (
-                            <div 
-                              className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 rounded px-1 py-1"
-                              onClick={() => {
-                                if (!isDisabled && editingLeadId !== lead.id) {
-                                  setEditingLeadId(lead.id);
-                                }
+                     {/* Proposal Amount */}
+                      <div className={`flex flex-col items-center gap-1`}>
+                        {editingLeadId === lead.id ? (
+                          <>
+                            <input
+                              type="number"
+                              value={amountInputs[lead.id]?.proposalAmount || ''}
+                              onChange={(e) => {
+                                const value = parseFloat(e.target.value) || 0;
+                                setAmountInputs(prev => ({
+                                  ...prev,
+                                  [lead.id]: {
+                                    ...prev[lead.id],
+                                    proposalAmount: value
+                                  }
+                                }));
                               }}
-                            >
-                              <span className="text-xs font-medium">${lead.proposalAmount || 0}</span>
-                            </div>
-                          )}
-                          <div className="text-xs text-gray-500 text-wrap text-center w-20 ">
-                             Proposal Amount
-                          </div>
-                        </div>
-
-                        {/* Job Booked Amount */}
-                        <div className={`flex flex-col items-center gap-1`}>
-                          {editingLeadId === lead.id ? (
-                            <>
-                              <input
-                                type="number"
-                                value={amountInputs[lead.id]?.jobBookedAmount || ''}
-                                onChange={(e) => {
-                                  const value = parseFloat(e.target.value) || 0;
-                                  setAmountInputs(prev => ({
-                                    ...prev,
-                                    [lead.id]: {
-                                      ...prev[lead.id],
-                                      jobBookedAmount: value
-                                    }
-                                  }));
-                                }}
-                                placeholder="0"
-                                className="w-20 px-2 py-1 text-xs text-center border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
-                                disabled={isDisabled}
-                                min="0"
-                                step="0.01"
-                              />
-                            </>
-                          ) : (
-                            <div 
-                              className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 rounded px-1 py-1"
-                              onClick={() => {
-                                if (!isDisabled && editingLeadId !== lead.id) {
-                                  setEditingLeadId(lead.id);
-                                }
-                              }}
-                            >
-                              <span className="text-xs font-medium">${lead.jobBookedAmount || 0}</span>
-                            </div>
-                          )}
-                          <div className="text-xs text-gray-500 text-wrap text-center w-20 ">
-                            Job Booked Amount
-                          </div>
-                        </div>
-
-                     
-
-                        {/* Save Button - Only show when editing */}
-                        {editingLeadId === lead.id && (
-                          <button
+                              placeholder="0"
+                              className="w-20 px-2 py-1 text-xs text-center border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                              disabled={isDisabled || !canSetProposalAmount(lead.status)}
+                              min="0"
+                              step="0.01"
+                            />
+                          </>
+                        ) : (
+                          <div 
+                            className={`flex items-center gap-2 rounded px-1 py-1 ${
+                              canSetProposalAmount(lead.status) 
+                                ? 'cursor-pointer hover:bg-gray-50' 
+                                : 'cursor-not-allowed opacity-50'
+                            }`}
                             onClick={() => {
-                              const jobBookedAmount = amountInputs[lead.id]?.jobBookedAmount || 0;
-                              const proposalAmount = amountInputs[lead.id]?.proposalAmount || 0;
-                              handleAmountUpdate(lead.id, jobBookedAmount, proposalAmount);
-                              setEditingLeadId(null);
+                              if (!isDisabled && editingLeadId !== lead.id && canSetProposalAmount(lead.status)) {
+                                setEditingLeadId(lead.id);
+                              }
                             }}
-                            className="p-1 text-green-600 hover:text-green-700 hover:bg-green-50 rounded transition-colors"
-                            disabled={isDisabled}
-                            title="Save amounts"
                           >
-                            <Save className="w-3 h-3" />
-                          </button>
+                            <span className="text-xs font-medium">${lead.proposalAmount || 0}</span>
+                          </div>
                         )}
+                        <div className="text-xs text-gray-500 text-wrap text-center w-20 ">
+                           Proposal Amount
+                        </div>
                       </div>
+
+                      {/* Job Booked Amount */}
+                      <div className={`flex flex-col items-center gap-1`}>
+                        {editingLeadId === lead.id ? (
+                          <>
+                            <input
+                              type="number"
+                              value={amountInputs[lead.id]?.jobBookedAmount || ''}
+                              onChange={(e) => {
+                                const value = parseFloat(e.target.value) || 0;
+                                setAmountInputs(prev => ({
+                                  ...prev,
+                                  [lead.id]: {
+                                    ...prev[lead.id],
+                                    jobBookedAmount: value
+                                  }
+                                }));
+                              }}
+                              placeholder="0"
+                              className="w-20 px-2 py-1 text-xs text-center border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                              disabled={isDisabled || !canSetJobBookedAmount(lead.status)}
+                              min="0"
+                              step="0.01"
+                            />
+                          </>
+                        ) : (
+                          <div 
+                            className={`flex items-center gap-2 rounded px-1 py-1 ${
+                              canSetJobBookedAmount(lead.status) 
+                                ? 'cursor-pointer hover:bg-gray-50' 
+                                : 'cursor-not-allowed opacity-50'
+                            }`}
+                            onClick={() => {
+                              if (!isDisabled && editingLeadId !== lead.id && canSetJobBookedAmount(lead.status)) {
+                                setEditingLeadId(lead.id);
+                              }
+                            }}
+                          >
+                            <span className="text-xs font-medium">${lead.jobBookedAmount || 0}</span>
+                          </div>
+                        )}
+                        <div className="text-xs text-gray-500 text-wrap text-center w-20 ">
+                          Job Booked Amount
+                        </div>
+                      </div>
+
+                   
+
+                      {/* Save Button - Only show when editing */}
+                      {editingLeadId === lead.id && (
+                        <button
+                          onClick={() => {
+                            const jobBookedAmount = amountInputs[lead.id]?.jobBookedAmount || 0;
+                            const proposalAmount = amountInputs[lead.id]?.proposalAmount || 0;
+                            handleAmountUpdate(lead.id, jobBookedAmount, proposalAmount);
+                            setEditingLeadId(null);
+                          }}
+                          className="p-1 text-green-600 hover:text-green-700 hover:bg-green-50 rounded transition-colors"
+                          disabled={isDisabled}
+                          title="Save amounts"
+                        >
+                          <Save className="w-3 h-3" />
+                        </button>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
             </div>

@@ -1,5 +1,14 @@
 // Lead status types
-export type LeadStatus = 'new' | 'in_progress' | 'estimate_set' | 'unqualified';
+export type LeadStatus = 
+  | 'new' 
+  | 'in_progress' 
+  | 'estimate_set' 
+  | 'virtual_quote'
+  | 'estimate_canceled'
+  | 'proposal_presented'
+  | 'job_booked'
+  | 'job_lost'
+  | 'unqualified';
 
 // Lead update data interface
 export interface LeadUpdateData {

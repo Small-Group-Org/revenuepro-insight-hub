@@ -11,7 +11,7 @@ export interface GetLeadsPayload {
 
 export interface UpdateLeadPayload {
   _id: string;
-  status?: 'new' | 'in_progress' | 'estimate_set' | 'unqualified';
+  status?: 'new' | 'in_progress' | 'estimate_set' | 'virtual_quote' | 'estimate_canceled' | 'proposal_presented' | 'job_booked' | 'job_lost' | 'unqualified';
   unqualifiedLeadReason?: string;
   jobBookedAmount?: number;
   proposalAmount?: number;

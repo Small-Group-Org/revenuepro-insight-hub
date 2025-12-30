@@ -14,6 +14,8 @@ import {
   getScoreInfo,
   getStatusInfo,
   FIELD_WEIGHTS,
+  canSetProposalAmount,
+  canSetJobBookedAmount,
 } from "@/utils/leads/leadProcessing";
 import {
   AlertDialog,
@@ -171,23 +173,32 @@ export const LeadSheet = () => {
   // Amount update handler
   const handleAmountUpdate = useCallback(
     async (leadId: string, jobBookedAmount: number, proposalAmount: number) => {
+      const lead = leads.find((l) => l.id === leadId);
+      if (!lead) return;
+
+      // Build update payload based on current status
+      const updatePayload: any = {};
+      
+      // Only include proposalAmount if status allows it
+      if (canSetProposalAmount(lead.status)) {
+        updatePayload.proposalAmount = proposalAmount;
+      }
+      
+      // Only include jobBookedAmount if status allows it
+      if (canSetJobBookedAmount(lead.status)) {
+        updatePayload.jobBookedAmount = jobBookedAmount;
+      }
+
+      // Don't change status, just update amounts
       const success = await handleLeadUpdate(
         leadId,
-        { 
-          status: "estimate_set", 
-          jobBookedAmount, 
-          proposalAmount 
-        },
+        updatePayload,
         "Amounts have been updated successfully."
       );
 
       if (success) {
         // Update local state
-        updateLeadLocal(leadId, { 
-          status: "estimate_set", 
-          jobBookedAmount, 
-          proposalAmount 
-        });
+        updateLeadLocal(leadId, updatePayload);
         
         // Refresh only the lead data instead of full page reload
         if (selectedUserId) {
@@ -211,6 +222,7 @@ export const LeadSheet = () => {
       }
     },
     [
+      leads,
       handleLeadUpdate, 
       updateLeadLocal, 
       selectedUserId, 

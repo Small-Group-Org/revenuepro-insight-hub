@@ -180,6 +180,7 @@ export const useLeadStore = create<LeadStoreState>((set, get) => ({
             jobBookedAmount: updatedLead.jobBookedAmount,
             proposalAmount: updatedLead.proposalAmount,
             notes: updatedLead.notes,
+            statusHistory: updatedLead.statusHistory,
             updatedAt: updatedLead.updatedAt
           } : lead
         );

@@ -139,7 +139,7 @@ export const LeadFiltersAndControls = React.memo(({
                 <SelectItem value="all">All Statuses</SelectItem>
                 {filterOptions?.statuses.map(status => (
                   <SelectItem key={status} value={status}>
-                    {getStatusInfo(status as 'new' | 'in_progress' | 'estimate_set' | 'unqualified').label}
+                    {getStatusInfo(status).label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -187,7 +187,7 @@ export const LeadFiltersAndControls = React.memo(({
               )}
               {currentFilters.status && (
                 <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                  Status: {getStatusInfo(currentFilters.status as 'new' | 'in_progress' | 'estimate_set' | 'unqualified').label}
+                  Status: {getStatusInfo(currentFilters.status).label}
                 </Badge>
               )}
               {currentFilters.unqualifiedLeadReason && (

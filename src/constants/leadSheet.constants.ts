@@ -48,6 +48,11 @@ export const STATUS_INFO = {
   new: { label: 'New', color: 'blue' },
   in_progress: { label: 'In Progress', color: 'yellow' },
   estimate_set: { label: 'Estimate Set', color: 'green' },
+  virtual_quote: { label: 'Virtual Quote', color: 'purple' },
+  estimate_canceled: { label: 'Estimate Canceled', color: 'orange' },
+  proposal_presented: { label: 'Proposal Presented', color: 'teal' },
+  job_booked: { label: 'Job Booked', color: 'green' },
+  job_lost: { label: 'Job Lost', color: 'red' },
   unqualified: { label: 'Unqualified', color: 'red' }
 } as const;
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DatePeriodSelector } from "@/components/DatePeriodSelector";
@@ -27,6 +27,8 @@ import { exportToExcel, ExportData } from "@/utils/excelExport";
 import { useUserStore } from "@/stores/userStore";
 import { FullScreenLoader } from "@/components/ui/full-screen-loader";
 import { useCombinedLoading } from "@/hooks/useCombinedLoading";
+import { useMetaBudgetSpent } from "@/hooks/useMetaBudgetSpent";
+import { useUserContext } from "@/utils/UserContext";
 
 export const CompareResults = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -34,11 +36,28 @@ export const CompareResults = () => {
     "monthly"
   );
 
-  const { reportingData, targetData, getReportingData } = useReportingDataStore();
+  const { reportingData, targetData, getReportingData, upsertReportingData } = useReportingDataStore();
   const { isLoading } = useCombinedLoading();
   const { selectedUserId } = useUserStore();
-  // Fetch actual+target data from single API
+  const { isVerifying } = useUserContext();
+
+  // Use meta budget spent hook
+  const {
+    hasMetaIntegration,
+    isUpserting,
+    isLoadingCampaignData,
+    fetchCampaignData,
+    setCampaignData,
+    totalCampaignSpend,
+    upsertMetaBudgetSpentForEntry,
+  } = useMetaBudgetSpent(selectedUserId);
+
+  // Fetch actual+target data from single API - wait for verification to complete
   useEffect(() => {
+    // Wait for token verification to complete
+    if (isVerifying) return;
+    if (!selectedUserId) return;
+
     let startDate: string, endDate: string, queryType: string;
     if (period === "weekly") {
       const weekInfo = getWeekInfo(selectedDate);
@@ -54,8 +73,66 @@ export const CompareResults = () => {
       endDate = format(endOfYear(selectedDate), "yyyy-MM-dd");
       queryType = "yearly";
     }
+
     getReportingData(startDate, endDate, queryType, period);
-  }, [selectedDate, period, selectedUserId, getReportingData]);
+  }, [isVerifying, selectedUserId, selectedDate, period, getReportingData]);
+
+  // Helper function to get date range
+  const getDateRange = useCallback((date: Date, periodType: "weekly" | "monthly" | "yearly"): {
+    startDate: string;
+    endDate: string;
+    queryType: string;
+  } => {
+    if (periodType === "weekly") {
+      const weekInfo = getWeekInfo(date);
+      return {
+        startDate: format(weekInfo.weekStart, "yyyy-MM-dd"),
+        endDate: format(weekInfo.weekEnd, "yyyy-MM-dd"),
+        queryType: "weekly",
+      };
+    } else if (periodType === "monthly") {
+      return {
+        startDate: format(startOfMonth(date), "yyyy-MM-dd"),
+        endDate: format(endOfMonth(date), "yyyy-MM-dd"),
+        queryType: "monthly",
+      };
+    } else {
+      return {
+        startDate: format(startOfYear(date), "yyyy-MM-dd"),
+        endDate: format(endOfYear(date), "yyyy-MM-dd"),
+        queryType: "yearly",
+      };
+    }
+  }, []);
+
+  // Fetch Meta campaign data when date/period changes (like WeeklyReporting)
+  useEffect(() => {
+    const fetchMetaCampaignData = async () => {
+      // Only fetch if we have a selected user and meta integration is confirmed
+      if (!selectedUserId || hasMetaIntegration !== true) {
+        setCampaignData([]);
+        return;
+      }
+
+      const { startDate, endDate, queryType } = getDateRange(selectedDate, period);
+
+      // Fetch campaign data using the hook
+      const result = await fetchCampaignData(
+        selectedUserId,
+        startDate,
+        endDate,
+        queryType as "weekly" | "monthly" | "yearly"
+      );
+
+      if (result.success && result.data && result.data.length > 0) {
+        setCampaignData(result.data);
+      } else {
+        setCampaignData([]);
+      }
+    };
+
+    fetchMetaCampaignData();
+  }, [selectedDate, period, selectedUserId, hasMetaIntegration, fetchCampaignData, setCampaignData, getDateRange]);
 
   // Process target data with all calculated fields
   const processedTargetData = useMemo(() => {
@@ -69,12 +146,12 @@ export const CompareResults = () => {
   // Process actual data with all calculated fields
   const processedActualData = useMemo(() => {
     if (!reportingData || reportingData.length === 0) return undefined;
-    
+
     // Aggregate actual data from reporting fields
     const aggregatedActual: FieldValue = {};
     reportingData.forEach((data) => {
       Object.keys(data).forEach((key) => {
-        if (key !== 'userId' && key !== 'startDate' && key !== 'endDate' && 
+        if (key !== 'userId' && key !== 'startDate' && key !== 'endDate' &&
             key !== '_id' && key !== 'createdAt' && key !== 'updatedAt' && key !== '__v') {
           aggregatedActual[key] = (aggregatedActual[key] || 0) + (data[key] || 0);
         }
@@ -88,9 +165,69 @@ export const CompareResults = () => {
       targetRevenue: processedTargetData?.revenue || 0,
     };
 
-    // Apply reporting field calculations
-    return calculateReportingFields(actualWithTargets);
-  }, [reportingData, processedTargetData]);
+    // Pass totalCampaignSpend when meta integration is active (like WeeklyReporting)
+    // This will override the manual budget entries if meta integration exists
+    // Don't pass campaignSpend while loading to prevent showing 0 during fetch
+    const campaignSpend = hasMetaIntegration === true && !isLoadingCampaignData && totalCampaignSpend > 0
+      ? totalCampaignSpend
+      : undefined;
+    return calculateReportingFields(actualWithTargets, campaignSpend);
+  }, [reportingData, processedTargetData, hasMetaIntegration, totalCampaignSpend, isLoadingCampaignData]);
+
+  // Auto-upsert metaBudgetSpent when it's null and meta integration is active
+  useEffect(() => {
+    const upsertMetaBudgetSpentIfNull = async () => {
+      // Only proceed if:
+      // 1. Reporting data has been loaded
+      // 2. User has meta integration enabled
+      // 3. Not currently upserting (prevents recursion)
+      if (!reportingData || !Array.isArray(reportingData) || reportingData.length === 0) {
+        return;
+      }
+
+      if (hasMetaIntegration !== true || !selectedUserId) {
+        return;
+      }
+
+      if (isUpserting) {
+        return; // Prevent running while already upserting
+      }
+
+      // Only process entries that actually need updating
+      // (all manual budgets are zero AND metaBudgetSpent is missing)
+      const entriesToProcess = reportingData.filter(entry => {
+        const hasManualBudgets = (entry.testingBudgetSpent || 0) !== 0
+          || (entry.awarenessBrandingBudgetSpent || 0) !== 0
+          || (entry.leadGenerationBudgetSpent || 0) !== 0;
+
+        // Only process if no manual budgets exist
+        if (hasManualBudgets) return false;
+
+        // Process if metaBudgetSpent is missing or null
+        return entry.metaBudgetSpent === undefined || entry.metaBudgetSpent === null;
+      });
+
+      // If no entries need processing, skip
+      if (entriesToProcess.length === 0) {
+        return;
+      }
+
+      // Check each reporting data entry (works for weekly, monthly, and yearly)
+      for (const dataEntry of entriesToProcess) {
+        await upsertMetaBudgetSpentForEntry(
+          dataEntry,
+          selectedUserId,
+          period,
+          upsertReportingData,
+          getReportingData,
+          getDateRange,
+          selectedDate
+        );
+      }
+    };
+
+    upsertMetaBudgetSpentIfNull();
+  }, [reportingData, hasMetaIntegration, period, selectedUserId, isUpserting, upsertReportingData, getReportingData, selectedDate, upsertMetaBudgetSpentForEntry, getDateRange]);
 
   // Helper function to calculate actual metrics from reporting data
   const calculateActualMetrics = useMemo(() => {
@@ -503,7 +640,16 @@ export const CompareResults = () => {
       </div>
       
       {/* Full Screen Loader */}
-      <FullScreenLoader isLoading={isLoading} message="Loading comparison data..." />
+      <FullScreenLoader
+        isLoading={isLoading || isUpserting || isLoadingCampaignData}
+        message={
+          isUpserting
+            ? "Updating budget data..."
+            : isLoadingCampaignData
+              ? "Loading Meta campaign data..."
+              : "Loading comparison data..."
+        }
+      />
     </div>
   );
 };
