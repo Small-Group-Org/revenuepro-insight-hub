@@ -3,12 +3,14 @@ import { API_ENDPOINTS } from "@/utils/constant";
 import {
   PerformanceBoardRequest,
   PerformanceRow,
+  PerformanceBoardAverages,
 } from "@/types/adPerformanceBoard";
 
 interface PerformanceBoardServiceResponse {
   error: boolean;
   message?: string;
   data?: PerformanceRow[];
+  averages?: PerformanceBoardAverages;
   availableZipCodes?: string[];
   availableServiceTypes?: string[];
 }
@@ -34,6 +36,7 @@ export const fetchAdPerformanceBoard = async (
     return {
       error: false,
       data: rows as PerformanceRow[],
+      averages: responseData?.averages,
       availableZipCodes: responseData?.availableZipCodes,
       availableServiceTypes: responseData?.availableServiceTypes,
     };

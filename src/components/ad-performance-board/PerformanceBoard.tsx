@@ -28,6 +28,7 @@ import {
   GroupBy,
   PerformanceBoardFilters,
   PerformanceRow,
+  PerformanceBoardAverages,
 } from "@/types/adPerformanceBoard";
 import { fetchAdPerformanceBoard } from "@/service/adPerformanceBoardService";
 import { useUserContext } from "@/utils/UserContext";
@@ -79,6 +80,7 @@ export const PerformanceBoard = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
   const [availableZipCodes, setAvailableZipCodes] = useState<string[]>([]);
   const [availableServiceTypes, setAvailableServiceTypes] = useState<string[]>([]);
+  const [apiAverages, setApiAverages] = useState<PerformanceBoardAverages | null>(null);
   // Load saved preferences
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -355,7 +357,12 @@ export const PerformanceBoard = () => {
       if (response.availableServiceTypes) {
         setAvailableServiceTypes(response.availableServiceTypes);
       }
-      
+
+      // Store API-provided averages
+      if (response.averages) {
+        setApiAverages(response.averages);
+      }
+
       return response.data || [];
     },
     enabled: Boolean(clientId && appliedFilters.startDate && appliedFilters.endDate),
@@ -1016,7 +1023,7 @@ export const PerformanceBoard = () => {
                       const isService = column.id === "service";
                       const categoryColors = getCategoryColors(column.category);
                       const hasAggregate = column.aggregate && column.aggregate !== "none";
-                      const aggregateValue = hasAggregate ? getAggregateValue(column, sortedData) : null;
+                      const aggregateValue = hasAggregate ? getAggregateValue(column, sortedData, apiAverages) : null;
                       const isFrozen = frozenColumns.includes(column.id);
                       const frozenIndex = frozenColumns.indexOf(column.id);
                       const leftOffset = isFrozen ? frozenIndex * 250 : 0;

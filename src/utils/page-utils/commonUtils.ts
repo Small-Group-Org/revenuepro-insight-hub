@@ -14,7 +14,7 @@ export const formatCurrency = (val: number): string => {
     currency: 'USD',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0
-  }).format(Math.ceil(val));
+  }).format(Math.round(val));
 };
 
 /**
