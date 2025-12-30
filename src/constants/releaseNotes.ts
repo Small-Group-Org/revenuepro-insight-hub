@@ -3,10 +3,16 @@ export interface ReleaseNote {
   items: string[];
 }
 
-export const CURRENT_PATCH_VERSION = "2025.12.16"; // Update this with each new release
-export const LAST_UPDATED = "DECEMBER 16, 2025";
+export const CURRENT_PATCH_VERSION = "2025.12.25"; // Update this with each new release
+export const LAST_UPDATED = "DECEMBER 25, 2025";
 
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    date: "December 25, 2025",
+    items: [
+      "New status of leads for better tracking: Virtual Quote, Estimate Canceled, Proposal Presented, Job Booked, and Job Lost",
+    ],
+  },
   {
     date: "December 16, 2025",
     items: [
