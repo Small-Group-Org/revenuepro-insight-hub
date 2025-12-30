@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Plus, X, GripVertical, ArrowUp, ArrowDown, Sigma, BarChart3, TrendingDown, TrendingUp, Pin, Settings } from "lucide-react";
+import { Loader2, Plus, X, GripVertical, ArrowUp, ArrowDown, Sigma, BarChart3, TrendingDown, TrendingUp, Pin, Settings, LayoutGrid, Table as TableIcon } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { FiltersBar } from "./FiltersBar";
 import { ColumnCard } from "./ColumnCard";
@@ -35,6 +35,7 @@ import { useUserContext } from "@/utils/UserContext";
 import { useUserStore } from "@/stores/userStore";
 import { useToast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
+import { AdGridView } from "@/components/ads/AdGridView";
 
 const STORAGE_KEY = "ad-performance-board:v1";
 
@@ -76,6 +77,7 @@ export const PerformanceBoard = () => {
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [frozenColumns, setFrozenColumns] = useState<string[]>([]);
   const [searchInputValue, setSearchInputValue] = useState<string>("");
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
   const [availableZipCodes, setAvailableZipCodes] = useState<string[]>([]);
   const [availableServiceTypes, setAvailableServiceTypes] = useState<string[]>([]);
   const [apiAverages, setApiAverages] = useState<PerformanceBoardAverages | null>(null);
@@ -703,15 +705,39 @@ export const PerformanceBoard = () => {
               />
             </div>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-2"
-            onClick={() => setIsAddOpen(true)}
-          >
-            <Settings className="h-4 w-4" />
-            Configure columns
-          </Button>
+          <div className="flex items-center gap-2">
+            {groupBy === 'ad' && (
+              <div className="flex items-center border border-slate-200 rounded-md">
+                <Button
+                  variant={viewMode === 'table' ? 'default' : 'ghost'}
+                  size="sm"
+                  className="rounded-r-none border-r h-9"
+                  onClick={() => setViewMode('table')}
+                >
+                  <TableIcon className="h-4 w-4 mr-1" />
+                  Table
+                </Button>
+                <Button
+                  variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                  size="sm"
+                  className="rounded-l-none h-9"
+                  onClick={() => setViewMode('grid')}
+                >
+                  <LayoutGrid className="h-4 w-4 mr-1" />
+                  Grid
+                </Button>
+              </div>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={() => setIsAddOpen(true)}
+            >
+              <Settings className="h-4 w-4" />
+              Configure columns
+            </Button>
+          </div>
         </div>
 
         {isFetching && (
@@ -728,6 +754,13 @@ export const PerformanceBoard = () => {
           </div>
         )}
 
+        {viewMode === 'grid' && groupBy === 'ad' ? (
+          <AdGridView 
+            ads={sortedData} 
+            startDate={appliedFilters.startDate}
+            endDate={appliedFilters.endDate}
+          />
+        ) : (
         <div
           className="w-full overflow-x-auto overflow-y-auto"
           style={{ maxHeight: "calc(100vh - 220px)" }}
@@ -1049,6 +1082,7 @@ export const PerformanceBoard = () => {
             </table>
           </div>
         </div>
+        )}
       </Card>
 
       <AddColumnSheet
