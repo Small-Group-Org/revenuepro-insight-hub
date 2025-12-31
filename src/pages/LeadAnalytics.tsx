@@ -379,18 +379,29 @@ export const LeadAnalytics = () => {
       .slice(0, TOP_N_ZIP);
   }, [analyticsData, zipMetric]);
 
-  const totalEffectiveLeads =
-    analyticsData?.overview.estimateSetCount +
-      analyticsData?.overview.unqualifiedCount || 0;
+  // Calculate qualified outcomes: Estimate Set + Virtual Quote + Proposal Presented + Job Booked
+  const qualifiedOutcomes =
+    (analyticsData?.overview.estimateSetCount || 0) +
+    (analyticsData?.overview.virtualQuoteCount || 0) +
+    (analyticsData?.overview.proposalPresentedCount || 0) +
+    (analyticsData?.overview.jobBookedCount || 0);
+
+  // Calculate unqualified outcomes: Unqualified + Estimate Canceled + Job Lost
+  const unqualifiedOutcomes =
+    (analyticsData?.overview.unqualifiedCount || 0) +
+    (analyticsData?.overview.estimateCanceledCount || 0) +
+    (analyticsData?.overview.jobLostCount || 0);
+
+  const totalEffectiveLeads = qualifiedOutcomes + unqualifiedOutcomes;
 
   const estimateSetRate =
     totalEffectiveLeads > 0
-      ? (analyticsData?.overview.estimateSetCount / totalEffectiveLeads) * 100
+      ? (qualifiedOutcomes / totalEffectiveLeads) * 100
       : 0;
 
   const unqualifiedRate =
     totalEffectiveLeads > 0
-      ? (analyticsData?.overview.unqualifiedCount / totalEffectiveLeads) * 100
+      ? (unqualifiedOutcomes / totalEffectiveLeads) * 100
       : 0;
 
   return (
@@ -687,7 +698,7 @@ export const LeadAnalytics = () => {
                       format: "percent" as const,
                     },
                   ]}
-                  description="Estimate Set / (Estimate Set + Unqualified)"
+                  description="Qualified Outcomes / (Qualified + Unqualified Outcomes)"
                 />
               </div>
 
