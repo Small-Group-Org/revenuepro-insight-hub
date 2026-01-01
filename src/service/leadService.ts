@@ -113,7 +113,12 @@ export interface DeleteLeadResponse {
 export interface AnalyticsOverview {
   totalLeads: number;
   estimateSetCount: number;
+  virtualQuoteCount: number;
+  proposalPresentedCount: number;
+  jobBookedCount: number;
   unqualifiedCount: number;
+  estimateCanceledCount: number;
+  jobLostCount: number;
 }
 
 export interface ZipAnalyticsDataPoint {

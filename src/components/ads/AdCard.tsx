@@ -1,6 +1,3 @@
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { Video, Image as ImageIcon, LayoutGrid, Link as LinkIcon } from 'lucide-react';
 
 interface AdCardProps {
@@ -9,8 +6,18 @@ interface AdCardProps {
     fb_cost_per_lead?: number;
     fb_total_leads?: number;
     fb_spend?: number;
+    fb_link_clicks?: number;
+    fb_impressions?: number;
+    fb_video_views?: number;
+    fb_clicks?: number;
+    fb_post_reactions?: number;
+    fb_post_comments?: number;
+    fb_post_shares?: number;
     costPerLead?: number | null;
+    costPerEstimateSet?: number | null;
     numberOfLeads?: number;
+    numberOfEstimateSets?: number;
+    estimateSetRate?: number | null;
     creative?: {
       id: string;
       name?: string;
@@ -29,46 +36,43 @@ interface AdCardProps {
       headline?: string;
     };
   };
-  // Optional: Pass in conversion score and hook score if available
   conversionScore?: number;
   hookScore?: number;
-  leadsConversionRate?: number;
   onClick?: () => void;
 }
 
-export function AdCard({ ad, conversionScore = 50, hookScore, leadsConversionRate, onClick }: AdCardProps) {
+export function AdCard({ ad, onClick }: AdCardProps) {
   const creative = ad.creative;
-  
-  // Determine creative type icon and badge
+
+  // Determine creative type info
   const getCreativeTypeInfo = () => {
-    if (!creative) return { icon: ImageIcon, label: 'No Creative', color: 'bg-gray-500' };
-    
+    if (!creative) return { icon: ImageIcon, label: 'No Creative' };
+
     switch (creative.creativeType) {
       case 'video':
-        return { icon: Video, label: 'Video', color: 'bg-blue-500' };
+        return { icon: Video, label: 'Video' };
       case 'carousel':
-        return { icon: LayoutGrid, label: 'Carousel', color: 'bg-purple-500' };
+        return { icon: LayoutGrid, label: 'Carousel' };
       case 'link':
-        return { icon: LinkIcon, label: 'Link', color: 'bg-green-500' };
+        return { icon: LinkIcon, label: 'Link' };
       case 'image':
-        return { icon: ImageIcon, label: 'Image', color: 'bg-orange-500' };
+        return { icon: ImageIcon, label: 'Image' };
       default:
-        return { icon: ImageIcon, label: 'Other', color: 'bg-gray-500' };
+        return { icon: ImageIcon, label: 'Other' };
     }
   };
 
   const typeInfo = getCreativeTypeInfo();
-  const CreativeIcon = typeInfo.icon;
 
   // Get the best available image/thumbnail
   const getMediaUrl = () => {
     if (!creative) return null;
-    
+
     // For image ads, use imageUrl (high-res)
     if (creative.creativeType === 'image' && creative.imageUrl) {
       return creative.imageUrl;
     }
-    
+
     // For video, carousel, link, and other types, use thumbnailUrl
     return creative.thumbnailUrl || creative.videos?.[0]?.thumbnailUrl || null;
   };
@@ -77,25 +81,42 @@ export function AdCard({ ad, conversionScore = 50, hookScore, leadsConversionRat
 
   // Format currency
   const formatCurrency = (value?: number | null) => {
-    if (value === null || value === undefined) return 'N/A';
+    if (value === null || value === undefined || isNaN(value)) return 'N/A';
     return `$${value.toFixed(2)}`;
   };
 
-  // Calculate conversion rate if not provided
-  const calculatedConversionRate = leadsConversionRate ?? 
-    (ad.numberOfLeads && ad.fb_total_leads 
-      ? ((ad.numberOfLeads / ad.fb_total_leads) * 100) 
-      : 0);
+  // Format percentage
+  const formatPercentage = (value?: number | null) => {
+    if (value === null || value === undefined || isNaN(value)) return 'N/A';
+    return `${value.toFixed(2)}%`;
+  };
+
+  // Calculate Conversion Rate: facebook leads / link clicks
+  const conversionRate = ad.fb_total_leads && ad.fb_link_clicks && ad.fb_link_clicks > 0
+    ? ((ad.fb_total_leads / ad.fb_link_clicks) * 100)
+    : null;
+
+  // Calculate Thumbstop Rate: 3-second video plays / impressions
+  // Using fb_video_views as a proxy for 3-second video plays
+  const thumbstopRate = ad.fb_video_views && ad.fb_impressions && ad.fb_impressions > 0
+    ? ((ad.fb_video_views / ad.fb_impressions) * 100)
+    : null;
+
+  // Calculate See More Rate: (Clicks (all) - Link Clicks - Post Reactions - Post Comments - Post Shares) / Impressions
+  const seeMoreClicks = (ad.fb_clicks || 0) - (ad.fb_link_clicks || 0) - (ad.fb_post_reactions || 0) - (ad.fb_post_comments || 0) - (ad.fb_post_shares || 0);
+  const seeMoreRate = ad.fb_impressions && ad.fb_impressions > 0
+    ? ((seeMoreClicks / ad.fb_impressions) * 100)
+    : null;
 
   return (
-    <Card 
-      className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+    <div
+      className="w-full bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition cursor-pointer"
       onClick={onClick}
     >
-      {/* Creative Media */}
-      <div className="relative aspect-video bg-gray-100">
+      {/* Media */}
+      <div className="relative aspect-video bg-gray-100 overflow-hidden rounded-t-xl">
         {mediaUrl ? (
-          <img 
+          <img
             src={mediaUrl}
             alt={ad.adName || 'Ad creative'}
             className="w-full h-full object-cover"
@@ -104,65 +125,76 @@ export function AdCard({ ad, conversionScore = 50, hookScore, leadsConversionRat
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-400">
-            <CreativeIcon className="w-12 h-12" />
+            <typeInfo.icon className="w-12 h-12" />
           </div>
         )}
-        
-        {/* Creative Type Badge */}
-        <div className="absolute top-2 left-2">
-          <Badge className={`${typeInfo.color} text-white flex items-center gap-1`}>
-            <CreativeIcon className="w-3 h-3" />
-            {typeInfo.label}
-          </Badge>
-        </div>
 
-        {/* Video Duration Badge */}
-        {creative?.creativeType === 'video' && creative.videos?.[0]?.duration && (
-          <div className="absolute bottom-2 right-2">
-            <Badge variant="secondary" className="bg-black/70 text-white">
-              {creative.videos[0].duration}s
-            </Badge>
-          </div>
-        )}
+        <span className="absolute bottom-2 left-2 bg-black/80 text-white text-[11px] px-2 py-1 rounded-md">
+          {typeInfo.label}
+        </span>
       </div>
 
-      <CardContent className="p-4 space-y-3">
-        {/* Ad Name */}
-        <h3 className="font-semibold text-sm line-clamp-2 min-h-[40px]">
+      {/* Content */}
+      <div className="p-2.5">
+        {/* Title */}
+        <h4 className="text-sm font-semibold text-gray-900 leading-snug mb-2 line-clamp-2">
           {ad.adName || 'Untitled Ad'}
-        </h3>
+        </h4>
 
-        {/* Metrics Grid */}
-        <div className="space-y-2">
-          <div>
-            <p className="text-xs text-muted-foreground">Cost Per On-Facebook Lead</p>
-            <p className="font-semibold text-lg">{formatCurrency(ad.fb_cost_per_lead)}</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">On-Facebook Leads</p>
-            <p className="font-semibold text-lg">{ad.fb_total_leads || 0}</p>
-          </div>
+        {/* Metrics */}
+        <div className="space-y-1 text-xs">
+          <Metric label="Cost / Lead" value={formatCurrency(ad.costPerLead)} />
+          <Metric label="Leads" value={ad.numberOfLeads?.toString() || 'N/A'} />
+          <MetricWithBar label="Conv. Rate" value={formatPercentage(conversionRate)} percentage={conversionRate} />
+          <MetricWithBar label="Thumbstop Rate" value={formatPercentage(thumbstopRate)} percentage={thumbstopRate} />
+          <MetricWithBar label="See More Rate" value={formatPercentage(seeMoreRate)} percentage={seeMoreRate} />
+          <Metric label="Cost / Est. Set" value={formatCurrency(ad.costPerEstimateSet)} />
+          <MetricWithBar label="Est. Set Rate" value={formatPercentage(ad.estimateSetRate)} percentage={ad.estimateSetRate} />
         </div>
 
-        {/* Hook Score */}
-        {hookScore !== undefined && hookScore !== null && (
-          <div>
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-xs text-muted-foreground">Hook Score</span>
-              <span className="text-xs font-semibold">{hookScore}</span>
-            </div>
-            <Progress value={hookScore} className="h-2" />
-          </div>
-        )}
-
-        {/* Amount Spent */}
-        <div className="pt-2 border-t">
-          <div className="flex justify-between items-center">
-            <span className="text-xs text-muted-foreground">Amount spent</span>
-            <span className="font-semibold">{formatCurrency(ad.fb_spend)}</span>
-          </div>
+        {/* Footer */}
+        <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
+          <span>Amount Spent</span>
+          <span className="font-semibold text-gray-900">
+            {formatCurrency(ad.fb_spend)}
+          </span>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
+
+const Metric = ({ label, value }: { label: string; value: string }) => (
+  <div className="flex items-center justify-between bg-gray-50 rounded px-1.5 py-0.5">
+    <span className="text-gray-500">{label}</span>
+    <span className="font-semibold text-gray-900">{value}</span>
+  </div>
+);
+
+const MetricWithBar = ({ label, value, percentage }: { label: string; value: string; percentage: number | null }) => {
+  // Determine color based on percentage value
+  const getColor = (pct: number | null) => {
+    if (pct === null || pct === undefined || isNaN(pct)) return 'bg-gray-300';
+    if (pct >= 70) return 'bg-green-500';
+    if (pct >= 40) return 'bg-yellow-500';
+    return 'bg-red-500';
+  };
+
+  const safePercentage = percentage === null || percentage === undefined || isNaN(percentage) ? 0 : Math.min(100, Math.max(0, percentage));
+  const color = getColor(percentage);
+
+  return (
+    <div className="bg-gray-50 rounded px-1.5 py-0.5">
+      <div className="flex items-center justify-between mb-0.5">
+        <span className="text-gray-500">{label}</span>
+        <span className="font-semibold text-gray-900">{value}</span>
+      </div>
+      <div className="w-full bg-gray-200 rounded-full h-0.5">
+        <div
+          className={`${color} h-0.5 rounded-full transition-all duration-300`}
+          style={{ width: `${safePercentage}%` }}
+        />
+      </div>
+    </div>
+  );
+};

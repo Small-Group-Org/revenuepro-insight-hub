@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Plus, X, GripVertical, ArrowUp, ArrowDown, Sigma, BarChart3, TrendingDown, TrendingUp, Pin, Settings, LayoutGrid, Table as TableIcon } from "lucide-react";
+import { Loader2, Plus, X, GripVertical, ArrowUp, ArrowDown, Sigma, BarChart3, TrendingDown, TrendingUp, Pin, Settings } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { FiltersBar } from "./FiltersBar";
 import { ColumnCard } from "./ColumnCard";
@@ -77,7 +77,6 @@ export const PerformanceBoard = () => {
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [frozenColumns, setFrozenColumns] = useState<string[]>([]);
   const [searchInputValue, setSearchInputValue] = useState<string>("");
-  const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
   const [availableZipCodes, setAvailableZipCodes] = useState<string[]>([]);
   const [availableServiceTypes, setAvailableServiceTypes] = useState<string[]>([]);
   const [apiAverages, setApiAverages] = useState<PerformanceBoardAverages | null>(null);
@@ -349,7 +348,7 @@ export const PerformanceBoard = () => {
         });
         return [];
       }
-      
+
       // Update available options from API response
       if (response.availableZipCodes) {
         setAvailableZipCodes(response.availableZipCodes);
@@ -369,6 +368,50 @@ export const PerformanceBoard = () => {
     staleTime: 60 * 1000,
     refetchOnWindowFocus: false,
   });
+
+  // Separate query for ad grid view - always fetches ad-level data
+  // const { data: adGridData } = useQuery<PerformanceRow[]>({
+  //   queryKey: [
+  //     "ad-performance-board-grid",
+  //     clientId,
+  //     transformedFilters,
+  //   ],
+  //   queryFn: async () => {
+  //     const response = await fetchAdPerformanceBoard({
+  //       clientId,
+  //       groupBy: "ad", // Always fetch ad-level data for grid
+  //       filters: transformedFilters,
+  //       columns: {
+  //         adName: true,
+  //         fb_cost_per_lead: true,
+  //         fb_total_leads: true,
+  //         fb_spend: true,
+  //         fb_link_clicks: true,
+  //         fb_impressions: true,
+  //         fb_video_views: true,
+  //         fb_clicks: true,
+  //         fb_post_reactions: true,
+  //         fb_post_comments: true,
+  //         fb_post_shares: true,
+  //         costPerLead: true,
+  //         costPerEstimateSet: true,
+  //         numberOfLeads: true,
+  //         numberOfEstimateSets: true,
+  //         estimateSetRate: true,
+  //         creative: true,
+  //       },
+  //     });
+
+  //     if (response.error) {
+  //       return [];
+  //     }
+
+  //     return response.data || [];
+  //   },
+  //   enabled: Boolean(clientId && appliedFilters.startDate && appliedFilters.endDate),
+  //   staleTime: 60 * 1000,
+  //   refetchOnWindowFocus: false,
+  // });
 
   const sortedData = useMemo(() => {
     if (!data) return [];
@@ -706,28 +749,6 @@ export const PerformanceBoard = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {groupBy === 'ad' && (
-              <div className="flex items-center border border-slate-200 rounded-md">
-                <Button
-                  variant={viewMode === 'table' ? 'default' : 'ghost'}
-                  size="sm"
-                  className="rounded-r-none border-r h-9"
-                  onClick={() => setViewMode('table')}
-                >
-                  <TableIcon className="h-4 w-4 mr-1" />
-                  Table
-                </Button>
-                <Button
-                  variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                  size="sm"
-                  className="rounded-l-none h-9"
-                  onClick={() => setViewMode('grid')}
-                >
-                  <LayoutGrid className="h-4 w-4 mr-1" />
-                  Grid
-                </Button>
-              </div>
-            )}
             <Button
               variant="outline"
               size="sm"
@@ -754,13 +775,17 @@ export const PerformanceBoard = () => {
           </div>
         )}
 
-        {viewMode === 'grid' && groupBy === 'ad' ? (
-          <AdGridView 
-            ads={sortedData} 
-            startDate={appliedFilters.startDate}
-            endDate={appliedFilters.endDate}
-          />
-        ) : (
+        {/* Grid View - Commented out for now */}
+        {/* {adGridData && adGridData.length > 0 && (
+          <div className="mb-4">
+            <AdGridView
+              ads={adGridData}
+              startDate={appliedFilters.startDate}
+              endDate={appliedFilters.endDate}
+            />
+          </div>
+        )} */}
+
         <div
           className="w-full overflow-x-auto overflow-y-auto"
           style={{ maxHeight: "calc(100vh - 220px)" }}
@@ -1082,7 +1107,6 @@ export const PerformanceBoard = () => {
             </table>
           </div>
         </div>
-        )}
       </Card>
 
       <AddColumnSheet

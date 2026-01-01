@@ -394,6 +394,7 @@ export const LeadAnalytics = () => {
 
   const totalEffectiveLeads = qualifiedOutcomes + unqualifiedOutcomes;
 
+  // Overall estimate set rate (qualified outcomes / total effective leads)
   const estimateSetRate =
     totalEffectiveLeads > 0
       ? (qualifiedOutcomes / totalEffectiveLeads) * 100
@@ -403,6 +404,20 @@ export const LeadAnalytics = () => {
     totalEffectiveLeads > 0
       ? (unqualifiedOutcomes / totalEffectiveLeads) * 100
       : 0;
+
+  // Net Estimate Set calculation (for Estimate Set card only)
+  const netEstimateSetCount = analyticsData?.overview.estimateSetCount || 0;
+  const netEstimateSetTotal = netEstimateSetCount + (analyticsData?.overview.unqualifiedCount || 0);
+  const netEstimateSetRate = netEstimateSetTotal > 0
+    ? (netEstimateSetCount / netEstimateSetTotal) * 100
+    : 0;
+
+  // Net Unqualified calculation (for Unqualified card only)
+  const netUnqualifiedCount = analyticsData?.overview.unqualifiedCount || 0;
+  const netUnqualifiedTotal = (analyticsData?.overview.estimateSetCount || 0) + netUnqualifiedCount;
+  const netUnqualifiedRate = netUnqualifiedTotal > 0
+    ? (netUnqualifiedCount / netUnqualifiedTotal) * 100
+    : 0;
 
   return (
     <div className="min-h-screen overflow-x-hidden">
@@ -647,53 +662,53 @@ export const LeadAnalytics = () => {
 
                 <TopCard
                   variant="large"
-                  title="Estimates Set"
+                  title="Net Estimates Set"
                   icon={
                     <CheckCircle className="h-5 w-5 opacity-50 text-green-600" />
                   }
                   metrics={[
                     {
-                      label: "Estimates Set",
-                      value: analyticsData.overview.estimateSetCount,
+                      label: "Net Estimates Set",
+                      value: netEstimateSetCount,
                       format: "number" as const,
                     },
                     {
-                      label: "Estimate Set Rate",
-                      value: estimateSetRate,
+                      label: "Net Estimate Set Rate",
+                      value: netEstimateSetRate,
                       format: "percent" as const,
                     },
                   ]}
-                  description="Leads with estimates set"
+                  description="Leads with net estimate set status"
                 />
 
                 <TopCard
                   variant="large"
-                  title="Unqualified"
+                  title="Net Unqualified"
                   icon={<XCircle className="h-5 w-5 opacity-50 text-red-600" />}
                   metrics={[
                     {
-                      label: "Unqualified",
-                      value: analyticsData.overview.unqualifiedCount,
+                      label: "Net Unqualified",
+                      value: netUnqualifiedCount,
                       format: "number" as const,
                     },
                     {
-                      label: "Unqualified Rate",
-                      value: unqualifiedRate,
+                      label: "Net Unqualified Rate",
+                      value: netUnqualifiedRate,
                       format: "percent" as const,
                     },
                   ]}
-                  description="Leads marked as unqualified"
+                  description="Leads with net unqualified status"
                 />
 
                 <TopCard
                   variant="large"
-                  title="Estimate Set Rate"
+                  title="Net Estimate Set Rate"
                   icon={
                     <TrendingUp className="h-5 w-5 opacity-50 text-blue-600" />
                   }
                   metrics={[
                     {
-                      label: "Estimate Set Rate",
+                      label: "Net Estimate Set Rate",
                       value: estimateSetRate,
                       format: "percent" as const,
                     },
