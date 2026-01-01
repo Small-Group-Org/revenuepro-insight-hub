@@ -50,7 +50,7 @@ export const LeadSummaryCards = React.memo(({ statusCounts }: LeadSummaryCardsPr
           format: 'number'
         }
       ]}
-      description="Leads with net estimate set status"
+      description="Leads with net estimate set statuses (estimate_set, virtual_quote, eproposal_presented, job_booked)"
     />
     <TopCard
       title="Net Unqualified Leads"
@@ -62,7 +62,7 @@ export const LeadSummaryCards = React.memo(({ statusCounts }: LeadSummaryCardsPr
           format: 'number'
         }
       ]}
-      description="Leads with net unqualified status"
+      description="Leads with net unqualified statuses (unqualified, estimate_canceled, job_lost)"
     />
   </div>
 ));
