@@ -35,6 +35,7 @@ import { useUserContext } from "@/utils/UserContext";
 import { useUserStore } from "@/stores/userStore";
 import { useToast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
+import { AdGridView } from "@/components/ads/AdGridView";
 
 const STORAGE_KEY = "ad-performance-board:v1";
 
@@ -347,7 +348,7 @@ export const PerformanceBoard = () => {
         });
         return [];
       }
-      
+
       // Update available options from API response
       if (response.availableZipCodes) {
         setAvailableZipCodes(response.availableZipCodes);
@@ -367,6 +368,50 @@ export const PerformanceBoard = () => {
     staleTime: 60 * 1000,
     refetchOnWindowFocus: false,
   });
+
+  // Separate query for ad grid view - always fetches ad-level data
+  // const { data: adGridData } = useQuery<PerformanceRow[]>({
+  //   queryKey: [
+  //     "ad-performance-board-grid",
+  //     clientId,
+  //     transformedFilters,
+  //   ],
+  //   queryFn: async () => {
+  //     const response = await fetchAdPerformanceBoard({
+  //       clientId,
+  //       groupBy: "ad", // Always fetch ad-level data for grid
+  //       filters: transformedFilters,
+  //       columns: {
+  //         adName: true,
+  //         fb_cost_per_lead: true,
+  //         fb_total_leads: true,
+  //         fb_spend: true,
+  //         fb_link_clicks: true,
+  //         fb_impressions: true,
+  //         fb_video_views: true,
+  //         fb_clicks: true,
+  //         fb_post_reactions: true,
+  //         fb_post_comments: true,
+  //         fb_post_shares: true,
+  //         costPerLead: true,
+  //         costPerEstimateSet: true,
+  //         numberOfLeads: true,
+  //         numberOfEstimateSets: true,
+  //         estimateSetRate: true,
+  //         creative: true,
+  //       },
+  //     });
+
+  //     if (response.error) {
+  //       return [];
+  //     }
+
+  //     return response.data || [];
+  //   },
+  //   enabled: Boolean(clientId && appliedFilters.startDate && appliedFilters.endDate),
+  //   staleTime: 60 * 1000,
+  //   refetchOnWindowFocus: false,
+  // });
 
   const sortedData = useMemo(() => {
     if (!data) return [];
@@ -703,15 +748,17 @@ export const PerformanceBoard = () => {
               />
             </div>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-2"
-            onClick={() => setIsAddOpen(true)}
-          >
-            <Settings className="h-4 w-4" />
-            Configure columns
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={() => setIsAddOpen(true)}
+            >
+              <Settings className="h-4 w-4" />
+              Configure columns
+            </Button>
+          </div>
         </div>
 
         {isFetching && (
@@ -727,6 +774,17 @@ export const PerformanceBoard = () => {
             relaxing filters.
           </div>
         )}
+
+        {/* Grid View - Commented out for now */}
+        {/* {adGridData && adGridData.length > 0 && (
+          <div className="mb-4">
+            <AdGridView
+              ads={adGridData}
+              startDate={appliedFilters.startDate}
+              endDate={appliedFilters.endDate}
+            />
+          </div>
+        )} */}
 
         <div
           className="w-full overflow-x-auto overflow-y-auto"

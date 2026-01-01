@@ -686,7 +686,7 @@ export const LeadSheet = () => {
             startDate,
             endDate,
             page: currentPage,
-            pageSize,
+            limit: pageSize,
             sortBy: currentSorting.sortBy,
             sortOrder: currentSorting.sortOrder,
             ...currentFilters,

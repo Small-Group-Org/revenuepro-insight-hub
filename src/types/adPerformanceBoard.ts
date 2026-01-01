@@ -98,6 +98,10 @@ export interface PerformanceRow {
   numberOfEstimateSets?: number;
   numberOfJobsBooked?: number;
   numberOfUnqualifiedLeads?: number;
+  numberOfVirtualQuotes?: number;
+  numberOfEstimateCanceled?: number;
+  numberOfProposalPresented?: number;
+  numberOfJobLost?: number;
   costPerLead?: number;
   costPerEstimateSet?: number;
   costPerJobBooked?: number;
