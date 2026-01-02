@@ -8,7 +8,7 @@ interface AdCardProps {
     fb_spend?: number;
     fb_link_clicks?: number;
     fb_impressions?: number;
-    fb_video_views?: number;
+    fb_video_play_actions?: number; // Using this as proxy for 3-second video views (fb_video_views not available from API)
     fb_clicks?: number;
     fb_post_reactions?: number;
     fb_post_comments?: number;
@@ -41,14 +41,20 @@ interface AdCardProps {
   onClick?: () => void;
 }
 
-const SimpleMetric = ({ label, value }: { label: string; value: string }) => (
-  <div className="flex items-center justify-between ">
+const SimpleMetric = ({ label, value, tooltip }: { label: string; value: string; tooltip?: string }) => (
+  <div className="flex items-center justify-between group relative">
     <span className="text-gray-600 text-sm">{label}</span>
     <span className="font-semibold text-gray-900 text-sm">{value}</span>
+    {tooltip && (
+      <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block bg-gray-900 text-white text-xs rounded px-3 py-2 whitespace-nowrap z-10 shadow-lg">
+        {tooltip}
+        <div className="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+      </div>
+    )}
   </div>
 );
 
-const ScoreMetric = ({ label, score }: { label: string; score: number }) => {
+const ScoreMetric = ({ label, score, tooltip }: { label: string; score: number; tooltip?: string }) => {
   const getColor = (score: number) => {
     if (score >= 70) return 'bg-green-500';
     if (score >= 50) return 'bg-green-400';
@@ -59,7 +65,7 @@ const ScoreMetric = ({ label, score }: { label: string; score: number }) => {
   const color = getColor(score);
 
   return (
-    <div className="flex items-center justify-between py-1 gap-2">
+    <div className="flex items-center justify-between py-1 gap-2 group relative">
       <span className="text-gray-600 text-sm whitespace-nowrap">{label}</span>
       <div className="flex items-center gap-2 flex-1 min-w-0 max-w-[40%]">
         <div className="flex-1 bg-gray-200 rounded-full h-2">
@@ -68,8 +74,14 @@ const ScoreMetric = ({ label, score }: { label: string; score: number }) => {
             style={{ width: `${Math.min(100, Math.max(0, score))}%` }}
           />
         </div>
-        <span className="font-semibold text-gray-900 text-sm w-7 text-right flex-shrink-0">{score}</span>
+        <span className="font-semibold text-gray-900 text-sm w-auto text-right flex-shrink-0">{score.toFixed(2)}%</span>
       </div>
+      {tooltip && (
+        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block bg-gray-900 text-white text-xs rounded px-3 py-2 whitespace-nowrap z-10 shadow-lg">
+          {tooltip}
+          <div className="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+        </div>
+      )}
     </div>
   );
 };
@@ -149,6 +161,18 @@ export function AdCard({ ad, conversionScore, hookScore, onClick }: AdCardProps)
   // Calculate Conversion Rate: facebook leads / link clicks
   const conversionRate = ad.fb_total_leads && ad.fb_link_clicks && ad.fb_link_clicks > 0
     ? ((ad.fb_total_leads / ad.fb_link_clicks) * 100)
+    : null;
+
+  // Calculate Thumbstop Rate: 3-second video plays / impressions
+  // NOTE: Using fb_video_play_actions as proxy since fb_video_views (3-sec threshold) is not available from API
+  const thumbstopRate = ad.fb_video_play_actions && ad.fb_impressions && ad.fb_impressions > 0
+    ? ((ad.fb_video_play_actions / ad.fb_impressions) * 100)
+    : null;
+
+  // Calculate See More Rate: (Clicks (all) - Link Clicks - Post Reactions - Post Comments - Post Shares) / Impressions
+  const seeMoreClicks = (ad.fb_clicks || 0) - (ad.fb_link_clicks || 0) - (ad.fb_post_reactions || 0) - (ad.fb_post_comments || 0) - (ad.fb_post_shares || 0);
+  const seeMoreRate = ad.fb_impressions && ad.fb_impressions > 0
+    ? ((seeMoreClicks / ad.fb_impressions) * 100)
     : null;
 
   return (
@@ -253,20 +277,44 @@ export function AdCard({ ad, conversionScore, hookScore, onClick }: AdCardProps)
       </div>
 
       {/* Content */}
-      <div className="p-4 flex flex-col justify-between h-[250px]">
+      <div className="p-4 flex flex-col">
         {/* Title */}
-        <h4 className="text-lg font-semibold text-gray-900 leading-tight mb-4 line-clamp-2">
+        <h4 className="text-lg font-semibold text-gray-900 leading-tight mb-3 line-clamp-2">
           {ad.adName || 'Untitled Ad'}
         </h4>
 
         {/* Metrics */}
         <div className="space-y-1 text-sm">
-          <SimpleMetric label="Cost Per On-Facebook" value={formatCurrency(ad.fb_cost_per_lead)} />
-          <SimpleMetric label="On-Facebook Leads" value={ad.fb_total_leads?.toString() || 'N/A'} />
-          <SimpleMetric label="Leads Conversion Rate" value={formatPercentage(conversionRate)} />
-          <ScoreMetric label="Conversion Score" score={conversionScore || 50} />
-          <ScoreMetric label="Hook Score" score={hookScore || 42} />
-          <SimpleMetric label="Amount spent" value={formatCurrency(ad.fb_spend)} />
+          <ScoreMetric
+            label="Conversion Rate"
+            score={conversionRate ?? 0}
+            tooltip="Formula: Facebook Leads / Link Clicks"
+          />
+          <ScoreMetric
+            label="Thumbstop Rate"
+            score={thumbstopRate ?? 0}
+            tooltip="Formula: 3-Second Video Plays / Impressions"
+          />
+          <ScoreMetric
+            label="See More Rate"
+            score={seeMoreRate ?? 0}
+            tooltip="Formula: (Clicks (all) - Link Clicks - Post Reactions - Post Comments - Post Shares) / Impressions"
+          />
+          <SimpleMetric
+            label="Cost Per Lead"
+            value={formatCurrency(ad.costPerLead)}
+            tooltip="Total cost divided by number of leads"
+          />
+          <SimpleMetric
+            label="Cost Per Estimate Set"
+            value={formatCurrency(ad.costPerEstimateSet)}
+            tooltip="Total cost divided by number of estimate sets"
+          />
+          <ScoreMetric
+            label="Estimate Set Rate"
+            score={ad.estimateSetRate ?? 0}
+            tooltip="Percentage of leads that set estimates"
+          />
         </div>
       </div>
     </div>
