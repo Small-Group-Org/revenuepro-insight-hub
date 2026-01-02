@@ -36,9 +36,10 @@ interface AdGridViewProps {
   hookScoreMap?: Record<string, number>;
   startDate?: string;
   endDate?: string;
+  clientId?: string;
 }
 
-export function AdGridView({ ads, conversionScoreMap = {}, hookScoreMap = {}, startDate, endDate }: AdGridViewProps) {
+export function AdGridView({ ads, conversionScoreMap = {}, hookScoreMap = {}, startDate, endDate, clientId }: AdGridViewProps) {
   const [selectedAd, setSelectedAd] = useState<Ad | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -134,7 +135,7 @@ export function AdGridView({ ads, conversionScoreMap = {}, hookScoreMap = {}, st
       </div>
 
       {/* Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2 p-4">
         {paginatedAds.map((ad, index) => (
           <AdCard
             key={ad.creative?.id || index}
@@ -184,6 +185,7 @@ export function AdGridView({ ads, conversionScoreMap = {}, hookScoreMap = {}, st
           hookScore={hookScoreMap[selectedAd.adName || '']}
           startDate={startDate}
           endDate={endDate}
+          clientId={clientId}
         />
       )}
     </>
