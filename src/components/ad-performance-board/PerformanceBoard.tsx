@@ -31,6 +31,7 @@ import {
   PerformanceBoardAverages,
 } from "@/types/adPerformanceBoard";
 import { fetchAdPerformanceBoard } from "@/service/adPerformanceBoardService";
+import { fetchAdGridData, AdGridAd } from "@/service/adGridService";
 import { useUserContext } from "@/utils/UserContext";
 import { useUserStore } from "@/stores/userStore";
 import { useToast } from "@/hooks/use-toast";
@@ -369,37 +370,17 @@ export const PerformanceBoard = () => {
     refetchOnWindowFocus: false,
   });
 
-  // Separate query for ad grid view - always fetches ad-level data
-  const { data: adGridData } = useQuery<PerformanceRow[]>({
+  // Separate query for ad grid view - uses dedicated API for grid data
+  const { data: adGridData } = useQuery<AdGridAd[]>({
     queryKey: [
-      "ad-performance-board-grid",
+      "ad-grid-data",
       clientId,
       transformedFilters,
     ],
     queryFn: async () => {
-      const response = await fetchAdPerformanceBoard({
+      const response = await fetchAdGridData({
         clientId,
-        groupBy: "ad", // Always fetch ad-level data for grid
         filters: transformedFilters,
-        columns: {
-          adName: true,
-          fb_cost_per_lead: true,
-          fb_total_leads: true,
-          fb_spend: true,
-          fb_link_clicks: true,
-          fb_impressions: true,
-          fb_video_views: true,
-          fb_clicks: true,
-          fb_post_reactions: true,
-          fb_post_comments: true,
-          fb_post_shares: true,
-          costPerLead: true,
-          costPerEstimateSet: true,
-          numberOfLeads: true,
-          numberOfEstimateSets: true,
-          estimateSetRate: true,
-          creative: true,
-        },
       });
 
       if (response.error) {

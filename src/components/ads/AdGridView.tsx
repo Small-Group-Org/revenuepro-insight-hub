@@ -4,31 +4,9 @@ import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { AdGridAd } from '@/service/adGridService';
 
-interface Ad {
-  adName?: string;
-  fb_cost_per_lead?: number;
-  fb_total_leads?: number;
-  fb_spend?: number;
-  costPerLead?: number | null;
-  numberOfLeads?: number;
-  creative?: {
-    id: string;
-    name?: string;
-    creativeType?: 'image' | 'video' | 'carousel' | 'link' | 'other';
-    thumbnailUrl?: string;
-    imageUrl?: string;
-    videoId?: string;
-    videos?: Array<{
-      id: string;
-      url: string;
-      thumbnailUrl?: string;
-      duration?: number;
-    }>;
-    primaryText?: string;
-    headline?: string;
-  };
-}
+type Ad = AdGridAd;
 
 interface AdGridViewProps {
   ads: Ad[];

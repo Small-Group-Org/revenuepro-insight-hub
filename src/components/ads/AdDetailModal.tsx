@@ -355,11 +355,8 @@ export function AdDetailModal({ open, onClose, ad, leadsConversionRate, startDat
             <p className="text-sm text-slate-500">Ad name</p>
           </DialogHeader>
 
-          {/* Separator Line */}
-          <div className="border-t border-slate-200"></div>
-
           {/* Independent Date Filter */}
-          <div className="pt-2">
+          <div>
             <Popover open={openPicker} onOpenChange={setOpenPicker}>
               <PopoverTrigger asChild>
                 <Button
@@ -374,7 +371,7 @@ export function AdDetailModal({ open, onClose, ad, leadsConversionRate, startDat
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
-                <div className="grid grid-cols-2 p-3">
+                <div className="grid grid-cols-2">
                   <div className="relative">
                     <p className="absolute top-6 left-6 text-sm font-medium text-slate-600 mb-2 text-center">Start</p>
                     <Calendar
@@ -433,7 +430,7 @@ export function AdDetailModal({ open, onClose, ad, leadsConversionRate, startDat
                     />
                   </div>
                 </div>
-                <div className="flex items-center justify-end gap-2 px-3 pb-3 border-t pt-3">
+                <div className="flex items-center justify-end gap-2 px-3 pb-3">
                   <Button
                     variant="ghost"
                     onClick={() => {
@@ -476,7 +473,7 @@ export function AdDetailModal({ open, onClose, ad, leadsConversionRate, startDat
         )}
 
         {/* Content */}
-        <div className="grid grid-cols-1 md:grid-cols-[1fr,320px] overflow-hidden" style={{ maxHeight: 'calc(80vh - 120px)' }}>
+        <div className="grid grid-cols-1 md:grid-cols-[1fr,400px] overflow-hidden" style={{ maxHeight: 'calc(80vh - 120px)' }}>
           {/* Left Column - Creative Preview */}
           <div className="p-4 border-r border-slate-200 flex flex-col">
             <div className="flex-1 flex flex-col">
