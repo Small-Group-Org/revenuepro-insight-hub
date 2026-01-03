@@ -525,17 +525,8 @@ export function AdDetailModal({ open, onClose, ad, leadsConversionRate, startDat
 
           {/* Right Column - Details */}
           <div className="p-4 space-y-3 bg-slate-50 overflow-y-auto pb-16 pr-4" style={{ maxHeight: 'calc(80vh - 120px)' }}>
-            {/* Superads Scores Section */}
-            <div className="bg-white rounded-lg border border-slate-200 p-3 space-y-2">
-              <h3 className="text-xs font-semibold text-slate-900 mb-2">Superads</h3>
-              <div className="space-y-2">
-                <ScoreBar label="Click Score" score={clickScore} />
-                <ScoreBar label="Conversion Score" score={conversionScoreCalculated} />
-                <ScoreBar label="Engagement Score" score={engagementScore} />
-                <ScoreBar label="Hold Score" score={holdScore} />
-                <ScoreBar label="Hook Score" score={hookScoreCalculated} />
-              </div>
-            </div>
+           
+             
 
             {/* Dimensions Section */}
             <Collapsible open={isDimensionsOpen} onOpenChange={setIsDimensionsOpen}>
