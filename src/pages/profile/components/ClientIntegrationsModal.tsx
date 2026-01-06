@@ -339,37 +339,47 @@ const ClientIntegrationsModal: React.FC<ClientIntegrationsModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Client Integrations - {userName}</DialogTitle>
-          <DialogDescription>
+      <DialogContent className="p-8 max-h-[90vh] overflow-y-auto shadow-2xl">
+        <DialogHeader className="mb-6">
+          <DialogTitle className="text-2xl font-semibold text-gray-900">Client Integrations - {userName}</DialogTitle>
+          <DialogDescription className="text-sm text-gray-600 mt-2">
             Manage Meta and GHL integrations for this client.
           </DialogDescription>
         </DialogHeader>
 
         <Tabs defaultValue="meta" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="meta">Meta</TabsTrigger>
-            <TabsTrigger value="ghl">GHL</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 gap-0 bg-transparent border-b-2 border-gray-200 p-0 mb-6">
+            <TabsTrigger 
+              value="meta" 
+              className="h-12 px-6 py-3 font-medium text-sm text-gray-500 bg-transparent border-none border-b-2 border-transparent rounded-t-lg transition-all duration-150 cursor-pointer relative box-border flex items-center justify-center -mb-0.5 hover:text-gray-700 hover:bg-gray-50 data-[state=active]:text-gray-900 data-[state=active]:bg-gray-200 data-[state=active]:border-gray-500 data-[state=active]:font-semibold"
+            >
+              Meta
+            </TabsTrigger>
+            <TabsTrigger 
+              value="ghl" 
+              className="h-12 px-6 py-3 font-medium text-sm text-gray-500 bg-transparent border-none border-b-2 border-transparent rounded-t-lg transition-all duration-150 cursor-pointer relative box-border flex items-center justify-center -mb-0.5 hover:text-gray-700 hover:bg-gray-50 data-[state=active]:text-gray-900 data-[state=active]:bg-gray-200 data-[state=active]:border-gray-500 data-[state=active]:font-semibold"
+            >
+              GHL
+            </TabsTrigger>
           </TabsList>
 
           {/* Meta Tab */}
-          <TabsContent value="meta" className="space-y-4 mt-4">
-            <form onSubmit={handleMetaSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="adAccount" className="text-card-foreground">
-                  Facebook Ad Account <span className="text-red-500">*</span>
+          <TabsContent value="meta" className="mt-6">
+            <form onSubmit={handleMetaSubmit}>
+              <div className="mb-6">
+                <Label htmlFor="adAccount" className="font-semibold text-sm text-gray-900 mb-2 block">
+                  Facebook Ad Account <span className="text-red-600 text-base font-bold ml-0.5">*</span>
                 </Label>
                 {metaLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                    <span className="ml-2 text-sm text-muted-foreground">
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+                    <span className="ml-2 text-sm text-gray-600">
                       Loading ad accounts...
                     </span>
                   </div>
                 ) : adAccounts.length === 0 ? (
-                  <div className="mt-1 p-4 border border-border rounded-md bg-muted/50">
-                    <p className="text-sm text-muted-foreground text-center">
+                  <div className="mt-2 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                    <p className="text-sm text-gray-600 text-center">
                       No client ad accounts available
                     </p>
                   </div>
@@ -380,7 +390,7 @@ const ClientIntegrationsModal: React.FC<ClientIntegrationsModalProps> = ({
                       onValueChange={setSelectedAdAccount}
                       disabled={metaLoading}
                     >
-                      <SelectTrigger className="mt-1 border-border focus:ring-primary">
+                      <SelectTrigger className="h-11 px-4 py-3 bg-gray-50 border-[1.5px] border-gray-200 rounded-lg text-sm transition-all duration-150 mt-2 hover:border-gray-300 hover:shadow-sm focus:border-gray-500 focus:ring-4 focus:ring-gray-100 focus:outline-none focus:bg-white disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed">
                         <SelectValue placeholder="Select an ad account" />
                       </SelectTrigger>
                       <SelectContent side="bottom" className="max-h-64">
@@ -391,7 +401,7 @@ const ClientIntegrationsModal: React.FC<ClientIntegrationsModalProps> = ({
                         ))}
                       </SelectContent>
                     </Select>
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-xs text-gray-500 mt-1.5 leading-snug">
                       {adAccounts.length} client ad account{adAccounts.length !== 1 ? "s" : ""}{" "}
                       available
                     </p>
@@ -399,8 +409,8 @@ const ClientIntegrationsModal: React.FC<ClientIntegrationsModalProps> = ({
                 )}
               </div>
 
-              <div>
-                <Label htmlFor="fbPixelId" className="text-card-foreground">
+              <div className="mb-6">
+                <Label htmlFor="fbPixelId" className="font-semibold text-sm text-gray-900 mb-2 block">
                   Facebook Pixel ID
                 </Label>
                 <Input
@@ -410,15 +420,15 @@ const ClientIntegrationsModal: React.FC<ClientIntegrationsModalProps> = ({
                   onChange={(e) => setFbPixelId(e.target.value)}
                   disabled={metaLoading}
                   placeholder="Enter Facebook Pixel ID (numeric only)"
-                  className="mt-1 border-border focus:ring-primary"
+                  className="h-11 px-4 py-3 bg-gray-50 border-[1.5px] border-gray-200 rounded-lg text-sm transition-all duration-150 mt-2 w-full hover:border-gray-300 focus:border-gray-500 focus:ring-4 focus:ring-gray-100 focus:outline-none focus:bg-white disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
                 />
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs text-gray-500 mt-1.5 leading-snug">
                   Optional: The numeric ID of your Facebook Pixel
                 </p>
               </div>
 
-              <div>
-                <Label htmlFor="fbPixelToken" className="text-card-foreground">
+              <div className="mb-6">
+                <Label htmlFor="fbPixelToken" className="font-semibold text-sm text-gray-900 mb-2 block">
                   Facebook Pixel Access Token
                 </Label>
                 <Input
@@ -428,36 +438,36 @@ const ClientIntegrationsModal: React.FC<ClientIntegrationsModalProps> = ({
                   onChange={(e) => setFbPixelToken(e.target.value)}
                   disabled={metaLoading}
                   placeholder={fbPixelId ? "Leave empty to keep current token" : "Enter Facebook Pixel Access Token"}
-                  className="mt-1 border-border focus:ring-primary"
+                  className="h-11 px-4 py-3 bg-gray-50 border-[1.5px] border-gray-200 rounded-lg text-sm transition-all duration-150 mt-2 w-full hover:border-gray-300 focus:border-gray-500 focus:ring-4 focus:ring-gray-100 focus:outline-none focus:bg-white disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
                 />
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs text-gray-500 mt-1.5 leading-snug">
                   {fbPixelId
                     ? "Token is encrypted and cannot be viewed. Enter a new token to update it."
                     : "Optional: The access token for your Facebook Pixel"}
                 </p>
               </div>
 
-              <div className="pt-2">
+              <div className="pt-4 mt-6">
                 <Button
                   type="submit"
-                  className="w-full bg-gradient-primary hover:bg-gradient-accent text-primary-foreground"
+                  className="h-12 px-6 py-4 font-semibold text-sm rounded-lg transition-all duration-150 shadow-sm w-full bg-gradient-primary hover:bg-gradient-accent text-primary-foreground hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
                   disabled={metaLoading}
                 >
-                    Save Meta Configuration
+                  Save Meta Configuration
                 </Button>
               </div>
             </form>
           </TabsContent>
 
           {/* GHL Tab */}
-          <TabsContent value="ghl" className="space-y-4 mt-4">
-            <form onSubmit={handleGhlSubmit} className="">
+          <TabsContent value="ghl" className="mt-6">
+            <form onSubmit={handleGhlSubmit}>
               {existingGhlClient && (
-                <div className="rounded-lg space-y-2">
+                <div className="rounded-lg mb-6 pb-4 border-b border-gray-200">
                   <p className="flex justify-end items-center gap-2">
-                    <span className="font-medium">Status:</span>{" "}
+                    <span className="font-semibold text-gray-700">Status:</span>{" "}
                     <span
-                      className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${
+                      className={`px-3 py-1.5 rounded-md text-xs font-semibold inline-flex items-center ${
                         existingGhlClient.status === "active"
                           ? "bg-green-100 text-green-800"
                           : "bg-orange-100 text-orange-800"
@@ -469,19 +479,19 @@ const ClientIntegrationsModal: React.FC<ClientIntegrationsModalProps> = ({
                 </div>
               )}
 
-              {/* Horizontal layout for inputs */}
-              <div className="grid grid-cols-1 gap-4">
-                <div>
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="locationId" className="text-card-foreground">
-                      Sub Account ID <span className="text-red-500">*</span>
+              {/* Form fields with enhanced spacing */}
+              <div className="space-y-6">
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <Label htmlFor="locationId" className="font-semibold text-sm text-gray-900 block">
+                      Sub Account ID <span className="text-red-600 text-base font-bold ml-0.5">*</span>
                     </Label>
                     {!existingGhlClient && (
                       <a
                         href="https://www.loom.com/share/0ff5ef9ea0a249649143ad1105787012"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-xs text-muted-foreground hover:text-primary hover:underline inline-flex items-center gap-1"
+                        className="text-xs text-gray-500 hover:text-blue-600 hover:underline inline-flex items-center gap-1 transition-colors"
                       >
                         Need help?
                         <ExternalLink className="h-3 w-3" />
@@ -496,22 +506,22 @@ const ClientIntegrationsModal: React.FC<ClientIntegrationsModalProps> = ({
                     required
                     disabled={ghlLoading}
                     placeholder="Enter GHL Sub Account ID"
-                    className="mt-1 border-border focus:ring-primary"
+                    className="h-11 px-4 py-3 bg-gray-50 border-[1.5px] border-gray-200 rounded-lg text-sm transition-all duration-150 w-full hover:border-gray-300 focus:border-gray-500 focus:ring-4 focus:ring-gray-100 focus:outline-none focus:bg-white disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
                   />
                 </div>
 
-                <div>
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="ghlApiToken" className="text-card-foreground">
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <Label htmlFor="ghlApiToken" className="font-semibold text-sm text-gray-900 block">
                       GHL Integration Token{" "}
-                      {!existingGhlClient && <span className="text-red-500">*</span>}
+                      {!existingGhlClient && <span className="text-red-600 text-base font-bold ml-0.5">*</span>}
                     </Label>
                     {!existingGhlClient && (
                       <a
                         href="https://www.loom.com/share/0ff5ef9ea0a249649143ad1105787012"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-xs text-muted-foreground hover:text-primary hover:underline inline-flex items-center gap-1"
+                        className="text-xs text-gray-500 hover:text-blue-600 hover:underline inline-flex items-center gap-1 transition-colors"
                       >
                         Need help?
                         <ExternalLink className="h-3 w-3" />
@@ -530,19 +540,19 @@ const ClientIntegrationsModal: React.FC<ClientIntegrationsModalProps> = ({
                         ? "Leave empty to keep current token"
                         : "Enter GHL Integration Token"
                     }
-                    className="mt-1 border-border focus:ring-primary"
+                    className="h-11 px-4 py-3 bg-gray-50 border-[1.5px] border-gray-200 rounded-lg text-sm transition-all duration-150 w-full hover:border-gray-300 focus:border-gray-500 focus:ring-4 focus:ring-gray-100 focus:outline-none focus:bg-white disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
                   />
                   {existingGhlClient && (
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-xs text-gray-500 mt-1.5 leading-snug">
                       Token is encrypted and cannot be viewed. Enter a new token to
                       update it.
                     </p>
                   )}
                 </div>
 
-                <div>
-                  <Label htmlFor="queryValue" className="text-card-foreground">
-                    Total Job Booked Amount <span className="text-red-500">*</span>
+                <div className="mb-6">
+                  <Label htmlFor="queryValue" className="font-semibold text-sm text-gray-900 mb-2 block">
+                    Total Job Booked Amount <span className="text-red-600 text-base font-bold ml-0.5">*</span>
                   </Label>
                   <Input
                     id="queryValue"
@@ -552,16 +562,16 @@ const ClientIntegrationsModal: React.FC<ClientIntegrationsModalProps> = ({
                     required
                     disabled={ghlLoading}
                     placeholder="e.g., 1st - Total Job Amount"
-                    className="mt-1 border-border focus:ring-primary"
+                    className="h-11 px-4 py-3 bg-gray-50 border-[1.5px] border-gray-200 rounded-lg text-sm transition-all duration-150 mt-2 w-full hover:border-gray-300 focus:border-gray-500 focus:ring-4 focus:ring-gray-100 focus:outline-none focus:bg-white disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
                   />
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-xs text-gray-500 mt-1.5 leading-snug">
                     The custom field name to search for in GHL
                   </p>
                 </div>
 
-                <div>
-                  <Label htmlFor="status" className="text-card-foreground">
-                    Status <span className="text-red-500">*</span>
+                <div className="mb-6">
+                  <Label htmlFor="status" className="font-semibold text-sm text-gray-900 mb-2 block">
+                    Status <span className="text-red-600 text-base font-bold ml-0.5">*</span>
                   </Label>
                   <Select
                     value={ghlFormData.status}
@@ -570,7 +580,7 @@ const ClientIntegrationsModal: React.FC<ClientIntegrationsModalProps> = ({
                     }
                     disabled={ghlLoading}
                   >
-                    <SelectTrigger className="mt-1 border-border focus:ring-primary">
+                    <SelectTrigger className="h-11 px-4 py-3 bg-gray-50 border-[1.5px] border-gray-200 rounded-lg text-sm transition-all duration-150 mt-2 hover:border-gray-300 hover:shadow-sm focus:border-gray-500 focus:ring-4 focus:ring-gray-100 focus:outline-none focus:bg-white disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed">
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent side="bottom" className="max-h-48">
@@ -581,10 +591,10 @@ const ClientIntegrationsModal: React.FC<ClientIntegrationsModalProps> = ({
                 </div>
               </div>
 
-              <div className="pt-2 mt-4">
+              <div className="pt-4 mt-6">
                 <Button
                   type="submit"
-                  className="w-full bg-gradient-primary hover:bg-gradient-accent text-primary-foreground"
+                  className="h-12 px-6 py-4 font-semibold text-sm rounded-lg transition-all duration-150 shadow-sm w-full bg-gradient-primary hover:bg-gradient-accent text-primary-foreground hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
                   disabled={ghlLoading}
                 >
                   {ghlLoading ? (
