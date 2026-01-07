@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -76,11 +76,17 @@ export const PerformanceBoard = () => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [activeColumn, setActiveColumn] = useState<ColumnConfig | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOverColumnId, setDragOverColumnId] = useState<string | null>(null);
+  const [dropPosition, setDropPosition] = useState<"left" | "right" | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isDropBlocked, setIsDropBlocked] = useState(false);
   const [frozenColumns, setFrozenColumns] = useState<string[]>([]);
   const [searchInputValue, setSearchInputValue] = useState<string>("");
   const [availableZipCodes, setAvailableZipCodes] = useState<string[]>([]);
   const [availableServiceTypes, setAvailableServiceTypes] = useState<string[]>([]);
   const [apiAverages, setApiAverages] = useState<PerformanceBoardAverages | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  
   // Load saved preferences
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -118,7 +124,10 @@ export const PerformanceBoard = () => {
 
   const visibleColumns = useMemo(() => {
     const dimensionIds = ["campaignName", "adSetName", "adName"];
-    const dimensionOrder = dimensionIds.filter((id) => columnOrder.includes(id));
+    const dimensionHierarchy = ["campaignName", "adSetName", "adName"]; // Enforced order: Campaign > Ad Set > Ad Name
+    
+    // Get dimensions in hierarchy order (always maintain Campaign > Ad Set > Ad Name)
+    const dimensionOrder = dimensionHierarchy.filter((id) => columnOrder.includes(id));
     const otherColumns = columnOrder
       .filter((id) => !dimensionIds.includes(id))
       .map((id) => columns.find((c) => c.id === id))
@@ -135,12 +144,30 @@ export const PerformanceBoard = () => {
     const unfrozen = allColumns.filter((col) => !frozenColumns.includes(col.id));
     
     // Order frozen columns by their freeze order (latest on the right)
-    const orderedFrozen = frozenColumns
-      .filter((id) => frozen.some((col) => col.id === id))
-      .map((id) => frozen.find((col) => col.id === id))
+    // But maintain dimension hierarchy within frozen columns
+    const frozenDimensions = frozen.filter((col) => dimensionIds.includes(col.id));
+    const frozenMetrics = frozen.filter((col) => !dimensionIds.includes(col.id));
+    const orderedFrozenDimensions = dimensionHierarchy
+      .filter((id) => frozenDimensions.some((col) => col.id === id))
+      .map((id) => frozenDimensions.find((col) => col.id === id))
       .filter((c): c is ColumnConfig => Boolean(c));
     
-    return [...orderedFrozen, ...unfrozen];
+    const orderedFrozenMetrics = frozenColumns
+      .filter((id) => frozenMetrics.some((col) => col.id === id))
+      .map((id) => frozenMetrics.find((col) => col.id === id))
+      .filter((c): c is ColumnConfig => Boolean(c));
+    
+    const orderedFrozen = [...orderedFrozenDimensions, ...orderedFrozenMetrics];
+    
+    // Unfrozen columns: maintain dimension hierarchy
+    const unfrozenDimensions = unfrozen.filter((col) => dimensionIds.includes(col.id));
+    const unfrozenMetrics = unfrozen.filter((col) => !dimensionIds.includes(col.id));
+    const orderedUnfrozenDimensions = dimensionHierarchy
+      .filter((id) => unfrozenDimensions.some((col) => col.id === id))
+      .map((id) => unfrozenDimensions.find((col) => col.id === id))
+      .filter((c): c is ColumnConfig => Boolean(c));
+    
+    return [...orderedFrozen, ...orderedUnfrozenDimensions, ...unfrozenMetrics];
   }, [columns, columnOrder, frozenColumns]);
 
   const formatZipCodeValue = (value: string | number | undefined): { display: string; full: string; remaining?: number } => {
@@ -555,85 +582,176 @@ export const PerformanceBoard = () => {
   const handleDragStart = (id: string) => (e: React.DragEvent) => {
     e.stopPropagation();
     setDraggingId(id);
+    setIsDragging(true);
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/plain", id);
+    
+    // Create custom drag image
+    try {
+      const dragElement = e.currentTarget as HTMLElement;
+      const rect = dragElement.getBoundingClientRect();
+      const dragImage = dragElement.cloneNode(true) as HTMLElement;
+      dragImage.style.position = "absolute";
+      dragImage.style.top = "-1000px";
+      dragImage.style.left = "-1000px";
+      dragImage.style.width = `${rect.width}px`;
+      dragImage.style.opacity = "0.9";
+      dragImage.style.transform = "rotate(2deg)";
+      dragImage.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.25)";
+      dragImage.style.backgroundColor = "white";
+      dragImage.style.border = "2px solid #3b82f6";
+      dragImage.style.borderRadius = "4px";
+      dragImage.style.pointerEvents = "none";
+      document.body.appendChild(dragImage);
+      e.dataTransfer.setDragImage(dragImage, rect.width / 2, rect.height / 2);
+      
+      // Clean up after a short delay
+      setTimeout(() => {
+        if (document.body.contains(dragImage)) {
+          document.body.removeChild(dragImage);
+        }
+      }, 0);
+    } catch (error) {
+      // Fallback to default drag image if custom one fails
+      console.warn("Failed to create custom drag image:", error);
+    }
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragEnd = () => {
+    // Clear all drag states immediately for instant visual feedback
+    setDraggingId(null);
+    setDragOverColumnId(null);
+    setDropPosition(null);
+    setIsDragging(false);
+    setIsDropBlocked(false);
+  };
+
+  const handleDragOver = (targetId: string) => (e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation();
+    
+    // Auto-scroll when near edges
+    if (scrollContainerRef.current && isDragging) {
+      const container = scrollContainerRef.current;
+      const rect = container.getBoundingClientRect();
+      const scrollThreshold = 100;
+      const scrollSpeed = 15;
+      
+      // Left edge scroll
+      if (e.clientX < rect.left + scrollThreshold && e.clientX > rect.left) {
+        const scrollAmount = Math.min(scrollSpeed, container.scrollLeft);
+        if (scrollAmount > 0) {
+          container.scrollBy({ left: -scrollAmount, behavior: 'auto' });
+        }
+      }
+      // Right edge scroll
+      else if (e.clientX > rect.right - scrollThreshold && e.clientX < rect.right) {
+        const maxScroll = container.scrollWidth - container.clientWidth;
+        const scrollAmount = Math.min(scrollSpeed, maxScroll - container.scrollLeft);
+        if (scrollAmount > 0) {
+          container.scrollBy({ left: scrollAmount, behavior: 'auto' });
+        }
+      }
+    }
+    
+    if (!draggingId || draggingId === targetId) {
+      setDragOverColumnId(null);
+      setDropPosition(null);
+      setIsDropBlocked(false);
+      return;
+    }
+
+    const dimensionIds = ["campaignName", "adSetName", "adName"];
+    const isSourceDimension = dimensionIds.includes(draggingId);
+    const isTargetDimension = dimensionIds.includes(targetId);
+    
+    // Block metrics from dropping in dimension zone
+    if (!isSourceDimension && isTargetDimension) {
+      setIsDropBlocked(true);
+      setDragOverColumnId(targetId);
+      setDropPosition(null);
+      return;
+    }
+    
+    // Allow dimension-to-dimension and metric-to-metric
+    setIsDropBlocked(false);
+    setDragOverColumnId(targetId);
+    
+    // Determine drop position (left or right) based on mouse position
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const mouseX = e.clientX;
+    const centerX = rect.left + rect.width / 2;
+    const newPosition = mouseX < centerX ? "left" : "right";
+    
+    // Only update if position changed to avoid unnecessary re-renders
+    setDropPosition((prev) => prev !== newPosition ? newPosition : prev);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverColumnId(null);
+    setDropPosition(null);
+    setIsDropBlocked(false);
   };
 
   const handleDrop = (targetId: string) => (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    // Clear drag state immediately for instant visual feedback
     const sourceId = draggingId || e.dataTransfer.getData("text/plain");
+    handleDragEnd();
+    
     if (!sourceId || sourceId === targetId) {
-      setDraggingId(null);
       return;
     }
 
     const dimensionIds = ["campaignName", "adSetName", "adName"];
+    const dimensionHierarchy = ["campaignName", "adSetName", "adName"]; // Enforced order
     const isSourceDimension = dimensionIds.includes(sourceId);
     const isTargetDimension = dimensionIds.includes(targetId);
 
+    // Block metrics from dropping in dimension zone
+    if (!isSourceDimension && isTargetDimension) {
+      return;
+    }
+
+    // Calculate new order immediately
     setColumnOrder((prev) => {
       const next = [...prev];
       const fromIndex = next.indexOf(sourceId);
       const toIndex = next.indexOf(targetId);
       if (fromIndex === -1 || toIndex === -1) {
-        setDraggingId(null);
         return prev;
       }
       
-      // If both are dimensions, reorder within dimensions
+      // If both are dimensions, allow dragging but always enforce hierarchy: Campaign > Ad Set > Ad Name
       if (isSourceDimension && isTargetDimension) {
-        const dimensionOrder = dimensionIds.filter((id) => next.includes(id));
+        const dimensionOrder = dimensionHierarchy.filter((id) => next.includes(id));
         const otherColumns = next.filter((id) => !dimensionIds.includes(id));
-        const newDimensionOrder = [...dimensionOrder];
-        const fromDimIndex = newDimensionOrder.indexOf(sourceId);
-        const toDimIndex = newDimensionOrder.indexOf(targetId);
-        newDimensionOrder.splice(fromDimIndex, 1);
-        newDimensionOrder.splice(toDimIndex, 0, sourceId);
-        setDraggingId(null);
-        return [...newDimensionOrder, ...otherColumns];
+        
+        // Dimensions are draggable but hierarchy is always enforced
+        // Simply re-sort dimensions to maintain hierarchy order
+        const sortedDimensions = dimensionHierarchy.filter((id) => dimensionOrder.includes(id));
+        return [...sortedDimensions, ...otherColumns];
       }
       
       // If source is dimension and target is not, move dimension to start (before first non-dimension)
       if (isSourceDimension && !isTargetDimension) {
-        const dimensionOrder = dimensionIds.filter((id) => next.includes(id));
+        const dimensionOrder = dimensionHierarchy.filter((id) => next.includes(id));
         const otherColumns = next.filter((id) => !dimensionIds.includes(id));
         const newDimensionOrder = dimensionOrder.filter((id) => id !== sourceId);
-        const targetIndexInOthers = otherColumns.indexOf(targetId);
-        if (targetIndexInOthers === -1) {
-          setDraggingId(null);
-          return prev;
-        }
-        otherColumns.splice(targetIndexInOthers, 0, sourceId);
-        setDraggingId(null);
-        return [...newDimensionOrder, ...otherColumns];
-      }
-      
-      // If source is not dimension and target is dimension, move to after dimensions
-      if (!isSourceDimension && isTargetDimension) {
-        const dimensionOrder = dimensionIds.filter((id) => next.includes(id));
-        const otherColumns = next.filter((id) => !dimensionIds.includes(id));
-        const newOtherColumns = otherColumns.filter((id) => id !== sourceId);
-        const targetIndexInDims = dimensionOrder.indexOf(targetId);
-        if (targetIndexInDims === -1) {
-          setDraggingId(null);
-          return prev;
-        }
-        // Insert after the target dimension
-        const newDimensionOrder = [...dimensionOrder];
-        newDimensionOrder.splice(targetIndexInDims + 1, 0, sourceId);
-        setDraggingId(null);
-        return [...newDimensionOrder, ...newOtherColumns];
+        // Re-add source and re-sort to maintain hierarchy
+        const allDimensions = [...newDimensionOrder, sourceId];
+        const sortedDimensions = dimensionHierarchy.filter((id) => allDimensions.includes(id));
+        return [...sortedDimensions, ...otherColumns];
       }
       
       // Both are non-dimensions, allow reordering
+      // Use drop position to determine exact placement
+      const finalToIndex = dropPosition === "left" ? toIndex : toIndex + 1;
+      const adjustedToIndex = finalToIndex > fromIndex ? finalToIndex - 1 : finalToIndex;
       next.splice(fromIndex, 1);
-      next.splice(toIndex, 0, sourceId);
-      setDraggingId(null);
+      next.splice(adjustedToIndex, 0, sourceId);
       return next;
     });
   };
@@ -697,7 +815,7 @@ export const PerformanceBoard = () => {
 
       <Separator className="mb-4" />
 
-      <Card className="p-3 border border-slate-200/70 overflow-hidden">
+      <Card className="p-3 border border-slate-200/70 overflow-hidden relative">
         <div className="flex items-center justify-between mb-3 gap-3">
           <div className="flex items-end gap-4">
             <div className="flex flex-col gap-1">
@@ -729,6 +847,12 @@ export const PerformanceBoard = () => {
               />
             </div>
           </div>
+            {/* Blocked drop warning - one liner above table */}
+            {isDragging && isDropBlocked && (
+            <div className="text-center py-2 text-red-600 text-sm font-semibold">
+              Dropping metric columns in this area is not allowed
+            </div>
+            )}
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
@@ -768,9 +892,11 @@ export const PerformanceBoard = () => {
         )} */}
 
         <div
-          className="w-full overflow-x-auto overflow-y-auto"
+          ref={scrollContainerRef}
+          className="w-full overflow-x-auto overflow-y-auto relative"
           style={{ maxHeight: "calc(100vh - 220px)" }}
         >
+
           <div className="inline-block border border-slate-200 rounded-md">
             <table className="border-collapse" style={{ minWidth: `${visibleColumns.length * 250}px` }}>
               <thead className="sticky top-0 z-30">
@@ -786,44 +912,111 @@ export const PerformanceBoard = () => {
                     const sortRule = sortState.find((r) => r.columnId === column.id);
                     const sortDirection = sortRule?.direction;
                     const categoryColors = getCategoryColors(column.category);
+                    const isBeingDragged = draggingId === column.id;
+                    const isDragOver = dragOverColumnId === column.id;
+                    const showLeftIndicator = isDragOver && dropPosition === "left" && !isDropBlocked;
+                    const showRightIndicator = isDragOver && dropPosition === "right" && !isDropBlocked;
+                    const showBlockedIndicator = isDragOver && isDropBlocked;
                     
                     return (
                       <th
                         key={column.id}
-                        className={`group px-3 py-2 text-left text-sm font-semibold tracking-wide border-r border-slate-200 last:border-r-0 relative whitespace-nowrap ${
+                        draggable={!isDimension}
+                        onDragStart={!isDimension ? handleDragStart(column.id) : undefined}
+                        onDragEnd={!isDimension ? (e) => {
+                          // Handle drag end immediately for instant feedback
+                          handleDragEnd();
+                        } : undefined}
+                        onDragOver={handleDragOver(column.id)}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop(column.id)}
+                        className={`group px-3 py-2 text-left text-sm font-semibold tracking-wide border-r border-slate-200 last:border-r-0 relative whitespace-nowrap transition-all duration-150 ${
                           categoryColors ? `${!isFrozen ? categoryColors.bg : ""} ${categoryColors.text}` : "text-slate-700"
-                        } ${isFrozen ? "sticky z-40" : ""}`}
+                        } ${isFrozen ? "sticky z-40" : ""} ${
+                          !isDimension && isBeingDragged ? "opacity-50 scale-95 cursor-grabbing" : !isDimension ? "cursor-grab hover:bg-slate-100" : ""
+                        } ${
+                          isDragOver && !isDropBlocked ? "bg-blue-50 border-blue-300" : ""
+                        } ${
+                          isDragOver && isDropBlocked ? "bg-red-100 border-red-400 border-2" : ""
+                        } ${
+                          isDimension ? "bg-purple-50/30 border-l-2 border-l-purple-400" : ""
+                        }`}
                         style={{
                           minWidth: "250px",
                           width: "250px",
                           maxWidth: (isZipCode || isService) ? "250px" : undefined,
                           top: 0,
                           left: isFrozen ? `${leftOffset}px` : undefined,
-                          backgroundColor: categoryColors ? categoryColors.bgColor : "#f8fafc",
+                          backgroundColor: isDragOver && isDropBlocked
+                            ? "rgba(254, 226, 226, 0.5)"
+                            : isDragOver && !isDropBlocked
+                            ? "#dbeafe"
+                            : isDimension
+                            ? "#faf5ff"
+                            : (categoryColors && !isFrozen ? categoryColors.bgColor : "#f8fafc"),
                           boxShadow: isFrozen ? "2px 0 4px rgba(0, 0, 0, 0.05)" : undefined,
                           position: "sticky",
                         }}
-                        onDragOver={handleDragOver}
-                        onDrop={handleDrop(column.id)}
                       >
+                        {/* Drop indicator - Left */}
+                        {showLeftIndicator && (
+                          <>
+                            <div 
+                              className="absolute left-0 top-0 bottom-0 w-1.5 bg-blue-500 z-50 animate-pulse"
+                              style={{ 
+                                boxShadow: "0 0 12px rgba(59, 130, 246, 0.8)"
+                              }}
+                            />
+                            <div 
+                              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-3 bg-blue-500 rounded-full z-50 border-2 border-white animate-pulse"
+                              style={{ boxShadow: "0 0 8px rgba(59, 130, 246, 0.8)" }}
+                            />
+                          </>
+                        )}
+                        {/* Drop indicator - Right */}
+                        {showRightIndicator && (
+                          <>
+                            <div 
+                              className="absolute right-0 top-0 bottom-0 w-1.5 bg-blue-500 z-50 animate-pulse"
+                              style={{ 
+                                boxShadow: "0 0 12px rgba(59, 130, 246, 0.8)"
+                              }}
+                            />
+                            <div 
+                              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-3 h-3 bg-blue-500 rounded-full z-50 border-2 border-white animate-pulse"
+                              style={{ boxShadow: "0 0 8px rgba(59, 130, 246, 0.8)" }}
+                            />
+                          </>
+                        )}
                         <div className="flex items-center justify-between">
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <div 
-                                  className="flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity max-w-full"
-                                  onClick={() => column.sortable && handleRequestSort(column.id)}
+                                  className="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity max-w-full"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (column.sortable) {
+                                      handleRequestSort(column.id);
+                                    }
+                                  }}
+                                  onMouseDown={(e) => {
+                                    // Prevent text selection while dragging
+                                    if (e.button === 0) {
+                                      e.preventDefault();
+                                    }
+                                  }}
                                 >
-                                  <span
-                                    draggable={true}
-                                    onDragStart={(e) => {
-                                      e.stopPropagation();
-                                      handleDragStart(column.id)(e);
-                                    }}
-                                    className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity"
-                                  >
-                                    <GripVertical className="h-3 w-3 text-slate-400" />
-                                  </span>
+                                  {!isDimension && (
+                                    <span
+                                      className={`cursor-grab active:cursor-grabbing transition-opacity ${
+                                        isDragging ? "opacity-100" : "opacity-60 group-hover:opacity-100"
+                                      }`}
+                                      style={{ pointerEvents: "none" }}
+                                    >
+                                      <GripVertical className="h-4 w-4 text-slate-500" />
+                                    </span>
+                                  )}
                                   <span className="text-sm leading-tight whitespace-nowrap truncate max-w-[220px]">
                                     {column.label}
                                   </span>
@@ -861,15 +1054,19 @@ export const PerformanceBoard = () => {
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
-                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className={`flex items-center gap-1 transition-opacity ${
+                            isDragging ? "opacity-30" : "opacity-0 group-hover:opacity-100"
+                          }`}>
                             <Button
                               size="icon"
                               variant="ghost"
                               className="h-6 w-6 hover:bg-white/80 hover:text-slate-700"
                               onClick={(e) => {
                                 e.stopPropagation();
+                                e.preventDefault();
                                 handleToggleFreeze(column.id);
                               }}
+                              onMouseDown={(e) => e.stopPropagation()}
                               title={frozenColumns.includes(column.id) ? "Unfreeze column" : "Freeze column"}
                             >
                               <Pin className={`h-3 w-3 ${frozenColumns.includes(column.id) ? "text-blue-600 fill-blue-600" : categoryColors ? categoryColors.text : "text-slate-600"}`} />
@@ -880,8 +1077,10 @@ export const PerformanceBoard = () => {
                               className="h-6 w-6 hover:bg-white/80 hover:text-slate-700"
                               onClick={(e) => {
                                 e.stopPropagation();
+                                e.preventDefault();
                                 handleRemoveColumn(column.id);
                               }}
+                              onMouseDown={(e) => e.stopPropagation()}
                             >
                               <X className={`h-3 w-3 ${categoryColors ? categoryColors.text : "text-slate-600"}`} />
                             </Button>
@@ -920,11 +1119,14 @@ export const PerformanceBoard = () => {
                         const isFrozen = frozenColumns.includes(column.id);
                         const frozenIndex = frozenColumns.indexOf(column.id);
                         const leftOffset = isFrozen ? frozenIndex * 250 : 0;
+                        const dimensionIds = ["campaignName", "adSetName", "adName"];
+                        const isDimension = dimensionIds.includes(column.id);
+                        const isColumnBlocked = dragOverColumnId === column.id && isDropBlocked;
                         
                         return (
                           <td
                             key={column.id}
-                            className={`py-2 pr-3 pl-6 text-sm border-r border-slate-100 last:border-r-0 overflow-hidden ${
+                            className={`py-2 pr-3 pl-6 text-sm border-r border-slate-100 last:border-r-0 overflow-hidden relative ${
                               categoryColors && !isFrozen ? categoryColors.cellBg : ""
                             } ${isFrozen ? "sticky z-20" : ""}`}
                             style={{
@@ -932,7 +1134,9 @@ export const PerformanceBoard = () => {
                               width: "250px",
                               maxWidth: (isZipCode || isService) ? "250px" : undefined,
                               left: isFrozen ? `${leftOffset}px` : undefined,
-                              backgroundColor: isFrozen 
+                              backgroundColor: isColumnBlocked
+                                ? "rgba(254, 226, 226, 0.5)"
+                                : isFrozen 
                                 ? (categoryColors ? categoryColors.bgColor : "#ffffff") 
                                 : undefined,
                               boxShadow: isFrozen ? "2px 0 4px rgba(0, 0, 0, 0.05)" : undefined,
@@ -1033,20 +1237,26 @@ export const PerformanceBoard = () => {
                       const isFrozen = frozenColumns.includes(column.id);
                       const frozenIndex = frozenColumns.indexOf(column.id);
                       const leftOffset = isFrozen ? frozenIndex * 250 : 0;
+                      const dimensionIds = ["campaignName", "adSetName", "adName"];
+                      const isColumnBlocked = dragOverColumnId === column.id && isDropBlocked;
                       
                       return (
                         <td
                           key={column.id}
-                          className={`py-2 pr-3 pl-6 text-sm text-slate-700 border-r border-slate-200 last:border-r-0 whitespace-nowrap ${
+                          className={`py-2 pr-3 pl-6 text-sm text-slate-700 border-r border-slate-200 last:border-r-0 whitespace-nowrap relative ${
                             categoryColors && !isFrozen ? categoryColors.cellBg : ""
-                          } ${isFrozen ? "sticky z-40" : ""}`}
+                          } ${isFrozen ? "sticky z-40" : ""} ${
+                            isColumnBlocked ? "bg-red-100" : ""
+                          }`}
                           style={{
                             minWidth: "250px",
                             width: "250px",
                             maxWidth: (isZipCode || isService) ? "250px" : undefined,
                             bottom: 0,
                             left: isFrozen ? `${leftOffset}px` : undefined,
-                            backgroundColor: categoryColors ? categoryColors.bgColor : "#f8fafc",
+                            backgroundColor: isColumnBlocked
+                              ? "rgba(254, 226, 226, 0.5)"
+                              : (categoryColors ? categoryColors.bgColor : "#f8fafc"),
                             boxShadow: isFrozen ? "2px 0 4px rgba(0, 0, 0, 0.05)" : undefined,
                             position: "sticky",
                           }}
