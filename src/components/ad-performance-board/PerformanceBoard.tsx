@@ -942,7 +942,7 @@ export const PerformanceBoard = () => {
           </div>
         )}
 
-        {/* {adGridData && adGridData.length > 0 && (
+        {adGridData && adGridData.length > 0 && (
           <div className="mb-4">
             <AdGridView
               ads={adGridData}
@@ -951,7 +951,7 @@ export const PerformanceBoard = () => {
               clientId={clientId}
             />
           </div>
-        )} */}
+        )}
 
         <div
           ref={scrollContainerRef}
