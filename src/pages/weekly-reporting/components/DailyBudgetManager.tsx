@@ -1,10 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { format, addDays } from 'date-fns';
-import { getWeekInfo } from '@/utils/weekLogic';
+import { format, addDays, subDays, isBefore } from 'date-fns';
+import { getCurrentWeek, getWeekInfo } from '@/utils/weekLogic';
 import { Undo2, Trash2 } from 'lucide-react';
 import { useUserContext } from '@/utils/UserContext';
 import { getReportingData as fetchReportingData, upsertReportingData as saveReportingData } from '@/service/reportingServices';
@@ -38,6 +38,26 @@ const ALLOWED_EDIT_USER_IDS = [
   
 ];
 
+const extractPreservedFields = (actual: Record<string, any> | null): Record<string, any> => {
+  const preserved: Record<string, any> = {};
+  if (!actual) return preserved;
+  Object.keys(actual).forEach((key) => {
+    if (
+      key !== 'adNamesAmount' &&
+      key !== 'userId' &&
+      key !== '_id' &&
+      key !== 'createdAt' &&
+      key !== 'updatedAt' &&
+      key !== '__v' &&
+      key !== 'startDate' &&
+      key !== 'endDate'
+    ) {
+      preserved[key] = actual[key];
+    }
+  });
+  return preserved;
+};
+
 export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
   selectedDate,
   weeklyBudget,
@@ -45,6 +65,7 @@ export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
 }) => {
   const { user } = useUserContext();
   const selectedUserId = useUserStore((s) => s.selectedUserId);
+  const autoPropagatedKeysRef = useRef<Set<string>>(new Set());
   const [rows, setRows] = useState<AdNameAmount[]>(
     Array.isArray(initialAdNamesAmount) && initialAdNamesAmount.length > 0
       ? initialAdNamesAmount
@@ -99,28 +120,16 @@ export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
         // Determine effective user id (admins may operate on a selected user)
         const effectiveUserId = user?.role === 'ADMIN' ? (selectedUserId || user?._id) : user?._id;
         if (!effectiveUserId) return;
+
+        const weekKey = `${effectiveUserId}:${startDate}`;
+
         const resp = await fetchReportingData(effectiveUserId, startDate, endDate, 'weekly');
         const payload = resp?.data?.data;
         const actualArray = Array.isArray(payload?.actual) ? payload.actual : (payload?.actual ? [payload.actual] : []);
         const actual = actualArray && actualArray.length > 0 ? actualArray[0] : null;
+
+        const preserved: Record<string, any> = {};
         if (actual) {
-          const fetchedRows: AdNameAmount[] = Array.isArray(actual.adNamesAmount) ? actual.adNamesAmount : [];
-          // Prefer any draft
-          let appliedRows = fetchedRows.length > 0 ? fetchedRows : [{ adName: '', budget: 0 }];
-          if (getDraftKey) {
-            const draftStr = sessionStorage.getItem(getDraftKey);
-            if (draftStr) {
-              try {
-                const draft = JSON.parse(draftStr);
-                if (Array.isArray(draft?.rows)) {
-                  appliedRows = draft.rows.length > 0 ? draft.rows : [{ adName: '', budget: 0 }];
-                  setIsDirty(true);
-                }
-              } catch {}
-            }
-          }
-          setRows(appliedRows);
-          const preserved: Record<string, any> = {};
           Object.keys(actual).forEach((key) => {
             if (
               key !== 'adNamesAmount' &&
@@ -135,10 +144,80 @@ export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
               preserved[key] = actual[key];
             }
           });
-          setExistingFields(preserved);
-        } else {
-          setExistingFields({});
         }
+        setExistingFields(preserved);
+
+        const fetchedRows: AdNameAmount[] = actual && Array.isArray(actual.adNamesAmount) ? actual.adNamesAmount : [];
+
+        // Prefer any draft first (draft means user has unsaved changes for this week)
+        if (getDraftKey) {
+          const draftStr = sessionStorage.getItem(getDraftKey);
+          if (draftStr) {
+            try {
+              const draft = JSON.parse(draftStr);
+              if (Array.isArray(draft?.rows)) {
+                const appliedRows = draft.rows.length > 0 ? draft.rows : [{ adName: '', budget: 0 }];
+                setRows(appliedRows);
+                setIsDirty(true);
+                return;
+              }
+            } catch {}
+          }
+        }
+
+        // If current week has values, use them
+        if (fetchedRows.length > 0) {
+          setRows(fetchedRows);
+          setIsDirty(false);
+          return;
+        }
+
+        // Carry-forward on navigation for CURRENT + FUTURE weeks only (avoid backfilling past weeks)
+        const currentWeekInfo = getCurrentWeek();
+        if (isBefore(weekInfo.weekStart, currentWeekInfo.weekStart)) {
+          setRows([{ adName: '', budget: 0 }]);
+          setIsDirty(false);
+          return;
+        }
+
+        // Current week is empty -> pull last week's values (carry-forward on load)
+        const prevWeekStart = subDays(weekInfo.weekStart, 7);
+        const prevWeekInfo = getWeekInfo(prevWeekStart);
+        const prevStartDate = format(prevWeekInfo.weekStart, 'yyyy-MM-dd');
+        const prevEndDate = format(prevWeekInfo.weekEnd, 'yyyy-MM-dd');
+
+        const prevResp = await fetchReportingData(effectiveUserId, prevStartDate, prevEndDate, 'weekly');
+        const prevPayload = prevResp?.data?.data;
+        const prevActualArray = Array.isArray(prevPayload?.actual) ? prevPayload.actual : (prevPayload?.actual ? [prevPayload.actual] : []);
+        const prevActual = prevActualArray && prevActualArray.length > 0 ? prevActualArray[0] : null;
+        const prevRows: AdNameAmount[] = prevActual && Array.isArray(prevActual.adNamesAmount) ? prevActual.adNamesAmount : [];
+
+        if (prevRows.length > 0) {
+          setRows(prevRows);
+          setIsDirty(false);
+
+          // Persist the carry-forward once per week/user so it exists even if user never clicks Save.
+          if (!autoPropagatedKeysRef.current.has(weekKey)) {
+            autoPropagatedKeysRef.current.add(weekKey);
+            try {
+              await saveReportingData({
+                userId: effectiveUserId,
+                startDate,
+                endDate,
+                ...preserved,
+                adNamesAmount: prevRows,
+              });
+            } catch {
+              // Silent fail: carry-forward still shows in UI
+            }
+          }
+
+          return;
+        }
+
+        // Nothing to carry forward; keep default row
+        setRows([{ adName: '', budget: 0 }]);
+        setIsDirty(false);
       } catch {
         // ignore fetch errors to avoid breaking UI
       } finally {
@@ -146,7 +225,7 @@ export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
       }
     };
     if (canView) load();
-  }, [canView, selectedDate, selectedUserId, user?.role, user?._id]);
+  }, [canView, selectedDate, selectedUserId, user?.role, user?._id, getDraftKey]);
 
   const totals = useMemo(() => {
     const dailyBudget = (weeklyBudget || 0) / 7;
@@ -227,36 +306,43 @@ export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
 
     setIsLoading(true);
     try {
-      // Use locally fetched existingFields to preserve other fields
-      const baseFields: any = { ...existingFields };
-
-      // Current week payload - merge existing fields with new adNamesAmount
-      const currentWeekPayload = {
-        startDate: startDate,
-        endDate: endDate,
-        ...baseFields,
-        adNamesAmount,
-      } as any;
-
-      // Next week payload - for next week, we only save adNamesAmount
-      const nextWeekStart = addDays(weekInfo.weekStart, 7);
-      const nextWeekEnd = addDays(weekInfo.weekEnd, 7);
-      const nextWeekInfo = getWeekInfo(nextWeekStart);
-      const nextWeekPayload = {
-        startDate: format(nextWeekInfo.weekStart, 'yyyy-MM-dd'),
-        endDate: format(nextWeekInfo.weekEnd, 'yyyy-MM-dd'),
-        adNamesAmount,
-      } as any;
-
       // Resolve effective user id
       const effectiveUserId = user?.role === 'ADMIN' ? (selectedUserId || user?._id) : user?._id;
       if (!effectiveUserId) throw new Error('No user id');
 
-      // Save current week (direct service, not global store)
+      // Save ONLY current selected week
+      const currentWeekPayload = {
+        startDate,
+        endDate,
+        ...(existingFields || {}),
+        adNamesAmount,
+      } as any;
       await saveReportingData({ ...currentWeekPayload, userId: effectiveUserId });
-      
-      // Save next week
-      await saveReportingData({ ...nextWeekPayload, userId: effectiveUserId });
+
+      // Also propagate to NEXT week (so when next week becomes current, it's already there)
+      const nextWeekStart = addDays(weekInfo.weekStart, 7);
+      const nextWeekInfo = getWeekInfo(nextWeekStart);
+      const nextStartDate = format(nextWeekInfo.weekStart, 'yyyy-MM-dd');
+      const nextEndDate = format(nextWeekInfo.weekEnd, 'yyyy-MM-dd');
+
+      try {
+        // Preserve any next-week fields (if present) so we don't accidentally wipe them.
+        const nextResp = await fetchReportingData(effectiveUserId, nextStartDate, nextEndDate, 'weekly');
+        const nextPayload = nextResp?.data?.data;
+        const nextActualArray = Array.isArray(nextPayload?.actual) ? nextPayload.actual : (nextPayload?.actual ? [nextPayload.actual] : []);
+        const nextActual = nextActualArray && nextActualArray.length > 0 ? nextActualArray[0] : null;
+        const nextPreserved = extractPreservedFields(nextActual);
+
+        await saveReportingData({
+          userId: effectiveUserId,
+          startDate: nextStartDate,
+          endDate: nextEndDate,
+          ...nextPreserved,
+          adNamesAmount,
+        });
+      } catch {
+        // Silent fail: we still saved the current week successfully
+      }
       
       // Immediately update local state with saved data (optimistic update)
       setRows(adNamesAmount.length > 0 ? adNamesAmount : [{ adName: '', budget: 0 }]);
@@ -306,7 +392,7 @@ export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
       
       toast({
         title: "✅ Saved Successfully",
-        description: "Data saved for current week and next week",
+        description: "Data saved for this week and copied to next week",
       });
     } catch (error) {
       toast({
