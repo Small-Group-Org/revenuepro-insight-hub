@@ -25,7 +25,7 @@ import { targetFields, reportingFields } from "@/utils/constant";
 import { FieldValue } from "@/types";
 import { exportToExcel, ExportData } from "@/utils/excelExport";
 import { useUserStore } from "@/stores/userStore";
-import { FullScreenLoader } from "@/components/ui/full-screen-loader";
+import { ContentLoader } from "@/components/ui/content-loader";
 import { useCombinedLoading } from "@/hooks/useCombinedLoading";
 import { useMetaBudgetSpent } from "@/hooks/useMetaBudgetSpent";
 import { useUserContext } from "@/utils/UserContext";
@@ -639,8 +639,8 @@ export const CompareResults = () => {
         </div>
       </div>
       
-      {/* Full Screen Loader */}
-      <FullScreenLoader
+      {/* Content Loader - Only covers main content area */}
+      <ContentLoader
         isLoading={isLoading || isUpserting || isLoadingCampaignData}
         message={
           isUpserting

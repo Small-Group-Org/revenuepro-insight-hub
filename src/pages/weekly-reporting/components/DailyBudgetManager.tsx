@@ -9,7 +9,7 @@ import { Undo2, Trash2 } from 'lucide-react';
 import { useUserContext } from '@/utils/UserContext';
 import { getReportingData as fetchReportingData, upsertReportingData as saveReportingData } from '@/service/reportingServices';
 import { useUserStore } from '@/stores/userStore';
-import { FullScreenLoader } from '@/components/ui/full-screen-loader';
+import { ContentLoader } from '@/components/ui/content-loader';
 
 type AdNameAmount = {
   adName: string;
@@ -406,8 +406,8 @@ export const DailyBudgetManager: React.FC<DailyBudgetManagerProps> = ({
   };
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 items-stretch">
-      <FullScreenLoader isLoading={isLoading} message="Updating campaign costs..." />
+    <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 items-stretch relative">
+      <ContentLoader isLoading={isLoading} message="Updating campaign costs..." />
       {/* 1/3 - Daily Budget Handling card */}
       <Card className="bg-card/90 backdrop-blur-sm border border-border/20 shadow-xl h-full min-h-[360px]">
         <div className="p-6 border-b border-border/50 bg-gradient-secondary/10">
