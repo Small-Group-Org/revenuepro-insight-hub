@@ -67,7 +67,7 @@ export const LeadTiles = React.memo(({
     ULR_OPTIONS: string[];
     selectedLeads: Set<string>;
     userRole: string;
-    handleLeadStatusChange: (leadId: string, value: 'new' | 'in_progress' | 'estimate_set' | 'virtual_quote' | 'estimate_canceled' | 'proposal_presented' | 'job_booked' | 'job_lost' | 'unqualified') => Promise<void>;
+    handleLeadStatusChange: (leadId: string, value: 'new' | 'in_progress' | 'estimate_set' | 'virtual_quote' | 'estimate_canceled' | 'proposal_presented' | 'job_booked' | 'job_lost' | 'estimate_rescheduled' | 'unqualified') => Promise<void>;
     handleULRChange: (leadId: string, value: string) => Promise<void>;
     handleCustomULRSubmit: (leadId: string) => Promise<void>;
     handleAmountUpdate: (leadId: string, jobBookedAmount: number, proposalAmount: number) => Promise<void>;
@@ -510,7 +510,7 @@ export const LeadTiles = React.memo(({
                 <div className="w-full">
                   <Select
                     value={lead.status}
-                    onValueChange={(value) => !isDisabled ? handleLeadStatusChange(lead.id, value as 'new' | 'in_progress' | 'estimate_set' | 'virtual_quote' | 'estimate_canceled' | 'proposal_presented' | 'job_booked' | 'job_lost' | 'unqualified') : undefined}
+                    onValueChange={(value) => !isDisabled ? handleLeadStatusChange(lead.id, value as 'new' | 'in_progress' | 'estimate_set' | 'virtual_quote' | 'estimate_canceled' | 'proposal_presented' | 'job_booked' | 'job_lost' | 'estimate_rescheduled' | 'unqualified') : undefined}
                     disabled={isDisabled}
                   >
                     <SelectTrigger 
@@ -573,6 +573,12 @@ export const LeadTiles = React.memo(({
                         <span className="inline-flex items-center gap-2">
                           <div className="w-2 h-2 bg-red-500 rounded-full"></div>
                           Job Lost
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="estimate_rescheduled" className="text-sm">
+                        <span className="inline-flex items-center gap-2">
+                          <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+                          Estimate Rescheduled
                         </span>
                       </SelectItem>
                       <SelectItem value="unqualified" className="text-sm">
