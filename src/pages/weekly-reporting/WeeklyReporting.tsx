@@ -12,7 +12,7 @@ import { handleInputDisable } from '@/utils/page-utils/compareUtils';
 import { processTargetData } from '@/utils/page-utils/targetUtils';
 import { getWeekInfo, getCurrentWeek } from '@/utils/weekLogic';
 import { useUserStore } from '@/stores/userStore';
-import { FullScreenLoader } from '@/components/ui/full-screen-loader';
+import { ContentLoader } from '@/components/ui/content-loader';
 import { useCombinedLoading } from '@/hooks/useCombinedLoading';
 import DailyBudgetManager from '@/pages/weekly-reporting/components/DailyBudgetManager';
 import { useGhlClientStore } from '@/stores/ghlClientStore';
@@ -662,8 +662,8 @@ React.useEffect(() => {
         </AlertDialogContent>
       </AlertDialog>
       
-      {/* Full Screen Loader */}
-      <FullScreenLoader isLoading={isLoading} message="Loading reporting data..." />
+      {/* Content Loader - Only covers main content area */}
+      <ContentLoader isLoading={isLoading} message="Loading reporting data..." />
     </div>
   );
 };

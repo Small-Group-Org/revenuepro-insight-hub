@@ -22,7 +22,7 @@ import {
   adminViewChartConfigs
 } from '@/utils/constant';
 import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
-import { FullScreenLoader } from '@/components/ui/full-screen-loader';
+import { ContentLoader } from '@/components/ui/content-loader';
 import { useCombinedLoading } from '@/hooks/useCombinedLoading';
 import { ReleaseNotesModal } from '../../components/ReleaseNotesModal';
 import { useUserContext } from '@/utils/UserContext';
@@ -349,8 +349,8 @@ export const Dashboard = () => {
         onMarkAsSeen={handleMarkUpdateAsSeen}
       />
       
-      {/* Full Screen Loader */}
-      <FullScreenLoader isLoading={isLoading} message="Loading dashboard data..." />
+      {/* Content Loader - Only covers main content area */}
+      <ContentLoader isLoading={isLoading} message="Loading dashboard data..." />
     </div>
   );
 };
