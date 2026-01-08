@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useState, useRef } from "react";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -11,10 +10,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Plus, X, GripVertical, ArrowUp, ArrowDown, Sigma, BarChart3, TrendingDown, TrendingUp, Pin, Settings } from "lucide-react";
+import { Loader2, X, GripVertical, ArrowUp, ArrowDown, Pin, Settings } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { FiltersBar } from "./FiltersBar";
-import { ColumnCard } from "./ColumnCard";
 import {
   AVAILABLE_COLUMNS,
   DEFAULT_COLUMN_ORDER,
@@ -36,7 +34,6 @@ import { useUserContext } from "@/utils/UserContext";
 import { useUserStore } from "@/stores/userStore";
 import { useToast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
-import { AdGridView } from "@/components/ads/AdGridView";
 
 const STORAGE_KEY = "ad-performance-board:v1";
 
@@ -53,6 +50,17 @@ const getDefaultDateRange = (): { startDate: string; endDate: string } => {
   return { startDate: format(start), endDate: format(end) };
 };
 
+// Helper function to load saved preferences synchronously
+const loadSavedPreferences = () => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) return null;
+    return JSON.parse(saved);
+  } catch (error) {
+    return null;
+  }
+};
+
 export const PerformanceBoard = () => {
   const { user } = useUserContext();
   const { selectedUserId } = useUserStore();
@@ -60,45 +68,67 @@ export const PerformanceBoard = () => {
   const clientId = selectedUserId || (user as any)?._id;
   const { toast } = useToast();
 
-  const [filters, setFilters] = useState<PerformanceBoardFilters>(() => ({
-    ...getDefaultDateRange(),
-  }));
-  const [appliedFilters, setAppliedFilters] =
-    useState<PerformanceBoardFilters>(filters);
-  const [groupBy, setGroupBy] = useState<GroupBy>("campaign");
+  // Load saved preferences synchronously during initialization
+  const savedPrefs = loadSavedPreferences();
+  const defaultFilters = savedPrefs?.filters || getDefaultDateRange();
+  const defaultGroupBy = savedPrefs?.groupBy || "campaign";
+  
+  // Initialize state from localStorage to prevent double API calls
+  const [filters, setFilters] = useState<PerformanceBoardFilters>(defaultFilters);
+  const [appliedFilters, setAppliedFilters] = useState<PerformanceBoardFilters>(defaultFilters);
+  const [groupBy, setGroupBy] = useState<GroupBy>(defaultGroupBy);
   const [columns, setColumns] = useState<ColumnConfig[]>(
-    AVAILABLE_COLUMNS.filter((c) => c.isDefault)
+    savedPrefs?.columns || AVAILABLE_COLUMNS.filter((c) => c.isDefault)
   );
-  const [columnOrder, setColumnOrder] =
-    useState<string[]>(DEFAULT_COLUMN_ORDER);
-  const [sortState, setSortState] = useState<SortRule[]>([]);
+  const [columnOrder, setColumnOrder] = useState<string[]>(
+    savedPrefs?.columnOrder || DEFAULT_COLUMN_ORDER
+  );
+  const [sortState, setSortState] = useState<SortRule[]>(savedPrefs?.sortState || []);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [activeColumn, setActiveColumn] = useState<ColumnConfig | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
-  const [frozenColumns, setFrozenColumns] = useState<string[]>([]);
+  const [dragOverColumnId, setDragOverColumnId] = useState<string | null>(null);
+  const [dropPosition, setDropPosition] = useState<"left" | "right" | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isDropBlocked, setIsDropBlocked] = useState(false);
+  const [frozenColumns, setFrozenColumns] = useState<string[]>(savedPrefs?.frozenColumns || []);
   const [searchInputValue, setSearchInputValue] = useState<string>("");
   const [availableZipCodes, setAvailableZipCodes] = useState<string[]>([]);
   const [availableServiceTypes, setAvailableServiceTypes] = useState<string[]>([]);
   const [apiAverages, setApiAverages] = useState<PerformanceBoardAverages | null>(null);
-  // Load saved preferences
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const isInitialMount = useRef(true);
+  
+  // Only sync localStorage changes after initial mount (for cross-tab sync)
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (!saved) return;
-    try {
-      const parsed = JSON.parse(saved);
-      if (parsed.columns) setColumns(parsed.columns);
-      if (parsed.columnOrder) setColumnOrder(parsed.columnOrder);
-      if (parsed.sortState) setSortState(parsed.sortState);
-      if (parsed.filters) {
-        setFilters(parsed.filters);
-        setAppliedFilters(parsed.filters);
-      }
-      if (parsed.groupBy) setGroupBy(parsed.groupBy);
-      if (parsed.frozenColumns) setFrozenColumns(parsed.frozenColumns);
-    } catch (error) {
-      // ignore corrupted preferences
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
     }
+    
+    // This effect only runs for external localStorage changes after initial mount
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEY && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (parsed.filters) {
+            setFilters(parsed.filters);
+            setAppliedFilters(parsed.filters);
+          }
+          if (parsed.groupBy) setGroupBy(parsed.groupBy);
+          if (parsed.columns) setColumns(parsed.columns);
+          if (parsed.columnOrder) setColumnOrder(parsed.columnOrder);
+          if (parsed.sortState) setSortState(parsed.sortState);
+          if (parsed.frozenColumns) setFrozenColumns(parsed.frozenColumns);
+        } catch (error) {
+          // ignore corrupted preferences
+        }
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   // Persist preferences
@@ -118,7 +148,10 @@ export const PerformanceBoard = () => {
 
   const visibleColumns = useMemo(() => {
     const dimensionIds = ["campaignName", "adSetName", "adName"];
-    const dimensionOrder = dimensionIds.filter((id) => columnOrder.includes(id));
+    const dimensionHierarchy = ["campaignName", "adSetName", "adName"]; // Enforced order: Campaign > Ad Set > Ad Name
+    
+    // Get dimensions in hierarchy order (always maintain Campaign > Ad Set > Ad Name)
+    const dimensionOrder = dimensionHierarchy.filter((id) => columnOrder.includes(id));
     const otherColumns = columnOrder
       .filter((id) => !dimensionIds.includes(id))
       .map((id) => columns.find((c) => c.id === id))
@@ -135,12 +168,30 @@ export const PerformanceBoard = () => {
     const unfrozen = allColumns.filter((col) => !frozenColumns.includes(col.id));
     
     // Order frozen columns by their freeze order (latest on the right)
-    const orderedFrozen = frozenColumns
-      .filter((id) => frozen.some((col) => col.id === id))
-      .map((id) => frozen.find((col) => col.id === id))
+    // But maintain dimension hierarchy within frozen columns
+    const frozenDimensions = frozen.filter((col) => dimensionIds.includes(col.id));
+    const frozenMetrics = frozen.filter((col) => !dimensionIds.includes(col.id));
+    const orderedFrozenDimensions = dimensionHierarchy
+      .filter((id) => frozenDimensions.some((col) => col.id === id))
+      .map((id) => frozenDimensions.find((col) => col.id === id))
       .filter((c): c is ColumnConfig => Boolean(c));
     
-    return [...orderedFrozen, ...unfrozen];
+    const orderedFrozenMetrics = frozenColumns
+      .filter((id) => frozenMetrics.some((col) => col.id === id))
+      .map((id) => frozenMetrics.find((col) => col.id === id))
+      .filter((c): c is ColumnConfig => Boolean(c));
+    
+    const orderedFrozen = [...orderedFrozenDimensions, ...orderedFrozenMetrics];
+    
+    // Unfrozen columns: maintain dimension hierarchy
+    const unfrozenDimensions = unfrozen.filter((col) => dimensionIds.includes(col.id));
+    const unfrozenMetrics = unfrozen.filter((col) => !dimensionIds.includes(col.id));
+    const orderedUnfrozenDimensions = dimensionHierarchy
+      .filter((id) => unfrozenDimensions.some((col) => col.id === id))
+      .map((id) => unfrozenDimensions.find((col) => col.id === id))
+      .filter((c): c is ColumnConfig => Boolean(c));
+    
+    return [...orderedFrozen, ...orderedUnfrozenDimensions, ...unfrozenMetrics];
   }, [columns, columnOrder, frozenColumns]);
 
   const formatZipCodeValue = (value: string | number | undefined): { display: string; full: string; remaining?: number } => {
@@ -236,28 +287,51 @@ export const PerformanceBoard = () => {
     }, 500); // 500ms debounce delay
 
     return () => clearTimeout(timer);
-  }, [searchInputValue]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [searchInputValue, groupBy, appliedFilters]); // Fixed: Added missing dependencies
 
-  // Reset search filter when groupBy changes
+  // Reset search filter when groupBy changes (but skip on initial mount)
   useEffect(() => {
+    // Skip on initial mount to prevent double API call
+    if (isInitialMount.current) {
+      return;
+    }
+    
     // Clear the search input
     setSearchInputValue("");
     
     // Clear the filter for the previous groupBy and apply empty filter for new groupBy
-    const update: Partial<PerformanceBoardFilters> = {
-      campaignName: undefined,
-      adSetName: undefined,
-      adName: undefined,
-    };
-    
-    // Set the appropriate filter to undefined based on new groupBy
-    // (This ensures the old filter is cleared)
-    handleApplyFilters({ ...appliedFilters, ...update });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Use functional update to avoid stale closure issues
+    setAppliedFilters((prevFilters) => {
+      const update: Partial<PerformanceBoardFilters> = {
+        campaignName: undefined,
+        adSetName: undefined,
+        adName: undefined,
+      };
+      const newFilters = { ...prevFilters, ...update };
+      setFilters(newFilters); // Also update filters state
+      return newFilters;
+    });
   }, [groupBy]); // Reset when groupBy changes
 
   // Transform filters: if operator is "!=", convert to "=" with remaining zip codes
   // Remove operator fields as backend doesn't need them (assumes "=" by default)
+  // NOTE: We use a ref to access latest availableZipCodes/availableServiceTypes without causing re-renders
+  const availableZipCodesRef = useRef<string[]>([]);
+  const availableServiceTypesRef = useRef<string[]>([]);
+  
+  // Update refs when values change (without triggering query re-runs)
+  useEffect(() => {
+    if (availableZipCodes.length > 0) {
+      availableZipCodesRef.current = availableZipCodes;
+    }
+  }, [availableZipCodes]);
+  
+  useEffect(() => {
+    if (availableServiceTypes.length > 0) {
+      availableServiceTypesRef.current = availableServiceTypes;
+    }
+  }, [availableServiceTypes]);
+  
   const transformedFilters = useMemo(() => {
     const filters: any = { ...appliedFilters };
     
@@ -268,7 +342,8 @@ export const PerformanceBoard = () => {
         : [filters.zipCode];
       
       // Get all available zip codes and exclude the selected ones
-      const remainingZipCodes = availableZipCodes.filter(
+      // Use ref to avoid circular dependency
+      const remainingZipCodes = availableZipCodesRef.current.filter(
         (zip) => !excludedZipCodes.includes(zip)
       );
       
@@ -293,7 +368,8 @@ export const PerformanceBoard = () => {
         : [filters.serviceType];
       
       // Get all available service types and exclude the selected ones
-      const remainingServiceTypes = availableServiceTypes.filter(
+      // Use ref to avoid circular dependency
+      const remainingServiceTypes = availableServiceTypesRef.current.filter(
         (service) => !excludedServiceTypes.includes(service)
       );
       
@@ -316,7 +392,7 @@ export const PerformanceBoard = () => {
     delete filters.jobBookedLeads;
     
     return filters;
-  }, [appliedFilters, availableZipCodes, availableServiceTypes]);
+  }, [appliedFilters]); // Removed availableZipCodes and availableServiceTypes from dependencies
 
   const { data, isFetching, refetch } = useQuery<PerformanceRow[]>({
     queryKey: [
@@ -350,12 +426,22 @@ export const PerformanceBoard = () => {
         return [];
       }
 
-      // Update available options from API response
-      if (response.availableZipCodes) {
-        setAvailableZipCodes(response.availableZipCodes);
+      // Update available options from API response (only if they changed to avoid unnecessary updates)
+      if (response.availableZipCodes && response.availableZipCodes.length > 0) {
+        setAvailableZipCodes((prev) => {
+          // Only update if different to prevent unnecessary re-renders
+          const prevStr = JSON.stringify(prev.sort());
+          const newStr = JSON.stringify([...response.availableZipCodes].sort());
+          return prevStr === newStr ? prev : response.availableZipCodes;
+        });
       }
-      if (response.availableServiceTypes) {
-        setAvailableServiceTypes(response.availableServiceTypes);
+      if (response.availableServiceTypes && response.availableServiceTypes.length > 0) {
+        setAvailableServiceTypes((prev) => {
+          // Only update if different to prevent unnecessary re-renders
+          const prevStr = JSON.stringify(prev.sort());
+          const newStr = JSON.stringify([...response.availableServiceTypes].sort());
+          return prevStr === newStr ? prev : response.availableServiceTypes;
+        });
       }
 
       // Store API-provided averages
@@ -366,11 +452,15 @@ export const PerformanceBoard = () => {
       return response.data || [];
     },
     enabled: Boolean(clientId && appliedFilters.startDate && appliedFilters.endDate),
-    staleTime: 60 * 1000,
+    staleTime: 60 * 1000, // Consider data fresh for 60 seconds
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
     refetchOnWindowFocus: false,
+    refetchOnMount: true, // Only refetch on mount if data is stale
+    placeholderData: keepPreviousData, // Keep previous data visible while fetching new data
   });
 
   // Separate query for ad grid view - uses dedicated API for grid data
+  // DISABLED: Currently not used in render (commented out), so we disable to prevent unnecessary API calls
   const { data: adGridData } = useQuery<AdGridAd[]>({
     queryKey: [
       "ad-grid-data",
@@ -389,7 +479,7 @@ export const PerformanceBoard = () => {
 
       return response.data || [];
     },
-    enabled: Boolean(clientId && appliedFilters.startDate && appliedFilters.endDate),
+    enabled: false, // Disabled since it's not currently used in the UI
     staleTime: 60 * 1000,
     refetchOnWindowFocus: false,
   });
@@ -555,85 +645,176 @@ export const PerformanceBoard = () => {
   const handleDragStart = (id: string) => (e: React.DragEvent) => {
     e.stopPropagation();
     setDraggingId(id);
+    setIsDragging(true);
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/plain", id);
+    
+    // Create custom drag image
+    try {
+      const dragElement = e.currentTarget as HTMLElement;
+      const rect = dragElement.getBoundingClientRect();
+      const dragImage = dragElement.cloneNode(true) as HTMLElement;
+      dragImage.style.position = "absolute";
+      dragImage.style.top = "-1000px";
+      dragImage.style.left = "-1000px";
+      dragImage.style.width = `${rect.width}px`;
+      dragImage.style.opacity = "0.9";
+      dragImage.style.transform = "rotate(2deg)";
+      dragImage.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.25)";
+      dragImage.style.backgroundColor = "white";
+      dragImage.style.border = "2px solid #3b82f6";
+      dragImage.style.borderRadius = "4px";
+      dragImage.style.pointerEvents = "none";
+      document.body.appendChild(dragImage);
+      e.dataTransfer.setDragImage(dragImage, rect.width / 2, rect.height / 2);
+      
+      // Clean up after a short delay
+      setTimeout(() => {
+        if (document.body.contains(dragImage)) {
+          document.body.removeChild(dragImage);
+        }
+      }, 0);
+    } catch (error) {
+      // Fallback to default drag image if custom one fails
+      console.warn("Failed to create custom drag image:", error);
+    }
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragEnd = () => {
+    // Clear all drag states immediately for instant visual feedback
+    setDraggingId(null);
+    setDragOverColumnId(null);
+    setDropPosition(null);
+    setIsDragging(false);
+    setIsDropBlocked(false);
+  };
+
+  const handleDragOver = (targetId: string) => (e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation();
+    
+    // Auto-scroll when near edges
+    if (scrollContainerRef.current && isDragging) {
+      const container = scrollContainerRef.current;
+      const rect = container.getBoundingClientRect();
+      const scrollThreshold = 100;
+      const scrollSpeed = 15;
+      
+      // Left edge scroll
+      if (e.clientX < rect.left + scrollThreshold && e.clientX > rect.left) {
+        const scrollAmount = Math.min(scrollSpeed, container.scrollLeft);
+        if (scrollAmount > 0) {
+          container.scrollBy({ left: -scrollAmount, behavior: 'auto' });
+        }
+      }
+      // Right edge scroll
+      else if (e.clientX > rect.right - scrollThreshold && e.clientX < rect.right) {
+        const maxScroll = container.scrollWidth - container.clientWidth;
+        const scrollAmount = Math.min(scrollSpeed, maxScroll - container.scrollLeft);
+        if (scrollAmount > 0) {
+          container.scrollBy({ left: scrollAmount, behavior: 'auto' });
+        }
+      }
+    }
+    
+    if (!draggingId || draggingId === targetId) {
+      setDragOverColumnId(null);
+      setDropPosition(null);
+      setIsDropBlocked(false);
+      return;
+    }
+
+    const dimensionIds = ["campaignName", "adSetName", "adName"];
+    const isSourceDimension = dimensionIds.includes(draggingId);
+    const isTargetDimension = dimensionIds.includes(targetId);
+    
+    // Block metrics from dropping in dimension zone
+    if (!isSourceDimension && isTargetDimension) {
+      setIsDropBlocked(true);
+      setDragOverColumnId(targetId);
+      setDropPosition(null);
+      return;
+    }
+    
+    // Allow dimension-to-dimension and metric-to-metric
+    setIsDropBlocked(false);
+    setDragOverColumnId(targetId);
+    
+    // Determine drop position (left or right) based on mouse position
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const mouseX = e.clientX;
+    const centerX = rect.left + rect.width / 2;
+    const newPosition = mouseX < centerX ? "left" : "right";
+    
+    // Only update if position changed to avoid unnecessary re-renders
+    setDropPosition((prev) => prev !== newPosition ? newPosition : prev);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverColumnId(null);
+    setDropPosition(null);
+    setIsDropBlocked(false);
   };
 
   const handleDrop = (targetId: string) => (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    // Clear drag state immediately for instant visual feedback
     const sourceId = draggingId || e.dataTransfer.getData("text/plain");
+    handleDragEnd();
+    
     if (!sourceId || sourceId === targetId) {
-      setDraggingId(null);
       return;
     }
 
     const dimensionIds = ["campaignName", "adSetName", "adName"];
+    const dimensionHierarchy = ["campaignName", "adSetName", "adName"]; // Enforced order
     const isSourceDimension = dimensionIds.includes(sourceId);
     const isTargetDimension = dimensionIds.includes(targetId);
 
+    // Block metrics from dropping in dimension zone
+    if (!isSourceDimension && isTargetDimension) {
+      return;
+    }
+
+    // Calculate new order immediately
     setColumnOrder((prev) => {
       const next = [...prev];
       const fromIndex = next.indexOf(sourceId);
       const toIndex = next.indexOf(targetId);
       if (fromIndex === -1 || toIndex === -1) {
-        setDraggingId(null);
         return prev;
       }
       
-      // If both are dimensions, reorder within dimensions
+      // If both are dimensions, allow dragging but always enforce hierarchy: Campaign > Ad Set > Ad Name
       if (isSourceDimension && isTargetDimension) {
-        const dimensionOrder = dimensionIds.filter((id) => next.includes(id));
+        const dimensionOrder = dimensionHierarchy.filter((id) => next.includes(id));
         const otherColumns = next.filter((id) => !dimensionIds.includes(id));
-        const newDimensionOrder = [...dimensionOrder];
-        const fromDimIndex = newDimensionOrder.indexOf(sourceId);
-        const toDimIndex = newDimensionOrder.indexOf(targetId);
-        newDimensionOrder.splice(fromDimIndex, 1);
-        newDimensionOrder.splice(toDimIndex, 0, sourceId);
-        setDraggingId(null);
-        return [...newDimensionOrder, ...otherColumns];
+        
+        // Dimensions are draggable but hierarchy is always enforced
+        // Simply re-sort dimensions to maintain hierarchy order
+        const sortedDimensions = dimensionHierarchy.filter((id) => dimensionOrder.includes(id));
+        return [...sortedDimensions, ...otherColumns];
       }
       
       // If source is dimension and target is not, move dimension to start (before first non-dimension)
       if (isSourceDimension && !isTargetDimension) {
-        const dimensionOrder = dimensionIds.filter((id) => next.includes(id));
+        const dimensionOrder = dimensionHierarchy.filter((id) => next.includes(id));
         const otherColumns = next.filter((id) => !dimensionIds.includes(id));
         const newDimensionOrder = dimensionOrder.filter((id) => id !== sourceId);
-        const targetIndexInOthers = otherColumns.indexOf(targetId);
-        if (targetIndexInOthers === -1) {
-          setDraggingId(null);
-          return prev;
-        }
-        otherColumns.splice(targetIndexInOthers, 0, sourceId);
-        setDraggingId(null);
-        return [...newDimensionOrder, ...otherColumns];
-      }
-      
-      // If source is not dimension and target is dimension, move to after dimensions
-      if (!isSourceDimension && isTargetDimension) {
-        const dimensionOrder = dimensionIds.filter((id) => next.includes(id));
-        const otherColumns = next.filter((id) => !dimensionIds.includes(id));
-        const newOtherColumns = otherColumns.filter((id) => id !== sourceId);
-        const targetIndexInDims = dimensionOrder.indexOf(targetId);
-        if (targetIndexInDims === -1) {
-          setDraggingId(null);
-          return prev;
-        }
-        // Insert after the target dimension
-        const newDimensionOrder = [...dimensionOrder];
-        newDimensionOrder.splice(targetIndexInDims + 1, 0, sourceId);
-        setDraggingId(null);
-        return [...newDimensionOrder, ...newOtherColumns];
+        // Re-add source and re-sort to maintain hierarchy
+        const allDimensions = [...newDimensionOrder, sourceId];
+        const sortedDimensions = dimensionHierarchy.filter((id) => allDimensions.includes(id));
+        return [...sortedDimensions, ...otherColumns];
       }
       
       // Both are non-dimensions, allow reordering
+      // Use drop position to determine exact placement
+      const finalToIndex = dropPosition === "left" ? toIndex : toIndex + 1;
+      const adjustedToIndex = finalToIndex > fromIndex ? finalToIndex - 1 : finalToIndex;
       next.splice(fromIndex, 1);
-      next.splice(toIndex, 0, sourceId);
-      setDraggingId(null);
+      next.splice(adjustedToIndex, 0, sourceId);
       return next;
     });
   };
@@ -697,7 +878,7 @@ export const PerformanceBoard = () => {
 
       <Separator className="mb-4" />
 
-      <Card className="p-3 border border-slate-200/70 overflow-hidden">
+      <Card className="p-3 border border-slate-200/70 overflow-hidden relative">
         <div className="flex items-center justify-between mb-3 gap-3">
           <div className="flex items-end gap-4">
             <div className="flex flex-col gap-1">
@@ -729,6 +910,12 @@ export const PerformanceBoard = () => {
               />
             </div>
           </div>
+            {/* Blocked drop warning - one liner above table */}
+            {isDragging && isDropBlocked && (
+            <div className="text-center py-2 text-red-600 text-sm font-semibold">
+              Dropping metric columns in this area is not allowed
+            </div>
+            )}
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
@@ -768,9 +955,11 @@ export const PerformanceBoard = () => {
         )} */}
 
         <div
-          className="w-full overflow-x-auto overflow-y-auto"
+          ref={scrollContainerRef}
+          className="w-full overflow-x-auto overflow-y-auto relative"
           style={{ maxHeight: "calc(100vh - 220px)" }}
         >
+
           <div className="inline-block border border-slate-200 rounded-md">
             <table className="border-collapse" style={{ minWidth: `${visibleColumns.length * 250}px` }}>
               <thead className="sticky top-0 z-30">
@@ -786,44 +975,111 @@ export const PerformanceBoard = () => {
                     const sortRule = sortState.find((r) => r.columnId === column.id);
                     const sortDirection = sortRule?.direction;
                     const categoryColors = getCategoryColors(column.category);
+                    const isBeingDragged = draggingId === column.id;
+                    const isDragOver = dragOverColumnId === column.id;
+                    const showLeftIndicator = isDragOver && dropPosition === "left" && !isDropBlocked;
+                    const showRightIndicator = isDragOver && dropPosition === "right" && !isDropBlocked;
+                    const showBlockedIndicator = isDragOver && isDropBlocked;
                     
                     return (
                       <th
                         key={column.id}
-                        className={`group px-3 py-2 text-left text-sm font-semibold tracking-wide border-r border-slate-200 last:border-r-0 relative whitespace-nowrap ${
+                        draggable={!isDimension}
+                        onDragStart={!isDimension ? handleDragStart(column.id) : undefined}
+                        onDragEnd={!isDimension ? (e) => {
+                          // Handle drag end immediately for instant feedback
+                          handleDragEnd();
+                        } : undefined}
+                        onDragOver={handleDragOver(column.id)}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop(column.id)}
+                        className={`group px-3 py-2 text-left text-sm font-semibold tracking-wide border-r border-slate-200 last:border-r-0 relative whitespace-nowrap transition-all duration-150 ${
                           categoryColors ? `${!isFrozen ? categoryColors.bg : ""} ${categoryColors.text}` : "text-slate-700"
-                        } ${isFrozen ? "sticky z-40" : ""}`}
+                        } ${isFrozen ? "sticky z-40" : ""} ${
+                          !isDimension && isBeingDragged ? "opacity-50 scale-95 cursor-grabbing" : !isDimension ? "cursor-grab hover:bg-slate-100" : ""
+                        } ${
+                          isDragOver && !isDropBlocked ? "bg-blue-50 border-blue-300" : ""
+                        } ${
+                          isDragOver && isDropBlocked ? "bg-red-50" : ""
+                        } ${
+                          isDimension ? "bg-purple-50/30 border-l-2 border-l-purple-400" : ""
+                        }`}
                         style={{
                           minWidth: "250px",
                           width: "250px",
                           maxWidth: (isZipCode || isService) ? "250px" : undefined,
                           top: 0,
                           left: isFrozen ? `${leftOffset}px` : undefined,
-                          backgroundColor: categoryColors ? categoryColors.bgColor : "#f8fafc",
+                          backgroundColor: isDragOver && isDropBlocked
+                            ? "rgba(220, 38, 38, 0.1)"
+                            : isDragOver && !isDropBlocked
+                            ? "#dbeafe"
+                            : isDimension
+                            ? "#faf5ff"
+                            : (categoryColors && !isFrozen ? categoryColors.bgColor : "#f8fafc"),
                           boxShadow: isFrozen ? "2px 0 4px rgba(0, 0, 0, 0.05)" : undefined,
                           position: "sticky",
                         }}
-                        onDragOver={handleDragOver}
-                        onDrop={handleDrop(column.id)}
                       >
+                        {/* Drop indicator - Left */}
+                        {showLeftIndicator && (
+                          <>
+                            <div 
+                              className="absolute left-0 top-0 bottom-0 w-1.5 bg-blue-500 z-50 animate-pulse"
+                              style={{ 
+                                boxShadow: "0 0 12px rgba(59, 130, 246, 0.8)"
+                              }}
+                            />
+                            <div 
+                              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-3 bg-blue-500 rounded-full z-50 border-2 border-white animate-pulse"
+                              style={{ boxShadow: "0 0 8px rgba(59, 130, 246, 0.8)" }}
+                            />
+                          </>
+                        )}
+                        {/* Drop indicator - Right */}
+                        {showRightIndicator && (
+                          <>
+                            <div 
+                              className="absolute right-0 top-0 bottom-0 w-1.5 bg-blue-500 z-50 animate-pulse"
+                              style={{ 
+                                boxShadow: "0 0 12px rgba(59, 130, 246, 0.8)"
+                              }}
+                            />
+                            <div 
+                              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-3 h-3 bg-blue-500 rounded-full z-50 border-2 border-white animate-pulse"
+                              style={{ boxShadow: "0 0 8px rgba(59, 130, 246, 0.8)" }}
+                            />
+                          </>
+                        )}
                         <div className="flex items-center justify-between">
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <div 
-                                  className="flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity max-w-full"
-                                  onClick={() => column.sortable && handleRequestSort(column.id)}
+                                  className="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity max-w-full"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (column.sortable) {
+                                      handleRequestSort(column.id);
+                                    }
+                                  }}
+                                  onMouseDown={(e) => {
+                                    // Prevent text selection while dragging
+                                    if (e.button === 0) {
+                                      e.preventDefault();
+                                    }
+                                  }}
                                 >
-                                  <span
-                                    draggable={true}
-                                    onDragStart={(e) => {
-                                      e.stopPropagation();
-                                      handleDragStart(column.id)(e);
-                                    }}
-                                    className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity"
-                                  >
-                                    <GripVertical className="h-3 w-3 text-slate-400" />
-                                  </span>
+                                  {!isDimension && (
+                                    <span
+                                      className={`cursor-grab active:cursor-grabbing transition-opacity ${
+                                        isDragging ? "opacity-100" : "opacity-60 group-hover:opacity-100"
+                                      }`}
+                                      style={{ pointerEvents: "none" }}
+                                    >
+                                      <GripVertical className="h-4 w-4 text-slate-500" />
+                                    </span>
+                                  )}
                                   <span className="text-sm leading-tight whitespace-nowrap truncate max-w-[220px]">
                                     {column.label}
                                   </span>
@@ -861,15 +1117,19 @@ export const PerformanceBoard = () => {
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
-                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className={`flex items-center gap-1 transition-opacity ${
+                            isDragging ? "opacity-30" : "opacity-0 group-hover:opacity-100"
+                          }`}>
                             <Button
                               size="icon"
                               variant="ghost"
                               className="h-6 w-6 hover:bg-white/80 hover:text-slate-700"
                               onClick={(e) => {
                                 e.stopPropagation();
+                                e.preventDefault();
                                 handleToggleFreeze(column.id);
                               }}
+                              onMouseDown={(e) => e.stopPropagation()}
                               title={frozenColumns.includes(column.id) ? "Unfreeze column" : "Freeze column"}
                             >
                               <Pin className={`h-3 w-3 ${frozenColumns.includes(column.id) ? "text-blue-600 fill-blue-600" : categoryColors ? categoryColors.text : "text-slate-600"}`} />
@@ -880,8 +1140,10 @@ export const PerformanceBoard = () => {
                               className="h-6 w-6 hover:bg-white/80 hover:text-slate-700"
                               onClick={(e) => {
                                 e.stopPropagation();
+                                e.preventDefault();
                                 handleRemoveColumn(column.id);
                               }}
+                              onMouseDown={(e) => e.stopPropagation()}
                             >
                               <X className={`h-3 w-3 ${categoryColors ? categoryColors.text : "text-slate-600"}`} />
                             </Button>
@@ -920,11 +1182,14 @@ export const PerformanceBoard = () => {
                         const isFrozen = frozenColumns.includes(column.id);
                         const frozenIndex = frozenColumns.indexOf(column.id);
                         const leftOffset = isFrozen ? frozenIndex * 250 : 0;
+                        const dimensionIds = ["campaignName", "adSetName", "adName"];
+                        const isDimension = dimensionIds.includes(column.id);
+                        const isColumnBlocked = dragOverColumnId === column.id && isDropBlocked;
                         
                         return (
                           <td
                             key={column.id}
-                            className={`py-2 pr-3 pl-6 text-sm border-r border-slate-100 last:border-r-0 overflow-hidden ${
+                            className={`py-2 pr-3 pl-6 text-sm border-r border-slate-100 last:border-r-0 overflow-hidden relative ${
                               categoryColors && !isFrozen ? categoryColors.cellBg : ""
                             } ${isFrozen ? "sticky z-20" : ""}`}
                             style={{
@@ -932,7 +1197,9 @@ export const PerformanceBoard = () => {
                               width: "250px",
                               maxWidth: (isZipCode || isService) ? "250px" : undefined,
                               left: isFrozen ? `${leftOffset}px` : undefined,
-                              backgroundColor: isFrozen 
+                              backgroundColor: isColumnBlocked
+                                ? "rgba(220, 38, 38, 0.1)"
+                                : isFrozen 
                                 ? (categoryColors ? categoryColors.bgColor : "#ffffff") 
                                 : undefined,
                               boxShadow: isFrozen ? "2px 0 4px rgba(0, 0, 0, 0.05)" : undefined,
@@ -1033,20 +1300,26 @@ export const PerformanceBoard = () => {
                       const isFrozen = frozenColumns.includes(column.id);
                       const frozenIndex = frozenColumns.indexOf(column.id);
                       const leftOffset = isFrozen ? frozenIndex * 250 : 0;
+                      const dimensionIds = ["campaignName", "adSetName", "adName"];
+                      const isColumnBlocked = dragOverColumnId === column.id && isDropBlocked;
                       
                       return (
                         <td
                           key={column.id}
-                          className={`py-2 pr-3 pl-6 text-sm text-slate-700 border-r border-slate-200 last:border-r-0 whitespace-nowrap ${
+                          className={`py-2 pr-3 pl-6 text-sm text-slate-700 border-r border-slate-200 last:border-r-0 whitespace-nowrap relative ${
                             categoryColors && !isFrozen ? categoryColors.cellBg : ""
-                          } ${isFrozen ? "sticky z-40" : ""}`}
+                          } ${isFrozen ? "sticky z-40" : ""} ${
+                            isColumnBlocked ? "bg-red-50" : ""
+                          }`}
                           style={{
                             minWidth: "250px",
                             width: "250px",
                             maxWidth: (isZipCode || isService) ? "250px" : undefined,
                             bottom: 0,
                             left: isFrozen ? `${leftOffset}px` : undefined,
-                            backgroundColor: categoryColors ? categoryColors.bgColor : "#f8fafc",
+                            backgroundColor: isColumnBlocked
+                              ? "rgba(220, 38, 38, 0.1)"
+                              : (categoryColors ? categoryColors.bgColor : "#f8fafc"),
                             boxShadow: isFrozen ? "2px 0 4px rgba(0, 0, 0, 0.05)" : undefined,
                             position: "sticky",
                           }}

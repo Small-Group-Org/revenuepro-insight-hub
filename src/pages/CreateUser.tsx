@@ -454,7 +454,7 @@ const CreateUser = () => {
                         placeholder="Search by name or email..."
                         value={searchQuery}
                         onChange={(e) => handleSearchChange(e.target.value)}
-                        className="pl-10 pr-10"
+                        className="pl-10 w-60"
                       />
                       {searchQuery && (
                         <Button
