@@ -38,12 +38,12 @@ export default function AppLayout() {
           onLogout={handleLogout}
         />
         <div className="flex-1 flex flex-col overflow-hidden">
-          <main className="flex-1 overflow-auto">
-            <ErrorBoundary>
-              <TopBar />
+          <ErrorBoundary>
+            <TopBar />
+            <main className="flex-1 overflow-auto relative">
               <Outlet />
-            </ErrorBoundary>
-          </main>
+            </main>
+          </ErrorBoundary>
         </div>
       </div>
   );

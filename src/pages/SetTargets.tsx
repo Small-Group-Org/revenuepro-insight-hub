@@ -49,7 +49,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { FullScreenLoader } from "@/components/ui/full-screen-loader";
+import { ContentLoader } from "@/components/ui/content-loader";
 import { useCombinedLoading } from "@/hooks/useCombinedLoading";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { Card, CardContent } from "@/components/ui/card";
@@ -754,8 +754,8 @@ export const SetTargets = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Full Screen Loader */}
-      <FullScreenLoader isLoading={isLoading} message="Loading targets..." />
+      {/* Content Loader - Only covers main content area */}
+      <ContentLoader isLoading={isLoading} message="Loading targets..." />
     </div>
   );
 };
