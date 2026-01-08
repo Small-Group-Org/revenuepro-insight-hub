@@ -502,7 +502,7 @@ export const AVAILABLE_COLUMNS: ColumnConfig[] = [
     sortable: true,
     aggregate: "avg",
     aggregateFormula: "((numberOfEstimateSets + numberOfVirtualQuotes + numberOfProposalPresented + numberOfJobsBooked) / (numberOfEstimateSets + numberOfVirtualQuotes + numberOfProposalPresented + numberOfJobsBooked + numberOfUnqualifiedLeads + numberOfEstimateCanceled + numberOfJobLost)) * 100",
-    description: "Success rate showing the percentage of qualified outcomes (Estimate Set, Virtual Quote, Proposal Presented, Job Booked) versus unqualified outcomes (Unqualified, Estimate Canceled, Job Lost)",
+    description: "Success rate showing the percentage of qualified outcomes (Estimate Set, Virtual Quote, Proposal Presented, Job Booked, Estimate Canceled, Job Lost) versus unqualified outcomes (Unqualified)",
     formula:
       "(Estimate Set + Virtual Quote + Proposal Presented + Job Booked) / (Estimate Set + Virtual Quote + Proposal Presented + Job Booked + Unqualified + Estimate Canceled + Job Lost) × 100",
   },
