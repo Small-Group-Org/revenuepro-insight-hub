@@ -41,28 +41,28 @@ export const LeadSummaryCards = React.memo(({ statusCounts }: LeadSummaryCardsPr
       description="Leads currently being worked on by the team."
     />
     <TopCard
-      title="Net Estimate Set Leads"
+      title="Estimate Set Leads"
       icon={<Users className="h-5 w-5 opacity-50 text-green-500" />}
       metrics={[
         {
-          label: "Net Estimate Set Leads",
+          label: "Estimate Set Leads",
           value: statusCounts?.estimateSet || 0,
           format: 'number'
         }
       ]}
-      description="Leads with net estimate set statuses (estimate set, virtual quote,  proposal presented, job booked)"
+      description="(Estimate Set, Virtual Quote, Proposal Presented, Job Booked, Estimate Canceled, Job Lost and Estimate Rescheduled)"
     />
     <TopCard
-      title="Net Unqualified Leads"
+      title="Unqualified Leads"
       icon={<Users className="h-5 w-5 opacity-50 text-red-500" />}
       metrics={[
         {
-          label: "Net Unqualified Leads",
+          label: "Unqualified Leads",
           value: statusCounts?.unqualified || 0,
           format: 'number'
         }
       ]}
-      description="Leads with net unqualified statuses (unqualified, estimate canceled, job lost)"
+      description="(Unqualified)"
     />
   </div>
 ));

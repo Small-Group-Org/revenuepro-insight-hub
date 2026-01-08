@@ -47,6 +47,8 @@ export const getStatusInfo = (status: string) => {
       return { color: 'bg-green-100 text-green-800 border-green-200', label: 'Job Booked' };
     case 'job_lost':
       return { color: 'bg-red-100 text-red-800 border-red-200', label: 'Job Lost' };
+    case 'estimate_rescheduled':
+      return { color: 'bg-indigo-100 text-indigo-800 border-indigo-200', label: 'Estimate Rescheduled' };
     case 'unqualified':
       return { color: 'bg-red-100 text-red-800 border-red-200', label: 'Unqualified' };
     default:
