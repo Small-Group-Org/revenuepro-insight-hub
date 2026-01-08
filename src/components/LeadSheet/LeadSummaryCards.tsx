@@ -50,7 +50,7 @@ export const LeadSummaryCards = React.memo(({ statusCounts }: LeadSummaryCardsPr
           format: 'number'
         }
       ]}
-      description="(Estimate Set, Virtual Quote, Proposal Presented, Job Booked, Estimate Canceled, Job Lost)"
+      description="(Estimate Set, Virtual Quote, Proposal Presented, Job Booked, Estimate Canceled, Job Lost and Estimate Rescheduled)"
     />
     <TopCard
       title="Unqualified Leads"

@@ -8,6 +8,7 @@ export type LeadStatus =
   | 'proposal_presented'
   | 'job_booked'
   | 'job_lost'
+  | 'estimate_rescheduled'
   | 'unqualified';
 
 // Lead update data interface
