@@ -412,7 +412,7 @@ export const LeadAnalytics = () => {
     ? (netEstimateSetCount / netEstimateSetTotal) * 100
     : 0;
 
-  // Net Unqualified calculation (for Unqualified card only)
+  // Unqualified Leads calculation (for Unqualified card only)
   const netUnqualifiedCount = analyticsData?.overview.unqualifiedCount || 0;
   const netUnqualifiedTotal = (analyticsData?.overview.estimateSetCount || 0) + netUnqualifiedCount;
   const netUnqualifiedRate = netUnqualifiedTotal > 0
@@ -662,18 +662,18 @@ export const LeadAnalytics = () => {
 
                 <TopCard
                   variant="large"
-                  title="Net Estimates Set"
+                  title="Estimate Set Leads"
                   icon={
                     <CheckCircle className="h-5 w-5 opacity-50 text-green-600" />
                   }
                   metrics={[
                     {
-                      label: "Net Estimates Set",
+                      label: "Estimate Set Leads",
                       value: netEstimateSetCount,
                       format: "number" as const,
                     },
                     {
-                      label: "Net Estimate Set Rate",
+                      label: "Estimate Set Rate",
                       value: netEstimateSetRate,
                       format: "percent" as const,
                     },
@@ -683,16 +683,16 @@ export const LeadAnalytics = () => {
 
                 <TopCard
                   variant="large"
-                  title="Net Unqualified"
+                  title="Unqualified Leads"
                   icon={<XCircle className="h-5 w-5 opacity-50 text-red-600" />}
                   metrics={[
                     {
-                      label: "Net Unqualified",
+                      label: "Unqualified Leads",
                       value: netUnqualifiedCount,
                       format: "number" as const,
                     },
                     {
-                      label: "Net Unqualified Rate",
+                      label: "Unqualified Leads Rate",
                       value: netUnqualifiedRate,
                       format: "percent" as const,
                     },
@@ -702,18 +702,18 @@ export const LeadAnalytics = () => {
 
                 <TopCard
                   variant="large"
-                  title="Net Estimate Set Rate"
+                  title="Estimate Set Rate"
                   icon={
                     <TrendingUp className="h-5 w-5 opacity-50 text-blue-600" />
                   }
                   metrics={[
                     {
-                      label: "Net Estimate Set Rate",
+                      label: "Estimate Set Rate",
                       value: estimateSetRate,
                       format: "percent" as const,
                     },
                   ]}
-                  description="Qualified Outcomes / (Qualified + Unqualified Outcomes)"
+                  description="Estimate Set / (Estimate Set + Unqualified)"
                 />
               </div>
 
