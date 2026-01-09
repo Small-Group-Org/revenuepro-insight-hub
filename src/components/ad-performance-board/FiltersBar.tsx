@@ -137,7 +137,7 @@ export const FiltersBar = ({
   };
 
   return (
-    <Card className="mb-6 border-0 shadow-sm">
+    <Card className="mb-6 border border-slate-200 shadow-md shadow-slate-100/50">
       <div className="px-4 py-3 flex flex-wrap items-center gap-4 border-b">
         <div className="flex items-center gap-2 text-slate-700 font-semibold">
           <CalendarRange className="h-4 w-4 text-primary" />
@@ -194,11 +194,10 @@ export const FiltersBar = ({
         <div className="flex-shrink-0 w-[240px] max-w-[240px] flex-1">
           <Popover open={zipCodePopoverOpen} onOpenChange={setZipCodePopoverOpen}>
             <PopoverTrigger asChild>
-              <Button
-                variant="outline"
+              <div
                 role="combobox"
                 className={cn(
-                  "w-full h-10 justify-between p-0 border border-slate-300 bg-slate-50/50 hover:!bg-slate-50/80 hover:!text-slate-700",
+                  "w-full h-10 justify-between p-0 border border-slate-300 bg-slate-50/50 hover:!bg-slate-50/80 hover:!text-slate-700 cursor-pointer flex items-center rounded-md",
                   !filters.zipCode && "text-muted-foreground"
                 )}
                 style={{ 
@@ -270,7 +269,7 @@ export const FiltersBar = ({
                   })()}
                   <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
                 </div>
-              </Button>
+              </div>
             </PopoverTrigger>
             <PopoverContent className="w-250px] p-0" align="start">
               <div className="flex items-center justify-between border-b px-3 py-2">
@@ -318,11 +317,10 @@ export const FiltersBar = ({
         <div className="flex-shrink-0 w-[265px] max-w-[265px] flex-1">
           <Popover open={serviceTypePopoverOpen} onOpenChange={setServiceTypePopoverOpen}>
             <PopoverTrigger asChild>
-              <Button
-                variant="outline"
+              <div
                 role="combobox"
                 className={cn(
-                  "w-full h-10 justify-between p-0 border border-slate-300 bg-slate-50/50 hover:!bg-slate-50/80 hover:!text-slate-700",
+                  "w-full h-10 justify-between p-0 border border-slate-300 bg-slate-50/50 hover:!bg-slate-50/80 hover:!text-slate-700 cursor-pointer flex items-center rounded-md",
                   !filters.serviceType && "text-muted-foreground"
                 )}
                 style={{ 
@@ -394,7 +392,7 @@ export const FiltersBar = ({
                   })()}
                   <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
                 </div>
-              </Button>
+              </div>
             </PopoverTrigger>
             <PopoverContent className="w-[300px] p-0" align="start">
               <div className="flex items-center justify-between border-b px-3 py-2">

@@ -34,6 +34,7 @@ import { useUserContext } from "@/utils/UserContext";
 import { useUserStore } from "@/stores/userStore";
 import { useToast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
+import { AdGridView } from "@/components/ads/AdGridView";
 
 const STORAGE_KEY = "ad-performance-board:v1";
 
@@ -460,7 +461,6 @@ export const PerformanceBoard = () => {
   });
 
   // Separate query for ad grid view - uses dedicated API for grid data
-  // DISABLED: Currently not used in render (commented out), so we disable to prevent unnecessary API calls
   const { data: adGridData } = useQuery<AdGridAd[]>({
     queryKey: [
       "ad-grid-data",
@@ -479,7 +479,7 @@ export const PerformanceBoard = () => {
 
       return response.data || [];
     },
-    enabled: false, // Disabled since it's not currently used in the UI
+    enabled: Boolean(clientId && appliedFilters.startDate && appliedFilters.endDate),
     staleTime: 60 * 1000,
     refetchOnWindowFocus: false,
   });
@@ -876,9 +876,35 @@ export const PerformanceBoard = () => {
         availableServiceTypes={availableServiceTypes}
       />
 
-      <Separator className="mb-4" />
+      <div className="mb-6 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
 
-      <Card className="p-3 border border-slate-200/70 overflow-hidden relative">
+      <Card className="p-3 border border-slate-200 shadow-md shadow-slate-100/50 overflow-hidden relative">
+
+        {isFetching && (
+          <div className="flex items-center gap-2 text-sm text-slate-600 pb-3">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Loading performance data…
+          </div>
+        )}
+
+        {!isFetching && sortedData.length === 0 && (
+          <div className="text-sm text-slate-500 px-2 py-4">
+            No data returned for this range. Try expanding the date window or
+            relaxing filters.
+          </div>
+        )}
+
+        {adGridData && adGridData.length > 0 && (
+          <div className="mb-6 p-4 bg-slate-50/30 shadow-sm">
+            <AdGridView
+              ads={adGridData}
+              startDate={appliedFilters.startDate}
+              endDate={appliedFilters.endDate}
+              clientId={clientId}
+            />
+          </div>
+        )}
+
         <div className="flex items-center justify-between mb-3 gap-3">
           <div className="flex items-end gap-4">
             <div className="flex flex-col gap-1">
@@ -928,31 +954,6 @@ export const PerformanceBoard = () => {
             </Button>
           </div>
         </div>
-
-        {isFetching && (
-          <div className="flex items-center gap-2 text-sm text-slate-600 pb-3">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Loading performance data…
-          </div>
-        )}
-
-        {!isFetching && sortedData.length === 0 && (
-          <div className="text-sm text-slate-500 px-2 py-4">
-            No data returned for this range. Try expanding the date window or
-            relaxing filters.
-          </div>
-        )}
-
-        {adGridData && adGridData.length > 0 && (
-          <div className="mb-4">
-            <AdGridView
-              ads={adGridData}
-              startDate={appliedFilters.startDate}
-              endDate={appliedFilters.endDate}
-              clientId={clientId}
-            />
-          </div>
-        )}
 
         <div
           ref={scrollContainerRef}
