@@ -549,7 +549,6 @@ export function AdDetailModal({ open, onClose, ad, leadsConversionRate, startDat
                 <CollapsibleTrigger className="w-full">
                   <div className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
                     <div className="flex items-center gap-2">
-                      h
                       <span className="text-sm font-medium text-slate-700">Meta</span>
                     </div>
                     {isDimensionsOpen ? <ChevronUp className="h-4 w-4 text-slate-500" /> : <ChevronDown className="h-4 w-4 text-slate-500" />}
