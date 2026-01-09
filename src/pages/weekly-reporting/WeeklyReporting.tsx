@@ -282,7 +282,7 @@ React.useEffect(() => {
         const dataToUpsert = {
           startDate: startDate,
           endDate: endDate,
-          ...preservedFields,
+          // ...preservedFields,
           metaBudgetSpent: campaignSpend,
         };
 

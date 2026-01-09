@@ -64,7 +64,9 @@ export default function Profile() {
   // Allowed client IDs for Meta OAuth connection
   const ALLOWED_META_CLIENT_IDS = [
     '683acb7561f26ee98f5d2d51',
-    '68ac6ebce46631727500499b'
+    '68ac6ebce46631727500499b',
+    '690e4e0dd2df03bdd97a2915',
+    '68ae04ddadbebc3a37f34e39'
   ];
 
   // Check if current user can connect Meta
