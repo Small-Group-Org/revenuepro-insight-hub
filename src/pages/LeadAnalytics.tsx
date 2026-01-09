@@ -713,7 +713,7 @@ export const LeadAnalytics = () => {
                       format: "percent" as const,
                     },
                   ]}
-                  description="Estimate Set / (Estimate Set + Unqualified)"
+                  description="Estimate Set Statuses / (Estimate Set Statuses + Unqualified)"
                 />
               </div>
 
