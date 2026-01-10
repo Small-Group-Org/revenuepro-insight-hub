@@ -879,7 +879,7 @@ export const PerformanceBoard = () => {
 
         <Separator className="mb-4" />
 
-        // Ad media cards - Temporarily DISABLED
+        {/* Ad media cards - Temporarily DISABLED */}
         {/* {adGridData && adGridData.length > 0 && (
           <div className="mb-6 p-4 bg-slate-50/30 shadow-sm">
             <AdGridView
