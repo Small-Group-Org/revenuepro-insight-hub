@@ -73,7 +73,9 @@ export const PerformanceBoard = () => {
   // Load saved preferences synchronously during initialization
   const savedPrefs = loadSavedPreferences();
   const defaultFilters = savedPrefs?.filters || getDefaultDateRange();
-  const defaultGroupBy = savedPrefs?.groupBy || "campaign";
+  const defaultGroupBy = savedPrefs?.groupBy || "ad";
+  const defaultFrozenColumns = savedPrefs?.frozenColumns || ["campaignName", "adSetName", "adName"];
+  const defaultSortState = savedPrefs?.sortState || [{ columnId: "costPerEstimateSet", direction: "asc" as const }];
   
   // Initialize state from localStorage to prevent double API calls
   const [filters, setFilters] = useState<PerformanceBoardFilters>(defaultFilters);
@@ -85,7 +87,7 @@ export const PerformanceBoard = () => {
   const [columnOrder, setColumnOrder] = useState<string[]>(
     savedPrefs?.columnOrder || DEFAULT_COLUMN_ORDER
   );
-  const [sortState, setSortState] = useState<SortRule[]>(savedPrefs?.sortState || []);
+  const [sortState, setSortState] = useState<SortRule[]>(defaultSortState);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [activeColumn, setActiveColumn] = useState<ColumnConfig | null>(null);
@@ -94,7 +96,7 @@ export const PerformanceBoard = () => {
   const [dropPosition, setDropPosition] = useState<"left" | "right" | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isDropBlocked, setIsDropBlocked] = useState(false);
-  const [frozenColumns, setFrozenColumns] = useState<string[]>(savedPrefs?.frozenColumns || []);
+  const [frozenColumns, setFrozenColumns] = useState<string[]>(defaultFrozenColumns);
   const [searchInputValue, setSearchInputValue] = useState<string>("");
   const [availableZipCodes, setAvailableZipCodes] = useState<string[]>([]);
   const [availableServiceTypes, setAvailableServiceTypes] = useState<string[]>([]);
