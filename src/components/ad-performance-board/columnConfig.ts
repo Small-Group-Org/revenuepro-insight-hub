@@ -367,6 +367,7 @@ export const AVAILABLE_COLUMNS: ColumnConfig[] = [
     type: "number",
     sortable: true,
     aggregate: "sum",
+    isDefault: true,
     description: "Total number of leads that reached the Estimate Set stage",
     formula: "COUNT(leads WHERE status = 'estimate_set')",
   },
