@@ -49,6 +49,7 @@ export const AddColumnSheet = ({
       "Delivery",
       "Performance",
       "Engagement",
+      "Engagement Rates",
       "Video",
       "Conversions",
       "Cost",
@@ -76,7 +77,22 @@ export const AddColumnSheet = ({
       return acc;
     }, {});
 
-    return grouped;
+    // Return grouped object with explicit category order
+    const categoryOrder = activeTab === "meta" ? metaCategories : revenueProCategories;
+    const orderedGroups: Record<string, ColumnConfig[]> = {};
+    categoryOrder.forEach(category => {
+      if (grouped[category]) {
+        orderedGroups[category] = grouped[category];
+      }
+    });
+    // Add any remaining categories not in the predefined order
+    Object.keys(grouped).forEach(category => {
+      if (!orderedGroups[category]) {
+        orderedGroups[category] = grouped[category];
+      }
+    });
+
+    return orderedGroups;
   }, [query, availableColumns, activeTab]);
 
   const toggleSelection = (id: string) => {

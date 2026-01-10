@@ -108,6 +108,9 @@ export interface PerformanceRow {
   costOfMarketingPercent?: number;
   estimateSetRate?: number;
   revenue?: number;
+  thumbstop_rate?: number;
+  conversion_rate?: number;
+  see_more_rate?: number;
   [key: string]: string | number | undefined;
 }
 
