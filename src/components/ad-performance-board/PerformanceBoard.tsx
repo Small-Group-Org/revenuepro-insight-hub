@@ -877,7 +877,8 @@ export const PerformanceBoard = () => {
 
         <Separator className="mb-4" />
 
-        {adGridData && adGridData.length > 0 && (
+        // Ad media cards - Temporarily DISABLED
+        {/* {adGridData && adGridData.length > 0 && (
           <div className="mb-6 p-4 bg-slate-50/30 shadow-sm">
             <AdGridView
               ads={adGridData}
@@ -886,7 +887,7 @@ export const PerformanceBoard = () => {
               clientId={clientId}
             />
           </div>
-        )}
+        )} */}
 
         <div className="flex items-center justify-between mb-3 gap-3">
           <div className="flex items-end gap-4">
