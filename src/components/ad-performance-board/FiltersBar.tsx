@@ -137,7 +137,7 @@ export const FiltersBar = ({
   };
 
   return (
-    <Card className="mb-6 border-0 shadow-sm">
+    <Card className="mb-6 border border-slate-200 shadow-lg shadow-slate-300/60 bg-white">
       <div className="px-4 py-3 flex flex-wrap items-center gap-4 border-b">
         <div className="flex items-center gap-2 text-slate-700 font-semibold">
           <CalendarRange className="h-4 w-4 text-primary" />

@@ -877,7 +877,7 @@ export const PerformanceBoard = () => {
 
         <Separator className="mb-4" />
 
-        <Card className="p-3 border border-slate-200/70 overflow-hidden relative">
+        <Card className="p-3 border border-slate-200 shadow-lg shadow-slate-300/60 bg-white overflow-hidden relative">
         <div className="flex items-center justify-between mb-3 gap-3">
           <div className="flex items-end gap-4">
             <div className="flex flex-col gap-1">
