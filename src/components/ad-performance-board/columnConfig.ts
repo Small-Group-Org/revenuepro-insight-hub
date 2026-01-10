@@ -700,7 +700,16 @@ export const getAggregateValue = (
   return formatCellValue(column, aggregateValue);
 };
 
-export const DEFAULT_COLUMN_ORDER = AVAILABLE_COLUMNS.filter(
-  (c) => c.isDefault
-).map((c) => c.id);
+// Default column order matching the expected display order
+export const DEFAULT_COLUMN_ORDER = [
+  "campaignName",
+  "adSetName",
+  "adName",
+  "costPerEstimateSet",
+  "revenue",
+  "costOfMarketingPercent",
+  "numberOfEstimateSets",
+  "estimateSetRate",
+  "service",
+];
 
