@@ -31,6 +31,7 @@ import { LeadSummaryCards } from "@/components/LeadSheet/LeadSummaryCards";
 import { LeadFiltersAndControls } from "@/components/LeadSheet/LeadFiltersAndControls";
 import { LeadPagination } from "@/components/LeadSheet/LeadPagination";
 import { LeadTiles } from "@/components/LeadSheet/LeadTiles";
+import { PageHeader } from "@/components/common-ui/PageHeader";
 
 // Import refactored utilities and constants
 import {
@@ -726,21 +727,11 @@ export const LeadSheet = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200">
       <div className="relative z-10 pt-6 pb-16 px-4">
         <div className="max-w-7xl mx-auto space-y-8">
-          {/* Header */}
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-4 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-r from-primary to-primary/60 rounded-xl flex items-center justify-center shadow-lg">
-                <Users className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <h1 className="leading-[130%] text-3xl font-bold text-gradient-primary">
-                Lead Center
-              </h1>
-            </div>
-            <p className="text-muted-foreground max-w-2xl mx-auto text-base mb-6 mt-2">
-              Track and manage your leads with detailed information and lead
-              status
-            </p>
-          </div>
+          <PageHeader
+            icon={Users}
+            title="Lead Center"
+            description="Track and manage your leads with detailed information and lead status"
+          />
         </div>
 
         {/* Controls */}

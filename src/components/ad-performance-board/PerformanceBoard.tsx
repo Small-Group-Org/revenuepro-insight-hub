@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, X, GripVertical, ArrowUp, ArrowDown, Pin, Settings } from "lucide-react";
+import { Loader2, X, GripVertical, ArrowUp, ArrowDown, Pin, Settings, LayoutPanelTop } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { FiltersBar } from "./FiltersBar";
 import {
@@ -34,6 +34,7 @@ import { useUserContext } from "@/utils/UserContext";
 import { useUserStore } from "@/stores/userStore";
 import { useToast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
+import { PageHeader } from "@/components/common-ui/PageHeader";
 
 const STORAGE_KEY = "ad-performance-board:v1";
 
@@ -850,35 +851,33 @@ export const PerformanceBoard = () => {
   };
 
   return (
-    <div className="px-6 pb-10">
-      <div className="mb-4">
-        <h1 className="text-2xl font-bold text-slate-900">
-          Ad Performance Board
-        </h1>
-        <p className="text-sm text-slate-500">
-          Analyze and compare Meta ad performance with customizable columns, filters, and sorting.
-        </p>
-      </div>
+    <div className="px-6 pt-6 pb-10">
+      <div className="max-w-7xl mx-auto space-y-8">
+        <PageHeader
+          icon={LayoutPanelTop}
+          title="Ad Performance Board"
+          description="Analyze and compare Meta ad performance with customizable columns, filters, and sorting."
+        />
 
-      {!clientId && (
-        <Card className="mb-4 border border-amber-200 bg-amber-50 text-amber-800 p-4">
-          Select a client first to load the Ad Performance Board.
-        </Card>
-      )}
+        {!clientId && (
+          <Card className="mb-4 border border-amber-200 bg-amber-50 text-amber-800 p-4">
+            Select a client first to load the Ad Performance Board.
+          </Card>
+        )}
 
-      <FiltersBar
-        filters={filters}
-        onFiltersChange={setFilters}
-        onApply={handleApplyFilters}
-        onQuickApply={handleApplyFilters}
-        onReset={handleResetFilters}
-        availableZipCodes={availableZipCodes}
-        availableServiceTypes={availableServiceTypes}
-      />
+        <FiltersBar
+          filters={filters}
+          onFiltersChange={setFilters}
+          onApply={handleApplyFilters}
+          onQuickApply={handleApplyFilters}
+          onReset={handleResetFilters}
+          availableZipCodes={availableZipCodes}
+          availableServiceTypes={availableServiceTypes}
+        />
 
-      <Separator className="mb-4" />
+        <Separator className="mb-4" />
 
-      <Card className="p-3 border border-slate-200/70 overflow-hidden relative">
+        <Card className="p-3 border border-slate-200/70 overflow-hidden relative">
         <div className="flex items-center justify-between mb-3 gap-3">
           <div className="flex items-end gap-4">
             <div className="flex flex-col gap-1">
@@ -1361,7 +1360,8 @@ export const PerformanceBoard = () => {
             </table>
           </div>
         </div>
-      </Card>
+        </Card>
+      </div>
 
       <AddColumnSheet
         open={isAddOpen}
