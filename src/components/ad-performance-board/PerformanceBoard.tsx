@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, X, GripVertical, ArrowUp, ArrowDown, Pin, Settings, LayoutPanelTop } from "lucide-react";
+import { Loader2, X, GripVertical, ArrowUp, ArrowDown, Pin, Settings, LayoutPanelTop, Undo2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { FiltersBar } from "./FiltersBar";
 import {
@@ -73,7 +73,9 @@ export const PerformanceBoard = () => {
   // Load saved preferences synchronously during initialization
   const savedPrefs = loadSavedPreferences();
   const defaultFilters = savedPrefs?.filters || getDefaultDateRange();
-  const defaultGroupBy = savedPrefs?.groupBy || "campaign";
+  const defaultGroupBy = savedPrefs?.groupBy || "ad";
+  const defaultFrozenColumns = savedPrefs?.frozenColumns || [];
+  const defaultSortState = savedPrefs?.sortState || [{ columnId: "costPerEstimateSet", direction: "asc" as const }];
   
   // Initialize state from localStorage to prevent double API calls
   const [filters, setFilters] = useState<PerformanceBoardFilters>(defaultFilters);
@@ -85,7 +87,7 @@ export const PerformanceBoard = () => {
   const [columnOrder, setColumnOrder] = useState<string[]>(
     savedPrefs?.columnOrder || DEFAULT_COLUMN_ORDER
   );
-  const [sortState, setSortState] = useState<SortRule[]>(savedPrefs?.sortState || []);
+  const [sortState, setSortState] = useState<SortRule[]>(defaultSortState);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [activeColumn, setActiveColumn] = useState<ColumnConfig | null>(null);
@@ -94,7 +96,7 @@ export const PerformanceBoard = () => {
   const [dropPosition, setDropPosition] = useState<"left" | "right" | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isDropBlocked, setIsDropBlocked] = useState(false);
-  const [frozenColumns, setFrozenColumns] = useState<string[]>(savedPrefs?.frozenColumns || []);
+  const [frozenColumns, setFrozenColumns] = useState<string[]>(defaultFrozenColumns);
   const [searchInputValue, setSearchInputValue] = useState<string>("");
   const [availableZipCodes, setAvailableZipCodes] = useState<string[]>([]);
   const [availableServiceTypes, setAvailableServiceTypes] = useState<string[]>([]);
@@ -149,51 +151,23 @@ export const PerformanceBoard = () => {
   }, [columns, columnOrder, sortState, appliedFilters, groupBy, frozenColumns]);
 
   const visibleColumns = useMemo(() => {
-    const dimensionIds = ["campaignName", "adSetName", "adName"];
-    const dimensionHierarchy = ["campaignName", "adSetName", "adName"]; // Enforced order: Campaign > Ad Set > Ad Name
-    
-    // Get dimensions in hierarchy order (always maintain Campaign > Ad Set > Ad Name)
-    const dimensionOrder = dimensionHierarchy.filter((id) => columnOrder.includes(id));
-    const otherColumns = columnOrder
-      .filter((id) => !dimensionIds.includes(id))
+    // Build columns in the exact order from columnOrder
+    const orderedColumns = columnOrder
       .map((id) => columns.find((c) => c.id === id))
       .filter((c): c is ColumnConfig => Boolean(c));
     
-    const dimensionColumns = dimensionOrder
-        .map((id) => columns.find((c) => c.id === id))
+    // Separate frozen and unfrozen columns while maintaining order
+    const frozen = orderedColumns.filter((col) => frozenColumns.includes(col.id));
+    const unfrozen = orderedColumns.filter((col) => !frozenColumns.includes(col.id));
+    
+    // Order frozen columns by their freeze order (as they were frozen)
+    const orderedFrozen = frozenColumns
+      .filter((id) => frozen.some((col) => col.id === id))
+      .map((id) => frozen.find((col) => col.id === id))
       .filter((c): c is ColumnConfig => Boolean(c));
     
-    const allColumns = [...dimensionColumns, ...otherColumns];
-    
-    // Separate frozen and unfrozen columns
-    const frozen = allColumns.filter((col) => frozenColumns.includes(col.id));
-    const unfrozen = allColumns.filter((col) => !frozenColumns.includes(col.id));
-    
-    // Order frozen columns by their freeze order (latest on the right)
-    // But maintain dimension hierarchy within frozen columns
-    const frozenDimensions = frozen.filter((col) => dimensionIds.includes(col.id));
-    const frozenMetrics = frozen.filter((col) => !dimensionIds.includes(col.id));
-    const orderedFrozenDimensions = dimensionHierarchy
-      .filter((id) => frozenDimensions.some((col) => col.id === id))
-      .map((id) => frozenDimensions.find((col) => col.id === id))
-      .filter((c): c is ColumnConfig => Boolean(c));
-    
-    const orderedFrozenMetrics = frozenColumns
-      .filter((id) => frozenMetrics.some((col) => col.id === id))
-      .map((id) => frozenMetrics.find((col) => col.id === id))
-      .filter((c): c is ColumnConfig => Boolean(c));
-    
-    const orderedFrozen = [...orderedFrozenDimensions, ...orderedFrozenMetrics];
-    
-    // Unfrozen columns: maintain dimension hierarchy
-    const unfrozenDimensions = unfrozen.filter((col) => dimensionIds.includes(col.id));
-    const unfrozenMetrics = unfrozen.filter((col) => !dimensionIds.includes(col.id));
-    const orderedUnfrozenDimensions = dimensionHierarchy
-      .filter((id) => unfrozenDimensions.some((col) => col.id === id))
-      .map((id) => unfrozenDimensions.find((col) => col.id === id))
-      .filter((c): c is ColumnConfig => Boolean(c));
-    
-    return [...orderedFrozen, ...orderedUnfrozenDimensions, ...unfrozenMetrics];
+    // Unfrozen columns maintain their exact order from columnOrder
+    return [...orderedFrozen, ...unfrozen];
   }, [columns, columnOrder, frozenColumns]);
 
   const formatZipCodeValue = (value: string | number | undefined): { display: string; full: string; remaining?: number } => {
@@ -589,6 +563,27 @@ export const PerformanceBoard = () => {
     setAppliedFilters(defaults);
   };
 
+  const handleResetAllPreferences = () => {
+    // Clear localStorage
+    localStorage.removeItem(STORAGE_KEY);
+    
+    // Reset all state to defaults
+    const defaultFilters = getDefaultDateRange();
+    setFilters(defaultFilters);
+    setAppliedFilters(defaultFilters);
+    setGroupBy("ad");
+    setColumns(AVAILABLE_COLUMNS.filter((c) => c.isDefault));
+    setColumnOrder(DEFAULT_COLUMN_ORDER);
+    setSortState([{ columnId: "costPerEstimateSet", direction: "asc" as const }]);
+    setFrozenColumns([]);
+    setSearchInputValue("");
+  };
+
+  // Check if column order matches default (to disable/enable reset button)
+  const isDefaultOrder = useMemo(() => {
+    return JSON.stringify(columnOrder) === JSON.stringify(DEFAULT_COLUMN_ORDER);
+  }, [columnOrder]);
+
   const handleRequestSort = (columnId: string) => {
     setSortState((prev) => {
       const existingIndex = prev.findIndex((r) => r.columnId === columnId);
@@ -877,6 +872,7 @@ export const PerformanceBoard = () => {
 
         <Separator className="mb-4" />
 
+        {/* Ad media cards - Temporarily DISABLED */}
         {adGridData && adGridData.length > 0 && (
           <div className="mb-6 p-4 bg-slate-50/30 shadow-sm">
             <AdGridView
@@ -935,6 +931,24 @@ export const PerformanceBoard = () => {
               <Settings className="h-4 w-4" />
               Configure columns
             </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 text-slate-500 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                    onClick={handleResetAllPreferences}
+                    disabled={isDefaultOrder}
+                  >
+                    <Undo2 className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Reset columns</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </div>
 

@@ -17,6 +17,7 @@ export const AVAILABLE_COLUMNS: ColumnConfig[] = [
     apiField: "adSetName",
     type: "text",
     sortable: true,
+    isDefault: true,
   },
   {
     id: "adName",
@@ -25,6 +26,7 @@ export const AVAILABLE_COLUMNS: ColumnConfig[] = [
     apiField: "adName",
     type: "text",
     sortable: true,
+    isDefault: true,
   },
   {
     id: "spend",
@@ -35,7 +37,6 @@ export const AVAILABLE_COLUMNS: ColumnConfig[] = [
     decimals: 2,
     sortable: true,
     aggregate: "sum",
-    isDefault: true,
     description: "Total ad spend from Facebook Analytics",
   },
   {
@@ -46,7 +47,6 @@ export const AVAILABLE_COLUMNS: ColumnConfig[] = [
     type: "number",
     sortable: true,
     aggregate: "sum",
-    isDefault: true,
     description: "Total number of times ads were shown (impressions)",
   },
   {
@@ -79,7 +79,6 @@ export const AVAILABLE_COLUMNS: ColumnConfig[] = [
     type: "number",
     sortable: true,
     aggregate: "sum",
-    isDefault: true,
     description: "Total number of clicks on ads",
   },
   {
@@ -102,7 +101,6 @@ export const AVAILABLE_COLUMNS: ColumnConfig[] = [
     sortable: true,
     aggregate: "avg",
     aggregateFormula: "(fb_clicks / fb_impressions) * 100",
-    isDefault: true,
     description: "Average click-through rate across weeks",
   },
   {
@@ -335,7 +333,6 @@ export const AVAILABLE_COLUMNS: ColumnConfig[] = [
     type: "number",
     sortable: true,
     aggregate: "sum",
-    isDefault: true,
     description: "Total leads tracked by Facebook",
   },
   {
@@ -348,7 +345,6 @@ export const AVAILABLE_COLUMNS: ColumnConfig[] = [
     sortable: true,
     aggregate: "avg",
     aggregateFormula: "fb_spend / fb_total_leads",
-    isDefault: true,
     description: "Average cost per lead reported by Facebook",
     formula: "FB Spend / FB Leads",
   },
@@ -371,6 +367,7 @@ export const AVAILABLE_COLUMNS: ColumnConfig[] = [
     type: "number",
     sortable: true,
     aggregate: "sum",
+    isDefault: true,
     description: "Total number of leads that reached the Estimate Set stage",
     formula: "COUNT(leads WHERE status = 'estimate_set')",
   },
@@ -463,6 +460,7 @@ export const AVAILABLE_COLUMNS: ColumnConfig[] = [
     sortable: true,
     aggregate: "avg",
     aggregateFormula: "fb_spend / numberOfEstimateSets",
+    isDefault: true,
     description: "Average marketing cost to generate each Estimate Set",
     formula: "FB Spend / Number Of Estimate Sets",
   },
@@ -489,6 +487,7 @@ export const AVAILABLE_COLUMNS: ColumnConfig[] = [
     sortable: true,
     aggregate: "avg",
     aggregateFormula: "(fb_spend / revenue) * 100",
+    isDefault: true,
     description: "Marketing cost expressed as a percentage of total revenue",
     formula: "(FB Spend / Revenue) × 100",
   },
@@ -502,6 +501,7 @@ export const AVAILABLE_COLUMNS: ColumnConfig[] = [
     sortable: true,
     aggregate: "avg",
     aggregateFormula: "((numberOfEstimateSets + numberOfVirtualQuotes + numberOfProposalPresented + numberOfJobsBooked) / (numberOfEstimateSets + numberOfVirtualQuotes + numberOfProposalPresented + numberOfJobsBooked + numberOfUnqualifiedLeads + numberOfEstimateCanceled + numberOfJobLost)) * 100",
+    isDefault: true,
     description: "Success rate showing the percentage of qualified outcomes (Estimate Set, Virtual Quote, Proposal Presented, Job Booked, Estimate Canceled, Job Lost and Estimate Rescheduled) versus unqualified outcomes (Unqualified)",
     formula:
       "(Estimate Set + Virtual Quote + Proposal Presented + Job Booked) / (Estimate Set + Virtual Quote + Proposal Presented + Job Booked + Unqualified + Estimate Canceled + Job Lost) × 100",
@@ -515,6 +515,7 @@ export const AVAILABLE_COLUMNS: ColumnConfig[] = [
     decimals: 2,
     sortable: true,
     aggregate: "sum",
+    isDefault: true,
     description: "Total job booked amount from leads",
     formula: "SUM(Job Booked Amount) across all booked jobs",
   },
@@ -564,6 +565,7 @@ export const AVAILABLE_COLUMNS: ColumnConfig[] = [
     apiField: "service",
     type: "text",
     sortable: true,
+    isDefault: true,
   },
   {
     id: "zipCode",
@@ -698,7 +700,16 @@ export const getAggregateValue = (
   return formatCellValue(column, aggregateValue);
 };
 
-export const DEFAULT_COLUMN_ORDER = AVAILABLE_COLUMNS.filter(
-  (c) => c.isDefault
-).map((c) => c.id);
+// Default column order matching the expected display order
+export const DEFAULT_COLUMN_ORDER = [
+  "campaignName",
+  "adSetName",
+  "adName",
+  "costPerEstimateSet",
+  "revenue",
+  "costOfMarketingPercent",
+  "numberOfEstimateSets",
+  "estimateSetRate",
+  "service",
+];
 
