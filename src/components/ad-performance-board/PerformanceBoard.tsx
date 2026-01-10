@@ -35,6 +35,7 @@ import { useUserStore } from "@/stores/userStore";
 import { useToast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/common-ui/PageHeader";
+import { AdGridView } from "@/components/ads/AdGridView";
 
 const STORAGE_KEY = "ad-performance-board:v1";
 
@@ -461,7 +462,6 @@ export const PerformanceBoard = () => {
   });
 
   // Separate query for ad grid view - uses dedicated API for grid data
-  // DISABLED: Currently not used in render (commented out), so we disable to prevent unnecessary API calls
   const { data: adGridData } = useQuery<AdGridAd[]>({
     queryKey: [
       "ad-grid-data",
@@ -480,7 +480,7 @@ export const PerformanceBoard = () => {
 
       return response.data || [];
     },
-    enabled: false, // Disabled since it's not currently used in the UI
+    enabled: Boolean(clientId && appliedFilters.startDate && appliedFilters.endDate),
     staleTime: 60 * 1000,
     refetchOnWindowFocus: false,
   });
@@ -877,7 +877,17 @@ export const PerformanceBoard = () => {
 
         <Separator className="mb-4" />
 
-        <Card className="p-3 border border-slate-200 shadow-lg shadow-slate-300/60 bg-white overflow-hidden relative">
+        {adGridData && adGridData.length > 0 && (
+          <div className="mb-6 p-4 bg-slate-50/30 shadow-sm">
+            <AdGridView
+              ads={adGridData}
+              startDate={appliedFilters.startDate}
+              endDate={appliedFilters.endDate}
+              clientId={clientId}
+            />
+          </div>
+        )}
+
         <div className="flex items-center justify-between mb-3 gap-3">
           <div className="flex items-end gap-4">
             <div className="flex flex-col gap-1">
@@ -928,31 +938,6 @@ export const PerformanceBoard = () => {
           </div>
         </div>
 
-        {isFetching && (
-          <div className="flex items-center gap-2 text-sm text-slate-600 pb-3">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Loading performance data…
-          </div>
-        )}
-
-        {!isFetching && sortedData.length === 0 && (
-          <div className="text-sm text-slate-500 px-2 py-4">
-            No data returned for this range. Try expanding the date window or
-            relaxing filters.
-          </div>
-        )}
-
-        {/* {adGridData && adGridData.length > 0 && (
-          <div className="mb-4">
-            <AdGridView
-              ads={adGridData}
-              startDate={appliedFilters.startDate}
-              endDate={appliedFilters.endDate}
-              clientId={clientId}
-            />
-          </div>
-        )} */}
-
         <div
           ref={scrollContainerRef}
           className="w-full overflow-x-auto overflow-y-auto relative"
@@ -999,7 +984,7 @@ export const PerformanceBoard = () => {
                         } ${
                           isDragOver && !isDropBlocked ? "bg-blue-50 border-blue-300" : ""
                         } ${
-                          isDragOver && isDropBlocked ? "bg-red-50" : ""
+                          isDragOver && isDropBlocked ? "bg-red-100 border-red-400 border-2" : ""
                         } ${
                           isDimension ? "bg-purple-50/30 border-l-2 border-l-purple-400" : ""
                         }`}
@@ -1010,7 +995,7 @@ export const PerformanceBoard = () => {
                           top: 0,
                           left: isFrozen ? `${leftOffset}px` : undefined,
                           backgroundColor: isDragOver && isDropBlocked
-                            ? "rgba(220, 38, 38, 0.1)"
+                            ? "rgba(254, 226, 226, 0.5)"
                             : isDragOver && !isDropBlocked
                             ? "#dbeafe"
                             : isDimension
@@ -1197,7 +1182,7 @@ export const PerformanceBoard = () => {
                               maxWidth: (isZipCode || isService) ? "250px" : undefined,
                               left: isFrozen ? `${leftOffset}px` : undefined,
                               backgroundColor: isColumnBlocked
-                                ? "rgba(220, 38, 38, 0.1)"
+                                ? "rgba(254, 226, 226, 0.5)"
                                 : isFrozen 
                                 ? (categoryColors ? categoryColors.bgColor : "#ffffff") 
                                 : undefined,
@@ -1308,7 +1293,7 @@ export const PerformanceBoard = () => {
                           className={`py-2 pr-3 pl-6 text-sm text-slate-700 border-r border-slate-200 last:border-r-0 whitespace-nowrap relative ${
                             categoryColors && !isFrozen ? categoryColors.cellBg : ""
                           } ${isFrozen ? "sticky z-40" : ""} ${
-                            isColumnBlocked ? "bg-red-50" : ""
+                            isColumnBlocked ? "bg-red-100" : ""
                           }`}
                           style={{
                             minWidth: "250px",
@@ -1317,7 +1302,7 @@ export const PerformanceBoard = () => {
                             bottom: 0,
                             left: isFrozen ? `${leftOffset}px` : undefined,
                             backgroundColor: isColumnBlocked
-                              ? "rgba(220, 38, 38, 0.1)"
+                              ? "rgba(254, 226, 226, 0.5)"
                               : (categoryColors ? categoryColors.bgColor : "#f8fafc"),
                             boxShadow: isFrozen ? "2px 0 4px rgba(0, 0, 0, 0.05)" : undefined,
                             position: "sticky",
@@ -1360,7 +1345,6 @@ export const PerformanceBoard = () => {
             </table>
           </div>
         </div>
-        </Card>
       </div>
 
       <AddColumnSheet

@@ -89,6 +89,7 @@ export interface PerformanceRow {
   fb_video_views_100pct?: number;
   fb_video_avg_watch_time?: number;
   fb_video_play_actions?: number;
+  fb_video_continuous_2_sec_watched?: number;
   fb_total_conversions?: number;
   fb_conversion_value?: number;
   fb_cost_per_conversion?: number;
@@ -111,6 +112,7 @@ export interface PerformanceRow {
   thumbstop_rate?: number;
   conversion_rate?: number;
   see_more_rate?: number;
+  optimizationGoal?: string;
   [key: string]: string | number | undefined;
 }
 
