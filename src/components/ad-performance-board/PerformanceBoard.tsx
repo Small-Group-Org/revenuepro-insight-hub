@@ -877,6 +877,17 @@ export const PerformanceBoard = () => {
 
         <Separator className="mb-4" />
 
+        {adGridData && adGridData.length > 0 && (
+          <div className="mb-6 p-4 bg-slate-50/30 shadow-sm">
+            <AdGridView
+              ads={adGridData}
+              startDate={appliedFilters.startDate}
+              endDate={appliedFilters.endDate}
+              clientId={clientId}
+            />
+          </div>
+        )}
+
         <div className="flex items-center justify-between mb-3 gap-3">
           <div className="flex items-end gap-4">
             <div className="flex flex-col gap-1">
