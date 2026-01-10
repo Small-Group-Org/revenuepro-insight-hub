@@ -63,7 +63,7 @@ export function AdGridView({ ads, conversionScoreMap = {}, hookScoreMap = {}, st
   }
 
   return (
-    <>
+    <div className="bg-white rounded-lg">
       {/* Pagination Controls - Top */}
       <div className="flex items-center justify-between mb-3 px-4">
         <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -166,6 +166,6 @@ export function AdGridView({ ads, conversionScoreMap = {}, hookScoreMap = {}, st
           clientId={clientId}
         />
       )}
-    </>
+    </div>
   );
 }

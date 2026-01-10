@@ -42,7 +42,7 @@ interface AdCardProps {
 }
 
 const SimpleMetric = ({ label, value, tooltip }: { label: string; value: string; tooltip?: string }) => (
-  <div className="flex items-center justify-between group relative">
+  <div className="flex items-center justify-between py-0.5 gap-2 group relative">
     <span className="text-gray-600 text-sm">{label}</span>
     <span className="font-semibold text-gray-900 text-sm">{value}</span>
     {tooltip && (
@@ -65,7 +65,7 @@ const ScoreMetric = ({ label, score, tooltip }: { label: string; score: number; 
   const color = getColor(score);
 
   return (
-    <div className="flex items-center justify-between py-1 gap-2 group relative">
+    <div className="flex items-center justify-between py-0.5 gap-2 group relative">
       <span className="text-gray-600 text-sm whitespace-nowrap">{label}</span>
       <div className="flex items-center gap-2 flex-1 min-w-0 max-w-[40%]">
         <div className="flex-1 bg-gray-200 rounded-full h-2">
@@ -177,7 +177,7 @@ export function AdCard({ ad, conversionScore, hookScore, onClick }: AdCardProps)
 
   return (
     <div
-      className="w-full bg-white  shadow-sm hover:shadow-md transition cursor-pointer hover:bg-gray-50"
+      className="w-full bg-white border border-slate-200 rounded-lg shadow-lg hover:shadow-2xl hover:border-primary/10 transition-all duration-300 cursor-pointer hover:bg-gray-50 hover:scale-105"
       onClick={onClick}
     >
       {/* Media */}
@@ -277,14 +277,14 @@ export function AdCard({ ad, conversionScore, hookScore, onClick }: AdCardProps)
       </div>
 
       {/* Content */}
-      <div className="p-4 flex flex-col">
+      <div className="px-4 py-2.5 flex flex-col">
         {/* Title */}
-        <h4 className="text-lg font-semibold text-gray-900 leading-tight mb-3 line-clamp-2">
+        <h4 className="text-lg font-semibold text-gray-900 leading-tight mb-2 line-clamp-2">
           {ad.adName || 'Untitled Ad'}
         </h4>
 
         {/* Metrics */}
-        <div className="space-y-1 text-sm">
+        <div className="space-y-0.5 text-sm">
           <ScoreMetric
             label="Conversion Rate"
             score={conversionRate ?? 0}

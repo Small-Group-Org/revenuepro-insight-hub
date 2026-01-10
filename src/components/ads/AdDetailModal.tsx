@@ -45,6 +45,17 @@ interface AdDetailModalProps {
       primaryText?: string;
       headline?: string;
       callToAction?: any;
+      description?: string;
+      body?: string;
+      objectStorySpec?: {
+        page_id?: string;
+        link_data?: {
+          link?: string;
+          message?: string;
+          name?: string;
+          image_hash?: string;
+        };
+      };
     };
     // Metrics
     fb_impressions?: number;
@@ -59,6 +70,8 @@ interface AdDetailModalProps {
     fb_post_shares?: number;
     fb_frequency?: number;
     fb_reach?: number;
+    fb_video_continuous_2_sec_watched?: number;
+    optimizationGoal?: string;
   };
   conversionScore?: number;
   hookScore?: number;
@@ -66,6 +79,7 @@ interface AdDetailModalProps {
   startDate?: string;
   endDate?: string;
   clientId?: string;
+  optimizationGoal?: string;
 }
 
 export function AdDetailModal({ open, onClose, ad, leadsConversionRate, startDate, endDate, clientId: clientIdProp }: AdDetailModalProps) {
@@ -162,6 +176,7 @@ export function AdDetailModal({ open, onClose, ad, leadsConversionRate, startDat
           fb_post_reactions: true,
           fb_post_comments: true,
           fb_post_shares: true,
+          fb_video_continuous_2_sec_watched: true,
           costPerLead: true,
           numberOfLeads: true,
         },
@@ -534,7 +549,6 @@ export function AdDetailModal({ open, onClose, ad, leadsConversionRate, startDat
                 <CollapsibleTrigger className="w-full">
                   <div className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
                     <div className="flex items-center gap-2">
-                      h
                       <span className="text-sm font-medium text-slate-700">Meta</span>
                     </div>
                     {isDimensionsOpen ? <ChevronUp className="h-4 w-4 text-slate-500" /> : <ChevronDown className="h-4 w-4 text-slate-500" />}
@@ -552,7 +566,12 @@ export function AdDetailModal({ open, onClose, ad, leadsConversionRate, startDat
                     
                     <div className="flex items-center justify-between py-2">
                       <span className="text-sm text-slate-600">Optimization goal</span>
-                      <span className="text-sm font-medium text-slate-900">lead_generation</span>
+                      <span className="text-sm font-medium text-slate-900">
+                        {displayAd.optimizationGoal 
+                          ? displayAd.optimizationGoal.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())
+                          : 'N/A'
+                        }
+                      </span>
                     </div>
                     
                     <div className="flex flex-col gap-1 py-2">
@@ -579,10 +598,20 @@ export function AdDetailModal({ open, onClose, ad, leadsConversionRate, startDat
                       </div>
                     )}
 
-                    <div className="flex items-center justify-between py-2">
-                      <span className="text-sm text-slate-600">Landing page</span>
-                      <span className="text-sm font-medium text-blue-600">fb.me</span>
-                    </div>
+                    {creative?.objectStorySpec?.link_data?.link && (
+                      <div className="flex items-center justify-between py-2">
+                        <span className="text-sm text-slate-600">Landing page</span>
+                        <a 
+                          href={creative.objectStorySpec.link_data.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-medium text-blue-600 hover:underline truncate max-w-[200px]"
+                          title={creative.objectStorySpec.link_data.link}
+                        >
+                          {new URL(creative.objectStorySpec.link_data.link).hostname}
+                        </a>
+                      </div>
+                    )}
 
                     <div className="flex items-center justify-between py-2">
                       <span className="text-sm text-slate-600">Ad type</span>
@@ -595,7 +624,10 @@ export function AdDetailModal({ open, onClose, ad, leadsConversionRate, startDat
                     <div className="flex items-center justify-between py-2">
                       <span className="text-sm text-slate-600">Call to action</span>
                       <span className="text-sm font-medium text-slate-900">
-                        {creative?.callToAction?.type || creative?.callToAction?.value || 'Get quote'}
+                        {creative?.callToAction?.type 
+                          ? creative.callToAction.type.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())
+                          : 'N/A'
+                        }
                       </span>
                     </div>
                   </div>
@@ -659,11 +691,11 @@ export function AdDetailModal({ open, onClose, ad, leadsConversionRate, startDat
                     <div className="grid grid-cols-2 gap-4 py-2">
                       <div>
                         <p className="text-xs text-slate-500 mb-1">Video Views</p>
-                        <p className="text-base font-semibold text-slate-900">{formatNumber(displayAd.fb_impressions)}</p>
+                        <p className="text-base font-semibold text-slate-900">{formatNumber(displayAd.fb_video_views)}</p>
                       </div>
                       <div>
                         <p className="text-xs text-slate-500 mb-1">3-sec Views</p>
-                        <p className="text-base font-semibold text-slate-900">N/A</p>
+                        <p className="text-base font-semibold text-slate-900">{formatNumber(displayAd.fb_video_continuous_2_sec_watched)}</p>
                       </div>
                     </div>
                   </div>
@@ -685,19 +717,19 @@ export function AdDetailModal({ open, onClose, ad, leadsConversionRate, startDat
                     <div className="grid grid-cols-2 gap-4 py-2">
                       <div>
                         <p className="text-xs text-slate-500 mb-1">Reactions</p>
-                        <p className="text-base font-semibold text-slate-900">N/A</p>
+                        <p className="text-base font-semibold text-slate-900">{formatNumber(displayAd.fb_post_reactions)}</p>
                       </div>
                       <div>
                         <p className="text-xs text-slate-500 mb-1">Comments</p>
-                        <p className="text-base font-semibold text-slate-900">N/A</p>
+                        <p className="text-base font-semibold text-slate-900">{formatNumber(displayAd.fb_post_comments)}</p>
                       </div>
                       <div>
                         <p className="text-xs text-slate-500 mb-1">Shares</p>
-                        <p className="text-base font-semibold text-slate-900">N/A</p>
+                        <p className="text-base font-semibold text-slate-900">{formatNumber(displayAd.fb_post_shares)}</p>
                       </div>
                       <div>
                         <p className="text-xs text-slate-500 mb-1">Engagement Rate</p>
-                        <p className="text-base font-semibold text-slate-900">N/A</p>
+                        <p className="text-base font-semibold text-slate-900">{engagementScore}%</p>
                       </div>
                     </div>
                   </div>
