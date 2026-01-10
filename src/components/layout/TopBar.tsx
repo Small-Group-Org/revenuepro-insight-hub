@@ -109,7 +109,7 @@ export const TopBar = () => {
   };
 
   return (
-    <div className="bg-sidebar text-sidebar-foreground border-b border-sidebar-border mb-8 px-4 py-3 h-[60px] flex-shrink-0 gap-6 flex  items-center justify-end">
+    <div className="bg-sidebar text-sidebar-foreground border-b border-sidebar-border px-4 py-3 h-[60px] flex-shrink-0 gap-6 flex items-center justify-end">
       {/* Admin Routes Navigation */}
       <div className="flex items-center gap-2">
         {isAdmin &&

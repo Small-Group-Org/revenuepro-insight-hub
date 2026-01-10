@@ -1,13 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { DatePeriodSelector } from "@/components/DatePeriodSelector";
 import {
   TrendingUp,
   TrendingDown,
-  DollarSign,
-  BarChart3,
-  Target,
 } from "lucide-react";
 import { useReportingDataStore } from "@/stores/reportingDataStore";
 import {
@@ -18,10 +14,9 @@ import {
   endOfYear,
 } from "date-fns";
 import { getWeekInfo } from "@/utils/weekLogic";
-import { processTargetData, calculateFields, getWeeksInMonth } from "@/utils/page-utils/targetUtils";
+import { processTargetData, calculateFields } from "@/utils/page-utils/targetUtils";
 import { calculateReportingFields } from "@/utils/page-utils/actualDataUtils";
-import { calculateManagementCost, formatCurrencyValue } from "@/utils/page-utils/commonUtils";
-import { targetFields, reportingFields } from "@/utils/constant";
+import { formatCurrencyValue } from "@/utils/page-utils/commonUtils";
 import { FieldValue } from "@/types";
 import { exportToExcel, ExportData } from "@/utils/excelExport";
 import { useUserStore } from "@/stores/userStore";
@@ -29,6 +24,7 @@ import { ContentLoader } from "@/components/ui/content-loader";
 import { useCombinedLoading } from "@/hooks/useCombinedLoading";
 import { useMetaBudgetSpent } from "@/hooks/useMetaBudgetSpent";
 import { useUserContext } from "@/utils/UserContext";
+import { PageHeader } from "@/components/common-ui/PageHeader";
 
 export const CompareResults = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -495,20 +491,11 @@ export const CompareResults = () => {
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       <div className="relative z-10 pt-6 pb-16 px-4">
         <div className="max-w-7xl mx-auto space-y-12">
-          {/* Header */}
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-4 mb-6">
-              <div className="w-10 h-10 bg-gradient-to-r from-primary to-primary/60 rounded-lg  flex items-center justify-center shadow-lg">
-                <TrendingUp className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <h1 className="leading-[130%] text-4xl font-bold text-gradient-primary">
-                Target Vs Actual
-              </h1>
-            </div>
-            <p className="text-muted-foreground max-w-2xl mx-auto text-lg mb-8 mt-2">
-              Compare your actual performance against targets with calculated metrics
-            </p>
-          </div>
+          <PageHeader
+            icon={TrendingUp}
+            title="Target Vs Actual"
+            description="Compare your actual performance against targets with calculated metrics"
+          />
         </div>
 
         {/* Controls */}

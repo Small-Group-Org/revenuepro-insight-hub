@@ -51,6 +51,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { TopCard } from "@/components/common-ui/TopCards";
+import { PageHeader } from "@/components/common-ui/PageHeader";
 
 // Chart colors
 const COLORS = ["#1f1c13", "#9ca3af", "#306BC8", "#2A388F", "#396F9C"];
@@ -423,22 +424,13 @@ export const LeadAnalytics = () => {
     <div className="min-h-screen overflow-x-hidden">
       <div className="relative z-10 pt-4 pb-12 px-4">
         <div className="max-w-7xl mx-auto space-y-10 w-full">
-          {/* Header */}
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-4">
-              <div className="w-10 h-10 bg-gradient-to-r from-primary to-primary/60 rounded-lg flex items-center justify-center shadow-lg">
-                <BarChart3 className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <h1 className="leading-[130%] text-4xl font-bold text-gradient-primary">
-                Lead Analytics
-              </h1>
-            </div>
-            <div className="flex items-center justify-center gap-4 mb-10 mt-2">
-              <p className="text-muted-foreground text-lg">
-                Complete analysis of lead performance - focusing on successful
-                conversions and trends
-              </p>
-              <div className="flex items-center gap-1 relative">
+          <PageHeader
+            icon={BarChart3}
+            title="Lead Analytics"
+            description="Complete analysis of lead performance - focusing on successful conversions and trends"
+          />
+          <div className="flex items-center justify-center gap-4 mb-10">
+            <div className="flex items-center gap-1 relative">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
                 <div className="relative">
                   <Select
@@ -597,7 +589,6 @@ export const LeadAnalytics = () => {
                     </PopoverContent>
                   </Popover>
                 )}
-              </div>
             </div>
           </div>
 
